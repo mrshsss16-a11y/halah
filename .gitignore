@@ -1,0 +1,13 @@
+# Cloudflare local cache + build output
+.wrangler
+dist
+node_modules
+
+# Secrets — never commit
+.env
+.env*.local
+.dev.vars
+
+# Editor/agent tooling — not part of the app
+.agents
+skills-lock.json

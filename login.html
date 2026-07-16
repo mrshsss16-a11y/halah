@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar" data-shell="product" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>هالة | تسجيل الدخول</title>
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var shell = "product";
+      var surfaceDefault = "light";
+      var pref = null;
+      try { pref = localStorage.getItem("hala_theme"); } catch (e) {}
+      var resolved;
+      if (pref === "light" || pref === "dark") { resolved = pref; }
+      else if (pref === "system") { resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; }
+      else { resolved = surfaceDefault; }
+      root.setAttribute("data-theme", resolved);
+      root.classList.toggle("dark", resolved === "dark");
+      var reduce = false;
+      try {
+        if (localStorage.getItem("hala_reduce_motion") === "1") reduce = true;
+        else if (localStorage.getItem("hala_reduce_motion") === "0") reduce = false;
+        else reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      } catch (e) { reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; }
+      root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
+    })();
+  </script>
+  <script src="theme.js"></script>
+  <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "outline-variant": "#bfc8ce",
+            "on-surface-variant": "#40484d",
+            "surface": "#f7f9fb",
+            "background": "#f7f9fb",
+            "secondary": "#006874",
+            "outline": "#70787e",
+            "on-background": "#191c1e",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#191c1e",
+            "primary": "#0b5f78",
+            "primary-container": "#2c7ca0",
+            "error": "#ba1a1a",
+            "inverse-primary": "#87d0f6"
+          },
+          fontFamily: { sans: ["DIN Next LT Arabic", "sans-serif"] }
+        }
+      }
+    };
+  </script>
+  <link href="style.css" rel="stylesheet"/>
+  <style>
+    .login-container {
+      max-width: 440px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex items-center justify-center p-6 relative overflow-hidden page-enter">
+
+  <!-- Soft pastel blobs (light theme) -->
+  <div class="light-aurora" aria-hidden="true">
+    <div class="light-blob light-blob-rose"></div>
+    <div class="light-blob light-blob-teal"></div>
+    <div class="light-blob light-blob-gold"></div>
+  </div>
+
+  <div class="login-container glass-card p-8 flex flex-col gap-6 relative z-10">
+    <div class="text-center">
+      <h1 class="text-3xl font-bold text-primary flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-[32px] font-bold" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+        هالة
+      </h1>
+      <p class="font-label-sm text-label-sm text-outline-variant mt-2">تسويق ذكي ومضاعفة مبيعات متجرك</p>
+    </div>
+
+    <form onsubmit="event.preventDefault(); window.location.href='dashboard.html?sandbox=1';" class="flex flex-col gap-4">
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-semibold text-outline" for="login-email">البريد الإلكتروني</label>
+        <input type="email" id="login-email" required class="w-full rounded-xl border border-outline-variant bg-transparent px-4 py-2.5 font-body-md text-sm text-on-background focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-outline-variant/75" placeholder="info@example.com"/>
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-semibold text-outline" for="login-password">كلمة المرور</label>
+        <input type="password" id="login-password" required class="w-full rounded-xl border border-outline-variant bg-transparent px-4 py-2.5 font-body-md text-sm text-on-background focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-outline-variant/75" placeholder="••••••••"/>
+      </div>
+
+      <div class="flex justify-between items-center text-xs mt-1">
+        <label class="flex items-center gap-1.5 cursor-pointer">
+          <input type="checkbox" class="rounded border-outline text-primary focus:ring-primary/20 w-4 h-4"/>
+          <span class="text-outline">تذكرني</span>
+        </label>
+        <a href="#" class="text-primary font-medium hover:underline" onclick="showToast('🔑 استعادة كلمة المرور ستتاح قريباً', 'info')">نسيت كلمة المرور؟</a>
+      </div>
+
+      <button type="submit" class="btn-primary-gradient py-3.5 rounded-xl font-bold mt-2 text-sm flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">login</span>
+        دخول إلى لوحة التحكم
+      </button>
+    </form>
+
+    <div class="relative flex py-2 items-center">
+      <div class="flex-grow border-t border-outline-variant/20"></div>
+      <span class="flex-shrink mx-4 text-outline text-xs">أو تسجيل دخول سريع كشريك</span>
+      <div class="flex-grow border-t border-outline-variant/20"></div>
+    </div>
+
+    <div class="flex flex-col gap-3">
+      <button onclick="window.location.href='onboarding.html?platform=salla';" class="w-full py-3 px-4 border border-outline-variant/30 rounded-xl flex items-center justify-center gap-2.5 hover:bg-primary/5 transition-all text-sm font-semibold">
+        <span class="platform-logo platform-logo--xs platform-logo--salla" aria-hidden="true"><span class="platform-logo-text">سلة</span></span>
+        <span>تسجيل الدخول عبر سلة (Salla)</span>
+      </button>
+      <button onclick="window.location.href='onboarding.html?platform=zid';" class="w-full py-3 px-4 border border-outline-variant/30 rounded-xl flex items-center justify-center gap-2.5 hover:bg-primary/5 transition-all text-sm font-semibold">
+        <span class="platform-logo platform-logo--xs platform-logo--zid" aria-hidden="true"><span class="platform-logo-text">زد</span></span>
+        <span>تسجيل الدخول عبر زد (Zid)</span>
+      </button>
+    </div>
+
+    <p class="text-center text-xs text-outline mt-2">
+      ليس لديك حساب شريك؟ 
+      <a href="onboarding.html" class="text-primary font-bold hover:underline">ابدأ الآن مجاناً</a>
+    </p>
+  </div>
+
+  <div class="toast-container" id="toast-container" style="position:fixed; top:24px; left:50%; transform:translateX(-50%); z-index:100;"></div>
+
+  <script>
+    function showToast(msg, type='success') {
+      const tc = document.getElementById('toast-container');
+      const t = document.createElement('div');
+      t.className = 'toast';
+      if (type === 'info') t.style.background = '#334155';
+      t.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">${type === 'success' ? 'check_circle' : 'info'}</span>${msg}`;
+      tc.appendChild(t);
+      setTimeout(() => t.remove(), 3200);
+    }
+  </script>
+</body>
+</html>

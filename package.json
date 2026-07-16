@@ -1,0 +1,10 @@
+{
+  "name": "hala-ai-os",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Hala AI OS — Saudi e-commerce AI marketer on Cloudflare Pages Functions + Workers AI + Vectorize",
+  "type": "module",
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

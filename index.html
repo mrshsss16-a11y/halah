@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar" data-shell="marketing" data-theme="dark">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>هالة | ذكاء اصطناعي يخدم تجارتك</title>
+  <meta name="description" content="هالة: ذكاء اصطناعي سعودي يكتشف خسائر متجرك ويصلحها تلقائياً. افحص متجرك مجاناً خلال ٣٠ ثانية."/>
+  <script>
+(function () {
+  var root = document.documentElement;
+  var shell = root.getAttribute("data-shell") || "product";
+  var surfaceDefault = shell === "marketing" ? "dark" : "light";
+  var pref = null;
+  try { pref = localStorage.getItem("hala_theme"); } catch (e) {}
+  var resolved;
+  if (pref === "light" || pref === "dark") {
+    resolved = pref;
+  } else if (pref === "system") {
+    resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } else {
+    // key absent — do NOT localStorage.setItem
+    resolved = surfaceDefault;
+  }
+  root.setAttribute("data-theme", resolved);
+  root.classList.toggle("dark", resolved === "dark");
+  // Motion FOUC
+  var reduce = false;
+  try {
+    if (localStorage.getItem("hala_reduce_motion") === "1") reduce = true;
+    else if (localStorage.getItem("hala_reduce_motion") === "0") reduce = false;
+    else reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch (e) {
+    reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+  root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
+  // NEVER setItem here. NEVER add theme-animating here.
+  // landing-dark: body may not exist yet — schedule mirror only
+  function syncLandingDark() {
+    if (!document.body) return;
+    document.body.classList.toggle(
+      "landing-dark",
+      shell === "marketing"
+    );
+  }
+  if (document.body) syncLandingDark();
+  else document.addEventListener("DOMContentLoaded", syncLandingDark, { once: true });
+})();
+  </script>
+  <script src="theme.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script>
+    /* PR4: Marketing GSAP gate — decide before paint so CSS enter can own mobile */
+    (function () {
+      function allowMarketingGSAP() {
+        if (document.documentElement.getAttribute("data-reduce-motion") === "1") return false;
+        if (matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+        if (navigator.connection && navigator.connection.saveData) return false;
+        if (!matchMedia("(pointer: fine)").matches) return false;
+        if (navigator.deviceMemory !== undefined && navigator.deviceMemory < 4) return false;
+        return true;
+      }
+      window.allowMarketingGSAP = allowMarketingGSAP;
+      document.documentElement.setAttribute(
+        "data-marketing-gsap",
+        allowMarketingGSAP() ? "1" : "0"
+      );
+    })();
+  </script>
+  <style>
+    /* PR4: CSS-only enter visual parity when GSAP is gated off (mobile / reduce / saveData / low-mem) */
+    html[data-marketing-gsap="0"] .gsap-hero-item,
+    html[data-marketing-gsap="0"] .gsap-reveal-text {
+      animation: motionEnterY var(--dur-enter, 600ms) var(--ease-standard, cubic-bezier(0.22, 1, 0.36, 1)) both;
+    }
+    html[data-marketing-gsap="0"] .hero-badge.gsap-hero-item { animation-delay: calc(var(--stagger-step, 80ms) * 0); }
+    html[data-marketing-gsap="0"] .gsap-reveal-text { animation-delay: calc(var(--stagger-step, 80ms) * 1); }
+    html[data-marketing-gsap="0"] .hero-sub.gsap-hero-item { animation-delay: calc(var(--stagger-step, 80ms) * 2); }
+    html[data-marketing-gsap="0"] .scanner-card.gsap-hero-item { animation-delay: calc(var(--stagger-step, 80ms) * 3); }
+    html[data-marketing-gsap="0"] .btn-trial-ghost.gsap-hero-item { animation-delay: calc(var(--stagger-step, 80ms) * 4); }
+
+    html[data-marketing-gsap="0"] #hero-stage {
+      animation: motionEnterY var(--dur-enter, 600ms) var(--ease-standard, cubic-bezier(0.22, 1, 0.36, 1)) both;
+      animation-delay: calc(var(--stagger-step, 80ms) * 2);
+    }
+    /* Restore CSS float when GSAP is off (style.css disables .parallax-card float for GSAP ownership) */
+    html[data-marketing-gsap="0"] .parallax-card {
+      animation: floatCard 5.5s ease-in-out infinite !important;
+      animation-delay: calc(var(--i, 0) * 0.7s) !important;
+      will-change: auto;
+    }
+
+    /* AOS replacement: features + trial CSS enter (all devices) */
+    .features-section .section-head.motion-enter,
+    .trial-section.motion-enter {
+      animation: motionEnterY var(--dur-enter, 600ms) var(--ease-standard, cubic-bezier(0.22, 1, 0.36, 1)) both;
+    }
+
+    html[data-reduce-motion="1"] .gsap-hero-item,
+    html[data-reduce-motion="1"] .gsap-reveal-text,
+    html[data-reduce-motion="1"] #hero-stage,
+    html[data-reduce-motion="1"] #hero-stage .parallax-card,
+    html[data-reduce-motion="1"] .features-section .section-head.motion-enter,
+    html[data-reduce-motion="1"] .features-section .motion-stagger > *,
+    html[data-reduce-motion="1"] .trial-section.motion-enter {
+      animation: none !important;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html:not([data-reduce-motion="0"]) .gsap-hero-item,
+      html:not([data-reduce-motion="0"]) .gsap-reveal-text,
+      html:not([data-reduce-motion="0"]) #hero-stage,
+      html:not([data-reduce-motion="0"]) #hero-stage .parallax-card,
+      html:not([data-reduce-motion="0"]) .features-section .section-head.motion-enter,
+      html:not([data-reduce-motion="0"]) .features-section .motion-stagger > *,
+      html:not([data-reduce-motion="0"]) .trial-section.motion-enter {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+      }
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "space": "#F9FBFC",
+            "neon-cyan": "#0b5f78",
+            "neon-teal": "#0d9488",
+            "deep-indigo": "#be8c78",
+            "on-primary-container": "#ffffff",
+            "surface-container-low": "#f3f6f8",
+            "outline-variant": "#d0d8e0",
+            "surface-bright": "#ffffff",
+            "surface-container": "#eef2f5",
+            "surface-container-high": "#e6ebf0",
+            "surface-tint": "#0b5f78",
+            "on-surface-variant": "#64748b",
+            "surface": "#F9FBFC",
+            "background": "#F9FBFC",
+            "secondary": "#0d9488",
+            "primary-fixed": "#d8eef5",
+            "outline": "#94a3b8",
+            "on-background": "#1E293B",
+            "surface-container-highest": "#dde3e9",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#1E293B",
+            "surface-variant": "#e8eef2",
+            "secondary-container": "#d5f5f0",
+            "on-secondary-container": "#0f3d3a",
+            "primary": "#0b5f78",
+            "primary-container": "#3d8aa8",
+            "error": "#b42318",
+            "primary-fixed-variant": "#a8d4e4"
+          },
+          borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", "2xl": "1rem", "3xl": "1.5rem", full: "9999px" },
+          spacing: {
+            "container-padding-mobile": "16px",
+            gutter: "24px",
+            "section-gap": "80px",
+            "container-padding-desktop": "32px"
+          },
+          fontFamily: {
+            "title-md": ["IBM Plex Sans Arabic"],
+            "headline-lg-mobile": ["IBM Plex Sans Arabic"],
+            "headline-lg": ["IBM Plex Sans Arabic"],
+            "label-sm": ["IBM Plex Sans Arabic"],
+            "body-md": ["IBM Plex Sans Arabic"],
+            "display-lg": ["IBM Plex Sans Arabic"],
+            "body-lg": ["IBM Plex Sans Arabic"]
+          },
+          fontSize: {
+            "title-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+            "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }],
+            "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
+            "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
+            "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+            "display-lg": ["48px", { lineHeight: "60px", letterSpacing: "-0.02em", fontWeight: "700" }],
+            "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }]
+          }
+        }
+      }
+    };
+  </script>
+  <link href="style.css" rel="stylesheet"/>
+</head>
+<body class="antialiased min-h-[100dvh] flex flex-col relative overflow-x-hidden page-enter">
+
+  <!-- Soft pastel blobs — light default (premium cream) -->
+  <div class="light-aurora" aria-hidden="true">
+    <div class="light-blob light-blob-rose"></div>
+    <div class="light-blob light-blob-teal"></div>
+    <div class="light-blob light-blob-gold"></div>
+  </div>
+
+  <!-- Neon gradient blobs — dark theme only -->
+  <div class="aurora-bg" aria-hidden="true">
+    <div class="aurora-blob aurora-blob-teal"></div>
+    <div class="aurora-blob aurora-blob-indigo"></div>
+    <div class="aurora-blob aurora-blob-cyan"></div>
+    <div class="aurora-noise"></div>
+  </div>
+
+  <div class="announcement-neon" id="announcement-bar" role="button" tabindex="0">
+    <span class="announcement-pulse"></span>
+    متجرك يخسر زوار كل يوم. اكتشف الرقم مجاناً خلال ٣٠ ثانية
+    <span class="material-symbols-outlined text-sm">arrow_back</span>
+  </div>
+
+  <header class="nav-shell">
+    <nav class="nav-glass" aria-label="القائمة الرئيسية">
+      <a href="index.html" class="nav-brand">
+        <img alt="شعار هالة" class="nav-logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAptF2Pl_8QbKJPZ4kVXlK03liL36VNpUtUSClpYxoT1KI6nFfBn9VVXOcD7P5JZJBZL_WlmurgRAi1XDNL9XRAx4urjY0OR7tm0Jk3uzbRje_wuw7onj-ROpBeWDX80W-pw-zDigjaSQhpBOyKIkkpF9WymT4C_m5TgmaSiUcD_8J5lCr_lYgoy7yMUHYbwlnXpWAb20wSSMJXG753JFmvB4MBfOu1p6ZqSrGZprEjrTsCONggXAkCjSJMP-68n9z9IP-_dggcWi0"/>
+        <span class="brand-ar nav-brand-text">هالة</span>
+      </a>
+      <div class="nav-links">
+        <a class="nav-link is-active" href="index.html">الرئيسية</a>
+        <a class="nav-link" href="#features">المزايا</a>
+        <a class="nav-link" href="#trial">التجربة المجانية</a>
+      </div>
+      <div class="nav-actions">
+        <div class="hala-prefs" role="group" aria-label="تفضيلات المظهر">
+          <label class="hala-prefs-field">
+            <span class="hala-prefs-label">المظهر</span>
+            <select class="hala-theme-select" data-hala-theme-select aria-label="المظهر">
+              <option value="light">فاتح</option>
+              <option value="dark">داكن</option>
+              <option value="system">تلقائي</option>
+            </select>
+          </label>
+          <label class="hala-prefs-motion">
+            <input type="checkbox" data-hala-reduce-motion />
+            <span>تقليل الحركة</span>
+          </label>
+        </div>
+        <a href="login.html" class="nav-cta">تسجيل الدخول</a>
+      </div>
+    </nav>
+  </header>
+
+  <main class="landing-main">
+
+    <!-- HERO -->
+    <section class="hero-section">
+      <!-- Text + scanner (RTL start = right) -->
+      <div class="hero-copy" id="hero-copy">
+        <div class="hero-badge gsap-hero-item">
+          <span class="hero-badge-dot"></span>
+          <span class="material-symbols-outlined text-sm">auto_awesome</span>
+          <span>ذكاء اصطناعي سعودي للتجارة الإلكترونية</span>
+        </div>
+
+        <h1 class="hero-title gsap-reveal-text">
+          ذكاء اصطناعي
+          <span class="hero-title-glow">يخدم تجارتك</span>
+        </h1>
+
+        <p class="hero-sub gsap-hero-item">
+          متجرك يخسر
+          <span class="hero-loss-num counter-wrapper">
+            <span class="counter-inner" id="hero-counter"><span>0</span></span>
+          </span>
+          زيارة يومياً من أخطاء الظهور. هالة تكتشفها وتصلحها تلقائياً.
+        </p>
+
+        <form id="scan-form" class="scanner-card neon-pulse-border gsap-hero-item">
+          <div class="scanner-card-inner">
+            <div class="scanner-input-row">
+              <span class="material-symbols-outlined scanner-icon">link</span>
+              <input
+                id="store-url"
+                type="url"
+                dir="ltr"
+                placeholder="https://oud-riyadh.salla.sa"
+                value="https://oud-riyadh.salla.sa"
+                class="scanner-input"
+                required
+                aria-label="رابط المتجر"
+              />
+            </div>
+            <button type="submit" class="btn-scan-now">
+              <span>افحص الآن</span>
+              <span class="material-symbols-outlined">radar</span>
+            </button>
+          </div>
+          <p class="scanner-hint">مجاني · بدون بطاقة · نتائج خلال ٣٠ ثانية</p>
+        </form>
+
+        <a href="onboarding.html" class="btn-trial-ghost gsap-hero-item">
+          <span class="material-symbols-outlined text-[20px]">rocket_launch</span>
+          ابدأ التجربة المجانية
+        </a>
+      </div>
+
+      <!-- Visual stage with hero image + floating glass cards -->
+      <div class="hero-stage" id="hero-stage">
+        <div class="hero-orbit" aria-hidden="true"></div>
+        <div class="hero-glow-ring" aria-hidden="true"></div>
+
+        <div class="hero-image-frame">
+          <img
+            alt="لوحة تحكم هالة لتحليل متاجر التجارة الإلكترونية السعودية"
+            class="hero-image"
+            src="saudi_ecommerce_ai_hero.png"
+            width="640"
+            height="640"
+          />
+          <div class="hero-image-sheen" aria-hidden="true"></div>
+        </div>
+
+        <!-- Floating 3D glass cards (GSAP parallax targets) -->
+        <article class="float-card float-card-whatsapp parallax-card" style="--i: 0" data-depth="0.035">
+          <div class="float-card-icon wa-icon">
+            <span class="material-symbols-outlined">chat</span>
+          </div>
+          <div class="float-card-body">
+            <p class="float-card-label">استعادة واتساب</p>
+            <p class="float-card-title">عميل عاد بعد ١٢ ساعة</p>
+            <p class="float-card-meta">تم إرسال رسالة استعادة تلقائية · +١٤٩ ر.س</p>
+          </div>
+          <span class="float-card-status">مباشر</span>
+        </article>
+
+        <article class="float-card float-card-dialect parallax-card" style="--i: 1" data-depth="0.055">
+          <div class="float-card-icon dialect-icon">
+            <span class="material-symbols-outlined">translate</span>
+          </div>
+          <div class="float-card-body">
+            <p class="float-card-label">مقارنة اللهجة السعودية</p>
+            <div class="dialect-compare">
+              <div class="dialect-row before">
+                <span class="dialect-tag">قبل</span>
+                <span>المنتج متوفر حالياً</span>
+              </div>
+              <div class="dialect-row after">
+                <span class="dialect-tag">بعد</span>
+                <span>جاهز عندك الحين، توصيل فوري</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="float-card float-card-stats parallax-card" style="--i: 2" data-depth="0.08">
+          <div class="float-card-icon stats-icon">
+            <span class="material-symbols-outlined">trending_up</span>
+          </div>
+          <div class="float-card-body">
+            <p class="float-card-label">رفع المبيعات لحظياً</p>
+            <p class="float-card-stat">+٢٧.٤٪</p>
+            <div class="mini-bars" aria-hidden="true">
+              <span style="--h: 40%"></span>
+              <span style="--h: 55%"></span>
+              <span style="--h: 48%"></span>
+              <span style="--h: 72%"></span>
+              <span style="--h: 88%"></span>
+              <span style="--h: 100%"></span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Social proof ticker -->
+    <section class="ticker-section" aria-label="إثبات اجتماعي">
+      <div class="ticker-fade ticker-fade-start"></div>
+      <div class="ticker-fade ticker-fade-end"></div>
+      <div class="marquee-track ticker-track" id="social-proof-ticker"></div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="features-section">
+      <div class="section-head motion-enter">
+        <h2 class="section-title">حلول ذكية لنمو متجرك</h2>
+        <p class="section-sub">نحلل بيانات متجرك ونقدّم توصيات قابلة للتنفيذ فوراً، دون تعقيد تقني.</p>
+      </div>
+      <div class="features-grid motion-stagger">
+        <article class="feature-card" style="--i: 0">
+          <div class="feature-icon">
+            <span class="material-symbols-outlined">search_insights</span>
+          </div>
+          <h3>تحسين الظهور</h3>
+          <p>تحليل شامل للكلمات المفتاحية وأداء الصفحات لاكتشاف فرص الظهور في محركات البحث.</p>
+          <span class="feature-chip">مدعوم بالذكاء الاصطناعي</span>
+        </article>
+        <article class="feature-card feature-card-accent" style="--i: 1">
+          <div class="feature-icon">
+            <span class="material-symbols-outlined">edit_note</span>
+          </div>
+          <h3>أوصاف المنتجات</h3>
+          <p>إنشاء أوصاف بيعية جذابة بلهجة سعودية متوافقة مع محركات البحث لرفع معدلات التحويل.</p>
+          <span class="feature-chip">مدعوم بالذكاء الاصطناعي</span>
+        </article>
+        <article class="feature-card" style="--i: 2">
+          <div class="feature-icon">
+            <span class="material-symbols-outlined">image_search</span>
+          </div>
+          <h3>معالجة الصور</h3>
+          <p>تحسين أسماء وأحجام الصور تلقائياً لتسريع التحميل وظهورها في بحث الصور.</p>
+          <span class="feature-chip">مدعوم بالذكاء الاصطناعي</span>
+        </article>
+        <article class="feature-card" style="--i: 3">
+          <div class="feature-icon">
+            <span class="material-symbols-outlined">sync_alt</span>
+          </div>
+          <h3>ربط ومزامنة ترينديول</h3>
+          <p>نشر المنتجات تلقائياً ومزامنة الأسعار والمخزون بين سلة، زد، وترينديول لفتح أسواق جديدة.</p>
+          <span class="feature-chip">تكامل عالمي نشط</span>
+        </article>
+      </div>
+    </section>
+
+    <!-- Trial / trust -->
+    <section id="trial" class="trial-section motion-enter">
+      <div class="trial-panel neon-pulse-border-soft">
+        <h2 class="trial-heading">يثق بنا أصحاب المتاجر في السعودية</h2>
+        <div class="platform-logos">
+          <span>سلة</span>
+          <span>زد</span>
+          <span>ترينديول</span>
+          <span>مكاني</span>
+        </div>
+        <div class="trial-stats">
+          <div class="trial-stat">
+            <p class="trial-stat-num">+٢٤٠</p>
+            <p class="trial-stat-label">متجر نشط</p>
+          </div>
+          <div class="trial-stat">
+            <p class="trial-stat-num teal">٨٧٪</p>
+            <p class="trial-stat-label">رفعوا مبيعاتهم</p>
+          </div>
+        </div>
+        <a href="onboarding.html" class="btn-scan-now btn-trial-lg">
+          فعّل تجربتك المجانية الآن
+          <span class="material-symbols-outlined">rocket_launch</span>
+        </a>
+        <p class="trial-fine">٣٠ يوماً تجريبية · ٢٠٠ وصف منتج · ٤٠٠ صورة استوديو · ٥٠ رسالة واتساب · بدون بطاقة ائتمان</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="landing-footer">
+    <div class="brand-ar footer-brand">هالة</div>
+    <div class="footer-links">
+      <a href="#">شروط الخدمة</a>
+      <a href="#">سياسة الخصوصية</a>
+      <a href="#">رؤية السعودية ٢٠٣٠</a>
+      <a href="#">تواصل معنا</a>
+    </div>
+    <div class="footer-copy">© ٢٠٢٦ هالة. جميع الحقوق محفوظة. ذكاء اصطناعي سعودي للتجارة.</div>
+  </footer>
+
+  <!-- Floating AI widget -->
+  <div class="ai-fab-wrap">
+    <div class="ai-chat-bubble glass-card" id="ai-chat-bubble">
+      <p>مرحباً. اكتشف كم زيارة يخسرها متجرك.</p>
+      <button type="button" id="bubble-scan-btn">ابدأ التحليل الآن</button>
+    </div>
+    <button type="button" class="ai-fab floating-widget-glow" id="ai-agent-btn" aria-label="فتح مساعد هالة">
+      <img alt="مساعد هالة" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAptF2Pl_8QbKJPZ4kVXlK03liL36VNpUtUSClpYxoT1KI6nFfBn9VVXOcD7P5JZJBZL_WlmurgRAi1XDNL9XRAx4urjY0OR7tm0Jk3uzbRje_wuw7onj-ROpBeWDX80W-pw-zDigjaSQhpBOyKIkkpF9WymT4C_m5TgmaSiUcD_8J5lCr_lYgoy7yMUHYbwlnXpWAb20wSSMJXG753JFmvB4MBfOu1p6ZqSrGZprEjrTsCONggXAkCjSJMP-68n9z9IP-_dggcWi0"/>
+      <span class="ai-fab-dot"></span>
+    </button>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      /* Theme: HalaTheme (theme.js) — no persist on load */
+
+      /* ── Existing page logic ── */
+      const tickerData = [
+        "منذ ٤ دقائق · متجر من الرياض وفّر ٣١٢ زيارة أسبوعياً",
+        "منذ ١٢ دقيقة · متجر عطور حقق زيادة ١٥٪ في التحويل",
+        "منذ ٢٥ دقيقة · تم تحليل ٤٥٠ منتجاً لمتجر ملابس",
+        "منذ ساعة · متجر من جدة تصدّر نتائج البحث لكلمة قهوة مختصة"
+      ];
+      const tickerEl = document.getElementById("social-proof-ticker");
+      const fullTickerData = [...tickerData, ...tickerData, ...tickerData];
+      tickerEl.innerHTML = fullTickerData
+        .map((msg) => `<span class="ticker-item">${msg}</span>`)
+        .join("");
+
+      const counterData = [124, 287, 53, 412];
+      const counterInner = document.getElementById("hero-counter");
+      let counterHTML = "";
+      counterData.forEach((num) => { counterHTML += `<span>${num}</span>`; });
+      counterHTML += `<span>1,248</span>`;
+      counterInner.innerHTML = counterHTML;
+      let currentIndex = 0;
+      const totalItems = counterData.length + 1;
+      if (!reduceMotion) {
+        setTimeout(() => {
+          setInterval(() => {
+            currentIndex = (currentIndex + 1) % totalItems;
+            counterInner.style.transform = `translateY(${-(currentIndex * 1.2)}em)`;
+          }, 2000);
+        }, 1000);
+      }
+
+      const agentBtn = document.getElementById("ai-agent-btn");
+      const chatBubble = document.getElementById("ai-chat-bubble");
+      setTimeout(() => {
+        chatBubble.classList.add("is-visible");
+      }, 2500);
+      agentBtn.addEventListener("click", () => {
+        chatBubble.classList.toggle("is-visible");
+      });
+
+      function goToScanner(url) {
+        const storeUrl = url || document.getElementById("store-url").value || "https://oud-riyadh.salla.sa";
+        sessionStorage.setItem("hala_store_url", storeUrl);
+        document.body.classList.add("page-transition-out");
+        setTimeout(() => {
+          window.location.href = "scanner.html";
+        }, 280);
+      }
+
+      document.getElementById("scan-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        goToScanner();
+      });
+      document.getElementById("announcement-bar").addEventListener("click", () => goToScanner());
+      document.getElementById("announcement-bar").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          goToScanner();
+        }
+      });
+      document.getElementById("bubble-scan-btn").addEventListener("click", () => goToScanner());
+
+      /* ── PR4: GSAP desktop PE only (lazy, gated) — durations ≤ 900ms for LCP ── */
+      function showHeroCssFallback() {
+        document.querySelectorAll(".gsap-reveal-text, .gsap-hero-item").forEach((el) => {
+          el.style.visibility = "visible";
+          el.style.opacity = "1";
+          el.style.transform = "none";
+        });
+        document.documentElement.setAttribute("data-marketing-gsap", "0");
+      }
+
+      function initGSAP() {
+        if (typeof gsap === "undefined" || !window.allowMarketingGSAP || !window.allowMarketingGSAP()) {
+          showHeroCssFallback();
+          return;
+        }
+
+        const ease = "power3.out";
+
+        // Staggered hero items — total perceived ≤ 900ms
+        const heroItems = gsap.utils.toArray(".gsap-hero-item");
+        gsap.set(heroItems, { opacity: 0, y: 20 });
+        gsap.to(heroItems, {
+          opacity: 1,
+          y: 0,
+          duration: 0.55,
+          stagger: 0.05,
+          ease,
+          delay: 0.05
+        });
+
+        // Smooth text reveal on hero title (line clip + rise) — ≤ 900ms total
+        const title = document.querySelector(".gsap-reveal-text");
+        if (title) {
+          const line1 = document.createElement("span");
+          line1.className = "gsap-split-line";
+          const line1Inner = document.createElement("span");
+          line1Inner.textContent = "ذكاء اصطناعي";
+          line1.appendChild(line1Inner);
+
+          const line2 = document.createElement("span");
+          line2.className = "gsap-split-line";
+          const line2Inner = document.createElement("span");
+          line2Inner.className = "hero-title-glow";
+          line2Inner.textContent = "يخدم تجارتك";
+          line2.appendChild(line2Inner);
+
+          title.textContent = "";
+          title.appendChild(line1);
+          title.appendChild(line2);
+
+          gsap.set([line1Inner, line2Inner], { yPercent: 115, opacity: 0 });
+          gsap.to([line1Inner, line2Inner], {
+            yPercent: 0,
+            opacity: 1,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: "power4.out",
+            delay: 0.04
+          });
+        }
+
+        // Hero stage + image enter — ≤ 900ms
+        const stage = document.getElementById("hero-stage");
+        if (stage) {
+          gsap.from(stage, {
+            opacity: 0,
+            scale: 0.96,
+            y: 24,
+            duration: 0.55,
+            ease,
+            delay: 0.08
+          });
+        }
+
+        const parallaxCards = gsap.utils.toArray(".parallax-card");
+        gsap.from(parallaxCards, {
+          opacity: 0,
+          y: 28,
+          scale: 0.95,
+          duration: 0.5,
+          stagger: 0.06,
+          ease,
+          delay: 0.15
+        });
+
+        // Mouse-tracking parallax (desktop PE only; never on mobile path)
+        const heroStage = document.getElementById("hero-stage");
+        if (heroStage && parallaxCards.length) {
+          const pointer = { x: 0, y: 0 };
+          const target = { x: 0, y: 0 };
+          let tickerActive = true;
+
+          heroStage.addEventListener(
+            "pointermove",
+            (e) => {
+              const rect = heroStage.getBoundingClientRect();
+              target.x = (e.clientX - rect.left) / rect.width - 0.5;
+              target.y = (e.clientY - rect.top) / rect.height - 0.5;
+            },
+            { passive: true }
+          );
+
+          heroStage.addEventListener("pointerleave", () => {
+            target.x = 0;
+            target.y = 0;
+          });
+
+          document.addEventListener("visibilitychange", () => {
+            tickerActive = document.visibilityState === "visible";
+          });
+
+          gsap.ticker.add(() => {
+            if (!tickerActive) return;
+            pointer.x += (target.x - pointer.x) * 0.08;
+            pointer.y += (target.y - pointer.y) * 0.08;
+            parallaxCards.forEach((card) => {
+              const depth = parseFloat(card.dataset.depth || "0.05");
+              const floatY = Math.sin(gsap.ticker.time * 0.9 + depth * 12) * 4;
+              gsap.set(card, {
+                x: pointer.x * depth * 220,
+                y: pointer.y * depth * 160 + floatY,
+                rotateX: pointer.y * -6 * (depth * 20),
+                rotateY: pointer.x * 8 * (depth * 20),
+                transformPerspective: 900,
+                force3D: true
+              });
+            });
+          });
+        }
+
+        // Nav enter — ≤ 900ms
+        gsap.from(".nav-glass", {
+          y: -16,
+          opacity: 0,
+          duration: 0.5,
+          ease,
+          delay: 0.02
+        });
+      }
+
+      function loadMarketingGSAP() {
+        return new Promise((resolve, reject) => {
+          if (typeof gsap !== "undefined") {
+            resolve();
+            return;
+          }
+          const s = document.createElement("script");
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js";
+          s.async = true;
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error("GSAP load failed"));
+          document.head.appendChild(s);
+        });
+      }
+
+      function bootMotion() {
+        if (!window.allowMarketingGSAP || !window.allowMarketingGSAP()) {
+          showHeroCssFallback();
+          return;
+        }
+        // Lazy-load GSAP only when gate passes (desktop PE)
+        loadMarketingGSAP()
+          .then(() => {
+            if (!window.allowMarketingGSAP()) {
+              showHeroCssFallback();
+              return;
+            }
+            document.documentElement.setAttribute("data-marketing-gsap", "1");
+            initGSAP();
+          })
+          .catch(() => {
+            showHeroCssFallback();
+          });
+      }
+      bootMotion();
+    });
+  </script>
+</body>
+</html>

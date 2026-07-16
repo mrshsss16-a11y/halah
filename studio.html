@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar" data-shell="product" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>هالة | الاستوديو · خدمات مباشرة</title>
+  <meta name="description" content="استوديو هالة الذكي — أنشئ محتوى منتجاتك وحسّن صورك وأرسل تنبيهات واتساب بدون ربط متجر."/>
+
+  <!-- FOUC Prevention -->
+  <script>
+  (function () {
+    var root = document.documentElement;
+    var shell = root.getAttribute("data-shell") || "product";
+    var surfaceDefault = "light";
+    var pref = null;
+    try { pref = localStorage.getItem("hala_theme"); } catch (e) {}
+    var resolved;
+    if (pref === "light" || pref === "dark") { resolved = pref; }
+    else if (pref === "system") { resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; }
+    else { resolved = surfaceDefault; }
+    root.setAttribute("data-theme", resolved);
+    root.classList.toggle("dark", resolved === "dark");
+    var reduce = false;
+    try {
+      if (localStorage.getItem("hala_reduce_motion") === "1") reduce = true;
+      else if (localStorage.getItem("hala_reduce_motion") === "0") reduce = false;
+      else reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (e) { reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; }
+    root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
+    function syncLandingDark() {
+      if (!document.body) return;
+      document.body.classList.toggle("landing-dark", shell === "marketing");
+    }
+    if (document.body) syncLandingDark();
+    else document.addEventListener("DOMContentLoaded", syncLandingDark, { once: true });
+  })();
+  </script>
+  <script src="theme.js"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link href="style.css" rel="stylesheet"/>
+
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "outline-variant": "#bfc8ce",
+            "on-surface-variant": "#40484d",
+            "surface": "#f7f9fb",
+            "background": "#f7f9fb",
+            "secondary": "#006874",
+            "outline": "#70787e",
+            "on-background": "#191c1e",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#191c1e",
+            "primary": "#0b5f78",
+            "primary-container": "#2c7ca0",
+            "error": "#ba1a1a",
+            "inverse-primary": "#87d0f6"
+          },
+          fontFamily: { sans: ["DIN Next LT Arabic", "sans-serif"] }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* ═══════════════════════════════════════════
+       Studio Page — Core Styles
+    ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --studio-bg: #f0f4f8;
+      --studio-card: #ffffff;
+      --studio-border: rgba(11,95,120,0.1);
+      --studio-muted: #64748b;
+      --studio-primary: #0b5f78;
+      --studio-primary-glow: rgba(11,95,120,0.15);
+      --studio-accent: #006874;
+      --studio-accent-soft: rgba(0,104,116,0.08);
+      --studio-glass: rgba(255,255,255,0.72);
+      --studio-glass-border: rgba(255,255,255,0.5);
+      --studio-shadow: 0 4px 24px rgba(11,95,120,0.08), 0 1px 4px rgba(0,0,0,0.04);
+      --studio-shadow-hover: 0 8px 32px rgba(11,95,120,0.14), 0 2px 8px rgba(0,0,0,0.06);
+      --studio-radius: 1.25rem;
+      --studio-radius-sm: 0.75rem;
+      --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    html.dark {
+      --studio-bg: #0c1117;
+      --studio-card: rgba(255,255,255,0.04);
+      --studio-border: rgba(135,208,246,0.1);
+      --studio-muted: #94a3b8;
+      --studio-primary: #87d0f6;
+      --studio-primary-glow: rgba(135,208,246,0.12);
+      --studio-accent: #4dd0e1;
+      --studio-accent-soft: rgba(77,208,225,0.08);
+      --studio-glass: rgba(15,23,42,0.7);
+      --studio-glass-border: rgba(135,208,246,0.12);
+      --studio-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3);
+      --studio-shadow-hover: 0 8px 40px rgba(135,208,246,0.12), 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    body {
+      font-family: "IBM Plex Sans Arabic", sans-serif;
+      background: var(--studio-bg);
+      color: var(--on-surface, #191c1e);
+      min-height: 100vh;
+      transition: background var(--transition), color var(--transition);
+    }
+
+    html.dark body { color: #e2e8f0; }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--studio-border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--studio-border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* ── Header ── */
+    .studio-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--studio-glass);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--studio-glass-border);
+      padding: 0 2rem;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .studio-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      text-decoration: none;
+    }
+
+    .studio-logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--studio-primary), var(--studio-accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 18px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 12px var(--studio-primary-glow);
+    }
+
+    .studio-logo-text { font-weight: 700; font-size: 1.125rem; color: var(--studio-primary); }
+    .studio-logo-badge {
+      font-size: 0.625rem; font-weight: 600; padding: 2px 6px;
+      background: var(--studio-accent-soft); color: var(--studio-accent);
+      border-radius: 99px; border: 1px solid currentColor; opacity: 0.85;
+      letter-spacing: 0.04em;
+    }
+
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+
+    .btn-icon {
+      width: 36px; height: 36px; border-radius: 0.5rem;
+      background: transparent; border: 1px solid var(--studio-border);
+      color: var(--studio-muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+    .btn-icon:hover { background: var(--studio-primary-glow); color: var(--studio-primary); border-color: var(--studio-primary); }
+    .btn-icon .material-symbols-outlined { font-size: 20px; }
+
+    /* ── Main Layout ── */
+    .studio-main {
+      position: relative; z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+      display: grid;
+      gap: 1.5rem;
+    }
+
+    /* ── Hero Banner (Unlinked Notice) ── */
+    .studio-hero {
+      background: linear-gradient(135deg, var(--studio-primary) 0%, var(--studio-accent) 100%);
+      border-radius: var(--studio-radius);
+      padding: 1.75rem 2rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 32px var(--studio-primary-glow);
+      position: relative;
+      overflow: hidden;
+    }
+    .studio-hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(circle at 80% 50%, rgba(255,255,255,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+    .studio-hero-label {
+      display: inline-flex; align-items: center; gap: 0.375rem;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
+      background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 99px; padding: 3px 10px; margin-bottom: 0.5rem;
+      backdrop-filter: blur(4px);
+    }
+    .studio-hero h1 { font-size: 1.5rem; font-weight: 700; line-height: 1.3; }
+    .studio-hero p { font-size: 0.9rem; opacity: 0.85; margin-top: 0.375rem; max-width: 520px; }
+    .studio-hero-action {
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: #fff; padding: 0.6rem 1.25rem;
+      border-radius: 0.625rem; font-size: 0.875rem; font-weight: 600;
+      cursor: pointer; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      transition: background var(--transition);
+      backdrop-filter: blur(8px); flex-shrink: 0;
+    }
+    .studio-hero-action:hover { background: rgba(255,255,255,0.28); }
+
+    /* ── Tabs ── */
+    .studio-tabs {
+      display: flex; gap: 0.375rem;
+      background: var(--studio-card);
+      border: 1px solid var(--studio-border);
+      border-radius: var(--studio-radius-sm);
+      padding: 0.375rem;
+      box-shadow: var(--studio-shadow);
+    }
+    .studio-tab {
+      flex: 1; padding: 0.625rem 1rem;
+      border-radius: 0.5rem; border: none;
+      cursor: pointer; font-family: inherit;
+      font-size: 0.875rem; font-weight: 500;
+      background: transparent; color: var(--studio-muted);
+      transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+    }
+    .studio-tab.active {
+      background: var(--studio-primary);
+      color: #fff;
+      box-shadow: 0 2px 12px var(--studio-primary-glow);
+    }
+    .studio-tab:not(.active):hover {
+      background: var(--studio-primary-glow);
+      color: var(--studio-primary);
+    }
+    .studio-tab .material-symbols-outlined { font-size: 18px; }
+    .tab-badge {
+      font-size: 0.65rem; font-weight: 700;
+      background: #0b5f78; color: #fff;
+      padding: 1px 6px; border-radius: 99px;
+    }
+    .studio-tab.active .tab-badge { background: rgba(255,255,255,0.3); }
+
+    /* ── Bento Grid ── */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1.25rem;
+    }
+
+    /* Panel base */
+    .panel {
+      background: var(--studio-card);
+      border: 1px solid var(--studio-border);
+      border-radius: var(--studio-radius);
+      padding: 1.5rem;
+      box-shadow: var(--studio-shadow);
+      transition: box-shadow var(--transition), transform var(--transition), background var(--transition), border-color var(--transition);
+      position: relative; overflow: hidden;
+    }
+    .panel:hover { box-shadow: var(--studio-shadow-hover); transform: translateY(-1px); }
+
+    /* Glow accent line on top of panels */
+    .panel-accent::before {
+      content: '';
+      position: absolute; top: 0; right: 0; left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--studio-primary), var(--studio-accent));
+      border-radius: var(--studio-radius) var(--studio-radius) 0 0;
+    }
+
+    .panel-title {
+      font-size: 0.95rem; font-weight: 600;
+      color: inherit; margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .panel-title .material-symbols-outlined { font-size: 20px; color: var(--studio-primary); }
+
+    /* Grid spans */
+    .col-5  { grid-column: span 5; }
+    .col-7  { grid-column: span 7; }
+    .col-6  { grid-column: span 6; }
+    .col-4  { grid-column: span 4; }
+    .col-8  { grid-column: span 8; }
+    .col-12 { grid-column: span 12; }
+
+    @media (max-width: 900px) {
+      .col-5, .col-7, .col-6, .col-4, .col-8 { grid-column: span 12; }
+    }
+
+    /* ── Form Elements ── */
+    .form-group { display: flex; flex-direction: column; gap: 0.375rem; margin-bottom: 1rem; }
+    .form-label {
+      font-size: 0.8rem; font-weight: 600; letter-spacing: 0.03em;
+      color: var(--studio-muted);
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; border-radius: 0.625rem;
+      border: 1.5px solid var(--studio-border);
+      background: var(--studio-bg);
+      color: inherit; font-family: inherit;
+      font-size: 0.9rem; padding: 0.6rem 0.875rem;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+      outline: none;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--studio-primary);
+      box-shadow: 0 0 0 3px var(--studio-primary-glow);
+      background: var(--studio-card);
+    }
+    .form-textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+    html.dark .form-input, html.dark .form-textarea, html.dark .form-select {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(135,208,246,0.15);
+      color: #e2e8f0;
+    }
+    html.dark .form-input:focus, html.dark .form-textarea:focus, html.dark .form-select:focus {
+      background: rgba(255,255,255,0.07);
+    }
+
+    /* File upload drop zone */
+    .upload-zone {
+      border: 2px dashed var(--studio-border);
+      border-radius: var(--studio-radius-sm);
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      background: var(--studio-accent-soft);
+    }
+    .upload-zone:hover, .upload-zone.drag-over {
+      border-color: var(--studio-primary);
+      background: var(--studio-primary-glow);
+    }
+    .upload-zone .material-symbols-outlined { font-size: 40px; color: var(--studio-primary); margin-bottom: 0.5rem; }
+    .upload-zone p { font-size: 0.85rem; color: var(--studio-muted); }
+    .upload-zone strong { color: var(--studio-primary); }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      background: linear-gradient(135deg, var(--studio-primary), var(--studio-accent));
+      color: #fff; border: none; border-radius: 0.75rem;
+      padding: 0.75rem 1.5rem; font-family: inherit;
+      font-size: 0.9rem; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      transition: opacity var(--transition), transform var(--transition), box-shadow var(--transition);
+      box-shadow: 0 2px 16px var(--studio-primary-glow);
+      width: 100%; letter-spacing: 0.02em;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 24px var(--studio-primary-glow); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-primary .material-symbols-outlined { font-size: 20px; }
+
+    .btn-secondary {
+      background: var(--studio-accent-soft);
+      color: var(--studio-primary); border: 1.5px solid var(--studio-border);
+      border-radius: 0.625rem; padding: 0.5rem 1rem;
+      font-family: inherit; font-size: 0.85rem; font-weight: 600;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 0.375rem;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .btn-secondary:hover { background: var(--studio-primary-glow); border-color: var(--studio-primary); }
+
+    /* ── AI Output Area ── */
+    .output-area {
+      min-height: 180px;
+      border-radius: var(--studio-radius-sm);
+      border: 1.5px solid var(--studio-border);
+      background: var(--studio-bg);
+      padding: 1rem 1.25rem;
+      font-size: 0.9rem; line-height: 1.8;
+      position: relative;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    html.dark .output-area { background: rgba(255,255,255,0.03); }
+    .output-area.generating {
+      border-color: var(--studio-primary);
+      box-shadow: 0 0 0 3px var(--studio-primary-glow);
+    }
+
+    /* Typing cursor */
+    .output-cursor::after {
+      content: '▋';
+      animation: blink 0.7s step-end infinite;
+      color: var(--studio-primary);
+    }
+    @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* ── Tone selector chips ── */
+    .tone-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .tone-chip {
+      padding: 0.3rem 0.75rem; border-radius: 99px;
+      border: 1.5px solid var(--studio-border);
+      font-size: 0.78rem; font-weight: 600; cursor: pointer;
+      background: transparent; color: var(--studio-muted);
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
+      font-family: inherit;
+    }
+    .tone-chip.active, .tone-chip:hover {
+      background: var(--studio-primary); border-color: var(--studio-primary); color: #fff;
+    }
+
+    /* ── Image preview cards ── */
+    .image-preview-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+    }
+    .img-card {
+      border-radius: var(--studio-radius-sm);
+      border: 1.5px solid var(--studio-border);
+      overflow: hidden; position: relative;
+      background: var(--studio-accent-soft);
+      aspect-ratio: 1/1;
+    }
+    .img-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .img-card-label {
+      position: absolute; bottom: 0; inset-x: 0;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+      color: #fff; text-align: center; font-size: 0.72rem; font-weight: 600;
+      padding: 0.3rem; letter-spacing: 0.04em;
+    }
+    .img-card-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; gap: 0.5rem; color: var(--studio-muted);
+    }
+    .img-card-placeholder .material-symbols-outlined { font-size: 36px; }
+    .img-card-placeholder span { font-size: 0.75rem; }
+
+    /* ── Credits mini widget ── */
+    .credits-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; margin-bottom: 1.25rem;
+      padding: 0.75rem 1rem; border-radius: var(--studio-radius-sm);
+      background: var(--studio-accent-soft);
+      border: 1px solid var(--studio-border);
+    }
+    .credits-label { font-size: 0.78rem; color: var(--studio-muted); font-weight: 500; }
+    .credits-value { font-size: 1.25rem; font-weight: 700; color: var(--studio-primary); }
+    .credits-sub { font-size: 0.7rem; color: var(--studio-muted); }
+    .credits-progress {
+      height: 4px; border-radius: 99px;
+      background: var(--studio-border); overflow: hidden; flex: 1; min-width: 80px;
+    }
+    .credits-progress-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--studio-primary), var(--studio-accent));
+      width: 68%;
+      transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* ── WhatsApp form ── */
+    .whatsapp-preview {
+      background: #e9fde9;
+      border-radius: 1rem 1rem 0.25rem 1rem;
+      padding: 0.875rem 1rem; font-size: 0.85rem; line-height: 1.7;
+      max-width: 85%; color: #1a3c20;
+      border: 1px solid rgba(37,211,102,0.2);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    html.dark .whatsapp-preview { background: #0f2a10; color: #a8d5a8; border-color: rgba(37,211,102,0.15); }
+    .whatsapp-meta { font-size: 0.68rem; color: #64748b; text-align: left; margin-top: 0.25rem; }
+
+    /* ── History list ── */
+    .history-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.75rem; border-radius: 0.625rem;
+      border: 1px solid var(--studio-border);
+      cursor: pointer; transition: background var(--transition), border-color var(--transition);
+      margin-bottom: 0.5rem; text-decoration: none; color: inherit;
+    }
+    .history-item:hover { background: var(--studio-primary-glow); border-color: var(--studio-primary); }
+    .history-icon {
+      width: 36px; height: 36px; border-radius: 0.5rem; flex-shrink: 0;
+      background: var(--studio-accent-soft);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--studio-primary);
+    }
+    .history-icon .material-symbols-outlined { font-size: 18px; }
+    .history-name { font-size: 0.85rem; font-weight: 600; }
+    .history-meta { font-size: 0.73rem; color: var(--studio-muted); margin-top: 1px; }
+    .history-badge {
+      margin-right: auto; font-size: 0.68rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 99px;
+    }
+    .badge-copy { background: rgba(11,95,120,0.1); color: #0b5f78; }
+    .badge-img  { background: rgba(234,88,12,0.1);  color: #ea580c; }
+    .badge-wa   { background: rgba(37,211,102,0.15); color: #16a34a; }
+    html.dark .badge-copy { background: rgba(135,208,246,0.12); color: #87d0f6; }
+
+    /* ── Stats cards ── */
+    .stat-card {
+      text-align: center; padding: 1rem;
+      border-radius: var(--studio-radius-sm);
+      background: var(--studio-accent-soft);
+      border: 1px solid var(--studio-border);
+    }
+    .stat-value { font-size: 1.75rem; font-weight: 800; color: var(--studio-primary); line-height: 1; }
+    .stat-label { font-size: 0.73rem; color: var(--studio-muted); margin-top: 0.25rem; }
+
+    /* ── Tab panels visibility ── */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: contents; }
+
+    /* ── Progress steps ── */
+    .progress-steps {
+      display: flex; align-items: center; gap: 0; margin-bottom: 1.5rem;
+    }
+    .step {
+      display: flex; align-items: center; gap: 0.5rem; flex: 1;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      right: -50%; width: 100%; height: 2px;
+      background: var(--studio-border);
+      top: 14px; z-index: 0;
+    }
+    .step.done:not(:last-child)::after { background: var(--studio-primary); }
+    .step-circle {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--studio-border);
+      background: var(--studio-card);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 700; flex-shrink: 0;
+      position: relative; z-index: 1;
+      color: var(--studio-muted);
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .step.done .step-circle {
+      background: var(--studio-primary); border-color: var(--studio-primary); color: #fff;
+    }
+    .step.active .step-circle {
+      border-color: var(--studio-primary); color: var(--studio-primary);
+      box-shadow: 0 0 0 4px var(--studio-primary-glow);
+    }
+    .step-label { font-size: 0.72rem; color: var(--studio-muted); white-space: nowrap; }
+    .step.active .step-label { color: var(--studio-primary); font-weight: 600; }
+    .step.done .step-label { color: var(--studio-primary); }
+
+    /* ── Spinner ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      animation: spin 0.7s linear infinite;
+      display: inline-block;
+    }
+
+    /* ── Toast ── */
+    .toast-container {
+      position: fixed; top: 72px; left: 50%; transform: translateX(-50%);
+      z-index: 999; display: flex; flex-direction: column; gap: 0.5rem; align-items: center;
+    }
+    .toast {
+      background: var(--studio-primary); color: #fff;
+      padding: 0.625rem 1.25rem; border-radius: 99px;
+      font-size: 0.85rem; font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
+      display: flex; align-items: center; gap: 0.375rem;
+    }
+    @keyframes toastIn  { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+    .toast .material-symbols-outlined { font-size: 16px; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--studio-border); margin: 1rem 0; }
+
+    /* ── Section headers ── */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .section-title { font-size: 1rem; font-weight: 700; }
+    .section-subtitle { font-size: 0.78rem; color: var(--studio-muted); margin-top: 2px; }
+
+    /* ── Responsive nav ── */
+    @media (max-width: 640px) {
+      .studio-header { padding: 0 1rem; }
+      .studio-main { padding: 1rem 1rem 3rem; }
+      .studio-hero { padding: 1.25rem; }
+      .studio-hero h1 { font-size: 1.2rem; }
+      .studio-tab span:not(.material-symbols-outlined) { display: none; }
+      .studio-tab { padding: 0.625rem; }
+    }
+
+    /* Image gallery generating animation */
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+    .shimmer {
+      background: linear-gradient(90deg, var(--studio-border) 25%, var(--studio-primary-glow) 50%, var(--studio-border) 75%);
+      background-size: 400px 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+    }
+
+    /* WhatsApp chat bubble wrapper */
+    .chat-wrapper { padding: 1rem; background: #f0f0f0; border-radius: var(--studio-radius-sm); }
+    html.dark .chat-wrapper { background: #1a1a2e; }
+
+    /* Pill info */
+    .pill-info {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      font-size: 0.72rem; font-weight: 600; padding: 2px 8px;
+      border-radius: 99px; border: 1px solid;
+    }
+    .pill-info.green { color: #16a34a; border-color: rgba(22,163,74,0.3); background: rgba(22,163,74,0.08); }
+    .pill-info.blue  { color: var(--studio-primary); border-color: var(--studio-border); background: var(--studio-accent-soft); }
+    .pill-info .material-symbols-outlined { font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ═══════════════════ HEADER ═══════════════════ -->
+<header class="studio-header">
+  <a href="index.html" class="studio-logo">
+    <div class="studio-logo-icon">
+      <span class="material-symbols-outlined" style="font-size:18px;font-variation-settings:'FILL' 1">auto_awesome</span>
+    </div>
+    <span class="studio-logo-text">هالة</span>
+    <span class="studio-logo-badge">STUDIO</span>
+  </a>
+
+  <div class="header-actions">
+    <!-- Theme toggle -->
+    <button class="btn-icon" id="theme-toggle-btn" title="تبديل المظهر">
+      <span class="material-symbols-outlined" id="theme-icon">light_mode</span>
+    </button>
+    <!-- Go to dashboard -->
+    <a href="dashboard.html?sandbox=1" class="btn-secondary" style="text-decoration:none;">
+      <span class="material-symbols-outlined" style="font-size:16px;">dashboard</span>
+      لوحة التحكم
+    </a>
+  </div>
+</header>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<main class="studio-main">
+
+  <!-- Hero Banner -->
+  <div class="studio-hero">
+    <div>
+      <div class="studio-hero-label">
+        <span class="material-symbols-outlined" style="font-size:13px;font-variation-settings:'FILL' 1">bolt</span>
+        بدون ربط متجر · مباشر الآن
+      </div>
+      <h1>الاستوديو الذكي — جرّب هالة فوراً</h1>
+      <p>أنشئ أوصاف منتجاتك، حسّن صورك، وأرسل تنبيهات واتساب بالذكاء الاصطناعي — بدون ربط سلة أو زد أو ترينديول.</p>
+    </div>
+    <a href="onboarding.html" class="studio-hero-action">
+      <span class="material-symbols-outlined" style="font-size:16px;font-variation-settings:'FILL' 1">store</span>
+      ربط متجري لاحقاً
+    </a>
+  </div>
+
+  <!-- Credits Bar -->
+  <div class="credits-bar panel" style="margin:0;padding:0.875rem 1.25rem;">
+    <div>
+      <div class="credits-label">رصيد الاستوديو المجاني</div>
+      <div class="credits-value">34 <span style="font-size:0.85rem;font-weight:400;">رصيداً</span></div>
+      <div class="credits-sub">من أصل 50 رصيداً في التجربة</div>
+    </div>
+    <div class="credits-progress">
+      <div class="credits-progress-fill" id="credits-fill"></div>
+    </div>
+    <span class="pill-info green">
+      <span class="material-symbols-outlined">check_circle</span>
+      حساب نشط
+    </span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="studio-tabs" role="tablist">
+    <button class="studio-tab active" role="tab" data-tab="copy" onclick="switchTab('copy', this)">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">edit_note</span>
+      <span>كتابة المحتوى</span>
+      <span class="tab-badge">AI</span>
+    </button>
+    <button class="studio-tab" role="tab" data-tab="image" onclick="switchTab('image', this)">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">photo_library</span>
+      <span>استوديو الصور</span>
+      <span class="tab-badge">AI</span>
+    </button>
+    <button class="studio-tab" role="tab" data-tab="whatsapp" onclick="switchTab('whatsapp', this)">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">chat</span>
+      <span>تنبيهات واتساب</span>
+    </button>
+    <button class="studio-tab" role="tab" data-tab="history" onclick="switchTab('history', this)">
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">history</span>
+      <span>السجل</span>
+    </button>
+  </div>
+
+  <!-- ════════ TAB: COPYWRITING ════════ -->
+  <div class="tab-panel active bento-grid" id="panel-copy">
+
+    <!-- LEFT: Input Form -->
+    <div class="panel panel-accent col-5">
+      <div class="panel-title">
+        <span class="material-symbols-outlined">inventory_2</span>
+        بيانات المنتج
+      </div>
+
+      <div class="progress-steps" id="copy-steps">
+        <div class="step done">
+          <div class="step-circle"><span class="material-symbols-outlined" style="font-size:13px;font-variation-settings:'FILL' 1">check</span></div>
+          <span class="step-label">البيانات</span>
+        </div>
+        <div class="step active">
+          <div class="step-circle">2</div>
+          <span class="step-label">الأسلوب</span>
+        </div>
+        <div class="step">
+          <div class="step-circle">3</div>
+          <span class="step-label">التوليد</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">اسم المنتج *</label>
+        <input class="form-input" id="product-name" type="text" placeholder="مثال: عطر العود الملكي 50 مل" dir="rtl"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">السعر والفئة</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <input class="form-input" id="product-price" type="text" placeholder="السعر (ر.س)" dir="rtl"/>
+          <select class="form-select" id="product-category" dir="rtl">
+            <option value="">الفئة</option>
+            <option>عطور وعود</option>
+            <option>ساعات ومجوهرات</option>
+            <option>ملابس وأزياء</option>
+            <option>إلكترونيات</option>
+            <option>مستحضرات تجميل</option>
+            <option>أثاث وديكور</option>
+            <option>مواد غذائية</option>
+            <option>رياضة ولياقة</option>
+            <option>أخرى</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">مميزات المنتج (اختياري)</label>
+        <textarea class="form-textarea" id="product-features" placeholder="اكتب أبرز مميزات المنتج..." dir="rtl" style="min-height:60px;"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">أسلوب الكتابة</label>
+        <div class="tone-chips" id="tone-chips">
+          <button class="tone-chip active" data-tone="white" onclick="setTone(this)">🗣️ اللهجة البيضاء</button>
+          <button class="tone-chip" data-tone="formal" onclick="setTone(this)">📋 رسمي</button>
+          <button class="tone-chip" data-tone="luxury" onclick="setTone(this)">✨ فاخر</button>
+          <button class="tone-chip" data-tone="deals" onclick="setTone(this)">🔥 عروض</button>
+          <button class="tone-chip" data-tone="funny" onclick="setTone(this)">😄 مرح</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">طول الوصف</label>
+        <select class="form-select" id="copy-length" dir="rtl">
+          <option value="short">قصير (40-70 كلمة)</option>
+          <option value="medium" selected>متوسط (80-120 كلمة)</option>
+          <option value="long">طويل (150-200 كلمة)</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" id="generate-copy-btn" onclick="generateCopy()">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">auto_awesome</span>
+        توليد الوصف بالذكاء الاصطناعي
+        <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 2 رصيد</span>
+      </button>
+    </div>
+
+    <!-- RIGHT: Output -->
+    <div class="panel col-7" style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="section-header">
+        <div>
+          <div class="section-title">الوصف المُولَّد</div>
+          <div class="section-subtitle">باللهجة البيضاء السعودية</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;" id="output-actions" style="display:none">
+          <button class="btn-secondary" onclick="copyOutput()" id="copy-btn">
+            <span class="material-symbols-outlined" style="font-size:15px;">content_copy</span>
+            نسخ
+          </button>
+          <button class="btn-secondary" onclick="regenerateCopy()">
+            <span class="material-symbols-outlined" style="font-size:15px;">refresh</span>
+            توليد بديل
+          </button>
+        </div>
+      </div>
+
+      <div class="output-area" id="copy-output">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:0.75rem;color:var(--studio-muted);opacity:0.6;padding:1rem 0;">
+          <span class="material-symbols-outlined" style="font-size:48px;font-variation-settings:'FILL' 0">auto_awesome</span>
+          <p style="font-size:0.85rem;text-align:center;">أدخل بيانات المنتج وانقر على زر التوليد لإنشاء وصف احترافي باللهجة السعودية البيضاء</p>
+        </div>
+      </div>
+
+      <!-- Variants row -->
+      <div id="variants-section" style="display:none;">
+        <div class="divider"></div>
+        <div class="panel-title" style="margin-bottom:0.75rem;">
+          <span class="material-symbols-outlined">splitscreen</span>
+          نسخ بديلة (A/B Testing)
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;" id="variants-grid"></div>
+      </div>
+
+      <!-- SEO suggestions -->
+      <div id="seo-section" style="display:none;">
+        <div class="divider"></div>
+        <div class="panel-title" style="margin-bottom:0.75rem;">
+          <span class="material-symbols-outlined" style="color:#ea580c;">search</span>
+          اقتراحات كلمات SEO
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.5rem;" id="seo-tags"></div>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="panel col-12" style="padding:1rem 1.5rem;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">12</div>
+          <div class="stat-label">وصف مُولَّد اليوم</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-saved">4.5</div>
+          <div class="stat-label">ساعة موفّرة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">%94</div>
+          <div class="stat-label">رضا المراجعة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">34</div>
+          <div class="stat-label">رصيد متبقي</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB: IMAGE STUDIO ════════ -->
+  <div class="tab-panel bento-grid" id="panel-image">
+
+    <!-- Upload panel -->
+    <div class="panel panel-accent col-5">
+      <div class="panel-title">
+        <span class="material-symbols-outlined">upload_file</span>
+        رفع صورة المنتج
+      </div>
+
+      <div class="upload-zone" id="upload-zone"
+           ondragover="event.preventDefault();this.classList.add('drag-over')"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleDrop(event)"
+           onclick="document.getElementById('file-input').click()">
+        <span class="material-symbols-outlined">cloud_upload</span>
+        <p><strong>اسحب وأفلت</strong> الصورة هنا<br>أو انقر للاختيار من جهازك</p>
+        <p style="margin-top:0.5rem;font-size:0.72rem;opacity:0.7;">PNG · JPG · WEBP · حتى 10MB</p>
+        <input type="file" id="file-input" accept="image/*" hidden onchange="handleFileSelect(event)"/>
+      </div>
+
+      <div class="form-group" style="margin-top: 1rem;">
+        <label class="form-label">أو اختر منتجاً جاهزاً للتجربة السريعة</label>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;">
+          <button onclick="selectPresetProduct('oud')" class="btn-secondary" style="font-size:0.75rem;padding:0.5rem;display:flex;flex-direction:column;align-items:center;gap:0.25rem;cursor:pointer;">
+            <span class="material-symbols-outlined" style="font-size:20px;color:var(--studio-primary);font-variation-settings:'FILL' 1">auto_awesome</span>
+            <span>عود الرياض</span>
+          </button>
+          <button onclick="selectPresetProduct('coffee')" class="btn-secondary" style="font-size:0.75rem;padding:0.5rem;display:flex;flex-direction:column;align-items:center;gap:0.25rem;cursor:pointer;">
+            <span class="material-symbols-outlined" style="font-size:20px;color:var(--studio-accent);font-variation-settings:'FILL' 1">local_cafe</span>
+            <span>قهوة رسلان</span>
+          </button>
+          <button onclick="selectPresetProduct('dates')" class="btn-secondary" style="font-size:0.75rem;padding:0.5rem;display:flex;flex-direction:column;align-items:center;gap:0.25rem;cursor:pointer;">
+            <span class="material-symbols-outlined" style="font-size:20px;color:#7c3aed;font-variation-settings:'FILL' 1">box</span>
+            <span>تمور الخلاص</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="form-group">
+        <label class="form-label">عملية التحسين</label>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <label style="display:flex;align-items:center;gap:0.625rem;cursor:pointer;font-size:0.85rem;">
+            <input type="checkbox" id="op-bg" checked style="accent-color:var(--studio-primary);width:15px;height:15px;">
+            <span class="material-symbols-outlined" style="font-size:17px;color:var(--studio-primary);">remove_circle</span>
+            إزالة الخلفية تلقائياً
+          </label>
+          <label style="display:flex;align-items:center;gap:0.625rem;cursor:pointer;font-size:0.85rem;">
+            <input type="checkbox" id="op-newbg" style="accent-color:var(--studio-primary);width:15px;height:15px;">
+            <span class="material-symbols-outlined" style="font-size:17px;color:var(--studio-accent);">gradient</span>
+            تطبيق خلفية احترافية
+          </label>
+          <label style="display:flex;align-items:center;gap:0.625rem;cursor:pointer;font-size:0.85rem;">
+            <input type="checkbox" id="op-logo" style="accent-color:var(--studio-primary);width:15px;height:15px;">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#7c3aed;">watermark</span>
+            إضافة شعار المتجر
+          </label>
+          <label style="display:flex;align-items:center;gap:0.625rem;cursor:pointer;font-size:0.85rem;">
+            <input type="checkbox" id="op-enhance" checked style="accent-color:var(--studio-primary);width:15px;height:15px;">
+            <span class="material-symbols-outlined" style="font-size:17px;color:#ea580c;">auto_fix_high</span>
+            تحسين الإضاءة والألوان
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group" id="bg-style-group">
+        <label class="form-label">نمط الخلفية</label>
+        <select class="form-select" id="bg-style" dir="rtl">
+          <option value="studio">استوديو أبيض نظيف</option>
+          <option value="gradient-blue">تدرج أزرق راقٍ</option>
+          <option value="gradient-warm">تدرج ذهبي دافئ</option>
+          <option value="marble">رخام فاتح</option>
+          <option value="dark-luxury">داكن فاخر</option>
+          <option value="outdoor">خلفية طبيعية</option>
+        </select>
+      </div>
+
+      <button class="btn-primary" id="process-image-btn" onclick="processImage()" disabled>
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">photo_magic</span>
+        معالجة الصورة بالذكاء الاصطناعي
+        <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 3 رصيد</span>
+      </button>
+    </div>
+
+    <!-- Preview panel -->
+    <div class="panel col-7">
+      <div class="section-header">
+        <div>
+          <div class="section-title">معاينة الصورة</div>
+          <div class="section-subtitle">قبل وبعد المعالجة</div>
+        </div>
+        <button class="btn-secondary" id="download-btn" onclick="downloadImage()" disabled>
+          <span class="material-symbols-outlined" style="font-size:15px;">download</span>
+          تحميل
+        </button>
+      </div>
+
+      <div class="image-preview-row" id="img-preview-row">
+        <div class="img-card" id="img-before">
+          <div class="img-card-placeholder">
+            <span class="material-symbols-outlined">image</span>
+            <span>قبل المعالجة</span>
+          </div>
+          <div class="img-card-label">قبل</div>
+        </div>
+        <div class="img-card" id="img-after">
+          <div class="img-card-placeholder">
+            <span class="material-symbols-outlined">auto_awesome</span>
+            <span>بعد المعالجة</span>
+          </div>
+          <div class="img-card-label">بعد</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="display:flex;align-items:center;gap:0.75rem;justify-content:center;padding:0.5rem 0;">
+        <span class="pill-info blue">
+          <span class="material-symbols-outlined">info</span>
+          الصور تُعالَج فور الرفع ولا تُحفظ لأكثر من 24 ساعة
+        </span>
+      </div>
+
+      <!-- Batch upload hint -->
+      <div style="margin-top:1rem;padding:0.875rem;border-radius:var(--studio-radius-sm);background:var(--studio-accent-soft);border:1px dashed var(--studio-border);">
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.375rem;">
+          <span class="material-symbols-outlined" style="font-size:17px;color:var(--studio-primary);">upload</span>
+          <strong style="font-size:0.82rem;">معالجة مجمّعة (CSV)</strong>
+        </div>
+        <p style="font-size:0.78rem;color:var(--studio-muted);">أو ارفع ملف CSV يحتوي روابط صور منتجاتك لمعالجتها دفعةً واحدة.</p>
+        <button class="btn-secondary" style="margin-top:0.625rem;font-size:0.78rem;" onclick="showToast('📁 رفع CSV سيُتاح قريباً في الإصدار القادم', 'info')">
+          <span class="material-symbols-outlined" style="font-size:14px;">table_view</span>
+          رفع ملف CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB: WHATSAPP ════════ -->
+  <div class="tab-panel bento-grid" id="panel-whatsapp">
+
+    <!-- Form -->
+    <div class="panel panel-accent col-5">
+      <div class="panel-title">
+        <span class="material-symbols-outlined" style="color:#25d366;">chat</span>
+        إعداد رسالة واتساب
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">نوع التنبيه</label>
+        <select class="form-select" id="wa-type" dir="rtl" onchange="updateWaPreview()">
+          <option value="new-product">🆕 منتج جديد</option>
+          <option value="offer">🔥 عرض مؤقت</option>
+          <option value="restock">📦 عودة المخزون</option>
+          <option value="order">✅ تأكيد طلب</option>
+          <option value="shipping">🚚 تحديث الشحن</option>
+          <option value="review">⭐ طلب تقييم</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">اسم المنتج أو الحملة</label>
+        <input class="form-input" id="wa-product" type="text" placeholder="مثال: عطر العود الملكي" dir="rtl" oninput="updateWaPreview()"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">تفاصيل إضافية (اختياري)</label>
+        <input class="form-input" id="wa-detail" type="text" placeholder="مثال: خصم 30%، صالح 48 ساعة" dir="rtl" oninput="updateWaPreview()"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">اسم المتجر</label>
+        <input class="form-input" id="wa-store" type="text" placeholder="مثال: متجر العود الأصيل" dir="rtl" oninput="updateWaPreview()"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">رقم واتساب الاستلام (للاختبار)</label>
+        <input class="form-input" id="wa-phone" type="tel" placeholder="+966 5x xxx xxxx" dir="ltr"/>
+      </div>
+
+      <button class="btn-primary" id="send-wa-btn" onclick="sendWhatsApp()">
+        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">send</span>
+        إنشاء وإرسال الرسالة
+        <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 1 رصيد</span>
+      </button>
+    </div>
+
+    <!-- Preview -->
+    <div class="panel col-7">
+      <div class="section-header">
+        <div>
+          <div class="section-title">معاينة الرسالة</div>
+          <div class="section-subtitle">محاكاة مظهر واتساب</div>
+        </div>
+        <button class="btn-secondary" onclick="copyWaMessage()">
+          <span class="material-symbols-outlined" style="font-size:15px;">content_copy</span>
+          نسخ الرسالة
+        </button>
+      </div>
+
+      <div class="chat-wrapper">
+        <div style="display:flex;justify-content:flex-end;">
+          <div>
+            <div class="whatsapp-preview" id="wa-preview-bubble">
+              <span style="opacity:0.5;font-size:0.82rem;">أدخل بيانات الرسالة لرؤية المعاينة...</span>
+            </div>
+            <div class="whatsapp-meta" id="wa-preview-time">الآن ✓✓</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div style="padding:0.75rem;border-radius:var(--studio-radius-sm);background:var(--studio-accent-soft);border:1px solid var(--studio-border);">
+        <div style="font-size:0.8rem;font-weight:600;margin-bottom:0.375rem;">📋 إرشادات واتساب للأعمال</div>
+        <ul style="font-size:0.77rem;color:var(--studio-muted);line-height:1.8;padding-right:1rem;list-style:disc;">
+          <li>يجب أن يكون المستلم قد وافق على استقبال الرسائل</li>
+          <li>تجنّب الإرسال المتكرر لتجنّب الحظر</li>
+          <li>الرسائل التسويقية: بحد أقصى رسالتين يومياً لكل عميل</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB: HISTORY ════════ -->
+  <div class="tab-panel bento-grid" id="panel-history">
+
+    <div class="panel col-8">
+      <div class="section-header">
+        <div>
+          <div class="section-title">سجل الاستوديو</div>
+          <div class="section-subtitle">آخر العمليات المُنجزة في هذه الجلسة</div>
+        </div>
+        <button class="btn-secondary" onclick="clearHistory()">
+          <span class="material-symbols-outlined" style="font-size:15px;">delete_sweep</span>
+          مسح السجل
+        </button>
+      </div>
+      <div id="history-list">
+        <div class="history-item">
+          <div class="history-icon"><span class="material-symbols-outlined">edit_note</span></div>
+          <div>
+            <div class="history-name">وصف منتج — عطر العود الملكي</div>
+            <div class="history-meta">منذ 3 دقائق · 127 كلمة · اللهجة البيضاء</div>
+          </div>
+          <span class="history-badge badge-copy">كتابة</span>
+        </div>
+        <div class="history-item">
+          <div class="history-icon"><span class="material-symbols-outlined">photo_library</span></div>
+          <div>
+            <div class="history-name">تحسين صورة — برواز عود أسود</div>
+            <div class="history-meta">منذ 12 دقيقة · إزالة خلفية + خلفية استوديو</div>
+          </div>
+          <span class="history-badge badge-img">صور</span>
+        </div>
+        <div class="history-item">
+          <div class="history-icon"><span class="material-symbols-outlined">chat</span></div>
+          <div>
+            <div class="history-name">تنبيه واتساب — عرض العيد</div>
+            <div class="history-meta">منذ 20 دقيقة · نوع: عرض مؤقت</div>
+          </div>
+          <span class="history-badge badge-wa">واتساب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quota summary -->
+    <div class="panel col-4" style="display:flex;flex-direction:column;gap:1rem;">
+      <div class="section-title">ملخص الاستهلاك</div>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">
+          <span style="display:flex;align-items:center;gap:0.375rem;color:var(--studio-muted);">
+            <span class="material-symbols-outlined" style="font-size:16px;">edit_note</span>
+            أوصاف محتوى
+          </span>
+          <strong>6 رصيد</strong>
+        </div>
+        <div style="height:4px;border-radius:99px;background:var(--studio-border);overflow:hidden;">
+          <div style="width:30%;height:100%;background:linear-gradient(90deg,var(--studio-primary),var(--studio-accent));border-radius:99px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">
+          <span style="display:flex;align-items:center;gap:0.375rem;color:var(--studio-muted);">
+            <span class="material-symbols-outlined" style="font-size:16px;">photo_library</span>
+            معالجة صور
+          </span>
+          <strong>6 رصيد</strong>
+        </div>
+        <div style="height:4px;border-radius:99px;background:var(--studio-border);overflow:hidden;">
+          <div style="width:30%;height:100%;background:linear-gradient(90deg,#ea580c,#f97316);border-radius:99px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">
+          <span style="display:flex;align-items:center;gap:0.375rem;color:var(--studio-muted);">
+            <span class="material-symbols-outlined" style="font-size:16px;">chat</span>
+            رسائل واتساب
+          </span>
+          <strong>4 رصيد</strong>
+        </div>
+        <div style="height:4px;border-radius:99px;background:var(--studio-border);overflow:hidden;">
+          <div style="width:20%;height:100%;background:linear-gradient(90deg,#16a34a,#25d366);border-radius:99px;"></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div style="text-align:center;">
+        <div style="font-size:2rem;font-weight:800;color:var(--studio-primary);">34</div>
+        <div style="font-size:0.78rem;color:var(--studio-muted);">رصيد متبقي من 50</div>
+      </div>
+      <a href="onboarding.html" style="text-decoration:none;">
+        <button class="btn-primary">
+          <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">upgrade</span>
+          ترقية الخطة
+        </button>
+      </a>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════════════ SCRIPTS ═══════════════════ -->
+<script>
+/* ── Theme Toggle ── */
+const themeBtn = document.getElementById('theme-toggle-btn');
+const themeIcon = document.getElementById('theme-icon');
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.documentElement.classList.toggle('dark', t === 'dark');
+  themeIcon.textContent = t === 'dark' ? 'dark_mode' : 'light_mode';
+  try { localStorage.setItem('hala_theme', t); } catch(e){}
+}
+themeBtn.onclick = () => {
+  const isDark = document.documentElement.classList.contains('dark');
+  applyTheme(isDark ? 'light' : 'dark');
+};
+// Init icon
+const initTheme = document.documentElement.getAttribute('data-theme') || 'light';
+themeIcon.textContent = initTheme === 'dark' ? 'dark_mode' : 'light_mode';
+
+// ?hala_debug_ai=1 or localStorage hala_debug_ai=1 — same pattern as HalaTheme's hala_debug_theme
+function halaDebugAI() {
+  try {
+    const params = new URLSearchParams(location.search);
+    return params.get('hala_debug_ai') === '1' || localStorage.getItem('hala_debug_ai') === '1';
+  } catch (e) { return false; }
+}
+
+/* ── Toast ── */
+function showToast(msg, type='success') {
+  const tc = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  if (type === 'info') t.style.background = '#334155';
+  t.innerHTML = `<span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">${type === 'success' ? 'check_circle' : 'info'}</span>${msg}`;
+  tc.appendChild(t);
+  setTimeout(() => t.remove(), 3200);
+}
+
+/* ── Tab Switching ── */
+function switchTab(tabId, el) {
+  document.querySelectorAll('.studio-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + tabId).classList.add('active');
+}
+
+/* ── Tone Chips ── */
+function setTone(el) {
+  document.querySelectorAll('.tone-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ── Copy Output Generator (Demo) ── */
+function detectCategory(name, catValue) {
+  const n = name.toLowerCase();
+  const c = catValue || '';
+  if (c.includes('ساعات') || n.includes('ساعة') || n.includes('ساعات') || n.includes('رولكس') || n.includes('إكسسوار') || n.includes('سوار') || n.includes('خاتم')) {
+    return 'watch';
+  }
+  if (c.includes('غذائية') || n.includes('قهوة') || n.includes('هيل') || n.includes('بن') || n.includes('تمر') || n.includes('تمور') || n.includes('خلاص') || n.includes('شوكولاتة')) {
+    return 'food';
+  }
+  if (c.includes('ملابس') || c.includes('أزياء') || n.includes('ثوب') || n.includes('فستان') || n.includes('عباية') || n.includes('شماغ') || n.includes('ملابس') || n.includes('شنطة') || n.includes('حقيبة')) {
+    return 'fashion';
+  }
+  return 'perfume'; // Default
+}
+
+const SAMPLE_COPIES = {
+  perfume: {
+    white: [
+      'لو تبحث عن رائحة تفرق وتطول معك طول اليوم — {name} هو الخيار. عطر أصيل مصنوع بعناية، يجمع بين خشب العود الفاخر ونفحات المسك الدافئة. مناسب لكل المناسبات، سواء لقاءات العمل أو السهرات العائلية. بسعر {price} ريال، تحصل على تجربة عطرية لا تُنسى.',
+      'ذوقك يحكي عنك — وعطر {name} يقول كل شي بالصح. تركيبة راقية من أجود أنواع العود السعودي، تبقى معك من الصباح للمساء بدون ما تحتاج تجدد. {price} ريال للفخامة اللي تستاهلها.'
+    ],
+    formal: [
+      'يُقدّم {name} تجربة عطرية استثنائية بمكوّنات عالية الجودة، تم اختيارها بعناية فائقة لتُعطي الحامل شخصية متميزة وأثراً دائماً. السعر: {price} ريالاً.',
+    ],
+    luxury: [
+      '✨ {name} — عطر يعكس أرقى معاني الفخامة والأناقة. نُقطة من هذا العطر تُحوّل كل لحظة إلى ذكرى لا تُمحى. للنخبة الذين يختارون الأفضل دائماً. بـ {price} ريالاً فقط.',
+    ],
+    deals: [
+      '🔥 عرض لا يفوتك! {name} الآن بـ {price} ريال فقط! سارع قبل نفاد الكمية — عطر ممتاز بسعر يجنن!',
+    ],
+    funny: [
+      '😄 يُحكى أن من تعطّر بـ {name} أصبح محط أنظار الجميع! شوف كيف يبدأ كل شخص يسألك: "وش هذا العطر؟" بـ {price} ريال وأنت مبسوط!',
+    ]
+  },
+  watch: {
+    white: [
+      'الجمال يكتمل بأدق التفاصيل — {name} هي اللمسة اللي تنقص كشختك. تصميم كلاسيكي فخم يناسب ذوقك الرفيع ومظهرك اليومي، سواء للعمل أو السحور والطلعات. بسعر {price} ريال، تحصل على الفخامة اللي تستاهلها.',
+      'كشختك ما تكمل إلا مع {name}. ساعة بتصميم راقي يلفت الأنظار ويناسب كل ملابسك. بـ {price} ريال للفخامة والتميز.'
+    ],
+    formal: [
+      'تُقدّم {name} معايير الدقة والأناقة الكلاسيكية بلمسة عصرية تناسب الشخصية القيادية والمظهر المهني المتميز. السعر: {price} ريالاً.',
+    ],
+    luxury: [
+      '✨ {name} — تحفة فنية تزين معصمك وتعكس ذوقك الاستثنائي. لغة الأناقة والوقت الفاخر بين يديك. بـ {price} ريالاً فقط للنخبة.',
+    ],
+    deals: [
+      '🔥 عرض محدود! {name} الآن بـ {price} ريال فقط مع علبة فاخرة وشحن مجاني لجميع مناطق المملكة!',
+    ],
+    funny: [
+      '😄 يقولون إن الوقت كالسيف، بس مع {name} الوقت كالأناقة! لا تخلي الدقائق تفوتك بدون كشخة، بـ {price} ريال وصير ضابط الوقت!',
+    ]
+  },
+  food: {
+    white: [
+      'يومك ما يضبط بدون فنجال من {name}. خلطة سعودية أصيلة وموزونة تعدل المزاج وتبيض وجهك قدام ضيوفك في كل مجلس. بـ {price} ريال بس للطعم الحقيقي.',
+      'الضيافة السعودية لها أصول، و{name} يختصر عليك الكلام. نكهة غنية وجودة ممتازة تعجب كل من تذوقها. بـ {price} ريال لقهوتك اليومية.'
+    ],
+    formal: [
+      'يُصنع منتج {name} من أجود المحاصيل المحمصة بعناية فائقة لتوفير جودة عالية تليق بالضيافة السعودية الفاخرة. السعر: {price} ريالاً.',
+    ],
+    luxury: [
+      '✨ {name} — نكهة الضيافة الفاخرة والمذاق الأصيل المختار بعناية فائقة لأصحاب الذوق الرفيع. متوفر بسعر {price} ريالاً.',
+    ],
+    deals: [
+      '🔥 دلّع ضيوفك الحين! اطلب {name} بـ {price} ريال فقط واستمتع بنكهة الضيافة السعودية الأصيلة!',
+    ],
+    funny: [
+      '😄 إذا تبي تعدل رأسك ومزاجك، مالك إلا {name}! الفنجال الأول بيخليك تبتسم بدون سبب، اطلبه الحين بـ {price} ريال وتذوق السعادة!'
+    ]
+  },
+  fashion: {
+    white: [
+      'كشختك غير مع {name}. خامة ممتازة وتفصيل مريح يناسب طلعاتك ودوامك اليومي ويخلي حضورك مميز. اطلبها الحين بسعر {price} ريال!',
+      'أناقتك اليومية تبدأ من هنا مع {name}. ملمس ناعم وجودة تدوم طويلاً مع الغسيل. الفخامة والراحة بسعر {price} ريال.'
+    ],
+    formal: [
+      'يُقدّم {name} تصميماً راقياً ومريحاً يجمع بين الأصالة والحداثة، مما يجعله مناسباً لكافة المناسبات واللقاءات الرسمية. السعر: {price} ريالاً.',
+    ],
+    luxury: [
+      '✨ {name} — فخامة التصميم ودقة التفاصيل تمنحك حضوراً واثقاً وأناقة لا تضاهى في كل مناسبة. متوفر الآن بسعر {price} ريالاً فقط.',
+    ],
+    deals: [
+      '🔥 لا يفوتك تجديد دولابك! احصل على {name} الآن بسعر خاص جداً {price} ريال فقط مع شحن مجاني لفترة محدودة!',
+    ],
+    funny: [
+      '😄 يقولون الملابس تصنع الرجل، ومع {name} الكل بيوقف يسألك من وين فصلتها! اكشخ وخليك جاهز للمديح بـ {price} ريال بس!'
+    ]
+  }
+};
+
+const SAMPLE_TAGS = ['عطر عود', 'عود سعودي', 'عطر فاخر', 'ساعة فاخرة', 'ساعة كلاسيكية', 'قهوة سعودية', 'ملابس فاخرة', 'أناقة'];
+
+let generatedText = '';
+
+async function generateCopy() {
+  const name = document.getElementById('product-name').value.trim();
+  const price = document.getElementById('product-price').value.trim();
+  if (!name) { showToast('❌ أدخل اسم المنتج أولاً', 'info'); return; }
+
+  const activeTone = document.querySelector('.tone-chip.active')?.dataset.tone || 'white';
+  const btn = document.getElementById('generate-copy-btn');
+  const outputEl = document.getElementById('copy-output');
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> جارٍ التوليد...';
+  outputEl.classList.add('generating');
+
+  // Resolve Category & Pool (categoryCopies always computed: used by variants
+  // section below regardless of whether the AI call succeeds, and as fallback text)
+  const catValue = document.getElementById('product-category').value;
+  const category = detectCategory(name, catValue);
+  const features = document.getElementById('product-features')?.value || '';
+  const categoryCopies = SAMPLE_COPIES[category] || SAMPLE_COPIES.perfume;
+
+  try {
+    const res = await fetch('/api/copy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, price, tone: activeTone, category, features })
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.result) {
+        generatedText = data.result;
+        if (halaDebugAI()) console.info('[hala-copy]', data);
+      } else {
+        throw new Error('No result returned from AI');
+      }
+    } else {
+      throw new Error('API request failed');
+    }
+  } catch (err) {
+    console.warn("AI API endpoint offline or unbound, falling back to local simulation:", err);
+    const pool = categoryCopies[activeTone] || categoryCopies.white;
+    const raw = pool[Math.floor(Math.random() * pool.length)];
+    generatedText = raw.replace('{name}', name || 'المنتج').replace('{price}', price || '99');
+  }
+
+  // Typewriter effect
+  outputEl.innerHTML = '<span id="typed-text"></span><span class="output-cursor"></span>';
+  const typedEl = document.getElementById('typed-text');
+  for (let i = 0; i < generatedText.length; i++) {
+    typedEl.textContent += generatedText[i];
+    await sleep(18);
+  }
+  document.querySelector('.output-cursor')?.remove();
+  outputEl.classList.remove('generating');
+
+  // Show actions
+  document.getElementById('output-actions').style.display = 'flex';
+
+  // Show SEO section
+  const seoSec = document.getElementById('seo-section');
+  const seoTags = document.getElementById('seo-tags');
+  seoSec.style.display = 'block';
+  seoTags.innerHTML = '';
+  SAMPLE_TAGS.slice(0, 5 + Math.floor(Math.random()*3)).forEach(tag => {
+    const el = document.createElement('span');
+    el.className = 'tone-chip';
+    el.textContent = '#' + tag;
+    seoTags.appendChild(el);
+  });
+
+  // Show variants
+  const variantsSec = document.getElementById('variants-section');
+  const variantsGrid = document.getElementById('variants-grid');
+  variantsSec.style.display = 'block';
+  variantsGrid.innerHTML = '';
+  [categoryCopies.formal[0], categoryCopies.luxury[0]].forEach((v, i) => {
+    const text = v.replace('{name}', name).replace('{price}', price || '99');
+    const card = document.createElement('div');
+    card.className = 'output-area';
+    card.style.minHeight = '80px';
+    card.style.fontSize = '0.78rem';
+    card.style.cursor = 'pointer';
+    card.title = 'انقر للاستخدام';
+    card.textContent = text.substring(0, 120) + '...';
+    card.onclick = () => { document.getElementById('copy-output').textContent = text; generatedText = text; showToast('تم اختيار النسخة البديلة'); };
+    variantsGrid.appendChild(card);
+  });
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">auto_awesome</span> توليد جديد <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 2 رصيد</span>';
+
+  // Update stats
+  const statEl = document.getElementById('stat-total');
+  statEl.textContent = parseInt(statEl.textContent) + 1;
+
+  // Add to history
+  addHistory('edit_note', `وصف منتج — ${name}`, `الآن · ${generatedText.split(' ').length} كلمة · ${getToneName(activeTone)}`, 'badge-copy', 'كتابة');
+  showToast('تم توليد الوصف بنجاح!');
+}
+
+async function regenerateCopy() {
+  document.getElementById('generate-copy-btn').click();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function getToneName(tone) {
+  const map = { white: 'اللهجة البيضاء', formal: 'رسمي', luxury: 'فاخر', deals: 'عروض', funny: 'مرح' };
+  return map[tone] || tone;
+}
+
+function copyOutput() {
+  if (!generatedText) return;
+  navigator.clipboard?.writeText(generatedText).then(() => showToast('تم نسخ الوصف!'));
+  const btn = document.getElementById('copy-btn');
+  btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px;">check</span> تم النسخ!';
+  setTimeout(() => { btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:15px;">content_copy</span> نسخ'; }, 2000);
+}
+
+function selectPresetProduct(type) {
+  const beforeCard = document.getElementById('img-before');
+  const processBtn = document.getElementById('process-image-btn');
+  
+  let src = 'saudi_ecommerce_ai_hero.png';
+  let name = 'عود الرياض';
+  let price = '٢٤٠';
+  
+  if (type === 'coffee') {
+    src = 'coffee_preset.png';
+    name = 'قهوة رسلان';
+    price = '٨٥';
+  } else if (type === 'dates') {
+    src = 'dates_preset.png';
+    name = 'تمور الخلاص';
+    price = '١٢٠';
+  }
+
+  beforeCard.innerHTML = `<img src="${src}" alt="قبل" style="max-height:100%;max-width:100%;object-fit:contain;" />\n<div class="img-card-label">قبل</div>`;
+  
+  const img = new Image();
+  img.src = src;
+  img.onload = () => {
+    window.uploadedProductImage = img;
+    // Presets are same-origin files, so a temp canvas can read them back out as a data URL for the API call.
+    const tmp = document.createElement('canvas');
+    tmp.width = img.width; tmp.height = img.height;
+    tmp.getContext('2d').drawImage(img, 0, 0);
+    window.uploadedProductImageDataUrl = tmp.toDataURL('image/png');
+    processBtn.disabled = false;
+    showToast(`🛒 تم اختيار المنتج: ${name}`);
+  };
+  
+  // Auto-fill copywriting form
+  document.getElementById('product-name').value = name;
+  document.getElementById('product-price').value = price;
+}
+
+/* ── Image Processing ── */
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) loadPreviewImage(file);
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadPreviewImage(file);
+}
+
+function loadPreviewImage(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const beforeCard = document.getElementById('img-before');
+    beforeCard.innerHTML = `<img src="${e.target.result}" alt="قبل" style="max-height:100%;max-width:100%;object-fit:contain;"/>\n<div class="img-card-label">قبل</div>`;
+    
+    // Store image in window for canvas compositing
+    const img = new Image();
+    img.src = e.target.result;
+    img.onload = () => {
+      window.uploadedProductImage = img;
+      window.uploadedProductImageDataUrl = e.target.result;
+    };
+
+    document.getElementById('process-image-btn').disabled = false;
+    document.getElementById('upload-zone').style.borderColor = 'var(--studio-primary)';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function processImage() {
+  const btn = document.getElementById('process-image-btn');
+  const afterCard = document.getElementById('img-after');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> جارٍ المعالجة...';
+
+  afterCard.innerHTML = '<div class="img-card-placeholder shimmer" style="height:100%;width:100%;"></div><div class="img-card-label">جارٍ المعالجة...</div>';
+
+  const removeBg = document.getElementById('op-bg').checked;
+  const img = window.uploadedProductImage;
+
+  await sleep(2200);
+
+  if (img) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 600;
+    canvas.height = 600;
+
+    const style = document.getElementById('bg-style').value;
+    
+    // 1. Draw background style
+    if (style === 'studio') {
+      const grad = ctx.createRadialGradient(300, 300, 50, 300, 300, 450);
+      grad.addColorStop(0, '#ffffff');
+      grad.addColorStop(1, '#e2e8f0');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 600, 600);
+    } else if (style === 'gradient-blue') {
+      const grad = ctx.createRadialGradient(300, 300, 50, 300, 300, 450);
+      grad.addColorStop(0, '#104e63');
+      grad.addColorStop(1, '#0c1117');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 600, 600);
+    } else if (style === 'gradient-warm') {
+      const grad = ctx.createRadialGradient(300, 300, 50, 300, 300, 450);
+      grad.addColorStop(0, '#be8c78');
+      grad.addColorStop(1, '#1c1917');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 600, 600);
+    } else if (style === 'marble') {
+      ctx.fillStyle = '#f1f5f9';
+      ctx.fillRect(0, 0, 600, 600);
+      // Soft marble lines
+      ctx.strokeStyle = 'rgba(148,163,184,0.12)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-50, 100); ctx.lineTo(650, 400);
+      ctx.moveTo(100, -50); ctx.lineTo(500, 650);
+      ctx.stroke();
+    } else if (style === 'dark-luxury') {
+      const grad = ctx.createRadialGradient(300, 300, 50, 300, 300, 450);
+      grad.addColorStop(0, '#1c1917');
+      grad.addColorStop(1, '#090504');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 600, 600);
+    } else { // outdoor
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, 380);
+      skyGrad.addColorStop(0, '#fdba74');
+      skyGrad.addColorStop(1, '#ffedd5');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, 600, 380);
+      
+      const groundGrad = ctx.createLinearGradient(0, 380, 0, 600);
+      groundGrad.addColorStop(0, '#fed7aa');
+      groundGrad.addColorStop(1, '#ea580c');
+      ctx.fillStyle = groundGrad;
+      ctx.fillRect(0, 380, 600, 220);
+    }
+
+    // 2. Process image with background removal simulation (chroma keying)
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = 600;
+    tempCanvas.height = 600;
+    
+    let drawWidth = 380;
+    let drawHeight = 380;
+    const ratio = img.width / img.height;
+    if (ratio > 1) {
+      drawHeight = 380 / ratio;
+    } else {
+      drawWidth = 380 * ratio;
+    }
+    const x = (600 - drawWidth) / 2;
+    const y = (600 - drawHeight) / 2;
+    
+    tempCtx.drawImage(img, x, y, drawWidth, drawHeight);
+
+    if (removeBg) {
+      const imgData = tempCtx.getImageData(0, 0, 600, 600);
+      const pixels = imgData.data;
+      
+      const targetR = pixels[0];
+      const targetG = pixels[1];
+      const targetB = pixels[2];
+      
+      const threshold = 45;
+      
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i+1];
+        const b = pixels[i+2];
+        
+        const dist = Math.sqrt(
+          Math.pow(r - targetR, 2) +
+          Math.pow(g - targetG, 2) +
+          Math.pow(b - targetB, 2)
+        );
+        
+        const isNearWhite = (r > 238 && g > 238 && b > 238);
+        
+        if (dist < threshold || isNearWhite) {
+          pixels[i+3] = 0; // Transparent
+        }
+      }
+      tempCtx.putImageData(imgData, 0, 0);
+    }
+    
+    // 3. Draw shadow on main canvas
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    ctx.shadowBlur = 32;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 24;
+    
+    ctx.drawImage(tempCanvas, 0, 0);
+    ctx.restore();
+    
+    // 4. Draw store logo watermark if checked
+    const drawLogo = document.getElementById('op-logo').checked;
+    if (drawLogo) {
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+      ctx.font = 'bold 15px "DIN Next LT Arabic"';
+      ctx.fillText('عود الرياض', 40, 560);
+    }
+    
+    // Save generated URL
+    const finalUrl = canvas.toDataURL('image/png');
+    afterCard.innerHTML = `<img src="${finalUrl}" alt="بعد" style="max-height:100%;max-width:100%;object-fit:contain;" />\n<div class="img-card-label">بعد</div>`;
+    window.generatedImageUrl = finalUrl;
+    document.getElementById('download-btn').disabled = false;
+    
+    showToast('تمت معالجة الصورة بنجاح!');
+  } else {
+    afterCard.innerHTML = '<div class="img-card-placeholder"><span class="material-symbols-outlined">error</span><span>فشل التوليد</span></div><div class="img-card-label">بعد</div>';
+    showToast('❌ عذراً، لم يتم العثور على صورة صالحة', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">photo_magic</span> معالجة جديدة <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 3 رصيد</span>';
+  addHistory('photo_library', 'تحسين صورة منتج', 'الآن · إزالة خلفية + تحسين', 'badge-img', 'صور');
+}
+
+function downloadImage() {
+  if (!window.generatedImageUrl) return;
+  const link = document.createElement('a');
+  link.href = window.generatedImageUrl;
+  link.download = 'hala_photoshoot.png';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast('📥 بدأ تحميل الصورة المعالجة');
+}
+
+/* ── WhatsApp Preview ── */
+const WA_TEMPLATES = {
+  'new-product': (p, d, s) => `🌟 *وصل جديد في ${s || 'متجرنا'}!*\n\n*${p || 'منتج مميز'}* الآن متاح${d ? ' — ' + d : ''}.\n\nاطلب الآن عبر المتجر الإلكتروني 🛒`,
+  'offer': (p, d, s) => `🔥 *عرض لا يفوتك — ${s || 'متجرنا'}!*\n\n${p || 'منتج مميز'}${d ? '\n💰 ' + d : ''}\n\n⏰ العرض محدود — اطلب الآن!`,
+  'restock': (p, d, s) => `📦 *عاد للمخزون!*\n\n${p || 'المنتج'} أصبح متاحاً مجدداً في ${s || 'متجرنا'}${d ? '\n' + d : ''}.\n\nلا تفوّت الفرصة 🛍️`,
+  'order': (p, d, s) => `✅ *تأكيد طلبك — ${s || 'متجرنا'}*\n\nشكراً لطلبك! تم استلام طلب "${p || 'منتجك'}" بنجاح.${d ? '\n' + d : ''}\n\nسيصلك تحديث الشحن قريباً 🚚`,
+  'shipping': (p, d, s) => `🚚 *تحديث شحن — ${s || 'متجرنا'}*\n\nطلبك "${p || 'المنتج'}" في الطريق إليك!${d ? '\n📍 ' + d : ''}\n\nنتطلع لتقييمك بعد الاستلام ⭐`,
+  'review': (p, d, s) => `⭐ *رأيك يهمنا — ${s || 'متجرنا'}*\n\nنأمل أنك راضٍ عن "${p || 'مشترياتك'}"!${d ? '\n' + d : ''}\n\nشاركنا تقييمك ليستفيد الجميع 🙏`,
+};
+
+let waText = '';
+
+function updateWaPreview() {
+  const type = document.getElementById('wa-type').value;
+  const product = document.getElementById('wa-product').value;
+  const detail = document.getElementById('wa-detail').value;
+  const store = document.getElementById('wa-store').value;
+  const tmpl = WA_TEMPLATES[type] || WA_TEMPLATES['new-product'];
+  waText = tmpl(product, detail, store);
+  const bubble = document.getElementById('wa-preview-bubble');
+  bubble.innerHTML = waText.replace(/\*(.*?)\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+  const now = new Date();
+  document.getElementById('wa-preview-time').textContent = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')} ✓✓`;
+}
+
+function sendWhatsApp() {
+  updateWaPreview();
+  if (!waText) { showToast('أدخل بيانات الرسالة أولاً', 'info'); return; }
+  const phone = document.getElementById('wa-phone').value.replace(/\s/g, '');
+  const msg = encodeURIComponent(waText);
+
+  showToast('جارٍ إعداد رسالة واتساب...', 'info');
+  setTimeout(() => {
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+    } else {
+      showToast('أدخل رقم واتساب للإرسال', 'info');
+    }
+    addHistory('chat', 'تنبيه واتساب', 'الآن · ' + document.querySelector('#wa-type option:checked').text, 'badge-wa', 'واتساب');
+  }, 800);
+}
+
+function copyWaMessage() {
+  if (!waText) { updateWaPreview(); }
+  navigator.clipboard?.writeText(waText).then(() => showToast('تم نسخ رسالة واتساب!'));
+}
+
+/* ── History ── */
+function addHistory(icon, name, meta, badgeClass, badgeText) {
+  const list = document.getElementById('history-list');
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  item.innerHTML = `
+    <div class="history-icon"><span class="material-symbols-outlined">${icon}</span></div>
+    <div>
+      <div class="history-name">${name}</div>
+      <div class="history-meta">${meta}</div>
+    </div>
+    <span class="history-badge ${badgeClass}">${badgeText}</span>
+  `;
+  list.insertBefore(item, list.firstChild);
+}
+
+function clearHistory() {
+  document.getElementById('history-list').innerHTML = '<div style="text-align:center;padding:2rem;color:var(--studio-muted);font-size:0.85rem;">لا يوجد سجل في هذه الجلسة</div>';
+  showToast('تم مسح السجل', 'info');
+}
+</script>
+</body>
+</html>
