@@ -22,7 +22,27 @@ const SAFE_FALLBACK = {
   fusha_friendly: "شكراً على تواصلك! وصلتني رسالتك وسأتأكد من التفاصيل وأعود إليك قريباً."
 };
 
-function buildChatSystem({ dialect, storeInstructions, examples }) {
+/**
+ * Real store knowledge for grounded replies: synced products from D1.
+ * Empty array when nothing is synced — persona rules already forbid
+ * inventing prices/products not in context.
+ */
+async function loadStoreProducts(env, storeId) {
+  if (!env.DB) return [];
+  try {
+    const { results } = await env.DB.prepare(
+      `SELECT external_id, title, price, stock FROM product_sync
+       WHERE merchant_id = ? ORDER BY last_sync_at DESC LIMIT 15`
+    )
+      .bind(storeId)
+      .all();
+    return results || [];
+  } catch {
+    return [];
+  }
+}
+
+function buildChatSystem({ dialect, storeInstructions, examples, products }) {
   const examplesBlock = examples.length
     ? examples
         .map((ex, i) => `مثال ${i + 1} — سؤال: "${ex.question}"\nرد ناجح سابق: "${ex.reply}"`)
@@ -39,6 +59,11 @@ function buildChatSystem({ dialect, storeInstructions, examples }) {
 
 تعليمات المتجر الحالية:
 ${storeInstructions || "لا توجد تعليمات إضافية."}
+
+${products && products.length
+  ? `منتجات المتجر الفعلية (المصدر الوحيد للأسعار والتوفر — لا تذكرين منتج أو سعر خارج هذه القائمة):
+${products.map((p) => `- ${p.title || p.external_id} | السعر: ${p.price ?? "غير محدد"} ريال | المخزون: ${p.stock ?? "غير محدد"}`).join("\n")}`
+  : "لا توجد بيانات منتجات متزامنة بعد — لا تذكرين أسعار أو منتجات محددة، وجّهي العميل لصفحات المتجر."}
 
 أمثلة ردود سابقة ناجحة لهذا المتجر (استخدميها كمرجع أسلوب، لا تنسخيها حرفياً):
 ${examplesBlock}`;
@@ -111,9 +136,12 @@ async function chatHandler(body, env) {
     return { error: "ما فيه رسالة عميل مرسلة." };
   }
 
-  const examples = await recallSimilar({ env, storeId, question: message, topK: 3 }).catch(() => []);
+  const [examples, products] = await Promise.all([
+    recallSimilar({ env, storeId, question: message, topK: 3 }).catch(() => []),
+    loadStoreProducts(env, storeId)
+  ]);
 
-  const system = buildChatSystem({ dialect, storeInstructions, examples });
+  const system = buildChatSystem({ dialect, storeInstructions, examples, products });
   let reply = await askWorkersAI({
     env,
     system,

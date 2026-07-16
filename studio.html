@@ -830,6 +830,10 @@
             <span class="material-symbols-outlined" style="font-size:15px;">refresh</span>
             توليد بديل
           </button>
+          <button class="btn-secondary" onclick="publishToStore()" id="publish-btn" title="نشر الوصف على منتج متجرك في سلة">
+            <span class="material-symbols-outlined" style="font-size:15px;">storefront</span>
+            انشر للمتجر
+          </button>
         </div>
       </div>
 
@@ -1441,6 +1445,37 @@ async function generateCopy() {
 
 async function regenerateCopy() {
   document.getElementById('generate-copy-btn').click();
+}
+
+// Publish the generated description onto a live Salla product (products.read_write).
+async function publishToStore() {
+  if (!generatedText) { showToast('ولّد وصفاً أولاً', 'info'); return; }
+  const storeId = halaStoreId();
+  if (storeId === 'default-store') {
+    showToast('اربط متجرك من صفحة الإعداد أولاً حتى تقدر تنشر', 'info');
+    return;
+  }
+  const productId = prompt('أدخل رقم المنتج في سلة (Product ID) اللي تبي تحدث وصفه:');
+  if (!productId) return;
+  const btn = document.getElementById('publish-btn');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/store/publish', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId, productId: productId.trim(), description: generatedText })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('🚀 تم نشر الوصف على منتجك في سلة!');
+      addHistory('storefront', `نشر وصف — منتج ${productId}`, 'الآن · نُشر على سلة', 'badge-copy', 'نشر');
+    } else {
+      showToast('❌ ' + (data.error || 'فشل النشر'), 'info');
+    }
+  } catch (err) {
+    showToast('❌ تعذر الوصول للخادم', 'info');
+  }
+  btn.disabled = false;
 }
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }

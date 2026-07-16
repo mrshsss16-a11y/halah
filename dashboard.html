@@ -1411,5 +1411,51 @@
       drawer.addEventListener("click", (e) => { if (e.target === drawer) drawer.classList.remove("open"); });
     });
   </script>
+  <script>
+    // Real store data overlay — when the store is actually linked
+    // (/api/store/overview), replace the demo product list with live
+    // Salla products + Trendyol synced products. Demo data stays as the
+    // fallback for unlinked/static sessions.
+    (async function loadRealOverview() {
+      let storeId = null;
+      try { storeId = localStorage.getItem("hala_store_id"); } catch (e) {}
+      if (!storeId) return;
+      let data = null;
+      try {
+        const res = await fetch("/api/store/overview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storeId })
+        });
+        data = await res.json();
+      } catch (err) { return; }
+      if (!data || !data.linked) return;
+
+      const list = document.getElementById("optimized-products-list");
+      const rows = [];
+      (data.products || []).forEach((p) => {
+        rows.push({ name: p.name, meta: `سلة · ${p.price ?? "—"} ر.س · مخزون ${p.quantity ?? "—"}`, status: p.status === "sale" || p.status === "active" ? "منشور" : String(p.status || ""), platform: "salla" });
+      });
+      (data.trendyolProducts || []).forEach((p) => {
+        rows.push({ name: p.title || p.external_id, meta: `Trendyol · ${p.price ?? "—"} · مخزون ${p.stock ?? "—"}`, status: p.sync_status === "synced" ? "متزامن" : p.sync_status === "error" ? "خطأ مزامنة" : "قيد المزامنة", platform: "trendyol" });
+      });
+      if (list && rows.length) {
+        list.innerHTML = rows.slice(0, 12).map((r) => `
+          <div class="product-row">
+            <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[22px]">inventory_2</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="font-body-md text-[14px] dash-title font-medium truncate">${r.name}</p>
+              <p class="font-label-sm text-[11px] dash-muted mt-1">${r.meta}</p>
+            </div>
+            <span class="product-status-chip${r.status.includes("مزامنة") ? " product-status-chip--sync" : ""}">${r.status}</span>
+          </div>`).join("");
+      }
+
+      const nameEl = document.getElementById("sidebar-platform-name");
+      if (nameEl && data.storeName) nameEl.textContent = data.storeName;
+    })();
+  </script>
 </body>
 </html>
