@@ -4,6 +4,11 @@
   "private": true,
   "description": "Hala AI OS — Saudi e-commerce AI marketer on Cloudflare Pages Functions + Workers AI + Vectorize",
   "type": "module",
+  "scripts": {
+    "stage": "node scripts/stage.mjs",
+    "dev": "node scripts/stage.mjs && wrangler pages dev",
+    "deploy": "node scripts/stage.mjs && wrangler pages deploy --project-name hala-ai-os"
+  },
   "devDependencies": {
     "wrangler": "^3.90.0"
   }

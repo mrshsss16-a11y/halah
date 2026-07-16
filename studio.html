@@ -659,10 +659,15 @@
   </a>
 
   <div class="header-actions">
-    <!-- Theme toggle -->
-    <button class="btn-icon" id="theme-toggle-btn" title="تبديل المظهر">
-      <span class="material-symbols-outlined" id="theme-icon">light_mode</span>
-    </button>
+    <!-- Theme control — wired by theme.js (HalaTheme.wireControls), tri-state per design doc KD-13 -->
+    <label class="hala-prefs-field" style="display:flex;align-items:center;gap:6px;">
+      <span class="material-symbols-outlined" style="font-size:18px;" aria-hidden="true">contrast</span>
+      <select class="hala-theme-select" data-hala-theme-select aria-label="المظهر">
+        <option value="light">فاتح</option>
+        <option value="dark">داكن</option>
+        <option value="system">تلقائي</option>
+      </select>
+    </label>
     <!-- Go to dashboard -->
     <a href="dashboard.html?sandbox=1" class="btn-secondary" style="text-decoration:none;">
       <span class="material-symbols-outlined" style="font-size:16px;">dashboard</span>
@@ -1200,22 +1205,7 @@
 
 <!-- ═══════════════════ SCRIPTS ═══════════════════ -->
 <script>
-/* ── Theme Toggle ── */
-const themeBtn = document.getElementById('theme-toggle-btn');
-const themeIcon = document.getElementById('theme-icon');
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  document.documentElement.classList.toggle('dark', t === 'dark');
-  themeIcon.textContent = t === 'dark' ? 'dark_mode' : 'light_mode';
-  try { localStorage.setItem('hala_theme', t); } catch(e){}
-}
-themeBtn.onclick = () => {
-  const isDark = document.documentElement.classList.contains('dark');
-  applyTheme(isDark ? 'light' : 'dark');
-};
-// Init icon
-const initTheme = document.documentElement.getAttribute('data-theme') || 'light';
-themeIcon.textContent = initTheme === 'dark' ? 'dark_mode' : 'light_mode';
+/* Theme handled entirely by theme.js (HalaTheme) via the data-hala-theme-select control in the header. */
 
 // ?hala_debug_ai=1 or localStorage hala_debug_ai=1 — same pattern as HalaTheme's hala_debug_theme
 function halaDebugAI() {
