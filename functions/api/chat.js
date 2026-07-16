@@ -11,6 +11,7 @@ import { withApi } from "../_lib/respond.js";
 import { askWorkersAI } from "../_lib/workersAI.js";
 import { PERSONA_SYSTEM_PROMPT, dialectLabel } from "../_lib/persona.js";
 import { recallSimilar, rememberReply } from "../_lib/memory.js";
+import { getMarketingContext } from "../_lib/db.js";
 
 const SCORE_THRESHOLD = 7;
 const HARD_FLOOR = 4;
@@ -81,9 +82,14 @@ async function critique({ env, message, reply, dialect }) {
 }
 
 async function chatHandler(body, env) {
-  const storeId = (body.storeId || "default-store").toString();
-  const dialect = body.botDialect || body.dialect || "saudi_najdi";
-  const storeInstructions = (body.botInstructions || body.storeInstructions || "").toString().slice(0, 2000);
+  const storeId = (body.storeId || "default-store").toString().slice(0, 40);
+  // Server-side context (D1) is the source of truth once the merchant saved
+  // settings; browser-sent values are the fallback for unlinked demo stores.
+  const saved = env.DB ? await getMarketingContext(env, storeId).catch(() => null) : null;
+  const dialect = (saved && saved.dialect) || body.botDialect || body.dialect || "saudi_najdi";
+  const storeInstructions = ((saved && saved.instructions) || body.botInstructions || body.storeInstructions || "")
+    .toString()
+    .slice(0, 2000);
   const debug = env.HALA_DEBUG_AI === "1" || body.debug === true;
 
   const incoming = Array.isArray(body.messages) ? body.messages : [];

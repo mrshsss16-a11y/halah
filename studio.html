@@ -1207,6 +1207,11 @@
 <script>
 /* Theme handled entirely by theme.js (HalaTheme) via the data-hala-theme-select control in the header. */
 
+// Canonical merchant id — set by onboarding after a real store link.
+function halaStoreId() {
+  try { return localStorage.getItem('hala_store_id') || 'default-store'; } catch (e) { return 'default-store'; }
+}
+
 // ?hala_debug_ai=1 or localStorage hala_debug_ai=1 — same pattern as HalaTheme's hala_debug_theme
 function halaDebugAI() {
   try {
@@ -1359,7 +1364,7 @@ async function generateCopy() {
     const res = await fetch('/api/copy', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, price, tone: activeTone, category, features })
+      body: JSON.stringify({ storeId: halaStoreId(), name, price, tone: activeTone, category, features })
     });
     if (res.ok) {
       const data = await res.json();

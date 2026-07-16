@@ -364,6 +364,12 @@
   <div class="toast-container" id="toast-container" style="position:fixed; top:24px; left:50%; transform:translateX(-50%); z-index:100;"></div>
 
   <script>
+    // Canonical merchant id — set by onboarding after a real store link.
+    // Falls back to 'default-store' so the demo keeps working unlinked.
+    function halaStoreId() {
+      try { return localStorage.getItem('hala_store_id') || 'default-store'; } catch (e) { return 'default-store'; }
+    }
+
     // ?hala_debug_ai=1 or localStorage hala_debug_ai=1 — same pattern as HalaTheme's hala_debug_theme
     function halaDebugAI() {
       try {
@@ -430,6 +436,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            storeId: halaStoreId(),
             messages: history,
             botDialect: dialect,
             botInstructions: instructions,
