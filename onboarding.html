@@ -1019,10 +1019,55 @@
         if (btn) btn.addEventListener("click", enterSandboxMode);
       });
 
-      // In-page mock OAuth redirect for Salla — UI-only; no secrets in URL bar or history.
+      // Real Salla install flow — active when SALLA_APP_ID is configured on the
+      // backend (/api/store/config). Opens the official install URL and polls
+      // /api/store/status until the app.store.authorize webhook lands.
+      let sallaInstallUrl = null;
+      fetch("/api/store/config").then(r => r.json()).then(cfg => { sallaInstallUrl = cfg.sallaInstallUrl || null; }).catch(() => {});
+
+      function pollSallaLink(deadlineMs) {
+        return new Promise((resolve) => {
+          const tick = async () => {
+            try {
+              const res = await fetch("/api/store/status", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({})
+              });
+              const data = await res.json();
+              if (data.linked && data.salla && data.storeId) return resolve(data);
+            } catch (e) { /* keep polling */ }
+            if (Date.now() > deadlineMs) return resolve(null);
+            setTimeout(tick, 3000);
+          };
+          tick();
+        });
+      }
+
+      async function startRealSallaInstall() {
+        window.open(sallaInstallUrl, "_blank", "noopener");
+        setRedirectPhase("phase-redirecting");
+        document.getElementById("redirect-url").textContent = "s.salla.sa/apps/install";
+        document.getElementById("redirect-status").textContent = "بانتظار موافقتك من متجر سلة... (ثبّت التطبيق بالتاب المفتوح)";
+        document.getElementById("redirect-progress").style.width = "30%";
+        const linked = await pollSallaLink(Date.now() + 5 * 60 * 1000);
+        if (linked) {
+          try { localStorage.setItem("hala_store_id", linked.storeId); } catch (e) {}
+          document.getElementById("redirect-progress").style.width = "100%";
+          establishSecureConnectSession("salla", "oauth");
+          setRedirectPhase("phase-success");
+          setTimeout(() => goToStep(2), 1100);
+        } else {
+          document.getElementById("redirect-status").textContent = "ما وصلنا تأكيد الربط — أعد المحاولة أو تأكد من تثبيت التطبيق.";
+          redirectBusy = false;
+        }
+      }
+
+      // Demo theater fallback — UI-only; no secrets in URL bar or history.
       document.getElementById("btn-start-redirect").addEventListener("click", () => {
         if (redirectBusy) return;
         redirectBusy = true;
+        if (sallaInstallUrl) { startRealSallaInstall(); return; }
         setRedirectPhase("phase-redirecting");
         const urlBar = document.getElementById("redirect-url");
         const progress = document.getElementById("redirect-progress");
@@ -1082,7 +1127,7 @@
         goToStep(2);
       }
 
-      function connectTrendyol() {
+      async function connectTrendyol() {
         const sidEl = document.getElementById("ty-seller-id");
         const keyEl = document.getElementById("ty-api-key");
         const secretEl = document.getElementById("ty-api-secret");
@@ -1096,7 +1141,34 @@
           else { secretEl.focus(); secretEl.style.borderColor = "#ba1a1a"; }
           return;
         }
-        // Presence check only — raw values never written to storage, cookies, or URL.
+        // Real validation: backend performs an authenticated Trendyol API call
+        // before persisting anything. Credentials travel in the POST body only.
+        const submitBtn = document.querySelector("#ty-connect-form button[type=submit]");
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "جارٍ التحقق من المفاتيح..."; }
+        let storeId = null;
+        try {
+          const res = await fetch("/api/trendyol/connect", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              storeId: (localStorage.getItem("hala_store_id") || undefined),
+              sellerId: sid, apiKey: key, apiSecret: secret
+            })
+          });
+          const data = await res.json();
+          if (!data.ok) {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "ربط المتجر"; }
+            [sidEl, keyEl, secretEl].forEach((el) => { el.style.borderColor = "#ba1a1a"; });
+            alert(data.error || "فشل التحقق من مفاتيح Trendyol");
+            return;
+          }
+          storeId = data.storeId;
+        } catch (err) {
+          // Backend unreachable (static demo) — keep the old presence-only path.
+          console.warn("trendyol connect API offline, demo fallback:", err);
+        }
+        if (storeId) { try { localStorage.setItem("hala_store_id", storeId); } catch (e) {} }
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "ربط المتجر"; }
         establishSecureConnectSession("trendyol", "api_key");
         wipeCredentialInputs(["ty-seller-id", "ty-api-key", "ty-api-secret"]);
         goToStep(2);

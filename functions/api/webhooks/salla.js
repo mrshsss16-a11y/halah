@@ -1,0 +1,134 @@
+// POST /api/webhooks/salla — Salla Easy Mode webhook receiver.
+//
+// Security: HMAC-SHA256 over the RAW request body with SALLA_WEBHOOK_SECRET,
+// compared timing-safe against X-Salla-Signature. Invalid signature → 401,
+// always logged. Salla waits max 30s and retries 3x every ~5min, so we ack
+// fast and do heavy work via context.waitUntil.
+//
+// Handled events:
+//   app.store.authorize → upsert merchant + save access/refresh tokens (this
+//                         IS the OAuth flow in Easy Mode — no callback dance)
+//   app.installed       → upsert merchant
+//   abandoned.cart      → store cart for the WhatsApp recovery feature
+//   order.created       → log (dashboard feed reads webhook_log for now)
+import { upsertMerchantFromSalla, saveTokens, logWebhook, saveAbandonedCart } from "../../_lib/db.js";
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "content-type": "application/json" }
+  });
+}
+
+async function verifySignature(rawBody, signatureHeader, secret) {
+  if (!signatureHeader || !secret) return false;
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const mac = await crypto.subtle.sign("HMAC", key, enc.encode(rawBody));
+  const computed = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  // timing-safe compare
+  if (computed.length !== signatureHeader.length) return false;
+  let diff = 0;
+  for (let i = 0; i < computed.length; i++) {
+    diff |= computed.charCodeAt(i) ^ signatureHeader.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
+async function handleEvent(env, event, payload) {
+  const data = payload.data || {};
+  const sallaMerchantId = payload.merchant || data.merchant || null;
+
+  switch (event) {
+    case "app.store.authorize": {
+      // data: { access_token, refresh_token, expires (unix), scope }
+      const merchantId = await upsertMerchantFromSalla(env, {
+        sallaMerchantId,
+        storeName: data.store_name || null
+      });
+      await saveTokens(env, {
+        merchantId,
+        platform: "salla",
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: Number(data.expires) || Math.floor(Date.now() / 1000) + 14 * 24 * 3600
+      });
+      return merchantId;
+    }
+    case "app.installed": {
+      return upsertMerchantFromSalla(env, {
+        sallaMerchantId,
+        storeName: (data.store && data.store.name) || data.store_name || null
+      });
+    }
+    case "abandoned.cart": {
+      if (!sallaMerchantId) return null;
+      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
+      const customer = data.customer || {};
+      await saveAbandonedCart(env, {
+        id: `salla_${data.id || crypto.randomUUID()}`,
+        merchantId,
+        customerName: [customer.first_name, customer.last_name].filter(Boolean).join(" ") || null,
+        customerPhone: customer.mobile || null,
+        items: (data.items || []).map((i) => ({ name: i.name, qty: i.quantity, price: i.price && i.price.amount })),
+        total: (data.total && data.total.amount) || 0
+      });
+      return merchantId;
+    }
+    default:
+      // order.created, product.* etc. — logged below; consumers read webhook_log
+      return sallaMerchantId ? upsertMerchantFromSalla(env, { sallaMerchantId }) : null;
+  }
+}
+
+export async function onRequestPost(context) {
+  const { request, env } = context;
+  const rawBody = await request.text();
+
+  let payload;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return json({ error: "invalid JSON" }, 400);
+  }
+
+  const signatureOk = await verifySignature(
+    rawBody,
+    request.headers.get("X-Salla-Signature"),
+    env.SALLA_WEBHOOK_SECRET
+  );
+  const event = payload.event || "unknown";
+
+  if (!signatureOk) {
+    context.waitUntil(
+      logWebhook(env, { platform: "salla", event, merchantId: null, payload: { rejected: true }, signatureOk: false }).catch(() => {})
+    );
+    return json({ error: "invalid signature" }, 401);
+  }
+
+  // Ack fast; process + log in the background (Salla 30s deadline).
+  context.waitUntil(
+    (async () => {
+      let merchantId = null;
+      try {
+        merchantId = await handleEvent(env, event, payload);
+      } catch (err) {
+        console.error("[salla-webhook]", event, err);
+      }
+      // Never persist tokens in the log — redact before writing.
+      const safePayload =
+        event === "app.store.authorize"
+          ? { event, merchant: payload.merchant, data: { scope: payload.data && payload.data.scope, redacted: true } }
+          : payload;
+      await logWebhook(env, { platform: "salla", event, merchantId, payload: safePayload, signatureOk: true }).catch(() => {});
+    })()
+  );
+
+  return json({ ok: true });
+}
