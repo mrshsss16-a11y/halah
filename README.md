@@ -50,6 +50,10 @@ npx wrangler d1 migrations apply halah-tr-db --remote   # تطبيق مخطط ج
 | `SALLA_APP_ID` | رابط تثبيت التطبيق (يفعّل التدفق الحقيقي بـ onboarding) |
 | `SALLA_CLIENT_ID` / `SALLA_CLIENT_SECRET` | تجديد التوكنات |
 | `SALLA_WEBHOOK_SECRET` | تحقق توقيع الـ webhooks |
+| `WHATSAPP_TOKEN` | توكن System User الدائم (Meta) — إرسال رسائل |
+| `WHATSAPP_PHONE_ID` | معرّف رقم الواتساب (phone_number_id) |
+| `WHATSAPP_VERIFY_TOKEN` | كلمة تحقق webhook (تختارها أنت، تطابقها بإعداد Meta) |
+| `WHATSAPP_APP_SECRET` | سر تطبيق Meta — تحقق توقيع الرسائل الواردة |
 
 تُضاف بـ: `npx wrangler pages secret put SALLA_WEBHOOK_SECRET --project-name hala-ai-os`
 
