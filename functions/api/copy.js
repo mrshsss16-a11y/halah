@@ -10,6 +10,7 @@ import { askWorkersAI } from "../_lib/workersAI.js";
 import { PERSONA_SYSTEM_PROMPT } from "../_lib/persona.js";
 import { recentCopy, saveCopy } from "../_lib/db.js";
 import { checkAndConsume, COSTS } from "../_lib/meter.js";
+import { resolveStoreId } from "../_lib/session.js";
 
 const TONE_LABELS = {
   white: "لهجة بيضاء تسويقية ودودة",
@@ -65,8 +66,8 @@ function parse(raw) {
   };
 }
 
-async function copyHandler(body, env) {
-  const merchantId = (body.storeId || "default-store").toString().slice(0, 40);
+async function copyHandler(body, env, request) {
+  const merchantId = await resolveStoreId(request, env, body.storeId);
   const name = (body.name || "").toString().trim().slice(0, 200);
   const price = (body.price || "").toString().trim().slice(0, 40);
   const tone = TONE_LABELS[body.tone] ? body.tone : "white";

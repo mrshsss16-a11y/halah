@@ -3,11 +3,12 @@
 // returns the current saved logo (so a save-then-load round trip is one call).
 import { withApi } from "../../_lib/respond.js";
 import { getStoreLogo, saveStoreLogo } from "../../_lib/db.js";
+import { resolveStoreId } from "../../_lib/session.js";
 
 const MAX_LOGO_BYTES = 500_000; // data URL length cap — small watermark, not a full asset
 
-async function logoHandler(body, env) {
-  const merchantId = (body.storeId || "default-store").toString().slice(0, 40);
+async function logoHandler(body, env, request) {
+  const merchantId = await resolveStoreId(request, env, body.storeId);
   const incoming = (body.logoDataUrl || "").toString();
 
   if (incoming) {

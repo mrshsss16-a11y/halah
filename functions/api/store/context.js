@@ -4,9 +4,10 @@
 // chat.js reads the saved context from D1 on every reply.
 import { withApi } from "../../_lib/respond.js";
 import { saveMarketingContext, getMarketingContext } from "../../_lib/db.js";
+import { resolveStoreId } from "../../_lib/session.js";
 
-async function contextHandler(body, env) {
-  const merchantId = (body.storeId || "default-store").toString().slice(0, 40);
+async function contextHandler(body, env, request) {
+  const merchantId = await resolveStoreId(request, env, body.storeId);
 
   if (body.dialect !== undefined || body.instructions !== undefined) {
     const dialect = ["saudi_najdi", "saudi_hijazi", "fusha_friendly"].includes(body.dialect)

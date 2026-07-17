@@ -6,9 +6,10 @@
 import { withApi } from "../../_lib/respond.js";
 import { getMerchant, getTokens, getPlatformConnection, listAbandonedCarts } from "../../_lib/db.js";
 import { listProducts, listOrders } from "../../_lib/salla.js";
+import { resolveStoreId } from "../../_lib/session.js";
 
-async function overviewHandler(body, env) {
-  const merchantId = (body.storeId || "").toString().slice(0, 40);
+async function overviewHandler(body, env, request) {
+  const merchantId = await resolveStoreId(request, env, body.storeId);
   const merchant = merchantId ? await getMerchant(env, merchantId) : null;
   if (!merchant) {
     return { linked: false, error: "المتجر غير مرتبط — اربط متجرك من صفحة الإعداد أولاً." };

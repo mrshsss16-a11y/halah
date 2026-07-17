@@ -17,7 +17,7 @@ export function withApi(handler) {
       return json({ error: "طلب غير صالح (JSON مفقود أو تالف)." }, 400);
     }
     try {
-      const result = await handler(body, context.env);
+      const result = await handler(body, context.env, context.request);
       return json(result);
     } catch (err) {
       console.error("[hala-api-error]", err);

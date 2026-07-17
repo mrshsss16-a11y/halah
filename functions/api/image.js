@@ -6,9 +6,10 @@
 import { withApi } from "../_lib/respond.js";
 import { checkAndConsume, COSTS } from "../_lib/meter.js";
 import { generateProductImage, STYLE_PRESETS } from "../_lib/imageProvider.js";
+import { resolveStoreId } from "../_lib/session.js";
 
-async function imageHandler(body, env) {
-  const merchantId = (body.storeId || "default-store").toString().slice(0, 40);
+async function imageHandler(body, env, request) {
+  const merchantId = await resolveStoreId(request, env, body.storeId);
   const imageBase64 = (body.imageBase64 || "").toString();
   const mime = (body.mime || "image/png").toString();
   const styleKey = STYLE_PRESETS[body.style] ? body.style : "minimal-white";

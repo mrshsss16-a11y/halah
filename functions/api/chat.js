@@ -13,6 +13,7 @@ import { PERSONA_SYSTEM_PROMPT, dialectLabel } from "../_lib/persona.js";
 import { recallSimilar, rememberReply } from "../_lib/memory.js";
 import { getMarketingContext } from "../_lib/db.js";
 import { checkAndConsume, COSTS } from "../_lib/meter.js";
+import { resolveStoreId } from "../_lib/session.js";
 
 const SCORE_THRESHOLD = 7;
 const HARD_FLOOR = 4;
@@ -107,8 +108,8 @@ async function critique({ env, message, reply, dialect }) {
   return parseCritique(raw);
 }
 
-async function chatHandler(body, env) {
-  const storeId = (body.storeId || "default-store").toString().slice(0, 40);
+async function chatHandler(body, env, request) {
+  const storeId = await resolveStoreId(request, env, body.storeId);
 
   const usage = await checkAndConsume(env, storeId, COSTS.chat);
   if (!usage.ok) {

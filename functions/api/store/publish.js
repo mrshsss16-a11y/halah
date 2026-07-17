@@ -3,9 +3,10 @@
 // the live Salla product (requires products.read_write scope).
 import { withApi } from "../../_lib/respond.js";
 import { updateProduct } from "../../_lib/salla.js";
+import { resolveStoreId } from "../../_lib/session.js";
 
-async function publishHandler(body, env) {
-  const merchantId = (body.storeId || "").toString().slice(0, 40);
+async function publishHandler(body, env, request) {
+  const merchantId = await resolveStoreId(request, env, body.storeId);
   const productId = (body.productId || "").toString().slice(0, 40);
   const description = (body.description || "").toString().slice(0, 5000);
 
