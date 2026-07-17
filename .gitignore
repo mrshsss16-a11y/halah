@@ -11,3 +11,6 @@ node_modules
 # Editor/agent tooling — not part of the app
 .agents
 skills-lock.json
+
+# Skill packages (npx skills add) — editor tooling, not app code
+.claude/skills
