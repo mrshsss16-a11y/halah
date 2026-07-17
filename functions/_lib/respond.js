@@ -1,10 +1,10 @@
 // Uniform JSON responses for functions/api/*.js — Pages Functions use the
 // Request/Response Web API (not Node req/res), so this is the Workers
 // equivalent of the old Vercel withApi() wrapper.
-export function json(data, status = 200) {
+export function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "content-type": "application/json" }
+    headers: { "content-type": "application/json", ...extraHeaders }
   });
 }
 
