@@ -21,12 +21,14 @@
 *.html              صفحات الواجهة (تُنسخ لـ dist/ عبر scripts/stage.mjs)
 style.css theme.js  التنسيق + نظام الثيم الموحد (HalaTheme — لا ثيم مخصص بأي صفحة)
 functions/
-  _lib/             persona (الشخصية التشغيلية) · workersAI · memory (RAG) · db · salla · trendyol · respond
+  _lib/             persona · workersAI · memory (RAG) · db · salla · trendyol · respond · meter (حصص) · imageProvider (klein+HF)
   api/
     chat.js         شات المسوقة: استرجاع → توليد → نقد ذاتي → تحسين → حارس → حفظ بالذاكرة
     copy.js         كتابة أوصاف منتجات
+    image.js        صور منتجات AI حقيقية (klein أساسي، Hugging Face احتياطي) — يحفظ هوية المنتج
+    usage.js        رصيد الحصة اليومية المتبقي (يغذي شريط studio.html)
     webhooks/salla.js   استقبال أحداث سلة (تحقق توقيع HMAC إلزامي)
-    store/          status · config · context · overview · publish
+    store/          status · config · context · overview · publish · logo (شعار المتجر)
     trendyol/       connect (تحقق حقيقي قبل الحفظ) · sync (منتجات/أسعار/طلبات)
 migrations/         مخطط D1 (الجداول الجديدة TEXT merchant ids — القديمة legacy)
 persona/            نسخة مرجعية للشخصية (التشغيلية بـ functions/_lib/persona.js — عدّل الاثنين)
@@ -54,6 +56,7 @@ npx wrangler d1 migrations apply halah-tr-db --remote   # تطبيق مخطط ج
 | `WHATSAPP_PHONE_ID` | معرّف رقم الواتساب (phone_number_id) |
 | `WHATSAPP_VERIFY_TOKEN` | كلمة تحقق webhook (تختارها أنت، تطابقها بإعداد Meta) |
 | `WHATSAPP_APP_SECRET` | سر تطبيق Meta — تحقق توقيع الرسائل الواردة |
+| `HF_TOKEN` | **اختياري** — مزود احتياطي لتوليد صور المنتجات (Hugging Face) لو خلصت حصة Cloudflare اليومية. النظام يشتغل بدونه بحدود Cloudflare وحدها. رصيده المجاني رمزي جداً ($0.10/شهر ≈ 3-4 صور) — مكافأة نادرة مو سعة أساسية |
 
 تُضاف بـ: `npx wrangler pages secret put SALLA_WEBHOOK_SECRET --project-name hala-ai-os`
 
