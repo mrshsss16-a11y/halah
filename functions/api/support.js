@@ -9,6 +9,17 @@ import { HALA_SUPPORT_PROMPT } from "../_lib/persona.js";
 
 const CTA_MARKER = "[WHATSAPP_CTA]";
 
+// Guardrail: catch invented currency figures. Only "٢٠٠/200 وصف", "٤٠٠/400 صورة",
+// "٥٠/50 رسالة", "٣٠/30 يوم" are real facts — any "ريال"/"دولار"/"SAR" number is
+// fabricated (Hala has no published post-trial price yet). Live-tested: the model
+// invented "200 ريال شهرياً" once despite prompt instructions — this is the backstop.
+const FABRICATED_PRICE = /\d[\d,.]*\s*(ريال|ر\.س|دولار|sar|\$)/i;
+
+function stripFabricatedPricing(reply) {
+  if (!FABRICATED_PRICE.test(reply)) return reply;
+  return "الأسعار بعد التجربة تختلف حسب حجم متجرك — فريقنا يحددها لك مباشرة على واتساب.\n\n" + CTA_MARKER;
+}
+
 async function supportHandler(body, env) {
   const incoming = Array.isArray(body.messages) ? body.messages : [];
   const turns = incoming
@@ -26,6 +37,8 @@ async function supportHandler(body, env) {
     messages: turns,
     maxTokens: 400
   });
+
+  reply = stripFabricatedPricing(reply);
 
   const wantsWhatsApp = reply.includes(CTA_MARKER);
   reply = reply.replace(CTA_MARKER, "").trim();
