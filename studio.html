@@ -1364,6 +1364,7 @@ async function generateCopy() {
   const features = document.getElementById('product-features')?.value || '';
   const categoryCopies = SAMPLE_COPIES[category] || SAMPLE_COPIES.perfume;
 
+  let aiTags = null, aiWhatsapp = null;
   try {
     const res = await fetch('/api/copy', {
       method: 'POST',
@@ -1374,6 +1375,8 @@ async function generateCopy() {
       const data = await res.json();
       if (data.result) {
         generatedText = data.result;
+        aiTags = Array.isArray(data.tags) && data.tags.length ? data.tags : null;
+        aiWhatsapp = data.whatsapp || null;
         if (halaDebugAI()) console.info('[hala-copy]', data);
       } else {
         throw new Error('No result returned from AI');
@@ -1406,12 +1409,33 @@ async function generateCopy() {
   const seoTags = document.getElementById('seo-tags');
   seoSec.style.display = 'block';
   seoTags.innerHTML = '';
-  SAMPLE_TAGS.slice(0, 5 + Math.floor(Math.random()*3)).forEach(tag => {
+  // Real SEO tags from the model when available; local sample only as fallback.
+  const tagsToShow = aiTags || SAMPLE_TAGS.slice(0, 5 + Math.floor(Math.random()*3));
+  tagsToShow.forEach(tag => {
     const el = document.createElement('span');
     el.className = 'tone-chip';
     el.textContent = '#' + tag;
     seoTags.appendChild(el);
   });
+
+  // WhatsApp-ready version — one-tap copy for a WhatsApp broadcast.
+  if (aiWhatsapp) {
+    let waBox = document.getElementById('wa-copy-box');
+    if (!waBox) {
+      waBox = document.createElement('div');
+      waBox.id = 'wa-copy-box';
+      waBox.style.cssText = 'margin-top:0.75rem;padding:0.75rem;border:1px dashed var(--studio-primary);border-radius:0.75rem;background:rgba(11,95,120,0.05);';
+      seoSec.appendChild(waBox);
+    }
+    waBox.innerHTML = `
+      <div style="display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;font-weight:700;color:var(--studio-primary);margin-bottom:0.35rem;">
+        <span class="material-symbols-outlined" style="font-size:15px;">chat</span> نسخة واتساب جاهزة
+      </div>
+      <div style="font-size:0.82rem;white-space:pre-wrap;line-height:1.7;">${aiWhatsapp.replace(/</g,'&lt;')}</div>
+      <button class="btn-secondary" style="margin-top:0.5rem;font-size:0.72rem;" onclick="navigator.clipboard?.writeText(${JSON.stringify(aiWhatsapp)}).then(()=>showToast('تم نسخ نسخة الواتساب'))">
+        <span class="material-symbols-outlined" style="font-size:14px;">content_copy</span> نسخ للواتساب
+      </button>`;
+  }
 
   // Show variants
   const variantsSec = document.getElementById('variants-section');

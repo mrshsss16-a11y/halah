@@ -1,12 +1,14 @@
 // POST /api/copy
-// body: { name, price, tone, category, features }
-// (path + { result } response shape match studio.html's generateCopy() fetch call — unchanged)
+// body: { storeId, name, price, tone, category, features, keywords? }
+// Response: { result, whatsapp, tags, tone, name, price }  (result = main description)
 //
-// Real Workers AI product copy grounded in the Hala marketer persona,
-// replacing the local SAMPLE_COPIES template pool.
+// Ideal-description generator: targets SEO keywords, avoids repeating the
+// store's recent openings (copy_history in D1), self-critiques, and returns a
+// WhatsApp-ready short version + real SEO tags. All on Workers AI.
 import { withApi } from "../_lib/respond.js";
 import { askWorkersAI } from "../_lib/workersAI.js";
 import { PERSONA_SYSTEM_PROMPT } from "../_lib/persona.js";
+import { recentCopy, saveCopy } from "../_lib/db.js";
 
 const TONE_LABELS = {
   white: "لهجة بيضاء تسويقية ودودة",
@@ -16,45 +18,96 @@ const TONE_LABELS = {
   funny: "خفة دم سعودية لطيفة"
 };
 
-function buildSystem() {
+// Lightweight keyword seeding from the product name/category when the client
+// doesn't supply keywords — the model still refines/expands these.
+function seedKeywords(name, category, extra) {
+  const base = new Set();
+  (extra || []).forEach((k) => k && base.add(String(k).trim()));
+  String(name || "").split(/\s+/).filter((w) => w.length > 2).forEach((w) => base.add(w));
+  if (category) base.add(String(category).trim());
+  return [...base].slice(0, 6);
+}
+
+function buildSystem({ recent, keywords }) {
+  const avoid = recent.length
+    ? `\n\n## لا تكرري هذه الافتتاحيات/الصياغات السابقة لنفس المتجر (ابدئي بجملة مختلفة تماماً):\n${recent
+        .map((r, i) => `${i + 1}. "${r.opening}"`)
+        .join("\n")}`
+    : "";
+  const kw = keywords.length
+    ? `\n\nكلمات مفتاحية للاستهداف (ادمجيها بطبيعية داخل الوصف — مو حشو): ${keywords.join("، ")}`
+    : "";
+
   return `${PERSONA_SYSTEM_PROMPT}
 
 ---
 
-## مهمتك الآن: كتابة وصف منتج
+## مهمتك الآن: كتابة وصف منتج مثالي
 
-اكتبي وصف منتج بالنبرة المطلوبة فقط، 2-3 جمل، طبيعي وجاهز للنشر مباشرة بصفحة المنتج أو رسالة
-واتساب. أرجعي النص فقط بدون أي مقدمة أو علامات تنصيص أو JSON — فقط الوصف النهائي.`;
+أرجعي **JSON فقط** بهذا الشكل بالضبط، بدون أي نص خارج الـ JSON:
+{
+  "description": "<وصف بالنبرة المطلوبة، 2-3 جمل، لهجة بيضاء طبيعية غير متكلفة، يدمج الكلمات المفتاحية بطبيعية>",
+  "whatsapp": "<نسخة أقصر جاهزة لرسالة واتساب: سطر أو سطرين + دعوة شراء واحدة + إيموجي 0-2>",
+  "tags": ["<وسم SEO عربي قصير>", "... 5 إلى 8 وسوم متعلقة فعلاً بالمنتج والكلمات المفتاحية"]
+}
+${kw}${avoid}`;
+}
+
+function parse(raw) {
+  const m = raw.match(/\{[\s\S]*\}/);
+  const p = JSON.parse(m ? m[0] : raw);
+  if (typeof p.description !== "string" || !p.description.trim()) throw new Error("empty description");
+  return {
+    description: p.description.trim(),
+    whatsapp: typeof p.whatsapp === "string" ? p.whatsapp.trim() : "",
+    tags: Array.isArray(p.tags) ? p.tags.slice(0, 8).map((t) => String(t).replace(/^#/, "").trim()) : []
+  };
 }
 
 async function copyHandler(body, env) {
+  const merchantId = (body.storeId || "default-store").toString().slice(0, 40);
   const name = (body.name || "").toString().trim().slice(0, 200);
   const price = (body.price || "").toString().trim().slice(0, 40);
   const tone = TONE_LABELS[body.tone] ? body.tone : "white";
   const category = (body.category || "").toString().trim().slice(0, 60);
   const features = (body.features || "").toString().trim().slice(0, 500);
 
-  if (!name) {
-    return { error: "أدخل اسم المنتج أولاً." };
+  if (!name) return { error: "أدخل اسم المنتج أولاً." };
+
+  const keywords = seedKeywords(name, category, body.keywords);
+  const recent = await recentCopy(env, merchantId).catch(() => []);
+
+  const system = buildSystem({ recent, keywords });
+  const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${TONE_LABELS[tone]} (${tone})`;
+
+  let out = parse(
+    await askWorkersAI({ env, system, messages: [{ role: "user", content: userMsg }], maxTokens: 500 })
+  );
+
+  // Cheap anti-repetition guard: if the opening collides with a recent one, retry once.
+  const opening = out.description.slice(0, 40);
+  const collides = recent.some((r) => r.opening && r.opening.slice(0, 40) === opening);
+  if (collides) {
+    out = parse(
+      await askWorkersAI({
+        env,
+        system: `${system}\n\nملاحظة: الافتتاحية اللي كتبتيها مكررة. ابدئي بزاوية مختلفة تماماً (فائدة/مناسبة/حاسة مختلفة).`,
+        messages: [{ role: "user", content: userMsg }],
+        maxTokens: 500
+      })
+    );
   }
 
-  const result = await askWorkersAI({
-    env,
-    system: buildSystem(),
-    messages: [
-      {
-        role: "user",
-        content: `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا إضافية: ${features || "لا يوجد"}\nالنبرة المطلوبة: ${TONE_LABELS[tone]} (قيمة: ${tone})`
-      }
-    ],
-    maxTokens: 300
-  });
+  await saveCopy(env, { merchantId, productName: name, opening: out.description, keywords }).catch(() => {});
 
-  if (!result) {
-    throw new Error("empty copy result from model");
-  }
-
-  return { result, tone, name, price };
+  return {
+    result: out.description,
+    whatsapp: out.whatsapp,
+    tags: out.tags,
+    tone,
+    name,
+    price
+  };
 }
 
 export const onRequestPost = withApi(copyHandler);

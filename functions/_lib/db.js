@@ -143,3 +143,70 @@ export async function savePlatformConnection(env, { merchantId, platform, seller
     .bind(merchantId, platform, sellerId, apiKey, apiSecret, environment || "prod", storeName || null)
     .run();
 }
+
+// ── Copy anti-repetition ──
+
+export async function recentCopy(env, merchantId, limit = 8) {
+  if (!env.DB) return [];
+  const { results } = await env.DB.prepare(
+    "SELECT product_name, opening, keywords FROM copy_history WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ?"
+  )
+    .bind(merchantId, limit)
+    .all();
+  return results || [];
+}
+
+export async function saveCopy(env, { merchantId, productName, opening, keywords }) {
+  if (!env.DB) return;
+  await env.DB.prepare(
+    "INSERT INTO copy_history (merchant_id, product_name, opening, keywords) VALUES (?, ?, ?, ?)"
+  )
+    .bind(merchantId, productName || null, (opening || "").slice(0, 80), (keywords || []).join(", "))
+    .run();
+}
+
+// ── WhatsApp ──
+
+export async function recordWaInbound(env, { merchantId, phone, name, body, waMessageId }) {
+  await env.DB.prepare(
+    `INSERT INTO whatsapp_contacts (merchant_id, phone, name, last_inbound_at)
+     VALUES (?, ?, ?, datetime('now'))
+     ON CONFLICT (merchant_id, phone) DO UPDATE SET
+       name = COALESCE(excluded.name, name), last_inbound_at = datetime('now')`
+  )
+    .bind(merchantId || "hala", phone, name || null)
+    .run();
+  await env.DB.prepare(
+    "INSERT INTO whatsapp_messages (merchant_id, phone, direction, body, wa_message_id) VALUES (?, ?, 'in', ?, ?)"
+  )
+    .bind(merchantId || "hala", phone, (body || "").slice(0, 4000), waMessageId || null)
+    .run();
+}
+
+export async function recordWaOutbound(env, { merchantId, phone, body, waMessageId }) {
+  await env.DB.prepare(
+    "INSERT INTO whatsapp_messages (merchant_id, phone, direction, body, wa_message_id) VALUES (?, ?, 'out', ?, ?)"
+  )
+    .bind(merchantId || "hala", phone, (body || "").slice(0, 4000), waMessageId || null)
+    .run();
+}
+
+/** Returns true if the 24h customer-service window is open for this phone. */
+export async function isWaWindowOpen(env, merchantId, phone) {
+  const row = await env.DB.prepare(
+    "SELECT last_inbound_at FROM whatsapp_contacts WHERE merchant_id = ? AND phone = ?"
+  )
+    .bind(merchantId || "hala", phone)
+    .first();
+  if (!row || !row.last_inbound_at) return false;
+  return Date.now() - new Date(row.last_inbound_at + "Z").getTime() < 24 * 3600 * 1000;
+}
+
+export async function recentWaHistory(env, merchantId, phone, limit = 6) {
+  const { results } = await env.DB.prepare(
+    "SELECT direction, body FROM whatsapp_messages WHERE merchant_id = ? AND phone = ? ORDER BY created_at DESC LIMIT ?"
+  )
+    .bind(merchantId || "hala", phone, limit)
+    .all();
+  return (results || []).reverse();
+}
