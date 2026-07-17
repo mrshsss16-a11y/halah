@@ -947,6 +947,25 @@
             <span class="material-symbols-outlined" style="font-size:17px;color:#7c3aed;">watermark</span>
             إضافة شعار المتجر
           </label>
+          <div id="logo-controls" style="display:none;flex-direction:column;gap:0.5rem;padding:0.75rem;margin-inline-start:1.5rem;border:1px dashed var(--studio-border);border-radius:0.5rem;">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="file" id="logo-upload" accept="image/png,image/webp,image/jpeg" style="font-size:0.75rem;flex:1;">
+              <img id="logo-preview" style="display:none;height:32px;width:32px;object-fit:contain;border-radius:4px;background:#fff;" alt="شعار">
+            </div>
+            <label style="font-size:0.72rem;color:var(--studio-muted);display:flex;flex-direction:column;gap:0.25rem;">
+              الموضع
+              <select id="logo-position" class="form-select" style="font-size:0.78rem;padding:0.35rem 0.5rem;">
+                <option value="bottom-right">أسفل اليمين</option>
+                <option value="bottom-left">أسفل اليسار</option>
+                <option value="top-right">أعلى اليمين</option>
+                <option value="top-left">أعلى اليسار</option>
+              </select>
+            </label>
+            <label style="font-size:0.72rem;color:var(--studio-muted);display:flex;flex-direction:column;gap:0.25rem;">
+              الحجم
+              <input type="range" id="logo-size" min="8" max="25" value="14" style="accent-color:var(--studio-primary);">
+            </label>
+          </div>
           <label style="display:flex;align-items:center;gap:0.625rem;cursor:pointer;font-size:0.85rem;">
             <input type="checkbox" id="op-enhance" checked style="accent-color:var(--studio-primary);width:15px;height:15px;">
             <span class="material-symbols-outlined" style="font-size:17px;color:#ea580c;">auto_fix_high</span>
@@ -1251,6 +1270,105 @@ async function refreshCredits() {
   } catch (e) { /* static demo — keep placeholder */ }
 }
 refreshCredits();
+
+/* ── Store logo (real upload + server persistence + Canvas overlay) ── */
+window.hala_logo_dataurl = null;
+
+function setLogoPreview(dataUrl) {
+  window.hala_logo_dataurl = dataUrl || null;
+  const img = document.getElementById('logo-preview');
+  if (dataUrl) { img.src = dataUrl; img.style.display = 'block'; }
+  else { img.style.display = 'none'; }
+}
+
+async function loadSavedLogo() {
+  try {
+    const res = await fetch('/api/store/logo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId: halaStoreId() })
+    });
+    const data = await res.json();
+    if (data.ok && data.logoDataUrl) { setLogoPreview(data.logoDataUrl); return; }
+  } catch (e) { /* static demo — try local cache below */ }
+  try {
+    const cached = localStorage.getItem('hala_logo_dataurl');
+    if (cached) setLogoPreview(cached);
+  } catch (e) {}
+}
+loadSavedLogo();
+
+document.getElementById('op-logo').addEventListener('change', (e) => {
+  document.getElementById('logo-controls').style.display = e.target.checked ? 'flex' : 'none';
+});
+
+document.getElementById('logo-upload').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const dataUrl = ev.target.result;
+    setLogoPreview(dataUrl);
+    try { localStorage.setItem('hala_logo_dataurl', dataUrl); } catch (err) {}
+    try {
+      await fetch('/api/store/logo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeId: halaStoreId(), logoDataUrl: dataUrl })
+      });
+      showToast('🖼️ تم حفظ شعار متجرك');
+    } catch (err) { console.warn('logo save API offline:', err); }
+  };
+  reader.readAsDataURL(file);
+});
+
+/**
+ * Composites window.hala_logo_dataurl onto a base image at the chosen corner,
+ * sized as a percentage of the canvas width. Resolves the original dataUrl
+ * unchanged if the logo checkbox is off or no logo is available.
+ */
+function compositeLogoOntoImage(baseDataUrl) {
+  return new Promise((resolve) => {
+    const wantLogo = document.getElementById('op-logo').checked;
+    if (!wantLogo || !window.hala_logo_dataurl) { resolve(baseDataUrl); return; }
+
+    const base = new Image();
+    base.onload = () => {
+      const logo = new Image();
+      logo.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = base.width;
+        canvas.height = base.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(base, 0, 0);
+
+        const sizePct = Number(document.getElementById('logo-size').value) / 100;
+        const logoW = canvas.width * sizePct;
+        const logoH = logoW * (logo.height / logo.width);
+        const pad = canvas.width * 0.03;
+        const position = document.getElementById('logo-position').value;
+        let lx = pad, ly = pad;
+        if (position === 'bottom-right') { lx = canvas.width - logoW - pad; ly = canvas.height - logoH - pad; }
+        else if (position === 'bottom-left') { lx = pad; ly = canvas.height - logoH - pad; }
+        else if (position === 'top-right') { lx = canvas.width - logoW - pad; ly = pad; }
+        else { lx = pad; ly = pad; }
+
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,0.35)';
+        ctx.shadowBlur = 8;
+        ctx.globalAlpha = 0.92;
+        ctx.drawImage(logo, lx, ly, logoW, logoH);
+        ctx.restore();
+
+        resolve(canvas.toDataURL('image/png'));
+      };
+      logo.onerror = () => resolve(baseDataUrl);
+      logo.src = window.hala_logo_dataurl;
+    };
+    base.onerror = () => resolve(baseDataUrl);
+    base.src = baseDataUrl;
+  });
+}
 
 /* ── Toast ── */
 function showToast(msg, type='success') {
@@ -1694,8 +1812,9 @@ async function processImage() {
         btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">photo_magic</span> معالجة جديدة <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 3 رصيد</span>';
         return;
       }
-      afterCard.innerHTML = `<img src="${ai.dataUrl}" alt="بعد" style="max-height:100%;max-width:100%;object-fit:contain;" />\n<div class="img-card-label">بعد (${ai.provider === 'huggingface' ? 'مزود احتياطي' : 'AI'})</div>`;
-      window.generatedImageUrl = ai.dataUrl;
+      const finalAiUrl = await compositeLogoOntoImage(ai.dataUrl);
+      afterCard.innerHTML = `<img src="${finalAiUrl}" alt="بعد" style="max-height:100%;max-width:100%;object-fit:contain;" />\n<div class="img-card-label">بعد (${ai.provider === 'huggingface' ? 'مزود احتياطي' : 'AI'})</div>`;
+      window.generatedImageUrl = finalAiUrl;
       document.getElementById('download-btn').disabled = false;
       if (typeof ai.remaining === 'number') renderCredits(ai.remaining, 50);
       showToast('✨ تم توليد صورة احترافية بالذكاء الاصطناعي!');
@@ -1826,16 +1945,20 @@ async function processImage() {
     ctx.drawImage(tempCanvas, 0, 0);
     ctx.restore();
     
-    // 4. Draw store logo watermark if checked
-    const drawLogo = document.getElementById('op-logo').checked;
-    if (drawLogo) {
+    // 4. Composite the merchant's real uploaded logo (falls back to a plain
+    // text watermark if no logo was uploaded, so the checkbox still does
+    // something meaningful for a first-time visitor).
+    const rawUrl = canvas.toDataURL('image/png');
+    let finalUrl = rawUrl;
+    if (document.getElementById('op-logo').checked && window.hala_logo_dataurl) {
+      finalUrl = await compositeLogoOntoImage(rawUrl);
+    } else if (document.getElementById('op-logo').checked) {
       ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
       ctx.font = 'bold 15px "DIN Next LT Arabic"';
-      ctx.fillText('عود الرياض', 40, 560);
+      ctx.fillText('شعار متجرك هنا', 40, 560);
+      finalUrl = canvas.toDataURL('image/png');
     }
-    
-    // Save generated URL
-    const finalUrl = canvas.toDataURL('image/png');
+
     afterCard.innerHTML = `<img src="${finalUrl}" alt="بعد" style="max-height:100%;max-width:100%;object-fit:contain;" />\n<div class="img-card-label">بعد</div>`;
     window.generatedImageUrl = finalUrl;
     document.getElementById('download-btn').disabled = false;

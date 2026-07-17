@@ -210,3 +210,22 @@ export async function recentWaHistory(env, merchantId, phone, limit = 6) {
     .all();
   return (results || []).reverse();
 }
+
+// Store logo for the image studio's logo-overlay feature (functions/api/store/logo.js).
+export async function getStoreLogo(env, merchantId) {
+  const row = await env.DB.prepare("SELECT logo_data_url FROM store_logos WHERE merchant_id = ?")
+    .bind(merchantId)
+    .first();
+  return row ? row.logo_data_url : null;
+}
+
+export async function saveStoreLogo(env, merchantId, logoDataUrl) {
+  await env.DB.prepare(
+    `INSERT INTO store_logos (merchant_id, logo_data_url, updated_at)
+     VALUES (?, ?, datetime('now'))
+     ON CONFLICT (merchant_id) DO UPDATE SET
+       logo_data_url = excluded.logo_data_url, updated_at = datetime('now')`
+  )
+    .bind(merchantId, logoDataUrl)
+    .run();
+}
