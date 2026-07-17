@@ -21,12 +21,14 @@
 *.html              صفحات الواجهة (تُنسخ لـ dist/ عبر scripts/stage.mjs)
 style.css theme.js  التنسيق + نظام الثيم الموحد (HalaTheme — لا ثيم مخصص بأي صفحة)
 functions/
-  _lib/             persona · workersAI · memory (RAG) · db · salla · trendyol · respond · meter (حصص) · imageProvider (klein+HF)
+  _lib/             persona · workersAI · memory (RAG) · db · salla · trendyol · respond · meter (حصص) · imageProvider (klein+HF) · auth (تجزئة كلمة مرور) · session (كوكي موقّع + resolveStoreId)
   api/
     chat.js         شات المسوقة: استرجاع → توليد → نقد ذاتي → تحسين → حارس → حفظ بالذاكرة
     copy.js         كتابة أوصاف منتجات
     image.js        صور منتجات AI حقيقية (klein أساسي، Hugging Face احتياطي) — يحفظ هوية المنتج
     usage.js        رصيد الحصة اليومية المتبقي (يغذي شريط studio.html)
+    stats.js        عدد التجار الحقيقي (اجتماعي صادق بصفحة الدخول)
+    auth/           signup · login · logout · me — حسابات حقيقية بجلسة موقّعة
     webhooks/salla.js   استقبال أحداث سلة (تحقق توقيع HMAC إلزامي)
     store/          status · config · context · overview · publish · logo (شعار المتجر)
     trendyol/       connect (تحقق حقيقي قبل الحفظ) · sync (منتجات/أسعار/طلبات)
@@ -49,6 +51,7 @@ npx wrangler d1 migrations apply halah-tr-db --remote   # تطبيق مخطط ج
 
 | السر | الاستخدام |
 |---|---|
+| `SESSION_SECRET` | توقيع كوكي جلسة الحسابات (HMAC) — مُخزَّن فعلاً |
 | `SALLA_APP_ID` | رابط تثبيت التطبيق (يفعّل التدفق الحقيقي بـ onboarding) |
 | `SALLA_CLIENT_ID` / `SALLA_CLIENT_SECRET` | تجديد التوكنات |
 | `SALLA_WEBHOOK_SECRET` | تحقق توقيع الـ webhooks |
