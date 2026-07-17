@@ -958,12 +958,12 @@
       <div class="form-group" id="bg-style-group">
         <label class="form-label">نمط الخلفية</label>
         <select class="form-select" id="bg-style" dir="rtl">
-          <option value="studio">استوديو أبيض نظيف</option>
-          <option value="gradient-blue">تدرج أزرق راقٍ</option>
-          <option value="gradient-warm">تدرج ذهبي دافئ</option>
-          <option value="marble">رخام فاتح</option>
-          <option value="dark-luxury">داكن فاخر</option>
-          <option value="outdoor">خلفية طبيعية</option>
+          <option value="studio">أبيض مينيمال — كتالوج نظيف</option>
+          <option value="gradient-blue">عصري جريء — تباين قوي</option>
+          <option value="gradient-warm">دافئ تراثي — أصالة عربية</option>
+          <option value="marble">رخام فاخر — بوتيك راقي</option>
+          <option value="dark-luxury">فخم داكن — إضاءة درامية</option>
+          <option value="outdoor">طبيعي خارجي — إضاءة نهارية</option>
         </select>
       </div>
 
@@ -1620,6 +1620,57 @@ function loadPreviewImage(file) {
   reader.readAsDataURL(file);
 }
 
+// bg-style select values (unchanged for backward compat with the local-simulation
+// fallback below) mapped to functions/_lib/imageProvider.js STYLE_PRESETS keys.
+const STYLE_KEY_MAP = {
+  studio: 'minimal-white',
+  'gradient-blue': 'bold-modern',
+  'gradient-warm': 'warm-heritage',
+  marble: 'marble-luxury',
+  'dark-luxury': 'luxury-dark',
+  outdoor: 'outdoor-natural'
+};
+
+function canvasToBase64NoPrefix(canvas, mime) {
+  return canvas.toDataURL(mime).split(',')[1];
+}
+
+async function tryRealAiImage(img, styleValue) {
+  // Resize to 512x512 — Workers AI reference-image constraint.
+  const rc = document.createElement('canvas');
+  rc.width = 512; rc.height = 512;
+  const rctx = rc.getContext('2d');
+  rctx.fillStyle = '#ffffff';
+  rctx.fillRect(0, 0, 512, 512);
+  let dw = 460, dh = 460;
+  const ratio = img.width / img.height;
+  if (ratio > 1) dh = 460 / ratio; else dw = 460 * ratio;
+  rctx.drawImage(img, (512 - dw) / 2, (512 - dh) / 2, dw, dh);
+
+  const res = await fetch('/api/image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      storeId: halaStoreId(),
+      imageBase64: canvasToBase64NoPrefix(rc, 'image/png'),
+      mime: 'image/png',
+      style: STYLE_KEY_MAP[styleValue] || 'minimal-white'
+    })
+  });
+  const data = await res.json();
+  if (data.code === 'OUT_OF_CREDITS') {
+    return { outOfCredits: true, message: data.error };
+  }
+  if (!res.ok || !data.ok || !data.imageBase64) {
+    throw new Error(data.error || 'AI image generation failed');
+  }
+  return {
+    dataUrl: `data:${data.mime};base64,${data.imageBase64}`,
+    provider: data.provider,
+    remaining: data.remaining
+  };
+}
+
 async function processImage() {
   const btn = document.getElementById('process-image-btn');
   const afterCard = document.getElementById('img-after');
@@ -1630,6 +1681,32 @@ async function processImage() {
 
   const removeBg = document.getElementById('op-bg').checked;
   const img = window.uploadedProductImage;
+  const styleValue = document.getElementById('bg-style').value;
+
+  if (img) {
+    try {
+      const ai = await tryRealAiImage(img, styleValue);
+      if (ai.outOfCredits) {
+        showToast('⛔ ' + ai.message, 'info');
+        renderCredits(0, 50);
+        afterCard.innerHTML = '<div class="img-card-placeholder"><span class="material-symbols-outlined">block</span><span>خلص رصيدك اليوم</span></div><div class="img-card-label">بعد</div>';
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">photo_magic</span> معالجة جديدة <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 3 رصيد</span>';
+        return;
+      }
+      afterCard.innerHTML = `<img src="${ai.dataUrl}" alt="بعد" style="max-height:100%;max-width:100%;object-fit:contain;" />\n<div class="img-card-label">بعد (${ai.provider === 'huggingface' ? 'مزود احتياطي' : 'AI'})</div>`;
+      window.generatedImageUrl = ai.dataUrl;
+      document.getElementById('download-btn').disabled = false;
+      if (typeof ai.remaining === 'number') renderCredits(ai.remaining, 50);
+      showToast('✨ تم توليد صورة احترافية بالذكاء الاصطناعي!');
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">photo_magic</span> معالجة جديدة <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 3 رصيد</span>';
+      addHistory('photo_library', 'تحسين صورة منتج بالذكاء الاصطناعي', 'الآن · ' + (ai.provider === 'huggingface' ? 'مزود احتياطي' : 'Workers AI'), 'badge-img', 'صور');
+      return;
+    } catch (err) {
+      console.warn('AI image API offline or failed, falling back to local simulation:', err);
+    }
+  }
 
   await sleep(2200);
 
