@@ -134,6 +134,8 @@
         </label>
       </div>
     </div>
+    <!-- حالة الحساب — يظهر بريد الحساب المسجّل + خروج، أو دعوة تسجيل مجانية لو الزيارة مجهولة -->
+    <div class="px-6 pb-3" id="account-status-widget"></div>
     <div class="flex-1 px-4 py-2 space-y-1">
       <a class="flex items-center gap-3 text-primary font-bold border-r-4 border-primary bg-primary/10 px-4 py-3 rounded-lg w-full transition-transform hover:translate-x-1" href="dashboard.html">
         <span class="material-symbols-outlined">dashboard</span>
@@ -619,6 +621,23 @@
       <div class="space-y-2.5 relative z-10" id="optimized-products-list">
         <!-- تُملأ ديناميكياً -->
       </div>
+    </div>
+
+    <!-- محتوى المتجر — توليد ونشر أوصاف بالجملة على منتجات المتجر الحقيقية -->
+    <div class="dash-panel glass-card rounded-xl p-5 mb-6" id="store-content" style="display:none;">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-5 relative z-10">
+        <div>
+          <h3 class="font-title-md text-title-md dash-title flex items-center gap-2">
+            <span class="material-symbols-outlined text-[#0d9488]">edit_note</span>
+            محتوى المتجر
+          </h3>
+          <p class="font-label-sm text-label-sm dash-muted mt-1">ولّد وصف جديد وانشره مباشرة على منتجك بسلة — بدون فتح الاستوديو</p>
+        </div>
+      </div>
+      <div class="space-y-2.5 relative z-10" id="store-content-list"></div>
+      <p class="font-label-sm text-label-sm dash-muted mt-3 relative z-10" id="store-content-empty" style="display:none;">
+        ما فيه منتجات متزامنة بعد — اربط متجرك من صفحة الإعداد.
+      </p>
     </div>
 
     <!-- بانر التجربة المجانية + الضمان -->
@@ -1455,7 +1474,132 @@
 
       const nameEl = document.getElementById("sidebar-platform-name");
       if (nameEl && data.storeName) nameEl.textContent = data.storeName;
+
+      // محتوى المتجر — قسم توليد+نشر بالجملة، منتجات سلة فقط (publish.js يدعم سلة حالياً)
+      renderStoreContent(storeId, data.products || []);
     })();
+
+    function renderStoreContent(storeId, sallaProducts) {
+      const section = document.getElementById("store-content");
+      const list = document.getElementById("store-content-list");
+      const empty = document.getElementById("store-content-empty");
+      if (!section) return;
+      section.style.display = "block";
+
+      if (!sallaProducts.length) {
+        empty.style.display = "block";
+        return;
+      }
+
+      list.innerHTML = sallaProducts.slice(0, 10).map((p, i) => `
+        <div class="product-row" id="sc-row-${i}" data-product-id="${p.id}" data-product-name="${(p.name || '').replace(/"/g, '&quot;')}" data-product-price="${p.price ?? ''}">
+          <div class="w-11 h-11 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[22px]">inventory_2</span>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="font-body-md text-[14px] dash-title font-medium truncate">${p.name || '—'}</p>
+            <p class="font-label-sm text-[11px] dash-muted mt-1 sc-desc-preview">اضغط "ولّد وصف" لإنشاء وصف جديد بالذكاء الاصطناعي</p>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <button class="btn-secondary" style="font-size:12px;padding:6px 10px;" onclick="scGenerate(${i})" id="sc-gen-${i}">ولّد وصف</button>
+            <button class="btn-primary-gradient" style="font-size:12px;padding:6px 10px;" onclick="scPublish(${i})" id="sc-pub-${i}" disabled>انشر</button>
+          </div>
+        </div>`).join("");
+    }
+
+    async function scGenerate(i) {
+      const row = document.getElementById("sc-row-" + i);
+      const btn = document.getElementById("sc-gen-" + i);
+      const preview = row.querySelector(".sc-desc-preview");
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = "جارٍ التوليد...";
+      try {
+        const storeId = localStorage.getItem("hala_store_id");
+        const res = await fetch("/api/copy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            storeId,
+            name: row.dataset.productName,
+            price: row.dataset.productPrice,
+            tone: "white"
+          })
+        });
+        const data = await res.json();
+        if (data.code === "OUT_OF_CREDITS") {
+          preview.textContent = "⛔ " + data.error;
+          btn.disabled = false; btn.textContent = original;
+          return;
+        }
+        if (!res.ok || !data.result) throw new Error(data.error || "failed");
+        row.dataset.generatedDescription = data.result;
+        preview.textContent = data.result;
+        document.getElementById("sc-pub-" + i).disabled = false;
+      } catch (err) {
+        preview.textContent = "❌ تعذر التوليد — حاول مرة ثانية.";
+      }
+      btn.disabled = false; btn.textContent = original;
+    }
+
+    async function scPublish(i) {
+      const row = document.getElementById("sc-row-" + i);
+      const btn = document.getElementById("sc-pub-" + i);
+      const description = row.dataset.generatedDescription;
+      if (!description) return;
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = "جارٍ النشر...";
+      try {
+        const storeId = localStorage.getItem("hala_store_id");
+        const res = await fetch("/api/store/publish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storeId, productId: row.dataset.productId, description })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "failed");
+        btn.textContent = "✓ نُشر";
+        return;
+      } catch (err) {
+        btn.textContent = "❌ فشل النشر";
+        setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2000);
+      }
+    }
+
+    // حالة الحساب — بريد الحساب + خروج، أو دعوة تسجيل مجانية
+    (async function loadAccountStatus() {
+      const widget = document.getElementById("account-status-widget");
+      if (!widget) return;
+      let data = { loggedIn: false };
+      try {
+        const res = await fetch("/api/auth/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        data = await res.json();
+      } catch (e) { /* static demo — show anonymous state below */ }
+
+      if (data.loggedIn) {
+        widget.innerHTML = `
+          <div class="flex items-center justify-between gap-2 rounded-lg bg-primary/5 px-3 py-2">
+            <div class="min-w-0">
+              <p class="font-label-sm text-[11px] dash-title font-semibold truncate">${data.email || ''}</p>
+              <p class="font-label-sm text-[10px] dash-muted">${data.usage ? data.usage.remaining + '/' + data.usage.limit + ' رصيد اليوم' : ''}</p>
+            </div>
+            <button class="font-label-sm text-[11px] text-primary hover:underline shrink-0" onclick="hala_logout()">خروج</button>
+          </div>`;
+      } else {
+        widget.innerHTML = `
+          <a href="login.html" class="flex items-center justify-between gap-2 rounded-lg bg-primary/5 px-3 py-2 hover:bg-primary/10 transition-colors">
+            <span class="font-label-sm text-[11px] dash-title font-semibold">🎁 سجّل مجاناً — رصيدك الخاص ٥٠/يوم</span>
+            <span class="material-symbols-outlined text-[16px] text-primary">arrow_back</span>
+          </a>`;
+      }
+    })();
+
+    async function hala_logout() {
+      try { await fetch("/api/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); } catch (e) {}
+      try { localStorage.removeItem("hala_store_id"); localStorage.removeItem("hala_account_email"); } catch (e) {}
+      window.location.href = "login.html";
+    }
   </script>
 </body>
 </html>

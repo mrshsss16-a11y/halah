@@ -166,6 +166,10 @@
 
   <!-- المحتوى الرئيسي -->
   <main class="flex-1 lg:mr-64 p-6 max-w-7xl mx-auto w-full pb-28 relative z-10 flex flex-col gap-6">
+    <div id="upgrade-banner" style="background:linear-gradient(90deg, rgba(13,148,136,0.1), rgba(11,95,120,0.1));border:1px solid rgba(13,148,136,0.25);border-radius:12px;padding:12px 16px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;display:none;">
+      <span style="font-size:13px;font-weight:600;">🎁 متجرك يشتغل الحين — سجّل مجاناً واحصل على رصيدك الخاص ٥٠/يوم (بدل ما تشاركه مع باقي الزوار)</span>
+      <a href="login.html" class="btn-primary-gradient" style="font-size:12px;padding:7px 14px;white-space:nowrap;">سجّل مجاناً</a>
+    </div>
     <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-outline-variant/10 pb-4">
       <div>
         <h2 class="text-2xl font-bold">مركز المحادثات وتنبيهات الواتساب</h2>
@@ -368,6 +372,11 @@
     // Falls back to 'default-store' so the demo keeps working unlinked.
     function halaStoreId() {
       try { return localStorage.getItem('hala_store_id') || 'default-store'; } catch (e) { return 'default-store'; }
+    }
+
+    if (halaStoreId() === 'default-store') {
+      const b = document.getElementById('upgrade-banner');
+      if (b) b.style.display = 'flex';
     }
 
     // ?hala_debug_ai=1 or localStorage hala_debug_ai=1 — same pattern as HalaTheme's hala_debug_theme

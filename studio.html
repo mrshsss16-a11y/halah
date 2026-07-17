@@ -679,6 +679,12 @@
 <!-- ═══════════════════ MAIN ═══════════════════ -->
 <main class="studio-main">
 
+  <!-- دعوة تسجيل — تظهر بس للزوار المجهولين (مشتركين برصيد واحد) -->
+  <div id="upgrade-banner" style="display:none;background:linear-gradient(90deg, rgba(13,148,136,0.1), rgba(11,95,120,0.1));border:1px solid rgba(13,148,136,0.25);border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:13px;font-weight:600;">🎁 متجرك يشتغل الحين — سجّل مجاناً واحصل على رصيدك الخاص ٥٠/يوم (بدل ما تشاركه مع باقي الزوار)</span>
+    <a href="login.html" class="btn-primary-gradient" style="font-size:12px;padding:7px 14px;white-space:nowrap;">سجّل مجاناً</a>
+  </div>
+
   <!-- Hero Banner -->
   <div class="studio-hero">
     <div>
@@ -1270,6 +1276,12 @@ async function refreshCredits() {
   } catch (e) { /* static demo — keep placeholder */ }
 }
 refreshCredits();
+
+// Non-blocking upsell — only for anonymous default-store visitors (shared pool).
+if (halaStoreId() === 'default-store') {
+  const b = document.getElementById('upgrade-banner');
+  if (b) b.style.display = 'flex';
+}
 
 /* ── Store logo (real upload + server persistence + Canvas overlay) ── */
 window.hala_logo_dataurl = null;
