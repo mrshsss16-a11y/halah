@@ -516,6 +516,12 @@
 
         if (res.ok) {
           const data = await res.json();
+          if (data.code === 'OUT_OF_CREDITS') {
+            botDiv.querySelector('.text-sm').innerText = data.error;
+            chat.scrollTop = chat.scrollHeight;
+            showToast('⛔ ' + data.error, 'info');
+            return;
+          }
           if (data.result) {
             botDiv.querySelector('.text-sm').innerText = data.result;
             chat.scrollTop = chat.scrollHeight;

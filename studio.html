@@ -699,8 +699,8 @@
   <div class="credits-bar panel" style="margin:0;padding:0.875rem 1.25rem;">
     <div>
       <div class="credits-label">رصيد الاستوديو المجاني</div>
-      <div class="credits-value">34 <span style="font-size:0.85rem;font-weight:400;">رصيداً</span></div>
-      <div class="credits-sub">من أصل 50 رصيداً في التجربة</div>
+      <div class="credits-value" id="credits-value">-- <span style="font-size:0.85rem;font-weight:400;">رصيداً</span></div>
+      <div class="credits-sub" id="credits-sub">من أصل -- رصيداً اليوم</div>
     </div>
     <div class="credits-progress">
       <div class="credits-progress-fill" id="credits-fill"></div>
@@ -1224,6 +1224,34 @@ function halaDebugAI() {
   } catch (e) { return false; }
 }
 
+/* ── Credit bar (real usage from /api/usage) ── */
+function renderCredits(remaining, limit) {
+  const valueEl = document.getElementById('credits-value');
+  const subEl = document.getElementById('credits-sub');
+  const fillEl = document.getElementById('credits-fill');
+  if (!valueEl) return;
+  valueEl.innerHTML = remaining + ' <span style="font-size:0.85rem;font-weight:400;">رصيداً</span>';
+  subEl.textContent = 'من أصل ' + limit + ' رصيداً اليوم';
+  if (fillEl) fillEl.style.width = Math.max(0, Math.min(100, (remaining / limit) * 100)) + '%';
+  document.querySelectorAll('#generate-copy-btn, #process-image-btn').forEach((btn) => {
+    if (remaining <= 0) btn.setAttribute('data-out-of-credits', '1');
+    else btn.removeAttribute('data-out-of-credits');
+  });
+}
+
+async function refreshCredits() {
+  try {
+    const res = await fetch('/api/usage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storeId: halaStoreId() })
+    });
+    const data = await res.json();
+    if (data.ok) renderCredits(data.remaining, data.limit);
+  } catch (e) { /* static demo — keep placeholder */ }
+}
+refreshCredits();
+
 /* ── Toast ── */
 function showToast(msg, type='success') {
   const tc = document.getElementById('toast-container');
@@ -1371,18 +1399,22 @@ async function generateCopy() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ storeId: halaStoreId(), name, price, tone: activeTone, category, features })
     });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.result) {
-        generatedText = data.result;
-        aiTags = Array.isArray(data.tags) && data.tags.length ? data.tags : null;
-        aiWhatsapp = data.whatsapp || null;
-        if (halaDebugAI()) console.info('[hala-copy]', data);
-      } else {
-        throw new Error('No result returned from AI');
-      }
+    const data = await res.json();
+    if (data.code === 'OUT_OF_CREDITS') {
+      showToast('⛔ ' + data.error, 'info');
+      renderCredits(0, 50);
+      btn.disabled = false;
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">auto_awesome</span> توليد جديد <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 2 رصيد</span>';
+      return;
+    }
+    if (res.ok && data.result) {
+      generatedText = data.result;
+      aiTags = Array.isArray(data.tags) && data.tags.length ? data.tags : null;
+      aiWhatsapp = data.whatsapp || null;
+      if (typeof data.remaining === 'number') renderCredits(data.remaining, 50);
+      if (halaDebugAI()) console.info('[hala-copy]', data);
     } else {
-      throw new Error('API request failed');
+      throw new Error('No result returned from AI');
     }
   } catch (err) {
     console.warn("AI API endpoint offline or unbound, falling back to local simulation:", err);

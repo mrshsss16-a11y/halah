@@ -9,6 +9,7 @@ import { withApi } from "../_lib/respond.js";
 import { askWorkersAI } from "../_lib/workersAI.js";
 import { PERSONA_SYSTEM_PROMPT } from "../_lib/persona.js";
 import { recentCopy, saveCopy } from "../_lib/db.js";
+import { checkAndConsume, COSTS } from "../_lib/meter.js";
 
 const TONE_LABELS = {
   white: "لهجة بيضاء تسويقية ودودة",
@@ -74,6 +75,15 @@ async function copyHandler(body, env) {
 
   if (!name) return { error: "أدخل اسم المنتج أولاً." };
 
+  const usage = await checkAndConsume(env, merchantId, COSTS.copy);
+  if (!usage.ok) {
+    return {
+      error: `خلص رصيدك المجاني اليوم (${usage.limit} رصيداً) — يتجدد الساعة 12 منتصف الليل بتوقيت UTC.`,
+      code: "OUT_OF_CREDITS",
+      remaining: 0
+    };
+  }
+
   const keywords = seedKeywords(name, category, body.keywords);
   const recent = await recentCopy(env, merchantId).catch(() => []);
 
@@ -106,7 +116,8 @@ async function copyHandler(body, env) {
     tags: out.tags,
     tone,
     name,
-    price
+    price,
+    remaining: usage.remaining
   };
 }
 

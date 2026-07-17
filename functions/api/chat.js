@@ -12,6 +12,7 @@ import { askWorkersAI } from "../_lib/workersAI.js";
 import { PERSONA_SYSTEM_PROMPT, dialectLabel } from "../_lib/persona.js";
 import { recallSimilar, rememberReply } from "../_lib/memory.js";
 import { getMarketingContext } from "../_lib/db.js";
+import { checkAndConsume, COSTS } from "../_lib/meter.js";
 
 const SCORE_THRESHOLD = 7;
 const HARD_FLOOR = 4;
@@ -108,6 +109,16 @@ async function critique({ env, message, reply, dialect }) {
 
 async function chatHandler(body, env) {
   const storeId = (body.storeId || "default-store").toString().slice(0, 40);
+
+  const usage = await checkAndConsume(env, storeId, COSTS.chat);
+  if (!usage.ok) {
+    return {
+      error: `خلص رصيدك المجاني اليوم (${usage.limit} رصيداً) — يتجدد الساعة 12 منتصف الليل بتوقيت UTC.`,
+      code: "OUT_OF_CREDITS",
+      remaining: 0
+    };
+  }
+
   // Server-side context (D1) is the source of truth once the merchant saved
   // settings; browser-sent values are the fallback for unlinked demo stores.
   const saved = env.DB ? await getMarketingContext(env, storeId).catch(() => null) : null;
@@ -190,6 +201,7 @@ async function chatHandler(body, env) {
     guarded,
     memorized: Boolean(memoryId),
     usedMemoryExamples: examples.length,
+    remaining: usage.remaining,
     ...(debug ? { debug: { feedback: verdict.feedback, examples } } : {})
   };
 }
