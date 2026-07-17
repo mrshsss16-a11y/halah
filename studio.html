@@ -4,7 +4,7 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>هالة | الاستوديو · خدمات مباشرة</title>
-  <meta name="description" content="استوديو هالة الذكي — أنشئ محتوى منتجاتك وحسّن صورك وأرسل تنبيهات واتساب بدون ربط متجر."/>
+  <meta name="description" content="استوديو هالة الذكي، أنشئ محتوى منتجاتك وحسّن صورك وأرسل تنبيهات واتساب بدون ربط متجر."/>
 
   <!-- FOUC Prevention -->
   <script>
@@ -51,15 +51,15 @@
             "on-surface-variant": "#40484d",
             "surface": "#f7f9fb",
             "background": "#f7f9fb",
-            "secondary": "#006874",
+            "secondary": "#2E7A87",
             "outline": "#70787e",
             "on-background": "#191c1e",
             "surface-container-lowest": "#ffffff",
             "on-surface": "#191c1e",
-            "primary": "#0b5f78",
-            "primary-container": "#2c7ca0",
+            "primary": "#2A6E93",
+            "primary-container": "#438FB3",
             "error": "#ba1a1a",
-            "inverse-primary": "#87d0f6"
+            "inverse-primary": "#8FC1DC"
           },
           fontFamily: { sans: ["DIN Next LT Arabic", "sans-serif"] }
         }
@@ -69,23 +69,23 @@
 
   <style>
     /* ═══════════════════════════════════════════
-       Studio Page — Core Styles
+       Studio Page، Core Styles
     ═══════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
       --studio-bg: #f0f4f8;
       --studio-card: #ffffff;
-      --studio-border: rgba(11,95,120,0.1);
+      --studio-border: rgba(42, 110, 147,0.1);
       --studio-muted: #64748b;
-      --studio-primary: #0b5f78;
-      --studio-primary-glow: rgba(11,95,120,0.15);
-      --studio-accent: #006874;
-      --studio-accent-soft: rgba(0,104,116,0.08);
+      --studio-primary: #2A6E93;
+      --studio-primary-glow: rgba(42, 110, 147,0.15);
+      --studio-accent: #2E7A87;
+      --studio-accent-soft: rgba(46, 122, 135,0.08);
       --studio-glass: rgba(255,255,255,0.72);
       --studio-glass-border: rgba(255,255,255,0.5);
-      --studio-shadow: 0 4px 24px rgba(11,95,120,0.08), 0 1px 4px rgba(0,0,0,0.04);
-      --studio-shadow-hover: 0 8px 32px rgba(11,95,120,0.14), 0 2px 8px rgba(0,0,0,0.06);
+      --studio-shadow: 0 4px 24px rgba(42, 110, 147,0.08), 0 1px 4px rgba(0,0,0,0.04);
+      --studio-shadow-hover: 0 8px 32px rgba(42, 110, 147,0.14), 0 2px 8px rgba(0,0,0,0.06);
       --studio-radius: 1.25rem;
       --studio-radius-sm: 0.75rem;
       --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
@@ -96,7 +96,7 @@
       --studio-card: rgba(255,255,255,0.04);
       --studio-border: rgba(135,208,246,0.1);
       --studio-muted: #94a3b8;
-      --studio-primary: #87d0f6;
+      --studio-primary: #8FC1DC;
       --studio-primary-glow: rgba(135,208,246,0.12);
       --studio-accent: #4dd0e1;
       --studio-accent-soft: rgba(77,208,225,0.08);
@@ -270,7 +270,7 @@
     .studio-tab .material-symbols-outlined { font-size: 18px; }
     .tab-badge {
       font-size: 0.65rem; font-weight: 700;
-      background: #0b5f78; color: #fff;
+      background: #2A6E93; color: #fff;
       padding: 1px 6px; border-radius: 99px;
     }
     .studio-tab.active .tab-badge { background: rgba(255,255,255,0.3); }
@@ -516,10 +516,10 @@
       margin-right: auto; font-size: 0.68rem; font-weight: 700;
       padding: 2px 8px; border-radius: 99px;
     }
-    .badge-copy { background: rgba(11,95,120,0.1); color: #0b5f78; }
+    .badge-copy { background: rgba(42, 110, 147,0.1); color: #2A6E93; }
     .badge-img  { background: rgba(234,88,12,0.1);  color: #ea580c; }
     .badge-wa   { background: rgba(37,211,102,0.15); color: #16a34a; }
-    html.dark .badge-copy { background: rgba(135,208,246,0.12); color: #87d0f6; }
+    html.dark .badge-copy { background: rgba(135,208,246,0.12); color: #8FC1DC; }
 
     /* ── Stats cards ── */
     .stat-card {
@@ -659,7 +659,7 @@
   </a>
 
   <div class="header-actions">
-    <!-- Theme control — wired by theme.js (HalaTheme.wireControls), tri-state per design doc KD-13 -->
+    <!-- Theme control، wired by theme.js (HalaTheme.wireControls), tri-state per design doc KD-13 -->
     <label class="hala-prefs-field" style="display:flex;align-items:center;gap:6px;">
       <span class="material-symbols-outlined" style="font-size:18px;" aria-hidden="true">contrast</span>
       <select class="hala-theme-select" data-hala-theme-select aria-label="المظهر">
@@ -679,9 +679,9 @@
 <!-- ═══════════════════ MAIN ═══════════════════ -->
 <main class="studio-main">
 
-  <!-- دعوة تسجيل — تظهر بس للزوار المجهولين (مشتركين برصيد واحد) -->
-  <div id="upgrade-banner" style="display:none;background:linear-gradient(90deg, rgba(13,148,136,0.1), rgba(11,95,120,0.1));border:1px solid rgba(13,148,136,0.25);border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-    <span style="font-size:13px;font-weight:600;">🎁 متجرك يشتغل الحين — سجّل مجاناً واحصل على رصيدك الخاص ٥٠/يوم (بدل ما تشاركه مع باقي الزوار)</span>
+  <!-- دعوة تسجيل، تظهر بس للزوار المجهولين (مشتركين برصيد واحد) -->
+  <div id="upgrade-banner" style="display:none;background:linear-gradient(90deg, rgba(46, 122, 135,0.1), rgba(42, 110, 147,0.1));border:1px solid rgba(46, 122, 135,0.25);border-radius:12px;padding:12px 16px;margin-bottom:16px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+    <span style="font-size:13px;font-weight:600;">🎁 متجرك يشتغل الحين، سجّل مجاناً واحصل على رصيدك الخاص ٥٠/يوم (بدل ما تشاركه مع باقي الزوار)</span>
     <a href="login.html" class="btn-primary-gradient" style="font-size:12px;padding:7px 14px;white-space:nowrap;">سجّل مجاناً</a>
   </div>
 
@@ -692,8 +692,8 @@
         <span class="material-symbols-outlined" style="font-size:13px;font-variation-settings:'FILL' 1">bolt</span>
         بدون ربط متجر · مباشر الآن
       </div>
-      <h1>الاستوديو الذكي — جرّب هالة فوراً</h1>
-      <p>أنشئ أوصاف منتجاتك، حسّن صورك، وأرسل تنبيهات واتساب بالذكاء الاصطناعي — بدون ربط سلة أو زد أو ترينديول.</p>
+      <h1>الاستوديو الذكي، جرّب هالة فوراً</h1>
+      <p>أنشئ أوصاف منتجاتك، حسّن صورك، وأرسل تنبيهات واتساب بالذكاء الاصطناعي، بدون ربط سلة أو زد أو ترينديول.</p>
     </div>
     <a href="onboarding.html" class="studio-hero-action">
       <span class="material-symbols-outlined" style="font-size:16px;font-variation-settings:'FILL' 1">store</span>
@@ -983,12 +983,12 @@
       <div class="form-group" id="bg-style-group">
         <label class="form-label">نمط الخلفية</label>
         <select class="form-select" id="bg-style" dir="rtl">
-          <option value="studio">أبيض مينيمال — كتالوج نظيف</option>
-          <option value="gradient-blue">عصري جريء — تباين قوي</option>
-          <option value="gradient-warm">دافئ تراثي — أصالة عربية</option>
-          <option value="marble">رخام فاخر — بوتيك راقي</option>
-          <option value="dark-luxury">فخم داكن — إضاءة درامية</option>
-          <option value="outdoor">طبيعي خارجي — إضاءة نهارية</option>
+          <option value="studio">أبيض مينيمال، كتالوج نظيف</option>
+          <option value="gradient-blue">عصري جريء، تباين قوي</option>
+          <option value="gradient-warm">دافئ تراثي، أصالة عربية</option>
+          <option value="marble">رخام فاخر، بوتيك راقي</option>
+          <option value="dark-luxury">فخم داكن، إضاءة درامية</option>
+          <option value="outdoor">طبيعي خارجي، إضاءة نهارية</option>
         </select>
       </div>
 
@@ -1157,7 +1157,7 @@
         <div class="history-item">
           <div class="history-icon"><span class="material-symbols-outlined">edit_note</span></div>
           <div>
-            <div class="history-name">وصف منتج — عطر العود الملكي</div>
+            <div class="history-name">وصف منتج، عطر العود الملكي</div>
             <div class="history-meta">منذ 3 دقائق · 127 كلمة · اللهجة البيضاء</div>
           </div>
           <span class="history-badge badge-copy">كتابة</span>
@@ -1165,7 +1165,7 @@
         <div class="history-item">
           <div class="history-icon"><span class="material-symbols-outlined">photo_library</span></div>
           <div>
-            <div class="history-name">تحسين صورة — برواز عود أسود</div>
+            <div class="history-name">تحسين صورة، برواز عود أسود</div>
             <div class="history-meta">منذ 12 دقيقة · إزالة خلفية + خلفية استوديو</div>
           </div>
           <span class="history-badge badge-img">صور</span>
@@ -1173,7 +1173,7 @@
         <div class="history-item">
           <div class="history-icon"><span class="material-symbols-outlined">chat</span></div>
           <div>
-            <div class="history-name">تنبيه واتساب — عرض العيد</div>
+            <div class="history-name">تنبيه واتساب، عرض العيد</div>
             <div class="history-meta">منذ 20 دقيقة · نوع: عرض مؤقت</div>
           </div>
           <span class="history-badge badge-wa">واتساب</span>
@@ -1236,12 +1236,12 @@
 <script>
 /* Theme handled entirely by theme.js (HalaTheme) via the data-hala-theme-select control in the header. */
 
-// Canonical merchant id — set by onboarding after a real store link.
+// Canonical merchant id، set by onboarding after a real store link.
 function halaStoreId() {
   try { return localStorage.getItem('hala_store_id') || 'default-store'; } catch (e) { return 'default-store'; }
 }
 
-// ?hala_debug_ai=1 or localStorage hala_debug_ai=1 — same pattern as HalaTheme's hala_debug_theme
+// ?hala_debug_ai=1 or localStorage hala_debug_ai=1، same pattern as HalaTheme's hala_debug_theme
 function halaDebugAI() {
   try {
     const params = new URLSearchParams(location.search);
@@ -1273,11 +1273,11 @@ async function refreshCredits() {
     });
     const data = await res.json();
     if (data.ok) renderCredits(data.remaining, data.limit);
-  } catch (e) { /* static demo — keep placeholder */ }
+  } catch (e) { /* static demo، keep placeholder */ }
 }
 refreshCredits();
 
-// Non-blocking upsell — only for anonymous default-store visitors (shared pool).
+// Non-blocking upsell، only for anonymous default-store visitors (shared pool).
 if (halaStoreId() === 'default-store') {
   const b = document.getElementById('upgrade-banner');
   if (b) b.style.display = 'flex';
@@ -1302,7 +1302,7 @@ async function loadSavedLogo() {
     });
     const data = await res.json();
     if (data.ok && data.logoDataUrl) { setLogoPreview(data.logoDataUrl); return; }
-  } catch (e) { /* static demo — try local cache below */ }
+  } catch (e) { /* static demo، try local cache below */ }
   try {
     const cached = localStorage.getItem('hala_logo_dataurl');
     if (cached) setLogoPreview(cached);
@@ -1426,17 +1426,17 @@ function detectCategory(name, catValue) {
 const SAMPLE_COPIES = {
   perfume: {
     white: [
-      'لو تبحث عن رائحة تفرق وتطول معك طول اليوم — {name} هو الخيار. عطر أصيل مصنوع بعناية، يجمع بين خشب العود الفاخر ونفحات المسك الدافئة. مناسب لكل المناسبات، سواء لقاءات العمل أو السهرات العائلية. بسعر {price} ريال، تحصل على تجربة عطرية لا تُنسى.',
-      'ذوقك يحكي عنك — وعطر {name} يقول كل شي بالصح. تركيبة راقية من أجود أنواع العود السعودي، تبقى معك من الصباح للمساء بدون ما تحتاج تجدد. {price} ريال للفخامة اللي تستاهلها.'
+      'لو تبحث عن رائحة تفرق وتطول معك طول اليوم، {name} هو الخيار. عطر أصيل مصنوع بعناية، يجمع بين خشب العود الفاخر ونفحات المسك الدافئة. مناسب لكل المناسبات، سواء لقاءات العمل أو السهرات العائلية. بسعر {price} ريال، تحصل على تجربة عطرية لا تُنسى.',
+      'ذوقك يحكي عنك، وعطر {name} يقول كل شي بالصح. تركيبة راقية من أجود أنواع العود السعودي، تبقى معك من الصباح للمساء بدون ما تحتاج تجدد. {price} ريال للفخامة اللي تستاهلها.'
     ],
     formal: [
       'يُقدّم {name} تجربة عطرية استثنائية بمكوّنات عالية الجودة، تم اختيارها بعناية فائقة لتُعطي الحامل شخصية متميزة وأثراً دائماً. السعر: {price} ريالاً.',
     ],
     luxury: [
-      '✨ {name} — عطر يعكس أرقى معاني الفخامة والأناقة. نُقطة من هذا العطر تُحوّل كل لحظة إلى ذكرى لا تُمحى. للنخبة الذين يختارون الأفضل دائماً. بـ {price} ريالاً فقط.',
+      '✨ {name}، عطر يعكس أرقى معاني الفخامة والأناقة. نُقطة من هذا العطر تُحوّل كل لحظة إلى ذكرى لا تُمحى. للنخبة الذين يختارون الأفضل دائماً. بـ {price} ريالاً فقط.',
     ],
     deals: [
-      '🔥 عرض لا يفوتك! {name} الآن بـ {price} ريال فقط! سارع قبل نفاد الكمية — عطر ممتاز بسعر يجنن!',
+      '🔥 عرض لا يفوتك! {name} الآن بـ {price} ريال فقط! سارع قبل نفاد الكمية، عطر ممتاز بسعر يجنن!',
     ],
     funny: [
       '😄 يُحكى أن من تعطّر بـ {name} أصبح محط أنظار الجميع! شوف كيف يبدأ كل شخص يسألك: "وش هذا العطر؟" بـ {price} ريال وأنت مبسوط!',
@@ -1444,14 +1444,14 @@ const SAMPLE_COPIES = {
   },
   watch: {
     white: [
-      'الجمال يكتمل بأدق التفاصيل — {name} هي اللمسة اللي تنقص كشختك. تصميم كلاسيكي فخم يناسب ذوقك الرفيع ومظهرك اليومي، سواء للعمل أو السحور والطلعات. بسعر {price} ريال، تحصل على الفخامة اللي تستاهلها.',
+      'الجمال يكتمل بأدق التفاصيل، {name} هي اللمسة اللي تنقص كشختك. تصميم كلاسيكي فخم يناسب ذوقك الرفيع ومظهرك اليومي، سواء للعمل أو السحور والطلعات. بسعر {price} ريال، تحصل على الفخامة اللي تستاهلها.',
       'كشختك ما تكمل إلا مع {name}. ساعة بتصميم راقي يلفت الأنظار ويناسب كل ملابسك. بـ {price} ريال للفخامة والتميز.'
     ],
     formal: [
       'تُقدّم {name} معايير الدقة والأناقة الكلاسيكية بلمسة عصرية تناسب الشخصية القيادية والمظهر المهني المتميز. السعر: {price} ريالاً.',
     ],
     luxury: [
-      '✨ {name} — تحفة فنية تزين معصمك وتعكس ذوقك الاستثنائي. لغة الأناقة والوقت الفاخر بين يديك. بـ {price} ريالاً فقط للنخبة.',
+      '✨ {name}، تحفة فنية تزين معصمك وتعكس ذوقك الاستثنائي. لغة الأناقة والوقت الفاخر بين يديك. بـ {price} ريالاً فقط للنخبة.',
     ],
     deals: [
       '🔥 عرض محدود! {name} الآن بـ {price} ريال فقط مع علبة فاخرة وشحن مجاني لجميع مناطق المملكة!',
@@ -1469,7 +1469,7 @@ const SAMPLE_COPIES = {
       'يُصنع منتج {name} من أجود المحاصيل المحمصة بعناية فائقة لتوفير جودة عالية تليق بالضيافة السعودية الفاخرة. السعر: {price} ريالاً.',
     ],
     luxury: [
-      '✨ {name} — نكهة الضيافة الفاخرة والمذاق الأصيل المختار بعناية فائقة لأصحاب الذوق الرفيع. متوفر بسعر {price} ريالاً.',
+      '✨ {name}، نكهة الضيافة الفاخرة والمذاق الأصيل المختار بعناية فائقة لأصحاب الذوق الرفيع. متوفر بسعر {price} ريالاً.',
     ],
     deals: [
       '🔥 دلّع ضيوفك الحين! اطلب {name} بـ {price} ريال فقط واستمتع بنكهة الضيافة السعودية الأصيلة!',
@@ -1487,7 +1487,7 @@ const SAMPLE_COPIES = {
       'يُقدّم {name} تصميماً راقياً ومريحاً يجمع بين الأصالة والحداثة، مما يجعله مناسباً لكافة المناسبات واللقاءات الرسمية. السعر: {price} ريالاً.',
     ],
     luxury: [
-      '✨ {name} — فخامة التصميم ودقة التفاصيل تمنحك حضوراً واثقاً وأناقة لا تضاهى في كل مناسبة. متوفر الآن بسعر {price} ريالاً فقط.',
+      '✨ {name}، فخامة التصميم ودقة التفاصيل تمنحك حضوراً واثقاً وأناقة لا تضاهى في كل مناسبة. متوفر الآن بسعر {price} ريالاً فقط.',
     ],
     deals: [
       '🔥 لا يفوتك تجديد دولابك! احصل على {name} الآن بسعر خاص جداً {price} ريال فقط مع شحن مجاني لفترة محدودة!',
@@ -1580,13 +1580,13 @@ async function generateCopy() {
     seoTags.appendChild(el);
   });
 
-  // WhatsApp-ready version — one-tap copy for a WhatsApp broadcast.
+  // WhatsApp-ready version، one-tap copy for a WhatsApp broadcast.
   if (aiWhatsapp) {
     let waBox = document.getElementById('wa-copy-box');
     if (!waBox) {
       waBox = document.createElement('div');
       waBox.id = 'wa-copy-box';
-      waBox.style.cssText = 'margin-top:0.75rem;padding:0.75rem;border:1px dashed var(--studio-primary);border-radius:0.75rem;background:rgba(11,95,120,0.05);';
+      waBox.style.cssText = 'margin-top:0.75rem;padding:0.75rem;border:1px dashed var(--studio-primary);border-radius:0.75rem;background:rgba(42, 110, 147,0.05);';
       seoSec.appendChild(waBox);
     }
     waBox.innerHTML = `
@@ -1625,7 +1625,7 @@ async function generateCopy() {
   statEl.textContent = parseInt(statEl.textContent) + 1;
 
   // Add to history
-  addHistory('edit_note', `وصف منتج — ${name}`, `الآن · ${generatedText.split(' ').length} كلمة · ${getToneName(activeTone)}`, 'badge-copy', 'كتابة');
+  addHistory('edit_note', `وصف منتج، ${name}`, `الآن · ${generatedText.split(' ').length} كلمة · ${getToneName(activeTone)}`, 'badge-copy', 'كتابة');
   showToast('تم توليد الوصف بنجاح!');
 }
 
@@ -1654,7 +1654,7 @@ async function publishToStore() {
     const data = await res.json();
     if (data.ok) {
       showToast('🚀 تم نشر الوصف على منتجك في سلة!');
-      addHistory('storefront', `نشر وصف — منتج ${productId}`, 'الآن · نُشر على سلة', 'badge-copy', 'نشر');
+      addHistory('storefront', `نشر وصف، منتج ${productId}`, 'الآن · نُشر على سلة', 'badge-copy', 'نشر');
     } else {
       showToast('❌ ' + (data.error || 'فشل النشر'), 'info');
     }
@@ -1766,7 +1766,7 @@ function canvasToBase64NoPrefix(canvas, mime) {
 }
 
 async function tryRealAiImage(img, styleValue) {
-  // Resize to 512x512 — Workers AI reference-image constraint.
+  // Resize to 512x512، Workers AI reference-image constraint.
   const rc = document.createElement('canvas');
   rc.width = 512; rc.height = 512;
   const rctx = rc.getContext('2d');
@@ -1864,7 +1864,7 @@ async function processImage() {
       ctx.fillRect(0, 0, 600, 600);
     } else if (style === 'gradient-warm') {
       const grad = ctx.createRadialGradient(300, 300, 50, 300, 300, 450);
-      grad.addColorStop(0, '#be8c78');
+      grad.addColorStop(0, '#438FB3');
       grad.addColorStop(1, '#1c1917');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, 600, 600);
@@ -1999,12 +1999,12 @@ function downloadImage() {
 
 /* ── WhatsApp Preview ── */
 const WA_TEMPLATES = {
-  'new-product': (p, d, s) => `🌟 *وصل جديد في ${s || 'متجرنا'}!*\n\n*${p || 'منتج مميز'}* الآن متاح${d ? ' — ' + d : ''}.\n\nاطلب الآن عبر المتجر الإلكتروني 🛒`,
-  'offer': (p, d, s) => `🔥 *عرض لا يفوتك — ${s || 'متجرنا'}!*\n\n${p || 'منتج مميز'}${d ? '\n💰 ' + d : ''}\n\n⏰ العرض محدود — اطلب الآن!`,
+  'new-product': (p, d, s) => `🌟 *وصل جديد في ${s || 'متجرنا'}!*\n\n*${p || 'منتج مميز'}* الآن متاح${d ? '، ' + d : ''}.\n\nاطلب الآن عبر المتجر الإلكتروني 🛒`,
+  'offer': (p, d, s) => `🔥 *عرض لا يفوتك، ${s || 'متجرنا'}!*\n\n${p || 'منتج مميز'}${d ? '\n💰 ' + d : ''}\n\n⏰ العرض محدود، اطلب الآن!`,
   'restock': (p, d, s) => `📦 *عاد للمخزون!*\n\n${p || 'المنتج'} أصبح متاحاً مجدداً في ${s || 'متجرنا'}${d ? '\n' + d : ''}.\n\nلا تفوّت الفرصة 🛍️`,
-  'order': (p, d, s) => `✅ *تأكيد طلبك — ${s || 'متجرنا'}*\n\nشكراً لطلبك! تم استلام طلب "${p || 'منتجك'}" بنجاح.${d ? '\n' + d : ''}\n\nسيصلك تحديث الشحن قريباً 🚚`,
-  'shipping': (p, d, s) => `🚚 *تحديث شحن — ${s || 'متجرنا'}*\n\nطلبك "${p || 'المنتج'}" في الطريق إليك!${d ? '\n📍 ' + d : ''}\n\nنتطلع لتقييمك بعد الاستلام ⭐`,
-  'review': (p, d, s) => `⭐ *رأيك يهمنا — ${s || 'متجرنا'}*\n\nنأمل أنك راضٍ عن "${p || 'مشترياتك'}"!${d ? '\n' + d : ''}\n\nشاركنا تقييمك ليستفيد الجميع 🙏`,
+  'order': (p, d, s) => `✅ *تأكيد طلبك، ${s || 'متجرنا'}*\n\nشكراً لطلبك! تم استلام طلب "${p || 'منتجك'}" بنجاح.${d ? '\n' + d : ''}\n\nسيصلك تحديث الشحن قريباً 🚚`,
+  'shipping': (p, d, s) => `🚚 *تحديث شحن، ${s || 'متجرنا'}*\n\nطلبك "${p || 'المنتج'}" في الطريق إليك!${d ? '\n📍 ' + d : ''}\n\nنتطلع لتقييمك بعد الاستلام ⭐`,
+  'review': (p, d, s) => `⭐ *رأيك يهمنا، ${s || 'متجرنا'}*\n\nنأمل أنك راضٍ عن "${p || 'مشترياتك'}"!${d ? '\n' + d : ''}\n\nشاركنا تقييمك ليستفيد الجميع 🙏`,
 };
 
 let waText = '';

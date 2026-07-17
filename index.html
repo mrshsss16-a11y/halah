@@ -18,7 +18,7 @@
   } else if (pref === "system") {
     resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   } else {
-    // key absent — do NOT localStorage.setItem
+    // key absent، do NOT localStorage.setItem
     resolved = surfaceDefault;
   }
   root.setAttribute("data-theme", resolved);
@@ -34,7 +34,7 @@
   }
   root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
   // NEVER setItem here. NEVER add theme-animating here.
-  // landing-dark: body may not exist yet — schedule mirror only
+  // landing-dark: body may not exist yet، schedule mirror only
   function syncLandingDark() {
     if (!document.body) return;
     document.body.classList.toggle(
@@ -53,7 +53,7 @@
   <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <script>
-    /* PR4: Marketing GSAP gate — decide before paint so CSS enter can own mobile */
+    /* PR4: Marketing GSAP gate، decide before paint so CSS enter can own mobile */
     (function () {
       function allowMarketingGSAP() {
         if (document.documentElement.getAttribute("data-reduce-motion") === "1") return false;
@@ -132,21 +132,21 @@
         extend: {
           colors: {
             "space": "#F9FBFC",
-            "neon-cyan": "#0b5f78",
-            "neon-teal": "#0d9488",
-            "deep-indigo": "#be8c78",
+            "neon-cyan": "#2A6E93",
+            "neon-teal": "#2E7A87",
+            "deep-indigo": "#438FB3",
             "on-primary-container": "#ffffff",
             "surface-container-low": "#f3f6f8",
             "outline-variant": "#d0d8e0",
             "surface-bright": "#ffffff",
             "surface-container": "#eef2f5",
             "surface-container-high": "#e6ebf0",
-            "surface-tint": "#0b5f78",
+            "surface-tint": "#2A6E93",
             "on-surface-variant": "#64748b",
             "surface": "#F9FBFC",
             "background": "#F9FBFC",
-            "secondary": "#0d9488",
-            "primary-fixed": "#d8eef5",
+            "secondary": "#2E7A87",
+            "primary-fixed": "#DCEBF1",
             "outline": "#94a3b8",
             "on-background": "#1E293B",
             "surface-container-highest": "#dde3e9",
@@ -155,8 +155,8 @@
             "surface-variant": "#e8eef2",
             "secondary-container": "#d5f5f0",
             "on-secondary-container": "#0f3d3a",
-            "primary": "#0b5f78",
-            "primary-container": "#3d8aa8",
+            "primary": "#2A6E93",
+            "primary-container": "#438FB3",
             "error": "#b42318",
             "primary-fixed-variant": "#a8d4e4"
           },
@@ -193,14 +193,14 @@
 </head>
 <body class="antialiased min-h-[100dvh] flex flex-col relative overflow-x-hidden page-enter">
 
-  <!-- Soft pastel blobs — light default (premium cream) -->
+  <!-- Soft pastel blobs، light default (premium cream) -->
   <div class="light-aurora" aria-hidden="true">
     <div class="light-blob light-blob-rose"></div>
     <div class="light-blob light-blob-teal"></div>
     <div class="light-blob light-blob-gold"></div>
   </div>
 
-  <!-- Neon gradient blobs — dark theme only -->
+  <!-- Neon gradient blobs، dark theme only -->
   <div class="aurora-bg" aria-hidden="true">
     <div class="aurora-blob aurora-blob-teal"></div>
     <div class="aurora-blob aurora-blob-indigo"></div>
@@ -488,32 +488,32 @@
   </div>
 
   <style>
-    /* Hala self-support chat panel — self-contained so it works on the dark marketing shell */
+    /* Hala self-support chat panel، self-contained so it works on the dark marketing shell */
     .hala-support-panel{position:absolute;bottom:74px;inset-inline-end:0;width:min(360px,calc(100vw - 32px));
       max-height:min(70vh,560px);display:flex;flex-direction:column;border-radius:20px;overflow:hidden;
       opacity:0;transform:translateY(12px) scale(.96);pointer-events:none;transition:opacity .28s,transform .28s;
-      background:rgba(12,17,23,.92);border:1px solid rgba(34,211,238,.22);box-shadow:0 24px 60px rgba(0,0,0,.5);backdrop-filter:blur(14px);}
+      background:rgba(12,17,23,.92);border:1px solid rgba(88, 168, 180,.22);box-shadow:0 24px 60px rgba(0,0,0,.5);backdrop-filter:blur(14px);}
     .hala-support-panel.is-open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
     .hala-support-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,.08);background:rgba(34,211,238,.06);}
+      border-bottom:1px solid rgba(255,255,255,.08);background:rgba(88, 168, 180,.06);}
     .hala-support-title{display:flex;align-items:center;gap:10px;color:#e6f6fb;}
     .hala-support-title strong{display:block;font-size:.92rem;}
-    .hala-support-status{font-size:.68rem;color:#22d3ee;}
+    .hala-support-status{font-size:.68rem;color:#58A8B4;}
     .hala-support-avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
-      background:linear-gradient(135deg,#22d3ee,#14b8a6);color:#04222a;}
+      background:linear-gradient(135deg,#58A8B4,#58A8B4);color:#04222a;}
     .hala-support-head button{background:none;border:none;color:#9fb4bd;cursor:pointer;display:grid;place-items:center;}
     .hala-support-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
     .hs-msg{max-width:82%;padding:9px 12px;border-radius:14px;font-size:.85rem;line-height:1.6;white-space:pre-wrap;}
-    .hs-msg.bot{align-self:flex-start;background:rgba(255,255,255,.07);color:#e6f6fb;border-bottom-inline-start:2px solid #22d3ee;}
-    .hs-msg.user{align-self:flex-end;background:rgba(34,211,238,.16);color:#eafcff;}
+    .hs-msg.bot{align-self:flex-start;background:rgba(255,255,255,.07);color:#e6f6fb;border-bottom-inline-start:2px solid #58A8B4;}
+    .hs-msg.user{align-self:flex-end;background:rgba(88, 168, 180,.16);color:#eafcff;}
     .hs-msg.typing{color:#9fb4bd;font-style:italic;}
     .hs-wa{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;margin-top:2px;padding:9px 14px;
       border-radius:12px;background:#25d366;color:#04241a;font-weight:700;font-size:.82rem;text-decoration:none;}
     .hala-support-input{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.08);}
     .hala-support-input input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
       border-radius:12px;padding:10px 12px;color:#eafcff;font-family:inherit;font-size:.85rem;outline:none;}
-    .hala-support-input input:focus{border-color:#22d3ee;}
-    .hala-support-input button{background:linear-gradient(135deg,#22d3ee,#14b8a6);border:none;border-radius:12px;
+    .hala-support-input input:focus{border-color:#58A8B4;}
+    .hala-support-input button{background:linear-gradient(135deg,#58A8B4,#58A8B4);border:none;border-radius:12px;
       width:42px;color:#04222a;cursor:pointer;display:grid;place-items:center;}
     @media (prefers-reduced-motion: reduce){.hala-support-panel{transition:opacity .2s;transform:none;}}
   </style>
@@ -522,7 +522,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      /* Theme: HalaTheme (theme.js) — no persist on load */
+      /* Theme: HalaTheme (theme.js)، no persist on load */
 
       /* ── Existing page logic ── */
       const tickerData = [
@@ -623,7 +623,7 @@
           }
         } catch (err) {
           typing.remove();
-          // Offline/static fallback — still funnel to WhatsApp.
+          // Offline/static fallback، still funnel to WhatsApp.
           supportAddMsg("أقدر أوصلك بفريقنا مباشرة على واتساب يساعدك خطوة بخطوة 👇", "bot");
           supportAddWhatsApp("مرحباً فريق هالة، عندي استفسار عن الخدمة");
         }
@@ -656,7 +656,7 @@
           goToScanner();
         }
       });
-      /* ── PR4: GSAP desktop PE only (lazy, gated) — durations ≤ 900ms for LCP ── */
+      /* ── PR4: GSAP desktop PE only (lazy, gated)، durations ≤ 900ms for LCP ── */
       function showHeroCssFallback() {
         document.querySelectorAll(".gsap-reveal-text, .gsap-hero-item").forEach((el) => {
           el.style.visibility = "visible";
@@ -674,7 +674,7 @@
 
         const ease = "power3.out";
 
-        // Staggered hero items — total perceived ≤ 900ms
+        // Staggered hero items، total perceived ≤ 900ms
         const heroItems = gsap.utils.toArray(".gsap-hero-item");
         gsap.set(heroItems, { opacity: 0, y: 20 });
         gsap.to(heroItems, {
@@ -686,7 +686,7 @@
           delay: 0.05
         });
 
-        // Smooth text reveal on hero title (line clip + rise) — ≤ 900ms total
+        // Smooth text reveal on hero title (line clip + rise)، ≤ 900ms total
         const title = document.querySelector(".gsap-reveal-text");
         if (title) {
           const line1 = document.createElement("span");
@@ -717,7 +717,7 @@
           });
         }
 
-        // Hero stage + image enter — ≤ 900ms
+        // Hero stage + image enter، ≤ 900ms
         const stage = document.getElementById("hero-stage");
         if (stage) {
           gsap.from(stage, {
@@ -786,7 +786,7 @@
           });
         }
 
-        // Nav enter — ≤ 900ms
+        // Nav enter، ≤ 900ms
         gsap.from(".nav-glass", {
           y: -16,
           opacity: 0,

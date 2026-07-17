@@ -17,7 +17,7 @@
   } else if (pref === "system") {
     resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   } else {
-    // key absent — do NOT localStorage.setItem
+    // key absent، do NOT localStorage.setItem
     resolved = surfaceDefault;
   }
   root.setAttribute("data-theme", resolved);
@@ -33,7 +33,7 @@
   }
   root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
   // NEVER setItem here. NEVER add theme-animating here.
-  // landing-dark: body may not exist yet — schedule mirror only
+  // landing-dark: body may not exist yet، schedule mirror only
   function syncLandingDark() {
     if (!document.body) return;
     document.body.classList.toggle(
@@ -63,14 +63,14 @@
             "on-surface-variant": "#40484d",
             "surface": "#f7f9fb",
             "background": "#f7f9fb",
-            "secondary": "#006874",
+            "secondary": "#2E7A87",
             "outline": "#70787e",
             "on-background": "#191c1e",
             "surface-container-lowest": "#ffffff",
             "on-surface": "#191c1e",
             "surface-variant": "#e0e3e5",
-            "primary": "#0b5f78",
-            "primary-container": "#2c7ca0",
+            "primary": "#2A6E93",
+            "primary-container": "#438FB3",
             "primary-fixed": "#c2e8ff",
             "error": "#ba1a1a",
             "error-container": "#ffdad6"
@@ -175,7 +175,7 @@
         </label>
       </div>
       <span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-3 py-1.5 rounded-full flex items-center gap-1">
-        <span class="material-symbols-outlined text-sm text-[#0f766e]">check_circle</span>
+        <span class="material-symbols-outlined text-sm text-[#2E7A87]">check_circle</span>
         اكتمل الفحص
       </span>
     </div>
@@ -217,21 +217,21 @@
             <div class="relative w-16 h-16">
               <svg class="w-full h-full" viewBox="0 0 64 64" aria-hidden="true">
                 <circle cx="32" cy="32" r="26" fill="none" stroke="#e8eef2" stroke-width="6"/>
-                <circle id="score-ring" class="score-ring" cx="32" cy="32" r="26" fill="none" stroke="#0b5f78" stroke-width="6"
+                <circle id="score-ring" class="score-ring" cx="32" cy="32" r="26" fill="none" stroke="#2A6E93" stroke-width="6"
                   stroke-linecap="round" stroke-dasharray="163.36" stroke-dashoffset="163.36"/>
               </svg>
-              <span id="score-value" class="absolute inset-0 flex items-center justify-center font-title-md text-title-md text-primary font-bold">—</span>
+              <span id="score-value" class="absolute inset-0 flex items-center justify-center font-title-md text-title-md text-primary font-bold">-</span>
             </div>
             <span class="font-label-sm text-label-sm text-on-surface-variant">درجة الصحة</span>
           </div>
           <div class="metric-chip rounded-xl p-4 flex flex-col items-center justify-center gap-1">
             <span class="material-symbols-outlined text-primary text-2xl">speed</span>
-            <span id="speed-value" class="font-title-md text-title-md text-on-background font-semibold" dir="ltr">—</span>
+            <span id="speed-value" class="font-title-md text-title-md text-on-background font-semibold" dir="ltr">-</span>
             <span class="font-label-sm text-label-sm text-on-surface-variant">ثانية تحميل</span>
           </div>
           <div class="metric-chip rounded-xl p-4 flex flex-col items-center justify-center gap-1 col-span-2 sm:col-span-1">
             <span class="material-symbols-outlined text-primary text-2xl">report</span>
-            <span id="issues-count" class="font-title-md text-title-md text-on-background font-semibold">—</span>
+            <span id="issues-count" class="font-title-md text-title-md text-on-background font-semibold">-</span>
             <span class="font-label-sm text-label-sm text-on-surface-variant">مشاكل مكتشفة</span>
           </div>
         </div>

@@ -17,7 +17,7 @@
   } else if (pref === "system") {
     resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   } else {
-    // key absent — do NOT localStorage.setItem
+    // key absent، do NOT localStorage.setItem
     resolved = surfaceDefault;
   }
   root.setAttribute("data-theme", resolved);
@@ -33,7 +33,7 @@
   }
   root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
   // NEVER setItem here. NEVER add theme-animating here.
-  // landing-dark: body may not exist yet — schedule mirror only
+  // landing-dark: body may not exist yet، schedule mirror only
   function syncLandingDark() {
     if (!document.body) return;
     document.body.classList.toggle(
@@ -66,10 +66,10 @@
             "on-surface-variant": "#40484d",
             "on-background": "#191c1e",
             "on-surface": "#191c1e",
-            "primary": "#0b5f78",
-            "primary-container": "#2c7ca0",
+            "primary": "#2A6E93",
+            "primary-container": "#438FB3",
             "primary-fixed": "#c2e8ff",
-            "secondary": "#006874",
+            "secondary": "#2E7A87",
             "secondary-container": "#9decf9",
             "on-secondary-container": "#066d78",
             "outline": "#70787e",
@@ -250,15 +250,15 @@
                     سننقلك إلى صفحة التفويض داخل هذه الواجهة (محاكاة). هالة تقرأ المنتجات والسيو فقط، دون الوصول للدفع أو بيانات العملاء.
                   </p>
                   <ul class="surface-trust text-right text-sm space-y-2 max-w-xs mx-auto mb-8 rounded-xl p-4" data-surface="trust">
-                    <li class="flex items-center gap-2 justify-end"><span>قراءة المنتجات والأوصاف</span><span class="material-symbols-outlined text-[#4fa8b4] text-base">check</span></li>
-                    <li class="flex items-center gap-2 justify-end"><span>تحديث الظهور والصور</span><span class="material-symbols-outlined text-[#4fa8b4] text-base">check</span></li>
-                    <li class="flex items-center gap-2 justify-end"><span>بدون الوصول للدفع أو العملاء</span><span class="material-symbols-outlined text-[#4fa8b4] text-base">check</span></li>
+                    <li class="flex items-center gap-2 justify-end"><span>قراءة المنتجات والأوصاف</span><span class="material-symbols-outlined text-[#58A8B4] text-base">check</span></li>
+                    <li class="flex items-center gap-2 justify-end"><span>تحديث الظهور والصور</span><span class="material-symbols-outlined text-[#58A8B4] text-base">check</span></li>
+                    <li class="flex items-center gap-2 justify-end"><span>بدون الوصول للدفع أو العملاء</span><span class="material-symbols-outlined text-[#58A8B4] text-base">check</span></li>
                   </ul>
                   <a
                     href="https://salla.sa/partner/apps/developer"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="dev-deep-link inline-flex items-center justify-center gap-1.5 mb-4 text-[12px] text-[#87d0f6] hover:text-white underline-offset-2 hover:underline transition-colors"
+                    class="dev-deep-link inline-flex items-center justify-center gap-1.5 mb-4 text-[12px] text-[#8FC1DC] hover:text-white underline-offset-2 hover:underline transition-colors"
                     id="salla-dev-deep-link"
                   >
                     <span class="material-symbols-outlined text-[16px]" aria-hidden="true">open_in_new</span>
@@ -280,15 +280,15 @@
                   </div>
                 </div>
 
-                <!-- مرحلة الموافقة داخل المنصة (trust surface — OAuth confirm) -->
+                <!-- مرحلة الموافقة داخل المنصة (trust surface، OAuth confirm) -->
                 <div class="redirect-phase surface-trust rounded-2xl p-4" id="phase-consent" data-surface="trust">
                   <div class="w-14 h-14 mx-auto mb-3 rounded-xl bg-gradient-to-br from-[#004D40] to-[#00796B] flex items-center justify-center text-white font-bold">سلة</div>
                   <p class="text-xs text-on-surface-variant mb-1">salla.sa/oauth/authorize</p>
                   <h2 class="text-lg font-bold mb-4 text-on-surface">هالة تطلب الوصول إلى متجرك</h2>
                   <div class="surface-trust bg-surface rounded-xl p-4 text-right text-sm space-y-2 max-w-sm mx-auto mb-6 border border-outline-variant/30" data-surface="trust">
-                    <p class="flex items-center gap-2 justify-end"><span>المنتجات والمخزون (قراءة وكتابة)</span><span class="material-symbols-outlined text-base text-[#4fa8b4]">inventory_2</span></p>
-                    <p class="flex items-center gap-2 justify-end"><span>الوسائط والصور</span><span class="material-symbols-outlined text-base text-[#4fa8b4]">image</span></p>
-                    <p class="flex items-center gap-2 justify-end"><span>إعدادات الظهور</span><span class="material-symbols-outlined text-base text-[#4fa8b4]">search</span></p>
+                    <p class="flex items-center gap-2 justify-end"><span>المنتجات والمخزون (قراءة وكتابة)</span><span class="material-symbols-outlined text-base text-[#58A8B4]">inventory_2</span></p>
+                    <p class="flex items-center gap-2 justify-end"><span>الوسائط والصور</span><span class="material-symbols-outlined text-base text-[#58A8B4]">image</span></p>
+                    <p class="flex items-center gap-2 justify-end"><span>إعدادات الظهور</span><span class="material-symbols-outlined text-base text-[#58A8B4]">search</span></p>
                   </div>
                   <div class="flex flex-col sm:flex-row gap-2 justify-center">
                     <button type="button" id="btn-approve-redirect" class="btn-primary-gradient font-title-md text-title-md px-8 py-3 rounded-xl">
@@ -416,7 +416,7 @@
                 <a href="https://docs.zid.sa/authorization" target="_blank" rel="noopener noreferrer" class="text-primary underline underline-offset-2">وثائق زد للمطوّرين</a>
                 أو
                 <a href="https://partner.zid.sa/" target="_blank" rel="noopener noreferrer" class="text-primary underline underline-offset-2">partner.zid.sa</a>
-                — أنشئ تطبيقاً وانسخ مفتاح الواجهة.
+               ، أنشئ تطبيقاً وانسخ مفتاح الواجهة.
               </p>
               <p id="zid-key-hint" class="sr-only">يُخفى المفتاح أثناء الكتابة ولا يُرسل في عنوان الصفحة</p>
               <button type="submit" id="btn-zid-connect" class="w-full btn-primary-gradient font-title-md text-title-md py-4 rounded-xl flex items-center justify-center gap-2">
@@ -624,9 +624,9 @@
                 class="w-full rounded-xl border border-outline-variant/50 bg-surface px-4 py-3 font-body-md text-body-md focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all appearance-none"
                 aria-describedby="copywriting-tone-hint"
               >
-                <option value="saudi_white">سعودي أبيض — طبيعي ودافئ (saudi_white)</option>
-                <option value="modern_standard">فصحى عصرية — احترافية واضحة (modern_standard)</option>
-                <option value="direct_technical">مباشر تقني — دقيق ومختصر (direct_technical)</option>
+                <option value="saudi_white">سعودي أبيض، طبيعي ودافئ (saudi_white)</option>
+                <option value="modern_standard">فصحى عصرية، احترافية واضحة (modern_standard)</option>
+                <option value="direct_technical">مباشر تقني، دقيق ومختصر (direct_technical)</option>
               </select>
               <p id="copywriting-tone-hint" class="font-label-sm text-label-sm text-on-surface-variant mt-1.5">تُستخدم في كل أوصاف المنتجات المُولَّدة بالذكاء الاصطناعي</p>
             </div>
@@ -777,7 +777,7 @@
         return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
       }
 
-      /** Opaque connect session only — never persist raw secrets. */
+      /** Opaque connect session only، never persist raw secrets. */
       function establishSecureConnectSession(platform, method) {
         clearLegacyCredentialStorage();
         const sessionId = createSessionId();
@@ -834,7 +834,7 @@
       }
 
       function safeNav(path) {
-        // Absolute path relative to current dir only — never inject secrets into query.
+        // Absolute path relative to current dir only، never inject secrets into query.
         const clean = String(path || "").split("#")[0].split("?")[0];
         if (!/^[a-zA-Z0-9_\-./]+\.html$/.test(clean) && clean !== "dashboard.html") {
           window.location.href = "dashboard.html";
@@ -899,7 +899,7 @@
         });
       });
 
-      /* Theme: HalaTheme (theme.js) — no persist on load */
+      /* Theme: HalaTheme (theme.js)، no persist on load */
 
       const platformNames = { salla: "سلة", zid: "زد", trendyol: "ترينديول" };
       const dialectLabels = { najdi: "نجدي", hijazi: "حجازي", fusha: "فصحى خفيفة" };
@@ -958,7 +958,7 @@
       function resetRedirectPhases() {
         redirectBusy = false;
         setRedirectPhase("phase-idle");
-        // Display-only host path — never include tokens/codes/secrets in mock URL bar.
+        // Display-only host path، never include tokens/codes/secrets in mock URL bar.
         document.getElementById("redirect-url").textContent = "hala.app/connect";
         document.getElementById("redirect-progress").style.width = "0%";
       }
@@ -1007,7 +1007,7 @@
         wipeCredentialInputs(["zid-api-key", "ty-seller-id", "ty-api-key", "ty-api-secret"]);
         document.body.classList.add("page-transition-out");
         setTimeout(() => {
-          // Safe flag only — never credentials on redirect query.
+          // Safe flag only، never credentials on redirect query.
           safeNavWithSafeQuery("dashboard.html", { sandbox: "1" });
         }, 280);
       }
@@ -1019,7 +1019,7 @@
         if (btn) btn.addEventListener("click", enterSandboxMode);
       });
 
-      // Real Salla install flow — active when SALLA_APP_ID is configured on the
+      // Real Salla install flow، active when SALLA_APP_ID is configured on the
       // backend (/api/store/config). Opens the official install URL and polls
       // /api/store/status until the app.store.authorize webhook lands.
       let sallaInstallUrl = null;
@@ -1058,12 +1058,12 @@
           setRedirectPhase("phase-success");
           setTimeout(() => goToStep(2), 1100);
         } else {
-          document.getElementById("redirect-status").textContent = "ما وصلنا تأكيد الربط — أعد المحاولة أو تأكد من تثبيت التطبيق.";
+          document.getElementById("redirect-status").textContent = "ما وصلنا تأكيد الربط، أعد المحاولة أو تأكد من تثبيت التطبيق.";
           redirectBusy = false;
         }
       }
 
-      // Demo theater fallback — UI-only; no secrets in URL bar or history.
+      // Demo theater fallback، UI-only; no secrets in URL bar or history.
       document.getElementById("btn-start-redirect").addEventListener("click", () => {
         if (redirectBusy) return;
         redirectBusy = true;
@@ -1112,7 +1112,7 @@
         }, 900);
       });
 
-      // Zid / Trendyol API connect — validate in-memory only; never persist raw secrets.
+      // Zid / Trendyol API connect، validate in-memory only; never persist raw secrets.
       function connectZid() {
         const keyEl = document.getElementById("zid-api-key");
         const key = keyEl.value.trim();
@@ -1164,7 +1164,7 @@
           }
           storeId = data.storeId;
         } catch (err) {
-          // Backend unreachable (static demo) — keep the old presence-only path.
+          // Backend unreachable (static demo)، keep the old presence-only path.
           console.warn("trendyol connect API offline, demo fallback:", err);
         }
         if (storeId) { try { localStorage.setItem("hala_store_id", storeId); } catch (e) {} }
@@ -1281,10 +1281,10 @@
               card.classList.remove("scanning");
               card.classList.add("done");
               card.querySelector(".product-status").textContent = "تم التحسين";
-              card.querySelector(".product-status").classList.add("text-[#0f766e]");
+              card.querySelector(".product-status").classList.add("text-[#2E7A87]");
               icon.textContent = "check_circle";
               icon.classList.remove("animate-spin");
-              icon.classList.add("text-[#0f766e]");
+              icon.classList.add("text-[#2E7A87]");
               icon.style.fontVariationSettings = "'FILL' 1";
 
               if (i === cards.length - 1) {
@@ -1297,7 +1297,7 @@
       }
 
       document.getElementById("btn-finish").addEventListener("click", () => {
-        // Live connect path: leave sandbox mode — credentials never on redirect URL.
+        // Live connect path: leave sandbox mode، credentials never on redirect URL.
         sessionStorage.removeItem("hala_sandbox");
         clearLegacyCredentialStorage();
         document.body.classList.add("page-transition-out");

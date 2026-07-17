@@ -17,7 +17,7 @@
   } else if (pref === "system") {
     resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   } else {
-    // key absent — do NOT localStorage.setItem
+    // key absent، do NOT localStorage.setItem
     resolved = surfaceDefault;
   }
   root.setAttribute("data-theme", resolved);
@@ -33,7 +33,7 @@
   }
   root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
   // NEVER setItem here. NEVER add theme-animating here.
-  // landing-dark: body may not exist yet — schedule mirror only
+  // landing-dark: body may not exist yet، schedule mirror only
   function syncLandingDark() {
     if (!document.body) return;
     document.body.classList.toggle(
@@ -66,10 +66,10 @@
             "on-surface-variant": "#40484d",
             "on-background": "#191c1e",
             "on-surface": "#191c1e",
-            "primary": "#0b5f78",
-            "primary-container": "#2c7ca0",
+            "primary": "#2A6E93",
+            "primary-container": "#438FB3",
             "primary-fixed": "#c2e8ff",
-            "secondary": "#006874",
+            "secondary": "#2E7A87",
             "secondary-container": "#9decf9",
             "outline": "#70787e",
             "error": "#ba1a1a",
@@ -141,7 +141,7 @@
 
       <div class="z-10 inline-flex items-center gap-2 bg-primary-fixed/40 text-primary px-4 py-2 rounded-full font-label-sm text-label-sm max-w-full">
         <span class="material-symbols-outlined text-base">storefront</span>
-        <span id="store-label" class="truncate" dir="ltr">—</span>
+        <span id="store-label" class="truncate" dir="ltr">-</span>
       </div>
 
       <div class="text-center z-10">
@@ -153,8 +153,8 @@
         <svg class="w-full h-full" viewBox="0 0 120 120" aria-hidden="true">
           <defs>
             <linearGradient id="scannerGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stop-color="#0b5f78"/>
-              <stop offset="100%" stop-color="#4fa8b4"/>
+              <stop offset="0%" stop-color="#2A6E93"/>
+              <stop offset="100%" stop-color="#58A8B4"/>
             </linearGradient>
           </defs>
           <circle class="scanner-ring-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8"/>
@@ -176,7 +176,7 @@
 
       <div class="w-full z-10">
         <div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden">
-          <div id="progress-bar" class="progress-bar-fill h-full rounded-full bg-gradient-to-l from-[#0b5f78] to-[#4fa8b4] transition-all duration-300 ease-out" data-allow-motion="progress" style="width: 0%"></div>
+          <div id="progress-bar" class="progress-bar-fill h-full rounded-full bg-gradient-to-l from-[#2A6E93] to-[#58A8B4] transition-all duration-300 ease-out" data-allow-motion="progress" style="width: 0%"></div>
         </div>
       </div>
 
@@ -271,14 +271,14 @@
             log.classList.remove("active");
             icon.textContent = "check_circle";
             icon.style.fontVariationSettings = "'FILL' 1";
-            icon.classList.add("text-[#0f766e]");
+            icon.classList.add("text-[#2E7A87]");
             icon.classList.remove("animate-spin");
           } else if (progress >= thresholds[i] - 5 || (i === 0 && progress > 0)) {
             log.classList.add("visible", "active");
             log.classList.remove("done");
             icon.textContent = "progress_activity";
             icon.classList.add("animate-spin");
-            icon.classList.remove("text-[#0f766e]");
+            icon.classList.remove("text-[#2E7A87]");
             icon.style.fontVariationSettings = "";
           }
         });
@@ -379,7 +379,7 @@
             icon: "title",
             title: `طول العنوان: ${titleLength} حرفاً`,
             subtitle: titleLength < 30
-              ? "العنوان قصير جداً (المستهدف 30–60 حرفاً)"
+              ? "العنوان قصير جداً (المستهدف 30-60 حرفاً)"
               : "العنوان طويل وقد يُقطع في نتائج البحث",
             badge: "تحسين"
           });
@@ -411,7 +411,7 @@
             severity: "warning",
             icon: "description",
             title: `طول الوصف: ${metaLength} حرفاً`,
-            subtitle: "الطول المثالي 70–160 حرفاً لظهور كامل في Google",
+            subtitle: "الطول المثالي 70-160 حرفاً لظهور كامل في Google",
             badge: "تحسين"
           });
         }
@@ -426,7 +426,7 @@
             severity: "critical",
             icon: "text_fields",
             title: "لا يوجد عنوان H1",
-            subtitle: "العنوان الرئيسي غائب — يضعف فهم المحتوى",
+            subtitle: "العنوان الرئيسي غائب، يضعف فهم المحتوى",
             badge: "حرج"
           });
         } else if (h1Count > 1) {
@@ -598,7 +598,7 @@
         const longWords = words.filter((w) => w.replace(/[^\p{L}\p{N}]/gu, "").length >= 8).length;
         const longWordRatio = wordCount ? longWords / wordCount : 0;
 
-        // Simple 0–100 readability (higher = easier)
+        // Simple 0-100 readability (higher = easier)
         let readabilityScore = 100;
         if (avgSentenceLength > 14) readabilityScore -= Math.min(35, (avgSentenceLength - 14) * 2.2);
         if (avgSentenceLength > 22) readabilityScore -= 10;
@@ -638,7 +638,7 @@
             severity: readabilityScore < 40 ? "critical" : "warning",
             icon: "menu_book",
             title: `مقروئية المحتوى: ${readabilityScore} من 100`,
-            subtitle: `متوسط الكلمات/جملة ≈ ${avgSentenceLength.toFixed(1)} — يفضّل تبسيط النصوص`,
+            subtitle: `متوسط الكلمات/جملة ≈ ${avgSentenceLength.toFixed(1)}، يفضّل تبسيط النصوص`,
             badge: "محتوى"
           });
         } else if (wordCount < 100) {
@@ -648,7 +648,7 @@
             severity: "warning",
             icon: "article",
             title: "محتوى نصي ضعيف",
-            subtitle: `حوالي ${wordCount} كلمة فقط — المحتوى الرقيق يضعف الترتيب`,
+            subtitle: `حوالي ${wordCount} كلمة فقط، المحتوى الرقيق يضعف الترتيب`,
             badge: "محتوى"
           });
         }
@@ -742,7 +742,7 @@
             speedSeverity === "ok"
               ? "أداء جيد مقارنة بالمتاجر المنافسة"
               : speedSeconds > 4
-                ? "أبطأ من معظم المتاجر — يؤثر على التحويل"
+                ? "أبطأ من معظم المتاجر، يؤثر على التحويل"
                 : "أبطأ من المستهدف (أقل من ٢٫٥ ث)",
           badge: speedSeverity === "ok" ? "جيد" : "المستهدف < ٢٫٥ ث"
         });
@@ -791,7 +791,7 @@
           log.classList.remove("visible", "done", "active");
           const icon = log.querySelector(".log-icon");
           icon.textContent = "radio_button_unchecked";
-          icon.classList.remove("text-[#0f766e]", "animate-spin");
+          icon.classList.remove("text-[#2E7A87]", "animate-spin");
           icon.style.fontVariationSettings = "";
         });
 
