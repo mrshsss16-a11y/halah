@@ -210,14 +210,14 @@
 
   <div class="announcement-neon" id="announcement-bar" role="button" tabindex="0">
     <span class="announcement-pulse"></span>
-    متجرك يخسر زوار كل يوم. اكتشف الرقم مجاناً خلال ٣٠ ثانية
+    افحص متجرك مجاناً خلال ٣٠ ثانية واكتشف أخطاء الظهور
     <span class="material-symbols-outlined text-sm">arrow_back</span>
   </div>
 
   <header class="nav-shell">
     <nav class="nav-glass" aria-label="القائمة الرئيسية">
       <a href="index.html" class="nav-brand">
-        <img alt="شعار هالة" class="nav-logo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAptF2Pl_8QbKJPZ4kVXlK03liL36VNpUtUSClpYxoT1KI6nFfBn9VVXOcD7P5JZJBZL_WlmurgRAi1XDNL9XRAx4urjY0OR7tm0Jk3uzbRje_wuw7onj-ROpBeWDX80W-pw-zDigjaSQhpBOyKIkkpF9WymT4C_m5TgmaSiUcD_8J5lCr_lYgoy7yMUHYbwlnXpWAb20wSSMJXG753JFmvB4MBfOu1p6ZqSrGZprEjrTsCONggXAkCjSJMP-68n9z9IP-_dggcWi0"/>
+        <span class="material-symbols-outlined nav-logo-icon" style="font-variation-settings:'FILL' 1;" aria-hidden="true">auto_awesome</span>
         <span class="brand-ar nav-brand-text">هالة</span>
       </a>
       <div class="nav-links">
@@ -263,11 +263,8 @@
         </h1>
 
         <p class="hero-sub gsap-hero-item">
-          متجرك يخسر
-          <span class="hero-loss-num counter-wrapper">
-            <span class="counter-inner" id="hero-counter"><span>0</span></span>
-          </span>
-          زيارة يومياً من أخطاء الظهور. هالة تكتشفها وتصلحها تلقائياً.
+          متجرك يفقد <span class="hero-loss-num">زيارات ومبيعات</span> كل يوم من أخطاء ظهور ما تشوفها.
+          هالة تكتشفها وتصلحها تلقائياً.
         </p>
 
         <form id="scan-form" class="scanner-card neon-pulse-border gsap-hero-item">
@@ -322,10 +319,10 @@
           </div>
           <div class="float-card-body">
             <p class="float-card-label">استعادة واتساب</p>
-            <p class="float-card-title">عميل عاد بعد ١٢ ساعة</p>
-            <p class="float-card-meta">تم إرسال رسالة استعادة تلقائية · +١٤٩ ر.س</p>
+            <p class="float-card-title">سلة متروكة رجعت تشتري</p>
+            <p class="float-card-meta">رسالة استعادة أُرسلت تلقائياً بلهجة متجرك</p>
           </div>
-          <span class="float-card-status">مباشر</span>
+          <span class="float-card-status">تلقائي</span>
         </article>
 
         <article class="float-card float-card-dialect parallax-card" style="--i: 1" data-depth="0.055">
@@ -352,8 +349,8 @@
             <span class="material-symbols-outlined">trending_up</span>
           </div>
           <div class="float-card-body">
-            <p class="float-card-label">رفع المبيعات لحظياً</p>
-            <p class="float-card-stat">+٢٧.٤٪</p>
+            <p class="float-card-label">تقرير الفحص</p>
+            <p class="float-card-stat">فرص تحسين مكتشفة</p>
             <div class="mini-bars" aria-hidden="true">
               <span style="--h: 40%"></span>
               <span style="--h: 55%"></span>
@@ -367,8 +364,8 @@
       </div>
     </section>
 
-    <!-- Social proof ticker -->
-    <section class="ticker-section" aria-label="إثبات اجتماعي">
+    <!-- Capability strip (honest — describes real features, no invented metrics) -->
+    <section class="ticker-section" aria-label="قدرات هالة">
       <div class="ticker-fade ticker-fade-start"></div>
       <div class="ticker-fade ticker-fade-end"></div>
       <div class="marquee-track ticker-track" id="social-proof-ticker"></div>
@@ -380,38 +377,52 @@
         <h2 class="section-title">حلول ذكية لنمو متجرك</h2>
         <p class="section-sub">نحلل بيانات متجرك ونقدّم توصيات قابلة للتنفيذ فوراً، دون تعقيد تقني.</p>
       </div>
-      <div class="features-grid motion-stagger">
-        <article class="feature-card" style="--i: 0">
-          <div class="feature-icon">
-            <span class="material-symbols-outlined">search_insights</span>
-          </div>
-          <h3>تحسين الظهور</h3>
-          <p>تحليل شامل للكلمات المفتاحية وأداء الصفحات لاكتشاف فرص الظهور في محركات البحث.</p>
-          <span class="feature-chip">مدعوم بالذكاء الاصطناعي</span>
-        </article>
-        <article class="feature-card feature-card-accent" style="--i: 1">
+      <!-- Bento: 5 cells (2fr+1fr / 1fr+1fr+1fr)، flagship large + image cell for background diversity -->
+      <div class="features-bento motion-stagger">
+        <article class="feature-card feature-card-accent bento-flagship" style="--i: 0">
           <div class="feature-icon">
             <span class="material-symbols-outlined">edit_note</span>
           </div>
-          <h3>أوصاف المنتجات</h3>
-          <p>إنشاء أوصاف بيعية جذابة بلهجة سعودية متوافقة مع محركات البحث لرفع معدلات التحويل.</p>
-          <span class="feature-chip">مدعوم بالذكاء الاصطناعي</span>
+          <h3>أوصاف منتجات بلهجة سعودية</h3>
+          <p>مساعدة تسويقية تكتب وصف يبيع: لهجة بيضاء طبيعية، كلمات مفتاحية تظهر بالبحث، ونسخة واتساب جاهزة. كل وصف يمر بمراجعة ذاتية قبل ما يوصلك.</p>
+          <div class="dialect-compare">
+            <div class="dialect-row before">
+              <span class="dialect-tag">قبل</span>
+              <span>المنتج متوفر حالياً بجودة عالية</span>
+            </div>
+            <div class="dialect-row after">
+              <span class="dialect-tag">بعد</span>
+              <span>عود كمبودي أصلي، ريحته تثبت وتدوم. جاهز عندك الحين</span>
+            </div>
+          </div>
+        </article>
+        <article class="feature-card bento-image-cell" style="--i: 1">
+          <img src="coffee_preset.png" alt="صورة منتج معالجة باستوديو هالة" loading="lazy"/>
+          <div class="bento-image-overlay">
+            <h3>استوديو الصور</h3>
+            <p>خلفيات احترافية بستايل متجرك، ومنتجك يبقى كما هو.</p>
+          </div>
         </article>
         <article class="feature-card" style="--i: 2">
           <div class="feature-icon">
-            <span class="material-symbols-outlined">image_search</span>
+            <span class="material-symbols-outlined">chat</span>
           </div>
-          <h3>معالجة الصور</h3>
-          <p>تحسين أسماء وأحجام الصور تلقائياً لتسريع التحميل وظهورها في بحث الصور.</p>
-          <span class="feature-chip">مدعوم بالذكاء الاصطناعي</span>
+          <h3>رد تلقائي على عملائك</h3>
+          <p>مساعد يرد بلهجة متجرك ويسترد السلات المتروكة عبر واتساب.</p>
         </article>
         <article class="feature-card" style="--i: 3">
           <div class="feature-icon">
+            <span class="material-symbols-outlined">search_insights</span>
+          </div>
+          <h3>فحص الظهور</h3>
+          <p>تحليل الكلمات المفتاحية وأداء الصفحات لاكتشاف فرص ظهور متجرك.</p>
+        </article>
+        <article class="feature-card" style="--i: 4">
+          <div class="feature-icon">
             <span class="material-symbols-outlined">sync_alt</span>
           </div>
-          <h3>ربط ومزامنة ترينديول</h3>
-          <p>نشر المنتجات تلقائياً ومزامنة الأسعار والمخزون بين سلة، زد، وترينديول لفتح أسواق جديدة.</p>
-          <span class="feature-chip">تكامل عالمي نشط</span>
+          <h3>ربط سلة وترينديول</h3>
+          <p>مزامنة المنتجات والأسعار والمخزون بين منصاتك تلقائياً.</p>
         </article>
       </div>
     </section>
@@ -419,28 +430,31 @@
     <!-- Trial / trust -->
     <section id="trial" class="trial-section motion-enter">
       <div class="trial-panel neon-pulse-border-soft">
-        <h2 class="trial-heading">يثق بنا أصحاب المتاجر في السعودية</h2>
+        <h2 class="trial-heading">يشتغل مع منصتك من أول يوم</h2>
         <div class="platform-logos">
           <span>سلة</span>
           <span>زد</span>
           <span>ترينديول</span>
-          <span>مكاني</span>
         </div>
         <div class="trial-stats">
           <div class="trial-stat">
-            <p class="trial-stat-num">+٢٤٠</p>
-            <p class="trial-stat-label">متجر نشط</p>
+            <p class="trial-stat-num">٢٠٠</p>
+            <p class="trial-stat-label">وصف منتج بالتجربة</p>
           </div>
           <div class="trial-stat">
-            <p class="trial-stat-num teal">٨٧٪</p>
-            <p class="trial-stat-label">رفعوا مبيعاتهم</p>
+            <p class="trial-stat-num teal">٤٠٠</p>
+            <p class="trial-stat-label">صورة استوديو</p>
+          </div>
+          <div class="trial-stat">
+            <p class="trial-stat-num">٥٠</p>
+            <p class="trial-stat-label">رسالة واتساب</p>
           </div>
         </div>
         <a href="onboarding.html" class="btn-scan-now btn-trial-lg">
-          فعّل تجربتك المجانية الآن
+          ابدأ التجربة المجانية
           <span class="material-symbols-outlined">rocket_launch</span>
         </a>
-        <p class="trial-fine">٣٠ يوماً تجريبية · ٢٠٠ وصف منتج · ٤٠٠ صورة استوديو · ٥٠ رسالة واتساب · بدون بطاقة ائتمان</p>
+        <p class="trial-fine">٣٠ يوماً كاملة، بدون بطاقة ائتمان</p>
       </div>
     </section>
   </main>
@@ -448,10 +462,9 @@
   <footer class="landing-footer">
     <div class="brand-ar footer-brand">هالة</div>
     <div class="footer-links">
-      <a href="#">شروط الخدمة</a>
-      <a href="#">سياسة الخصوصية</a>
-      <a href="#">رؤية السعودية ٢٠٣٠</a>
-      <a href="#">تواصل معنا</a>
+      <a href="privacy.html">سياسة الخصوصية</a>
+      <a href="#features">المزايا</a>
+      <a href="#" id="footer-contact">تواصل معنا</a>
     </div>
     <div class="footer-copy">© ٢٠٢٦ هالة. جميع الحقوق محفوظة. ذكاء اصطناعي سعودي للتجارة.</div>
   </footer>
@@ -482,7 +495,7 @@
       </form>
     </div>
     <button type="button" class="ai-fab floating-widget-glow" id="ai-agent-btn" aria-label="فتح مساعد هالة">
-      <img alt="مساعد هالة" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAptF2Pl_8QbKJPZ4kVXlK03liL36VNpUtUSClpYxoT1KI6nFfBn9VVXOcD7P5JZJBZL_WlmurgRAi1XDNL9XRAx4urjY0OR7tm0Jk3uzbRje_wuw7onj-ROpBeWDX80W-pw-zDigjaSQhpBOyKIkkpF9WymT4C_m5TgmaSiUcD_8J5lCr_lYgoy7yMUHYbwlnXpWAb20wSSMJXG753JFmvB4MBfOu1p6ZqSrGZprEjrTsCONggXAkCjSJMP-68n9z9IP-_dggcWi0"/>
+      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;font-size:26px;" aria-hidden="true">support_agent</span>
       <span class="ai-fab-dot"></span>
     </button>
   </div>
@@ -525,34 +538,21 @@
       /* Theme: HalaTheme (theme.js)، no persist on load */
 
       /* ── Existing page logic ── */
+      // Capability strip — what Hala actually does today, no fabricated
+      // social-proof numbers (project honesty rule, same as /api/stats).
       const tickerData = [
-        "منذ ٤ دقائق · متجر من الرياض وفّر ٣١٢ زيارة أسبوعياً",
-        "منذ ١٢ دقيقة · متجر عطور حقق زيادة ١٥٪ في التحويل",
-        "منذ ٢٥ دقيقة · تم تحليل ٤٥٠ منتجاً لمتجر ملابس",
-        "منذ ساعة · متجر من جدة تصدّر نتائج البحث لكلمة قهوة مختصة"
+        "وصف منتج بلهجة سعودية جاهز خلال ثوانٍ",
+        "صور منتجات باستوديو ذكاء اصطناعي يحافظ على منتجك",
+        "رد تلقائي على عملائك بلهجة متجرك",
+        "استعادة السلات المتروكة برسائل واتساب",
+        "ربط مباشر مع سلة وترينديول",
+        "فحص مجاني يكشف أخطاء ظهور متجرك"
       ];
       const tickerEl = document.getElementById("social-proof-ticker");
       const fullTickerData = [...tickerData, ...tickerData, ...tickerData];
       tickerEl.innerHTML = fullTickerData
         .map((msg) => `<span class="ticker-item">${msg}</span>`)
         .join("");
-
-      const counterData = [124, 287, 53, 412];
-      const counterInner = document.getElementById("hero-counter");
-      let counterHTML = "";
-      counterData.forEach((num) => { counterHTML += `<span>${num}</span>`; });
-      counterHTML += `<span>1,248</span>`;
-      counterInner.innerHTML = counterHTML;
-      let currentIndex = 0;
-      const totalItems = counterData.length + 1;
-      if (!reduceMotion) {
-        setTimeout(() => {
-          setInterval(() => {
-            currentIndex = (currentIndex + 1) % totalItems;
-            counterInner.style.transform = `translateY(${-(currentIndex * 1.2)}em)`;
-          }, 2000);
-        }, 1000);
-      }
 
       /* ── Hala self-support chat (real AI → funnels to WhatsApp) ── */
       // Hala's own WhatsApp number for the support funnel. Set to the real
@@ -601,6 +601,8 @@
         supportPanel.classList.contains("is-open") ? closeSupport() : openSupport();
       });
       document.getElementById("hala-support-close").addEventListener("click", closeSupport);
+      const footerContact = document.getElementById("footer-contact");
+      if (footerContact) footerContact.addEventListener("click", (e) => { e.preventDefault(); openSupport(); });
 
       async function supportSend(text) {
         supportAddMsg(text, "user");

@@ -2378,7 +2378,9 @@ body.landing-dark .section-sub {
   margin: 0;
 }
 
-body.landing-dark .features-grid {
+/* Features bento — 5 cells: flagship (2x) + image cell on row 1, three equal on row 2.
+   Mobile: strict single column (skill mobile-override rule). */
+.features-bento {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.15rem;
@@ -2386,17 +2388,67 @@ body.landing-dark .features-grid {
 }
 
 @media (min-width: 768px) {
-  body.landing-dark .features-grid {
+  .features-bento {
     grid-template-columns: repeat(2, 1fr);
     gap: 1.25rem;
   }
 }
 
 @media (min-width: 1024px) {
-  body.landing-dark .features-grid {
-    grid-template-columns: repeat(4, 1fr);
+  .features-bento {
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.25rem;
   }
+  .features-bento .bento-flagship {
+    grid-column: span 2;
+  }
+}
+
+.bento-flagship .dialect-compare {
+  margin-top: 1rem;
+  max-width: 520px;
+}
+
+.bento-image-cell {
+  position: relative;
+  overflow: hidden;
+  padding: 0 !important;
+  min-height: 240px;
+  display: flex;
+  align-items: flex-end;
+}
+
+.bento-image-cell img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.bento-image-overlay {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(0deg, rgba(10, 18, 24, 0.88) 0%, rgba(10, 18, 24, 0.45) 65%, transparent 100%);
+  color: #f1f5f9;
+}
+
+.bento-image-overlay h3 {
+  color: #f1f5f9 !important;
+  margin-bottom: 0.25rem;
+}
+
+.bento-image-overlay p {
+  color: rgba(241, 245, 249, 0.85) !important;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.nav-logo-icon {
+  font-size: 26px;
+  color: var(--brand-teal);
 }
 
 body.landing-dark .feature-card {
