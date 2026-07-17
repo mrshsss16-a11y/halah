@@ -816,7 +816,7 @@
       <button class="btn-primary" id="generate-copy-btn" onclick="generateCopy()">
         <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">auto_awesome</span>
         توليد الوصف بالذكاء الاصطناعي
-        <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 2 رصيد</span>
+        <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 1 رصيد</span>
       </button>
     </div>
 
@@ -1534,7 +1534,7 @@ async function generateCopy() {
       showToast('⛔ ' + data.error, 'info');
       renderCredits(0, 50);
       btn.disabled = false;
-      btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">auto_awesome</span> توليد جديد <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 2 رصيد</span>';
+      btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">auto_awesome</span> توليد جديد <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 1 رصيد</span>';
       return;
     }
     if (res.ok && data.result) {
@@ -1618,7 +1618,7 @@ async function generateCopy() {
   });
 
   btn.disabled = false;
-  btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">auto_awesome</span> توليد جديد <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 2 رصيد</span>';
+  btn.innerHTML = '<span class="material-symbols-outlined" style="font-variation-settings:\'FILL\' 1">auto_awesome</span> توليد جديد <span style="font-size:0.75rem;opacity:0.8;margin-right:auto;">يستهلك 1 رصيد</span>';
 
   // Update stats
   const statEl = document.getElementById('stat-total');

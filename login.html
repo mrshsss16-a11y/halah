@@ -78,9 +78,11 @@
     }
     .auth-tab {
       flex: 1; padding: 10px; border-radius: 9px; font-size: 13.5px; font-weight: 700;
-      text-align: center; cursor: pointer; transition: all 0.2s ease; color: var(--on-surface-variant, #40484d);
+      text-align: center; cursor: pointer; transition: all 0.2s ease; color: var(--muted, #64748b);
     }
-    .auth-tab.active { background: #fff; color: var(--primary, #2A6E93); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    /* Active tab bg is always white — text must be a FIXED dark hex, not a
+       theme var (dark mode resolves --primary to a light tint = unreadable). */
+    .auth-tab.active { background: #fff; color: #19647E; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 
     .auth-panel { display: none; }
     .auth-panel.active { display: flex; }
