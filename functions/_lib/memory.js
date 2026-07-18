@@ -63,3 +63,14 @@ export async function reembedHalaFaq(env, faqRows) {
   }
   return count;
 }
+
+/**
+ * Removes the Vectorize embedding for a single deleted hala_faq row so
+ * recallSimilar() stops surfacing an answer that no longer exists in D1.
+ * Must be called whenever a row is deleted, since reembedHalaFaq only
+ * upserts current rows and never prunes stale ones.
+ */
+export async function deleteHalaFaqEmbedding(env, id) {
+  if (!env.VECTORIZE_INDEX) return;
+  await env.VECTORIZE_INDEX.deleteByIds([`hala_faq_${id}`]);
+}

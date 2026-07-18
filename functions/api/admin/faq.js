@@ -3,7 +3,7 @@
 import { withApi } from "../../_lib/respond.js";
 import { requireAdmin } from "../../_lib/session.js";
 import { listHalaFaq, saveHalaFaqEntry, deleteHalaFaqEntry } from "../../_lib/db.js";
-import { reembedHalaFaq } from "../../_lib/memory.js";
+import { reembedHalaFaq, deleteHalaFaqEmbedding } from "../../_lib/memory.js";
 
 async function faqHandler(body, env, request) {
   const admin = await requireAdmin(request, env);
@@ -23,6 +23,7 @@ async function faqHandler(body, env, request) {
   if (action === "delete") {
     if (!body.id) return { ok: false, error: "id مفقود." };
     await deleteHalaFaqEntry(env, body.id);
+    await deleteHalaFaqEmbedding(env, body.id);
     return { ok: true };
   }
   if (action === "reembed") {
