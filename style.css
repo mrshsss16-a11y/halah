@@ -1358,7 +1358,7 @@ html[data-theme="dark"] body.landing-dark {
   --ld-badge-shadow: 0 0 20px rgba(88, 168, 180, 0.08);
 
   --ld-title-shadow: 0 0 40px rgba(88, 168, 180, 0.15);
-  --ld-title-glow: linear-gradient(105deg, #58A8B4 0%, #7FC4CE 35%, #a78bfa 70%, #58A8B4 100%);
+  --ld-title-glow: linear-gradient(105deg, #58A8B4 0%, #7FC4CE 35%, #438FB3 70%, #58A8B4 100%);
   --ld-title-glow-filter: drop-shadow(0 0 28px rgba(88, 168, 180, 0.45));
 
   --ld-scanner-bg:
@@ -2930,12 +2930,18 @@ html[data-theme="dark"] body.landing-dark::-webkit-scrollbar-thumb {
    ============================================================ */
 
 .hala-prefs {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 0.55rem;
   flex-wrap: wrap;
   flex-shrink: 0;
   font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+}
+
+@media (min-width: 768px) {
+  .hala-prefs {
+    display: inline-flex;
+  }
 }
 
 .hala-prefs--compact {
