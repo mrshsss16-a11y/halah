@@ -64,6 +64,7 @@ npx wrangler d1 migrations apply halah-tr-db --remote   # تطبيق مخطط ج
 | `WHATSAPP_VERIFY_TOKEN` | كلمة تحقق webhook (تختارها أنت، تطابقها بإعداد Meta) |
 | `WHATSAPP_APP_SECRET` | سر تطبيق Meta — تحقق توقيع الرسائل الواردة |
 | `HF_TOKEN` | **اختياري** — مزود احتياطي لتوليد صور المنتجات (Hugging Face) لو خلصت حصة Cloudflare اليومية. النظام يشتغل بدونه بحدود Cloudflare وحدها. رصيده المجاني رمزي جداً ($0.10/شهر ≈ 3-4 صور) — مكافأة نادرة مو سعة أساسية |
+| `ADMIN_EMAILS` | إيميلات مفصولة بفاصلة، تحدد مين يقدر يفتح `/admin.html` — بدون عمود role بقاعدة البيانات |
 
 تُضاف بـ: `npx wrangler pages secret put SALLA_WEBHOOK_SECRET --project-name hala-ai-os`
 
