@@ -4,19 +4,29 @@
 // Returns the canonical merchant id so the frontend can persist hala_store_id.
 import { withApi } from "../../_lib/respond.js";
 import { getMerchant, getMerchantBySalla, getTokens, getPlatformConnection } from "../../_lib/db.js";
+import { getSessionMerchantId } from "../../_lib/session.js";
 
-async function statusHandler(body, env) {
+async function statusHandler(body, env, request) {
   let merchant = null;
-  if (body.storeId) {
+  const sessionMerchantId = await getSessionMerchantId(request, env);
+  if (sessionMerchantId) {
+    merchant = await getMerchant(env, sessionMerchantId);
+  }
+  if (!merchant && body.storeId) {
     merchant = await getMerchant(env, String(body.storeId));
   }
   if (!merchant && body.sallaMerchantId) {
     merchant = await getMerchantBySalla(env, String(body.sallaMerchantId));
   }
   if (!merchant) {
-    // Cheap "latest linked merchant" path for the single-tenant demo flow:
-    // onboarding polls right after install, no id known yet.
-    merchant = await env.DB.prepare("SELECT * FROM merchants ORDER BY created_at DESC LIMIT 1").first();
+    // Right-after-install polling window only (onboarding polls with an
+    // empty body immediately after the Salla redirect, before it knows its
+    // own storeId). Bounded to the last 5 minutes so this can't be used to
+    // fetch an arbitrary merchant's storeId/connection status at any time —
+    // the previous unbounded "latest merchant" lookup was exactly that leak.
+    merchant = await env.DB.prepare(
+      "SELECT * FROM merchants WHERE created_at > datetime('now', '-5 minutes') ORDER BY created_at DESC LIMIT 1"
+    ).first();
   }
   if (!merchant) {
     return { linked: false };

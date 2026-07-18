@@ -6,8 +6,9 @@
 import { withApi } from "../../_lib/respond.js";
 import { verifyConnection } from "../../_lib/trendyol.js";
 import { getMerchant, savePlatformConnection } from "../../_lib/db.js";
+import { resolveStoreId } from "../../_lib/session.js";
 
-async function connectHandler(body, env) {
+async function connectHandler(body, env, request) {
   const sellerId = (body.sellerId || "").toString().trim();
   const apiKey = (body.apiKey || "").toString().trim();
   const apiSecret = (body.apiSecret || "").toString().trim();
@@ -32,9 +33,11 @@ async function connectHandler(body, env) {
     return { ok: false, error: `تعذر التحقق من الاتصال: ${msg.slice(0, 120)}` };
   }
 
-  // Credentials verified — persist.
-  let merchantId = (body.storeId || "").toString().slice(0, 40);
-  const existing = merchantId ? await getMerchant(env, merchantId) : null;
+  // Credentials verified — persist. resolveStoreId ensures a logged-in
+  // session always wins over a client-claimed storeId, so an attacker who
+  // knows another merchant's id can never hijack their Trendyol connection.
+  let merchantId = await resolveStoreId(request, env, body.storeId);
+  const existing = await getMerchant(env, merchantId);
   if (!existing) {
     merchantId = `m_${crypto.randomUUID().slice(0, 12)}`;
     await env.DB.prepare(

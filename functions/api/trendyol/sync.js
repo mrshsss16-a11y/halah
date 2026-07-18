@@ -11,15 +11,18 @@
 import { withApi } from "../../_lib/respond.js";
 import { getPlatformConnection } from "../../_lib/db.js";
 import { createProducts, updatePriceAndInventory, getBatchResult, getShipmentPackages } from "../../_lib/trendyol.js";
+import { resolveStoreId } from "../../_lib/session.js";
 
 async function sha256Hex(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function syncHandler(body, env) {
-  const merchantId = (body.storeId || "").toString().slice(0, 40);
-  if (!merchantId) return { ok: false, error: "storeId مفقود." };
+async function syncHandler(body, env, request) {
+  // resolveStoreId: a logged-in session always overrides a client-claimed
+  // storeId, so an attacker who knows another merchant's id can never read
+  // their orders or push/overwrite their product listings via this endpoint.
+  const merchantId = await resolveStoreId(request, env, body.storeId);
 
   const conn = await getPlatformConnection(env, merchantId, "trendyol");
   if (!conn) return { ok: false, error: "المتجر غير مرتبط بـ Trendyol — اربطه من صفحة الإعداد أولاً." };

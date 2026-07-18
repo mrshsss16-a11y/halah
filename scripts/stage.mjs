@@ -17,6 +17,8 @@ const partialsDir = join(root, "partials");
 const stylesDir = join(root, "styles");
 
 const INCLUDE = /\.(html|css|js|png|svg|webp|ico|txt)$/;
+// Cloudflare Pages config files — no extension, matched by exact name instead.
+const EXACT_NAME_INCLUDE = new Set(["_headers", "_redirects"]);
 const EXCLUDE_DIRS = new Set([".git", ".agents", ".wrangler", "node_modules", "dist", "docs", "functions", "migrations", "partials", "persona", "scripts", "styles"]);
 const INCLUDE_TAG = /<!--\s*#include\s+([\w./-]+)\s*-->/g;
 
@@ -53,7 +55,7 @@ for (const entry of readdirSync(root, { withFileTypes: true })) {
     }
     continue;
   }
-  if (!INCLUDE.test(entry.name)) continue;
+  if (!INCLUDE.test(entry.name) && !EXACT_NAME_INCLUDE.has(entry.name)) continue;
 
   const srcPath = join(root, entry.name);
   const outPath = join(dist, entry.name);

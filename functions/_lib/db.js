@@ -1,5 +1,6 @@
 // Unified D1 access layer (binding: DB → halah-tr-db). All queries live here —
 // endpoints never write raw SQL. merchants.id is the canonical storeId.
+import { encryptSecret, decryptSecret } from "./crypto.js";
 
 export async function getMerchant(env, merchantId) {
   return env.DB.prepare("SELECT * FROM merchants WHERE id = ?").bind(merchantId).first();
@@ -31,6 +32,8 @@ export async function upsertMerchantFromSalla(env, { sallaMerchantId, storeName 
 }
 
 export async function saveTokens(env, { merchantId, platform, accessToken, refreshToken, expiresAt }) {
+  const encAccess = await encryptSecret(env, accessToken);
+  const encRefresh = await encryptSecret(env, refreshToken);
   await env.DB.prepare(
     `INSERT INTO oauth_tokens (merchant_id, platform, access_token, refresh_token, expires_at, refresh_lock, updated_at)
      VALUES (?, ?, ?, ?, ?, 0, datetime('now'))
@@ -41,14 +44,23 @@ export async function saveTokens(env, { merchantId, platform, accessToken, refre
        refresh_lock = 0,
        updated_at = datetime('now')`
   )
-    .bind(merchantId, platform, accessToken, refreshToken, expiresAt)
+    .bind(merchantId, platform, encAccess, encRefresh, expiresAt)
     .run();
 }
 
+// oauth_tokens.access_token/refresh_token are encrypted at rest (see
+// functions/_lib/crypto.js) — decrypt on the way out so every caller keeps
+// working with plaintext tokens exactly as before.
 export async function getTokens(env, merchantId, platform) {
-  return env.DB.prepare("SELECT * FROM oauth_tokens WHERE merchant_id = ? AND platform = ?")
+  const row = await env.DB.prepare("SELECT * FROM oauth_tokens WHERE merchant_id = ? AND platform = ?")
     .bind(merchantId, platform)
     .first();
+  if (!row) return null;
+  return {
+    ...row,
+    access_token: await decryptSecret(env, row.access_token),
+    refresh_token: await decryptSecret(env, row.refresh_token)
+  };
 }
 
 /**
@@ -122,13 +134,25 @@ export async function saveMarketingContext(env, merchantId, { dialect, instructi
     .run();
 }
 
+// platform_connections.api_key/api_secret are encrypted at rest (see
+// functions/_lib/crypto.js) — decrypt on the way out so callers (e.g.
+// functions/_lib/trendyol.js's verifyConnection) keep working with
+// plaintext credentials exactly as before.
 export async function getPlatformConnection(env, merchantId, platform) {
-  return env.DB.prepare("SELECT * FROM platform_connections WHERE merchant_id = ? AND platform = ?")
+  const row = await env.DB.prepare("SELECT * FROM platform_connections WHERE merchant_id = ? AND platform = ?")
     .bind(merchantId, platform)
     .first();
+  if (!row) return null;
+  return {
+    ...row,
+    api_key: await decryptSecret(env, row.api_key),
+    api_secret: await decryptSecret(env, row.api_secret)
+  };
 }
 
 export async function savePlatformConnection(env, { merchantId, platform, sellerId, apiKey, apiSecret, environment, storeName }) {
+  const encApiKey = await encryptSecret(env, apiKey);
+  const encApiSecret = await encryptSecret(env, apiSecret);
   await env.DB.prepare(
     `INSERT INTO platform_connections (merchant_id, platform, seller_id, api_key, api_secret, environment, store_name)
      VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -140,7 +164,7 @@ export async function savePlatformConnection(env, { merchantId, platform, seller
        store_name = COALESCE(excluded.store_name, store_name),
        connected_at = datetime('now')`
   )
-    .bind(merchantId, platform, sellerId, apiKey, apiSecret, environment || "prod", storeName || null)
+    .bind(merchantId, platform, sellerId, encApiKey, encApiSecret, environment || "prod", storeName || null)
     .run();
 }
 
@@ -367,4 +391,51 @@ export async function adminStats(env) {
     bookings: bookings.n,
     faqEntries: faqEntries.n
   };
+}
+
+// ── Login brute-force protection ──
+
+const LOGIN_LOCKOUT_THRESHOLD = 5;
+const LOGIN_LOCKOUT_MINUTES = 15;
+
+/** Returns true if this email is currently locked out from login attempts. */
+export async function isLoginLocked(env, email) {
+  const row = await env.DB.prepare("SELECT locked_until FROM login_attempts WHERE email = ?")
+    .bind(email)
+    .first();
+  if (!row || !row.locked_until) return false;
+  return new Date(row.locked_until + "Z").getTime() > Date.now();
+}
+
+/** Records a failed login attempt; locks the email out after LOGIN_LOCKOUT_THRESHOLD failures. */
+export async function recordLoginFailure(env, email) {
+  await env.DB.prepare(
+    `INSERT INTO login_attempts (email, failed_count, updated_at)
+     VALUES (?, 1, datetime('now'))
+     ON CONFLICT (email) DO UPDATE SET
+       failed_count = failed_count + 1,
+       updated_at = datetime('now')`
+  )
+    .bind(email)
+    .run();
+
+  const row = await env.DB.prepare("SELECT failed_count FROM login_attempts WHERE email = ?")
+    .bind(email)
+    .first();
+  if (row && row.failed_count >= LOGIN_LOCKOUT_THRESHOLD) {
+    // LOGIN_LOCKOUT_MINUTES is a code constant, not user input — safe to
+    // interpolate into the datetime() modifier (D1 has no bind-parameter
+    // support inside datetime() modifiers).
+    await env.DB.prepare(
+      `UPDATE login_attempts SET locked_until = datetime('now', '+' || ? || ' minutes'), failed_count = 0
+       WHERE email = ?`
+    )
+      .bind(LOGIN_LOCKOUT_MINUTES, email)
+      .run();
+  }
+}
+
+/** Clears failed-attempt state on successful login. */
+export async function clearLoginAttempts(env, email) {
+  await env.DB.prepare("DELETE FROM login_attempts WHERE email = ?").bind(email).run();
 }

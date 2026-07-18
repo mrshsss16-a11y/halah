@@ -2,7 +2,7 @@
 import { json } from "../../_lib/respond.js";
 import { verifyPassword } from "../../_lib/auth.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/session.js";
-import { isAccountDisabled } from "../../_lib/db.js";
+import { isAccountDisabled, isLoginLocked, recordLoginFailure, clearLoginAttempts } from "../../_lib/db.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -16,14 +16,24 @@ export async function onRequestPost(context) {
   const email = (body.email || "").toString().trim().toLowerCase().slice(0, 200);
   const password = (body.password || "").toString();
 
+  if (email && (await isLoginLocked(env, email))) {
+    return json(
+      { ok: false, error: "محاولات كثيرة فاشلة — الحساب مقفل مؤقتاً، حاول بعد ١٥ دقيقة." },
+      429
+    );
+  }
+
   const account = await env.DB.prepare("SELECT * FROM accounts WHERE email = ?").bind(email).first();
   if (!account || !(await verifyPassword(password, account.password_hash, account.password_salt))) {
+    if (email) await recordLoginFailure(env, email).catch(() => {});
     return json({ ok: false, error: "البريد أو كلمة المرور غير صحيحة." }, 401);
   }
 
   if (await isAccountDisabled(env, account.merchant_id)) {
     return json({ ok: false, error: "هذا الحساب معطّل. تواصل مع فريق هالة." }, 403);
   }
+
+  await clearLoginAttempts(env, email).catch(() => {});
 
   const merchant = await env.DB.prepare("SELECT store_name FROM merchants WHERE id = ?")
     .bind(account.merchant_id)
