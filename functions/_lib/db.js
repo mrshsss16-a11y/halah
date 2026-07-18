@@ -229,3 +229,142 @@ export async function saveStoreLogo(env, merchantId, logoDataUrl) {
     .bind(merchantId, logoDataUrl)
     .run();
 }
+
+// ── Hala's own FAQ knowledge (RAG source of truth for the support persona) ──
+
+export async function listHalaFaq(env) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, question, answer FROM hala_faq ORDER BY id"
+  ).all();
+  return results || [];
+}
+
+export async function saveHalaFaqEntry(env, { id, question, answer }) {
+  if (id) {
+    await env.DB.prepare(
+      "UPDATE hala_faq SET question = ?, answer = ?, updated_at = datetime('now') WHERE id = ?"
+    )
+      .bind(question, answer, id)
+      .run();
+    return id;
+  }
+  const res = await env.DB.prepare(
+    "INSERT INTO hala_faq (question, answer) VALUES (?, ?)"
+  )
+    .bind(question, answer)
+    .run();
+  return res.meta.last_row_id;
+}
+
+export async function deleteHalaFaqEntry(env, id) {
+  await env.DB.prepare("DELETE FROM hala_faq WHERE id = ?").bind(id).run();
+}
+
+// ── Accounts admin helpers ──
+
+export async function getAccountEmail(env, merchantId) {
+  const row = await env.DB.prepare("SELECT email FROM accounts WHERE merchant_id = ?")
+    .bind(merchantId)
+    .first();
+  return row ? row.email : null;
+}
+
+export async function listAccounts(env, limit = 200) {
+  const { results } = await env.DB.prepare(
+    "SELECT merchant_id, email, created_at, disabled FROM accounts ORDER BY created_at DESC LIMIT ?"
+  )
+    .bind(limit)
+    .all();
+  return (results || []).map((r) => ({
+    merchantId: r.merchant_id,
+    email: r.email,
+    createdAt: r.created_at,
+    disabled: Boolean(r.disabled)
+  }));
+}
+
+export async function setAccountDisabled(env, merchantId, disabled) {
+  await env.DB.prepare("UPDATE accounts SET disabled = ? WHERE merchant_id = ?")
+    .bind(disabled ? 1 : 0, merchantId)
+    .run();
+}
+
+export async function isAccountDisabled(env, merchantId) {
+  const row = await env.DB.prepare("SELECT disabled FROM accounts WHERE merchant_id = ?")
+    .bind(merchantId)
+    .first();
+  return Boolean(row && row.disabled);
+}
+
+// ── WhatsApp admin overview ──
+
+export async function recentWaConversations(env, merchantId, limit = 50) {
+  const { results } = await env.DB.prepare(
+    `SELECT phone, body, direction, created_at
+     FROM whatsapp_messages
+     WHERE merchant_id = ?
+       AND id IN (
+         SELECT MAX(id) FROM whatsapp_messages WHERE merchant_id = ? GROUP BY phone
+       )
+     ORDER BY created_at DESC
+     LIMIT ?`
+  )
+    .bind(merchantId || "hala", merchantId || "hala", limit)
+    .all();
+  return (results || []).map((r) => ({
+    phone: r.phone,
+    lastBody: r.body,
+    lastDirection: r.direction,
+    lastAt: r.created_at
+  }));
+}
+
+// ── Consultation bookings ──
+
+export async function saveConsultationBooking(env, { name, phone, slotLabel }) {
+  const res = await env.DB.prepare(
+    "INSERT INTO consultation_bookings (name, phone, preferred_slot_label) VALUES (?, ?, ?)"
+  )
+    .bind(name || null, phone, slotLabel)
+    .run();
+  return res.meta.last_row_id;
+}
+
+export async function listConsultationBookings(env, limit = 100) {
+  const { results } = await env.DB.prepare(
+    "SELECT id, name, phone, preferred_slot_label, status, created_at FROM consultation_bookings ORDER BY created_at DESC LIMIT ?"
+  )
+    .bind(limit)
+    .all();
+  return (results || []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    phone: r.phone,
+    preferredSlotLabel: r.preferred_slot_label,
+    status: r.status,
+    createdAt: r.created_at
+  }));
+}
+
+export async function setBookingStatus(env, id, status) {
+  await env.DB.prepare("UPDATE consultation_bookings SET status = ? WHERE id = ?")
+    .bind(status, id)
+    .run();
+}
+
+// ── Admin dashboard counters (read-only, no raw SQL exposed to the client) ──
+
+export async function adminStats(env) {
+  const [merchants, accounts, bookings, faqEntries] = await Promise.all([
+    env.DB.prepare("SELECT COUNT(*) AS n FROM merchants").first(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM accounts").first(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM consultation_bookings").first(),
+    env.DB.prepare("SELECT COUNT(*) AS n FROM hala_faq").first()
+  ]);
+  return {
+    merchants: merchants.n,
+    accounts: accounts.n,
+    bookings: bookings.n,
+    faqEntries: faqEntries.n
+  };
+}
