@@ -4,29 +4,7 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>هالة | المحادثات والعملاء</title>
-  <script>
-    (function () {
-      var root = document.documentElement;
-      var shell = "product";
-      var surfaceDefault = "light";
-      var pref = null;
-      try { pref = localStorage.getItem("hala_theme"); } catch (e) {}
-      var resolved;
-      if (pref === "light" || pref === "dark") { resolved = pref; }
-      else if (pref === "system") { resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; }
-      else { resolved = surfaceDefault; }
-      root.setAttribute("data-theme", resolved);
-      root.classList.toggle("dark", resolved === "dark");
-      var reduce = false;
-      try {
-        if (localStorage.getItem("hala_reduce_motion") === "1") reduce = true;
-        else if (localStorage.getItem("hala_reduce_motion") === "0") reduce = false;
-        else reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-      } catch (e) { reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; }
-      root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
-    })();
-  </script>
-  <script src="theme.js"></script>
+  <!--#include partials/fouc-theme.html -->
   <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
@@ -59,110 +37,7 @@
 </head>
 <body class="bg-background text-on-background min-h-[100dvh] flex flex-col md:flex-row rtl page-enter">
 
-  <!-- Soft aurora blobs -->
-  <div class="light-aurora" aria-hidden="true">
-    <div class="light-blob light-blob-rose"></div>
-    <div class="light-blob light-blob-teal"></div>
-    <div class="light-blob light-blob-gold"></div>
-  </div>
-
-  <!-- الشريط الجانبي -->
-  <nav class="side-nav hidden lg:flex flex-col h-[100dvh] fixed right-0 top-0 z-40 border-l w-64">
-    <div class="p-6 flex items-start justify-between gap-2">
-      <div>
-        <h1 class="font-headline-lg text-headline-lg font-bold text-primary flex items-center gap-2 text-[26px]">
-          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
-          هالة
-        </h1>
-        <p class="font-label-sm text-label-sm dash-muted mt-1">تسويق ذكي لمتجرك</p>
-      </div>
-      <div class="hala-prefs hala-prefs--compact" role="group" aria-label="تفضيلات المظهر">
-        <label class="hala-prefs-field">
-          <span class="hala-prefs-label">المظهر</span>
-          <select class="hala-theme-select" data-hala-theme-select aria-label="المظهر">
-            <option value="light">فاتح</option>
-            <option value="dark">داكن</option>
-            <option value="system">تلقائي</option>
-          </select>
-        </label>
-        <label class="hala-prefs-motion">
-          <input type="checkbox" data-hala-reduce-motion />
-          <span>تقليل الحركة</span>
-        </label>
-      </div>
-    </div>
-    <div class="flex-1 px-4 py-2 space-y-1">
-      <a class="flex items-center gap-3 text-on-surface-variant dash-muted font-medium px-4 py-3 rounded-lg w-full hover:bg-white/5 transition-all duration-300" href="dashboard.html">
-        <span class="material-symbols-outlined">dashboard</span>
-        <span class="font-body-md text-body-md">لوحة التحكم</span>
-      </a>
-      <a class="flex items-center gap-3 text-on-surface-variant dash-muted font-medium px-4 py-3 rounded-lg w-full hover:bg-white/5 transition-all duration-300" href="scanner.html">
-        <span class="material-symbols-outlined">barcode_scanner</span>
-        <span class="font-body-md text-body-md">فحص المتجر</span>
-      </a>
-      <a class="flex items-center gap-3 text-on-surface-variant dash-muted font-medium px-4 py-3 rounded-lg w-full hover:bg-white/5 transition-all duration-300" href="studio.html">
-        <span class="material-symbols-outlined">photo_camera</span>
-        <span class="font-body-md text-body-md">استوديو الصور</span>
-      </a>
-      <a class="flex items-center gap-3 text-primary font-bold border-r-4 border-primary bg-primary/10 px-4 py-3 rounded-lg w-full transition-transform hover:translate-x-1" href="communication.html">
-        <span class="material-symbols-outlined">chat</span>
-        <span class="font-body-md text-body-md">المحادثات والعملاء</span>
-      </a>
-    </div>
-    <div class="p-4 border-t border-white/10">
-      <div id="sidebar-store-status" class="store-status-card mb-4">
-        <div class="flex items-center gap-3">
-          <div id="sidebar-platform-logo" class="platform-logo platform-logo--salla" aria-hidden="true">
-            <span class="platform-logo-text">سلة</span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-label-sm text-[11px] dash-muted mb-0.5">المتجر المربوط</p>
-            <p id="sidebar-platform-name" class="font-body-md text-[14px] dash-title font-semibold truncate">سلة</p>
-            <p class="flex items-center gap-1.5 mt-0.5">
-              <span class="store-status-dot" aria-hidden="true"></span>
-              <span class="font-label-sm text-[11px] text-emerald-600">متصل ونشط</span>
-            </p>
-          </div>
-        </div>
-      </div>
-      <button type="button" id="trial-cta-side" class="w-full btn-trial font-bold py-3 rounded-xl flex items-center justify-center gap-2 text-sm">
-        <span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
-        فعّل التجربة المجانية
-      </button>
-      <p class="font-label-sm text-label-sm dash-muted text-center mt-2 text-[11px]">١٤ يوماً · بدون بطاقة</p>
-      <div class="mt-4 space-y-1">
-        <a class="flex items-center gap-3 dash-muted font-medium px-4 py-2 rounded-lg hover:bg-white/5 transition-all duration-300" href="onboarding.html">
-          <span class="material-symbols-outlined">settings</span>
-          <span class="font-label-sm text-label-sm">الإعدادات</span>
-        </a>
-        <a class="flex items-center gap-3 dash-muted font-medium px-4 py-2 rounded-lg hover:bg-white/5 transition-all duration-300" href="index.html">
-          <span class="material-symbols-outlined">home</span>
-          <span class="font-label-sm text-label-sm">الموقع الرئيسي</span>
-        </a>
-      </div>
-    </div>
-  </nav>
-
-  <!-- شريط الجوال -->
-  <header class="mobile-top md:hidden flex flex-row-reverse justify-between items-center w-full px-container-padding-mobile h-16 backdrop-blur-md border-b shadow-sm sticky top-0 z-50">
-    <div class="flex items-center gap-2.5 min-w-0">
-      <h1 class="font-bold text-primary text-[20px] flex items-center gap-2 shrink-0">
-        <span class="material-symbols-outlined">auto_awesome</span>
-        هالة
-      </h1>
-      <div id="mobile-store-status" class="store-status-chip flex items-center gap-1.5 min-w-0 max-w-[42vw]">
-        <div id="mobile-platform-logo" class="platform-logo platform-logo--sm platform-logo--salla" aria-hidden="true">
-          <span class="platform-logo-text">سلة</span>
-        </div>
-        <span id="mobile-platform-label" class="font-label-sm text-[11px] dash-title font-medium truncate">متصل · سلة</span>
-      </div>
-    </div>
-    <div class="flex items-center gap-2">
-      <button type="button" id="mobile-menu-btn" class="text-primary" aria-label="القائمة">
-        <span class="material-symbols-outlined text-3xl">menu</span>
-      </button>
-    </div>
-  </header>
+  <!--#include partials/app-shell.html -->
 
   <!-- المحتوى الرئيسي -->
   <main class="flex-1 lg:mr-64 p-6 max-w-7xl mx-auto w-full pb-28 relative z-10 flex flex-col gap-6">

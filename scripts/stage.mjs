@@ -1,15 +1,37 @@
 // Stages deployable static files into dist/ — the single source of what gets
 // uploaded to Cloudflare Pages. Anything not listed here never ships (docs,
 // persona reference, editor tooling, this script itself).
-import { cpSync, mkdirSync, rmSync, readdirSync } from "node:fs";
+//
+// HTML files go through a minimal server-side-include pass first: shared
+// fragments (nav shells, FOUC bootstrap, banners) live once in partials/
+// and get inlined into each page at build time. Output stays flat static
+// HTML — no client-side fetch, no framework, no runtime cost — this only
+// removes copy-pasted markup at the source.
+import { cpSync, mkdirSync, rmSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
+const partialsDir = join(root, "partials");
 
 const INCLUDE = /\.(html|css|js|png|svg|webp|ico|txt)$/;
-const EXCLUDE_DIRS = new Set([".git", ".agents", ".wrangler", "node_modules", "dist", "docs", "functions", "migrations", "persona", "scripts"]);
+const EXCLUDE_DIRS = new Set([".git", ".agents", ".wrangler", "node_modules", "dist", "docs", "functions", "migrations", "partials", "persona", "scripts"]);
+const INCLUDE_TAG = /<!--\s*#include\s+([\w./-]+)\s*-->/g;
+
+function resolveIncludes(html, fromFile, depth = 0) {
+  if (depth > 5) throw new Error(`include nesting too deep in ${fromFile} — possible cycle`);
+  return html.replace(INCLUDE_TAG, (whole, relPath) => {
+    const partialPath = join(root, relPath);
+    let partial;
+    try {
+      partial = readFileSync(partialPath, "utf8");
+    } catch {
+      throw new Error(`${fromFile}: #include "${relPath}" not found at ${partialPath}`);
+    }
+    return resolveIncludes(partial, relPath, depth + 1);
+  });
+}
 
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
@@ -22,9 +44,16 @@ for (const entry of readdirSync(root, { withFileTypes: true })) {
     }
     continue;
   }
-  if (INCLUDE.test(entry.name)) {
-    cpSync(join(root, entry.name), join(dist, entry.name));
-    count++;
+  if (!INCLUDE.test(entry.name)) continue;
+
+  const srcPath = join(root, entry.name);
+  const outPath = join(dist, entry.name);
+  if (entry.name.endsWith(".html")) {
+    const html = resolveIncludes(readFileSync(srcPath, "utf8"), entry.name);
+    writeFileSync(outPath, html);
+  } else {
+    cpSync(srcPath, outPath);
   }
+  count++;
 }
-console.log(`staged ${count} files into dist/`);
+console.log(`staged ${count} files into dist/ (includes resolved from partials/)`);

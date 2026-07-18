@@ -5,48 +5,7 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>هالة | ذكاء اصطناعي يخدم تجارتك</title>
   <meta name="description" content="هالة: ذكاء اصطناعي سعودي يكتشف خسائر متجرك ويصلحها تلقائياً. افحص متجرك مجاناً خلال ٣٠ ثانية."/>
-  <script>
-(function () {
-  var root = document.documentElement;
-  var shell = root.getAttribute("data-shell") || "product";
-  var surfaceDefault = shell === "marketing" ? "dark" : "light";
-  var pref = null;
-  try { pref = localStorage.getItem("hala_theme"); } catch (e) {}
-  var resolved;
-  if (pref === "light" || pref === "dark") {
-    resolved = pref;
-  } else if (pref === "system") {
-    resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  } else {
-    // key absent، do NOT localStorage.setItem
-    resolved = surfaceDefault;
-  }
-  root.setAttribute("data-theme", resolved);
-  root.classList.toggle("dark", resolved === "dark");
-  // Motion FOUC
-  var reduce = false;
-  try {
-    if (localStorage.getItem("hala_reduce_motion") === "1") reduce = true;
-    else if (localStorage.getItem("hala_reduce_motion") === "0") reduce = false;
-    else reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  } catch (e) {
-    reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }
-  root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
-  // NEVER setItem here. NEVER add theme-animating here.
-  // landing-dark: body may not exist yet، schedule mirror only
-  function syncLandingDark() {
-    if (!document.body) return;
-    document.body.classList.toggle(
-      "landing-dark",
-      shell === "marketing"
-    );
-  }
-  if (document.body) syncLandingDark();
-  else document.addEventListener("DOMContentLoaded", syncLandingDark, { once: true });
-})();
-  </script>
-  <script src="theme.js"></script>
+  <!--#include partials/fouc-theme.html -->
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com" rel="preconnect"/>
   <link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>

@@ -6,36 +6,7 @@
   <title>هالة | الاستوديو · خدمات مباشرة</title>
   <meta name="description" content="استوديو هالة الذكي، أنشئ محتوى منتجاتك وحسّن صورك وأرسل تنبيهات واتساب بدون ربط متجر."/>
 
-  <!-- FOUC Prevention -->
-  <script>
-  (function () {
-    var root = document.documentElement;
-    var shell = root.getAttribute("data-shell") || "product";
-    var surfaceDefault = "light";
-    var pref = null;
-    try { pref = localStorage.getItem("hala_theme"); } catch (e) {}
-    var resolved;
-    if (pref === "light" || pref === "dark") { resolved = pref; }
-    else if (pref === "system") { resolved = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"; }
-    else { resolved = surfaceDefault; }
-    root.setAttribute("data-theme", resolved);
-    root.classList.toggle("dark", resolved === "dark");
-    var reduce = false;
-    try {
-      if (localStorage.getItem("hala_reduce_motion") === "1") reduce = true;
-      else if (localStorage.getItem("hala_reduce_motion") === "0") reduce = false;
-      else reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    } catch (e) { reduce = matchMedia("(prefers-reduced-motion: reduce)").matches; }
-    root.setAttribute("data-reduce-motion", reduce ? "1" : "0");
-    function syncLandingDark() {
-      if (!document.body) return;
-      document.body.classList.toggle("landing-dark", shell === "marketing");
-    }
-    if (document.body) syncLandingDark();
-    else document.addEventListener("DOMContentLoaded", syncLandingDark, { once: true });
-  })();
-  </script>
-  <script src="theme.js"></script>
+  <!--#include partials/fouc-theme.html -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>

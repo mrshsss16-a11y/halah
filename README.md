@@ -11,14 +11,18 @@
 |---|---|
 | الاستضافة | Cloudflare Pages (مشروع `hala-ai-os`) |
 | الـ API | Pages Functions (`functions/api/*` → `/api/*`) |
-| توليد النصوص | Workers AI — `@cf/meta/llama-3.1-8b-instruct` |
+| توليد النصوص | Workers AI — `@cf/meta/llama-3.3-70b-instruct-fp8-fast` |
 | ذاكرة RAG | Vectorize `halah-tr-faq` (embeddings: `@cf/baai/bge-m3`, عزل لكل متجر بـ metadata `storeId`) |
 | قاعدة البيانات | D1 `halah-tr-db` (migrations بـ `migrations/`) |
 
 ## خريطة الملفات
 
 ```
-*.html              صفحات الواجهة (تُنسخ لـ dist/ عبر scripts/stage.mjs)
+*.html              صفحات الواجهة — تمر بمعالج #include (انظر partials/) ثم تُنسخ لـ dist/ عبر scripts/stage.mjs
+partials/           مكونات مشتركة تُدمج وقت البناء بـ <!--#include partials/x.html -->:
+                      fouc-theme.html  سكربت منع وميض الثيم (كان مكرر/متباعد بـ 8 صفحات، الآن مصدر واحد)
+                      app-shell.html   السايدبار + هيدر الجوال + الدرج + بانر Sandbox لصفحات dashboard/communication
+                      (تفعيل الرابط النشط بجافاسكربت وقت التشغيل حسب اسم الصفحة، مو hardcoded — صفحة جديدة ما تحتاج تعدّل غير data-nav)
 style.css theme.js  التنسيق + نظام الثيم الموحد (HalaTheme — لا ثيم مخصص بأي صفحة)
 functions/
   _lib/             persona · workersAI · memory (RAG) · db · salla · trendyol · respond · meter (حصص) · imageProvider (klein+HF) · auth (تجزئة كلمة مرور) · session (كوكي موقّع + resolveStoreId)
