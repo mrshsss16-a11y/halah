@@ -61,6 +61,16 @@
       });
       return res.json();
     }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
   </script>
   <script>
     (async function boot() {
@@ -105,8 +115,8 @@
           (b) => `
         <div class="rounded-lg border p-3 flex items-center justify-between gap-3">
           <div>
-            <div class="font-bold">${b.name || "بدون اسم"} — ${b.phone}</div>
-            <div class="text-sm text-outline">${b.preferredSlotLabel} · ${b.status}</div>
+            <div class="font-bold">${escapeHtml(b.name) || "بدون اسم"} — ${escapeHtml(b.phone)}</div>
+            <div class="text-sm text-outline">${escapeHtml(b.preferredSlotLabel)} · ${escapeHtml(b.status)}</div>
           </div>
           <div class="flex gap-2">
             <button data-id="${b.id}" data-status="confirmed" class="booking-status-btn text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">تأكيد</button>
@@ -137,8 +147,8 @@
             .map(
               (c) => `
         <div class="rounded-lg border p-3">
-          <div class="font-bold">${c.phone}</div>
-          <div class="text-sm text-outline">${c.lastDirection === "in" ? "← " : "→ "}${(c.lastBody || "").slice(0, 120)}</div>
+          <div class="font-bold">${escapeHtml(c.phone)}</div>
+          <div class="text-sm text-outline">${c.lastDirection === "in" ? "← " : "→ "}${escapeHtml((c.lastBody || "").slice(0, 120))}</div>
         </div>`
             )
             .join("")
@@ -155,8 +165,8 @@
           (r) => `
         <div class="rounded-lg border p-3 flex items-start justify-between gap-3">
           <div>
-            <div class="font-bold">${r.question}</div>
-            <div class="text-sm text-outline">${r.answer}</div>
+            <div class="font-bold">${escapeHtml(r.question)}</div>
+            <div class="text-sm text-outline">${escapeHtml(r.answer)}</div>
           </div>
           <button data-id="${r.id}" class="faq-delete-btn text-xs px-2 py-1 rounded bg-red-100 text-red-700 shrink-0">حذف</button>
         </div>`
@@ -195,8 +205,8 @@
           (a) => `
         <div class="rounded-lg border p-3 flex items-center justify-between gap-3">
           <div>
-            <div class="font-bold">${a.email}</div>
-            <div class="text-sm text-outline">${a.createdAt}${a.disabled ? " · معطّل" : ""}</div>
+            <div class="font-bold">${escapeHtml(a.email)}</div>
+            <div class="text-sm text-outline">${escapeHtml(a.createdAt)}${a.disabled ? " · معطّل" : ""}</div>
           </div>
           <button data-merchant="${a.merchantId}" data-disabled="${!a.disabled}" class="account-toggle-btn text-xs px-2 py-1 rounded border">
             ${a.disabled ? "تفعيل" : "تعطيل"}
