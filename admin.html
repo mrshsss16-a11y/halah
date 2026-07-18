@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar" data-shell="product" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>هالة | لوحة أدمن أورا</title>
+  <!--#include partials/fouc-theme.html -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
+  <link href="style.css" rel="stylesheet"/>
+</head>
+<body class="bg-background text-on-background min-h-[100dvh] p-6 max-w-5xl mx-auto">
+  <h1 class="text-2xl font-bold mb-1">لوحة أدمن أورا</h1>
+  <p id="admin-email" class="text-sm text-outline mb-6"></p>
+  <div id="admin-forbidden" class="hidden rounded-xl border border-red-300 bg-red-50 text-red-700 p-4 mb-6">
+    ما عندك صلاحية أدمن على هذا الحساب.
+  </div>
+
+  <div id="admin-content" class="hidden flex flex-col gap-8">
+    <section>
+      <h2 class="text-lg font-bold mb-3">نظرة عامة</h2>
+      <div id="stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-bold mb-3">حجوزات الاستشارة</h2>
+      <div id="bookings-list" class="flex flex-col gap-2"></div>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-bold mb-3">محادثات واتساب أورا</h2>
+      <div id="conversations-list" class="flex flex-col gap-2"></div>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-bold mb-3">معرفة هالة (RAG)</h2>
+      <form id="faq-form" class="flex flex-col gap-2 mb-4 max-w-xl">
+        <input id="faq-question" placeholder="السؤال" class="rounded-lg border px-3 py-2" required/>
+        <textarea id="faq-answer" placeholder="الجواب" class="rounded-lg border px-3 py-2" rows="3" required></textarea>
+        <div class="flex gap-2">
+          <button type="submit" class="btn-primary-gradient px-4 py-2 rounded-lg">إضافة</button>
+          <button type="button" id="faq-reembed" class="px-4 py-2 rounded-lg border">إعادة تضمين بالذكاء الاصطناعي</button>
+        </div>
+      </form>
+      <div id="faq-list" class="flex flex-col gap-2"></div>
+    </section>
+
+    <section>
+      <h2 class="text-lg font-bold mb-3">الحسابات</h2>
+      <div id="accounts-list" class="flex flex-col gap-2"></div>
+    </section>
+  </div>
+
+  <script src="theme.js"></script>
+  <script>
+    async function adminPost(path, body) {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body || {})
+      });
+      return res.json();
+    }
+  </script>
+  <script>
+    (async function boot() {
+      const overview = await adminPost("/api/admin/overview", { action: "overview" });
+      if (!overview.ok) {
+        document.getElementById("admin-forbidden").classList.remove("hidden");
+        return;
+      }
+      document.getElementById("admin-email").textContent = overview.email;
+      document.getElementById("admin-content").classList.remove("hidden");
+
+      const stats = overview.stats;
+      document.getElementById("stats-grid").innerHTML = [
+        ["متاجر", stats.merchants],
+        ["حسابات", stats.accounts],
+        ["حجوزات", stats.bookings],
+        ["مدخلات معرفة", stats.faqEntries]
+      ]
+        .map(
+          ([label, value]) =>
+            `<div class="rounded-xl border p-4 text-center"><div class="text-2xl font-bold">${value}</div><div class="text-xs text-outline">${label}</div></div>`
+        )
+        .join("");
+
+      loadBookings();
+      loadConversations();
+      loadFaq();
+      loadAccounts();
+    })();
+  </script>
+  <script>
+    async function loadBookings() {
+      const res = await adminPost("/api/admin/bookings", { action: "list" });
+      if (!res.ok) return;
+      const el = document.getElementById("bookings-list");
+      if (!res.rows.length) {
+        el.innerHTML = '<p class="text-sm text-outline">ما فيه حجوزات بعد.</p>';
+        return;
+      }
+      el.innerHTML = res.rows
+        .map(
+          (b) => `
+        <div class="rounded-lg border p-3 flex items-center justify-between gap-3">
+          <div>
+            <div class="font-bold">${b.name || "بدون اسم"} — ${b.phone}</div>
+            <div class="text-sm text-outline">${b.preferredSlotLabel} · ${b.status}</div>
+          </div>
+          <div class="flex gap-2">
+            <button data-id="${b.id}" data-status="confirmed" class="booking-status-btn text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">تأكيد</button>
+            <button data-id="${b.id}" data-status="cancelled" class="booking-status-btn text-xs px-2 py-1 rounded bg-red-100 text-red-700">إلغاء</button>
+          </div>
+        </div>`
+        )
+        .join("");
+      el.querySelectorAll(".booking-status-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await adminPost("/api/admin/bookings", {
+            action: "setStatus",
+            id: Number(btn.dataset.id),
+            status: btn.dataset.status
+          });
+          loadBookings();
+        });
+      });
+    }
+  </script>
+  <script>
+    async function loadConversations() {
+      const res = await adminPost("/api/admin/conversations", {});
+      if (!res.ok) return;
+      const el = document.getElementById("conversations-list");
+      el.innerHTML = res.rows.length
+        ? res.rows
+            .map(
+              (c) => `
+        <div class="rounded-lg border p-3">
+          <div class="font-bold">${c.phone}</div>
+          <div class="text-sm text-outline">${c.lastDirection === "in" ? "← " : "→ "}${(c.lastBody || "").slice(0, 120)}</div>
+        </div>`
+            )
+            .join("")
+        : '<p class="text-sm text-outline">ما فيه محادثات بعد.</p>';
+    }
+  </script>
+  <script>
+    async function loadFaq() {
+      const res = await adminPost("/api/admin/faq", { action: "list" });
+      if (!res.ok) return;
+      const el = document.getElementById("faq-list");
+      el.innerHTML = res.rows
+        .map(
+          (r) => `
+        <div class="rounded-lg border p-3 flex items-start justify-between gap-3">
+          <div>
+            <div class="font-bold">${r.question}</div>
+            <div class="text-sm text-outline">${r.answer}</div>
+          </div>
+          <button data-id="${r.id}" class="faq-delete-btn text-xs px-2 py-1 rounded bg-red-100 text-red-700 shrink-0">حذف</button>
+        </div>`
+        )
+        .join("");
+      el.querySelectorAll(".faq-delete-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await adminPost("/api/admin/faq", { action: "delete", id: Number(btn.dataset.id) });
+          loadFaq();
+        });
+      });
+    }
+
+    document.getElementById("faq-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const question = document.getElementById("faq-question").value.trim();
+      const answer = document.getElementById("faq-answer").value.trim();
+      if (!question || !answer) return;
+      await adminPost("/api/admin/faq", { action: "save", question, answer });
+      document.getElementById("faq-form").reset();
+      loadFaq();
+    });
+
+    document.getElementById("faq-reembed").addEventListener("click", async () => {
+      const res = await adminPost("/api/admin/faq", { action: "reembed" });
+      alert(res.ok ? `تم تضمين ${res.reembedded} مدخل.` : res.error);
+    });
+  </script>
+  <script>
+    async function loadAccounts() {
+      const res = await adminPost("/api/admin/accounts", { action: "list" });
+      if (!res.ok) return;
+      const el = document.getElementById("accounts-list");
+      el.innerHTML = res.rows
+        .map(
+          (a) => `
+        <div class="rounded-lg border p-3 flex items-center justify-between gap-3">
+          <div>
+            <div class="font-bold">${a.email}</div>
+            <div class="text-sm text-outline">${a.createdAt}${a.disabled ? " · معطّل" : ""}</div>
+          </div>
+          <button data-merchant="${a.merchantId}" data-disabled="${!a.disabled}" class="account-toggle-btn text-xs px-2 py-1 rounded border">
+            ${a.disabled ? "تفعيل" : "تعطيل"}
+          </button>
+        </div>`
+        )
+        .join("");
+      el.querySelectorAll(".account-toggle-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          await adminPost("/api/admin/accounts", {
+            action: "setDisabled",
+            merchantId: btn.dataset.merchant,
+            disabled: btn.dataset.disabled === "true"
+          });
+          loadAccounts();
+        });
+      });
+    }
+  </script>
+</body>
+</html>
