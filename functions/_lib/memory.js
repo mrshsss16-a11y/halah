@@ -32,3 +32,34 @@ export async function recallSimilar({ env, storeId, question, topK = 3 }) {
     .map((m) => m.metadata)
     .filter((m) => Boolean(m) && (m.score === undefined || m.score >= 6));
 }
+
+/**
+ * Re-embeds every row in D1's hala_faq table into Vectorize under
+ * storeId="hala", so the WhatsApp/support personas can recallSimilar()
+ * against it exactly like a merchant's memory. Deterministic ids
+ * (hala_faq_<row id>) mean a re-run overwrites in place — no separate
+ * delete pass needed.
+ */
+export async function reembedHalaFaq(env, faqRows) {
+  if (!env.VECTORIZE_INDEX) return 0;
+  let count = 0;
+  for (const row of faqRows) {
+    const values = await embedText({ env, text: row.question });
+    await env.VECTORIZE_INDEX.upsert([
+      {
+        id: `hala_faq_${row.id}`,
+        values,
+        metadata: {
+          question: row.question,
+          reply: row.answer,
+          score: 10,
+          dialect: "saudi_najdi",
+          storeId: "hala",
+          ts: Date.now()
+        }
+      }
+    ]);
+    count++;
+  }
+  return count;
+}
