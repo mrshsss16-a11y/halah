@@ -1,0 +1,40 @@
+/* ============================================================
+   Trust surfaces - forced light field for money / OAuth / KYC
+   (PR7 - see docs/design-decisions/2026-07-12-hala-theme-animation-design.md)
+   ============================================================ */
+.surface-trust,
+[data-surface="trust"] {
+  color-scheme: light;
+  --bg: #f7f9fb;
+  --surface: #ffffff;
+  --fg: #191c1e;
+  --fg-muted: #40484d;
+  --brand: #2A6E93;
+  --border: #c5cdd3;
+  background: #ffffff;
+  color: #191c1e;
+  border: 1px solid #c5cdd3;
+}
+
+/* Reset common Tailwind utilities inside trust (CDN era) */
+.surface-trust .bg-background,
+.surface-trust .bg-surface,
+.surface-trust .bg-surface-container-lowest,
+.surface-trust .bg-white\/5,
+.surface-trust .bg-primary\/10 {
+  background-color: #f7f9fb !important;
+}
+.surface-trust .text-on-surface,
+.surface-trust .text-on-background,
+.surface-trust .dash-title {
+  color: #191c1e !important;
+}
+.surface-trust .text-on-surface-variant,
+.surface-trust .dash-muted {
+  color: #40484d !important;
+}
+.surface-trust .border-outline-variant\/30,
+.surface-trust .border-white\/10 {
+  border-color: #c5cdd3 !important;
+}
+/* Prefer migrating these blocks to var-based classes in PR6+ */

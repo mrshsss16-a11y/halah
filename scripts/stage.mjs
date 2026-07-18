@@ -14,9 +14,10 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dist = join(root, "dist");
 const partialsDir = join(root, "partials");
+const stylesDir = join(root, "styles");
 
 const INCLUDE = /\.(html|css|js|png|svg|webp|ico|txt)$/;
-const EXCLUDE_DIRS = new Set([".git", ".agents", ".wrangler", "node_modules", "dist", "docs", "functions", "migrations", "partials", "persona", "scripts"]);
+const EXCLUDE_DIRS = new Set([".git", ".agents", ".wrangler", "node_modules", "dist", "docs", "functions", "migrations", "partials", "persona", "scripts", "styles"]);
 const INCLUDE_TAG = /<!--\s*#include\s+([\w./-]+)\s*-->/g;
 
 function resolveIncludes(html, fromFile, depth = 0) {
@@ -36,7 +37,15 @@ function resolveIncludes(html, fromFile, depth = 0) {
 rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
-let count = 0;
+// style.css is authored as numbered sections under styles/ (01-base,
+// 02-motion-components, ...) — concatenated in filename order into one
+// dist/style.css so pages keep a single stylesheet request. Splitting the
+// source only; the shipped output is unchanged.
+const styleParts = readdirSync(stylesDir).filter((f) => f.endsWith(".css")).sort();
+const styleCss = styleParts.map((f) => readFileSync(join(stylesDir, f), "utf8")).join("");
+writeFileSync(join(dist, "style.css"), styleCss);
+
+let count = 1;
 for (const entry of readdirSync(root, { withFileTypes: true })) {
   if (entry.isDirectory()) {
     if (!EXCLUDE_DIRS.has(entry.name)) {
