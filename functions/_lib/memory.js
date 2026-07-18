@@ -19,7 +19,7 @@ export async function rememberReply({ env, storeId, question, reply, score, dial
   return id;
 }
 
-export async function recallSimilar({ env, storeId, question, topK = 3 }) {
+export async function recallSimilar({ env, storeId, question, topK = 5 }) {
   if (!env.VECTORIZE_INDEX) return [];
   const values = await embedText({ env, text: question });
   const result = await env.VECTORIZE_INDEX.query(values, {
