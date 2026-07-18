@@ -1,3 +1,5 @@
+import { getAccountEmail } from "./db.js";
+
 // Signed session cookie — no DB round trip to verify. Token shape:
 // `${merchantId}.${expiryUnix}.${hmacHex}`, HMAC-SHA256(SESSION_SECRET, `${merchantId}.${expiryUnix}`).
 // Same signing pattern as the Salla webhook signature check (functions/api/webhooks/salla.js)
@@ -79,6 +81,26 @@ export async function resolveStoreId(request, env, claimedStoreId) {
   const sessionMerchantId = await getSessionMerchantId(request, env);
   if (sessionMerchantId) return sessionMerchantId;
   return (claimedStoreId || "default-store").toString().slice(0, 40);
+}
+
+/**
+ * Admin gate: session token only carries merchantId (see resolveStoreId
+ * above), never email — so this looks up the account's email in D1 and
+ * checks it against the ADMIN_EMAILS secret. No role column anywhere:
+ * there is no code path that can grant admin by writing to the DB, only
+ * by editing the Cloudflare secret.
+ */
+export async function requireAdmin(request, env) {
+  const merchantId = await getSessionMerchantId(request, env);
+  if (!merchantId) return null;
+  const email = await getAccountEmail(env, merchantId);
+  if (!email) return null;
+  const allow = (env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allow.includes(email.toLowerCase())) return null;
+  return { merchantId, email };
 }
 
 export { COOKIE_NAME };
