@@ -6,6 +6,7 @@
 import { withApi } from "../_lib/respond.js";
 import { askWorkersAI } from "../_lib/workersAI.js";
 import { HALA_SUPPORT_PROMPT } from "../_lib/persona.js";
+import { recallSimilar } from "../_lib/memory.js";
 
 const CTA_MARKER = "[WHATSAPP_CTA]";
 
@@ -31,9 +32,17 @@ async function supportHandler(body, env) {
     return { error: "ما فيه رسالة." };
   }
 
+  const lastUserText = turns[turns.length - 1].content;
+  const memories = await recallSimilar({ env, storeId: "hala", question: lastUserText }).catch(() => []);
+  const ragContext = memories.length
+    ? `\n\n## معرفة ذات صلة (استخدميها لو تساعد بالإجابة، تجاهليها لو مو مرتبطة)\n${memories
+        .map((m) => `- س: ${m.question}\n  ج: ${m.reply}`)
+        .join("\n")}`
+    : "";
+
   let reply = await askWorkersAI({
     env,
-    system: HALA_SUPPORT_PROMPT,
+    system: `${HALA_SUPPORT_PROMPT}${ragContext}`,
     messages: turns,
     maxTokens: 400
   });
