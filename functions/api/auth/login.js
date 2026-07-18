@@ -2,6 +2,7 @@
 import { json } from "../../_lib/respond.js";
 import { verifyPassword } from "../../_lib/auth.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/session.js";
+import { isAccountDisabled } from "../../_lib/db.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -18,6 +19,10 @@ export async function onRequestPost(context) {
   const account = await env.DB.prepare("SELECT * FROM accounts WHERE email = ?").bind(email).first();
   if (!account || !(await verifyPassword(password, account.password_hash, account.password_salt))) {
     return json({ ok: false, error: "البريد أو كلمة المرور غير صحيحة." }, 401);
+  }
+
+  if (await isAccountDisabled(env, account.merchant_id)) {
+    return json({ ok: false, error: "هذا الحساب معطّل. تواصل مع فريق هالة." }, 403);
   }
 
   const merchant = await env.DB.prepare("SELECT store_name FROM merchants WHERE id = ?")
