@@ -15,6 +15,7 @@
 لو `merchantId === "hala"` (رقم أورا) → استخدم `HALA_SUPPORT_PROMPT` بدل شخصية التاجر. غير هذا، السلوك الحالي يبقى (لكل تاجر شخصيته من `marketing_contexts`).
 
 ### 2. RAG حقيقي لدعم هالة
+- **تصحيح (فحص توافق):** `migrations/` فيها فجوة ترقيم — `0003` مفقود (موجود 0001, 0002, 0004, 0005). كل ميجريشن جديدة بهالخطة تبدأ من `0006` تجنب أي تصادم رقمي.
 - جدول D1 جديد `hala_faq` (id, question, answer, created_at, updated_at) — مصدر الحقيقة للمعرفة.
 - بذر أولي من محتوى `persona/hala-support-knowledge.md` الحالي.
 - دالة `reembedHalaFaq(env)` بـ`functions/_lib/memory.js`: تمسح مدخلات Vectorize القديمة لـ`storeId="hala"` وتعيد تضمين كل صف من `hala_faq` (نفس نمط `rememberReply`/`recallSimilar` الموجود).
@@ -28,11 +29,11 @@
 ### 4. دور أدمن (بأمان، بدون سطح هجوم إضافي)
 - **بدون** عمود `role` بجدول الحسابات (تجنب مسار تصعيد صلاحيات عبر كتابة بالـDB).
 - بدلاً منه: سر بيئة `ADMIN_EMAILS` (قائمة إيميلات مفصولة بفاصلة) — يُفحص وقت التحقق من الجلسة لأي مسار `/api/admin/*`. أورا فقط تضيف إيميلها كسر Cloudflare — لا مسار كودي يقدر يمنح صلاحية أدمن لحساب.
-- دالة `requireAdmin(request, env)` بـ`functions/_lib/session.js` — نفس نمط `resolveStoreId` لكنها ترمي 403 لو الإيميل مو بالقائمة.
+- **تصحيح (فحص توافق):** `session.js` الحالي (`resolveStoreId`/`verifySessionToken`) يرجّع `merchantId` فقط — التوكن ما يحمل الإيميل. لذا `requireAdmin(request, env)` لازم: (1) `getSessionMerchantId(request, env)` → merchantId، (2) استعلام `accounts.email` بواسطة `merchantId` (استعلام D1 جديد بسيط بـ`db.js`، مثلاً `getAccountEmail(env, merchantId)`)، (3) قارن الإيميل مع قائمة `ADMIN_EMAILS`. ترمي 403 لو ما فيه جلسة أو الإيميل مو بالقائمة. تُضاف بـ`functions/_lib/session.js` بنفس نمط `resolveStoreId`.
 
 ### 5. لوحة `admin.html` (صفحة منتج جديدة، غير مربوطة بالتنقل العام)
 أقسام (كل قسم يقرأ/يكتب عبر `/api/admin/*` محمية بـ`requireAdmin`):
-- **محادثات واتساب أورا**: آخر 50 رسالة (`recentWaHistory`) + قائمة حجوزات الاستشارة مع تغيير الحالة (تأكيد/إلغاء).
+- **محادثات واتساب أورا**: **تصحيح (فحص توافق):** `recentWaHistory(env, merchantId, phone, limit)` الحالية تحتاج رقم جوال محدد — ما تصلح لعرض "كل المحادثات". تحتاج دالة جديدة `recentWaConversations(env, merchantId, limit)` بـ`db.js` (مو موجودة، تُضاف): آخر رسالة لكل جوال فريد. + قائمة حجوزات الاستشارة مع تغيير الحالة (تأكيد/إلغاء).
 - **معرفة هالة (RAG)**: جدول `hala_faq` — إضافة/تعديل/حذف سؤال-جواب، زر "إعادة تضمين" يستدعي `reembedHalaFaq`.
 - **الحسابات**: قائمة `accounts` (إيميل، تاريخ إنشاء، آخر استخدام) — عرض فقط + زر تعطيل (يضيف عمود `disabled` بسيط، `resolveStoreId`/تسجيل الدخول يرفض الحساب المعطّل).
 - **نظرة عامة على قاعدة البيانات**: عدادات فقط (تجار، حسابات، حجوزات، مدخلات معرفة) — **بدون console SQL خام** (قرار أمان متعمد: يمنع حقن/تلف بيانات عرضي).
