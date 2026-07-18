@@ -14,3 +14,6 @@ skills-lock.json
 
 # Skill packages (npx skills add) — editor tooling, not app code
 .claude/skills
+
+# graphify knowledge-graph output — regenerated from source, not app code
+graphify-out
