@@ -56,14 +56,31 @@ ${kw}${avoid}`;
 }
 
 function parse(raw) {
-  const m = raw.match(/\{[\s\S]*\}/);
-  const p = JSON.parse(m ? m[0] : raw);
-  if (typeof p.description !== "string" || !p.description.trim()) throw new Error("empty description");
-  return {
-    description: p.description.trim(),
-    whatsapp: typeof p.whatsapp === "string" ? p.whatsapp.trim() : "",
-    tags: Array.isArray(p.tags) ? p.tags.slice(0, 8).map((t) => String(t).replace(/^#/, "").trim()) : []
-  };
+  const source = typeof raw === "string" ? raw : String(raw ?? "");
+  const m = source.match(/\{[\s\S]*\}/);
+  // The model doesn't always honor the "JSON only" instruction under a long
+  // persona system prompt (seen live: plain prose response, no braces at
+  // all). Rather than 502 the whole request, fall back to using the raw
+  // text as the description — degraded (no whatsapp/tags variant) but a
+  // real usable description beats an error for the merchant.
+  if (m) {
+    try {
+      const p = JSON.parse(m[0]);
+      const description = typeof p.description === "string" ? p.description : String(p.description ?? "");
+      if (description.trim()) {
+        return {
+          description: description.trim(),
+          whatsapp: typeof p.whatsapp === "string" ? p.whatsapp.trim() : String(p.whatsapp ?? "").trim(),
+          tags: Array.isArray(p.tags) ? p.tags.slice(0, 8).map((t) => String(t).replace(/^#/, "").trim()) : []
+        };
+      }
+    } catch {
+      // fall through to plain-text fallback below
+    }
+  }
+  const plain = source.trim();
+  if (!plain) throw new Error("empty description");
+  return { description: plain, whatsapp: "", tags: [] };
 }
 
 async function copyHandler(body, env, request) {

@@ -78,11 +78,21 @@ async function tryKlein({ env, imageBase64, mime, prompt }) {
   const form = new FormData();
   form.append("prompt", prompt);
   form.append("input_image_0", new Blob([bytes], { type: mime }), "product.png");
-  form.append("width", "1024");
-  form.append("height", "1024");
+
+  // Two live-caught fixes here:
+  // 1. contentType must include the real multipart boundary FormData
+  //    generated — the literal string "multipart/form-data" alone caused
+  //    "3030: Missing boundary in multipart." on every call.
+  // 2. Per Cloudflare's own docs ("FormData is serialized into a stream
+  //    before passing"), `multipart.body` must be the serialized byte
+  //    stream, not the FormData object itself — passing the FormData
+  //    directly caused "8001: Invalid input" on every call.
+  const probe = new Request("https://x", { method: "POST", body: form });
+  const contentType = probe.headers.get("content-type");
+  const bodyStream = probe.body;
 
   const response = await env.AI.run(KLEIN_MODEL, {
-    multipart: { body: form, contentType: "multipart/form-data" }
+    multipart: { body: bodyStream, contentType }
   });
 
   const outB64 = response && response.image;
