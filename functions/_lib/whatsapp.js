@@ -75,6 +75,37 @@ export async function sendWaTemplate(env, { to, template, lang = "ar", component
   return data.messages && data.messages[0] && data.messages[0].id;
 }
 
+/** Sends an interactive list message — up to 10 tap-to-choose rows in one section. */
+export async function sendWaInteractiveList(env, { to, bodyText, buttonText, rows }) {
+  if (!waConfigured(env)) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
+  const res = await fetch(`${GRAPH}/${env.WHATSAPP_PHONE_ID}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.WHATSAPP_TOKEN}`,
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to,
+      type: "interactive",
+      interactive: {
+        type: "list",
+        body: { text: bodyText },
+        action: {
+          button: buttonText,
+          sections: [{ title: "الفتحات المتاحة", rows }]
+        }
+      }
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(`whatsapp interactive list failed: ${res.status} ${JSON.stringify(data).slice(0, 200)}`);
+  }
+  return data.messages && data.messages[0] && data.messages[0].id;
+}
+
 /** Extract inbound messages from a webhook payload into a simple shape. */
 export function parseInbound(payload) {
   const out = [];
@@ -84,12 +115,18 @@ export function parseInbound(payload) {
       const contacts = value.contacts || [];
       for (const msg of value.messages || []) {
         const contact = contacts.find((c) => c.wa_id === msg.from);
+        const listReply =
+          msg.type === "interactive" && msg.interactive && msg.interactive.type === "list_reply"
+            ? msg.interactive.list_reply
+            : null;
         out.push({
           from: msg.from,
           name: contact && contact.profile && contact.profile.name,
           text: msg.text && msg.text.body,
           type: msg.type,
-          id: msg.id
+          id: msg.id,
+          listReplyId: listReply ? listReply.id : null,
+          listReplyTitle: listReply ? listReply.title : null
         });
       }
     }
