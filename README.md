@@ -74,10 +74,10 @@ npx wrangler d1 migrations apply halah-tr-db --remote   # تطبيق مخطط ج
 
 ## قائمة جاهزية مراجعة سلة
 
-- [ ] حساب [salla.partners](https://salla.partners) موثق + تطبيق منشأ (Easy Mode)
+- [x] حساب [salla.partners](https://salla.partners) موثق + تطبيق منشأ (Easy Mode)
 - [ ] Scopes: `products.read_write, orders.read, customers.read, carts.read, webhooks.read_write, offline_access`
-- [ ] Webhook URL: `https://hala-ai-os.pages.dev/api/webhooks/salla` + استراتيجية Signature
-- [ ] الأسرار الثلاثة مضبوطة بـ Pages
+- [x] Webhook URL: `https://hala-ai-os.pages.dev/api/webhooks/salla` + استراتيجية Signature
+- [x] الأسرار الأربعة مضبوطة بـ Pages (`SALLA_APP_ID`, `SALLA_CLIENT_ID`, `SALLA_CLIENT_SECRET`, `SALLA_WEBHOOK_SECRET`)
 - [ ] اختبار على متجر ديمو: تثبيت → `app.store.authorize` يوصل → المنتجات تظهر بالداشبورد
 - [x] صفحة سياسة خصوصية (`/privacy.html`)
 - [ ] وصف التطبيق وأيقونته ببوابة الشركاء
