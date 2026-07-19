@@ -223,11 +223,34 @@ export async function recordWaOutbound(env, { merchantId, phone, body, waMessage
  */
 export async function getLastHumanReplyAt(env, merchantId, phone) {
   const row = await env.DB.prepare(
-    "SELECT created_at FROM whatsapp_messages WHERE merchant_id = ? AND phone = ? AND direction = 'out' AND source = 'human' ORDER BY created_at DESC LIMIT 1"
+    "SELECT created_at FROM whatsapp_messages WHERE merchant_id = ? AND phone = ? AND direction = 'out' AND source IN ('human', 'escalated') ORDER BY created_at DESC LIMIT 1"
   )
     .bind(merchantId || "hala", phone)
     .first();
   return row ? row.created_at : null;
+}
+
+/**
+ * Counts inbound messages from this phone in the last `sinceMinutes` that
+ * arrived after the most recent escalation (or since the window start if
+ * there was none). A code-level safety net: if the model never emits
+ * [ESCALATE] but the customer keeps messaging unanswered, this forces
+ * escalation regardless of what the model decided.
+ */
+export async function countRecentInboundWithoutResolution(env, merchantId, phone, sinceMinutes = 60) {
+  const row = await env.DB.prepare(
+    `SELECT COUNT(*) AS n FROM whatsapp_messages
+     WHERE merchant_id = ? AND phone = ? AND direction = 'in'
+       AND created_at > datetime('now', ?)
+       AND created_at > COALESCE(
+         (SELECT MAX(created_at) FROM whatsapp_messages
+          WHERE merchant_id = ? AND phone = ? AND direction = 'out' AND source = 'escalated'),
+         '1970-01-01'
+       )`
+  )
+    .bind(merchantId || "hala", phone, `-${sinceMinutes} minutes`, merchantId || "hala", phone)
+    .first();
+  return row ? row.n : 0;
 }
 
 /** Returns true if the 24h customer-service window is open for this phone. */
