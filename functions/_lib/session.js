@@ -1,4 +1,5 @@
 import { getAccountEmail } from "./db.js";
+import { ApiError } from "./respond.js";
 
 // Signed session cookie — no DB round trip to verify. Token shape:
 // `${merchantId}.${expiryUnix}.${hmacHex}`, HMAC-SHA256(SESSION_SECRET, `${merchantId}.${expiryUnix}`).
@@ -71,16 +72,28 @@ export async function getSessionMerchantId(request, env) {
 }
 
 /**
- * The core protection: if a valid session cookie exists, it always wins over
- * whatever storeId the client claims in the request body — closes the "send
- * someone else's storeId" hole. With no session (anonymous demo flow), the
- * client-claimed id passes through unchanged — zero behavior change for the
- * existing default-store experience.
+ * The core tenant-isolation rule, two layers:
+ *
+ * 1. A valid session cookie always wins over whatever storeId the client
+ *    claims in the request body — a logged-in attacker can never operate on
+ *    someone else's store by swapping ids.
+ * 2. With no session, a claimed storeId is only honored when that store has
+ *    NO account attached. Stores created via the Salla Easy-Mode install have
+ *    no login — their unguessable id (m_ + 96 random bits truncated) is their
+ *    only credential, so it must keep working. But the moment a merchant
+ *    signs up, their data is reachable exclusively through a session: a
+ *    leaked/guessed id alone gets 401 LOGIN_REQUIRED.
+ *
+ * The anonymous demo flow ("default-store") is untouched.
  */
 export async function resolveStoreId(request, env, claimedStoreId) {
   const sessionMerchantId = await getSessionMerchantId(request, env);
   if (sessionMerchantId) return sessionMerchantId;
-  return (claimedStoreId || "default-store").toString().slice(0, 40);
+  const claimed = (claimedStoreId || "default-store").toString().slice(0, 40);
+  if (claimed !== "default-store" && (await getAccountEmail(env, claimed))) {
+    throw new ApiError(401, "هذا المتجر مرتبط بحساب — سجّل دخولك للوصول له.", "LOGIN_REQUIRED");
+  }
+  return claimed;
 }
 
 /**

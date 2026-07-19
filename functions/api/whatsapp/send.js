@@ -3,11 +3,19 @@
 // Manual/merchant-triggered outbound WhatsApp message (e.g. abandoned-cart
 // recovery). Free-form text only works inside the 24h window; outside it, pass
 // a pre-approved template name instead.
-import { withApi } from "../../_lib/respond.js";
+import { withApi, ApiError } from "../../_lib/respond.js";
 import { sendWaText, sendWaTemplate, waConfigured } from "../../_lib/whatsapp.js";
 import { isWaWindowOpen, recordWaOutbound } from "../../_lib/db.js";
+import { requireAdmin } from "../../_lib/session.js";
 
-async function sendHandler(body, env) {
+async function sendHandler(body, env, request) {
+  // Outbound messages go out from the platform's own WhatsApp number
+  // (WHATSAPP_MERCHANT_ID), so this must never be callable anonymously —
+  // otherwise anyone can spam arbitrary phones as "hala". Admin only.
+  const admin = await requireAdmin(request, env);
+  if (!admin) {
+    throw new ApiError(403, "هذه العملية تتطلب صلاحية مشرف.", "ADMIN_REQUIRED");
+  }
   if (!waConfigured(env)) {
     return { ok: false, error: "WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID بأسرار Cloudflare." };
   }

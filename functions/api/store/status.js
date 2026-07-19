@@ -3,7 +3,7 @@
 // has landed after the merchant installs the app from the Salla store.
 // Returns the canonical merchant id so the frontend can persist hala_store_id.
 import { withApi } from "../../_lib/respond.js";
-import { getMerchant, getMerchantBySalla, getTokens, getPlatformConnection } from "../../_lib/db.js";
+import { getMerchant, getMerchantBySalla, getTokens, getPlatformConnection, getAccountEmail } from "../../_lib/db.js";
 import { getSessionMerchantId } from "../../_lib/session.js";
 
 async function statusHandler(body, env, request) {
@@ -30,6 +30,14 @@ async function statusHandler(body, env, request) {
   }
   if (!merchant) {
     return { linked: false };
+  }
+
+  // Tenant isolation: a merchant that has an account is only visible to its
+  // own session. Without this, probing storeId/sallaMerchantId (or racing the
+  // 5-minute install fallback) leaks a registered merchant's id, store name
+  // and connection state to anyone — the first link in the IDOR chain.
+  if (merchant.id !== sessionMerchantId && (await getAccountEmail(env, merchant.id))) {
+    return { linked: false, code: "LOGIN_REQUIRED" };
   }
 
   const sallaTokens = await getTokens(env, merchant.id, "salla");
