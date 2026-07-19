@@ -207,12 +207,27 @@ export async function recordWaInbound(env, { merchantId, phone, name, body, waMe
     .run();
 }
 
-export async function recordWaOutbound(env, { merchantId, phone, body, waMessageId }) {
+export async function recordWaOutbound(env, { merchantId, phone, body, waMessageId, source = null }) {
   await env.DB.prepare(
-    "INSERT INTO whatsapp_messages (merchant_id, phone, direction, body, wa_message_id) VALUES (?, ?, 'out', ?, ?)"
+    "INSERT INTO whatsapp_messages (merchant_id, phone, direction, body, wa_message_id, source) VALUES (?, ?, 'out', ?, ?, ?)"
   )
-    .bind(merchantId || "hala", phone, (body || "").slice(0, 4000), waMessageId || null)
+    .bind(merchantId || "hala", phone, (body || "").slice(0, 4000), waMessageId || null, source)
     .run();
+}
+
+/**
+ * Timestamp of the most recent human-typed reply (a phone-app echo on a
+ * Coexistence number) to this phone, or null if none. Lets autoReply() go
+ * quiet for a while after a human manually answers instead of talking over
+ * them on the customer's next message.
+ */
+export async function getLastHumanReplyAt(env, merchantId, phone) {
+  const row = await env.DB.prepare(
+    "SELECT created_at FROM whatsapp_messages WHERE merchant_id = ? AND phone = ? AND direction = 'out' AND source = 'human' ORDER BY created_at DESC LIMIT 1"
+  )
+    .bind(merchantId || "hala", phone)
+    .first();
+  return row ? row.created_at : null;
 }
 
 /** Returns true if the 24h customer-service window is open for this phone. */

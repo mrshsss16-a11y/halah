@@ -7,7 +7,7 @@
 import { verifyWaSignature, parseInbound, parseEchoes, sendWaText, waConfigured } from "../../_lib/whatsapp.js";
 import { askWorkersAI } from "../../_lib/workersAI.js";
 import { PERSONA_SYSTEM_PROMPT, HALA_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, dialectLabel } from "../../_lib/persona.js";
-import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking } from "../../_lib/db.js";
+import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt } from "../../_lib/db.js";
 import { recallSimilar } from "../../_lib/memory.js";
 
 export async function onRequestGet(context) {
@@ -22,8 +22,16 @@ export async function onRequestGet(context) {
 }
 
 const BOOK_SLOT_RE = /\[BOOK_SLOT:([^\]]+)\]/;
+// How long the bot stays quiet on a phone after a human manually replies
+// from the WhatsApp Business app, so it doesn't talk over them mid-handoff.
+const HUMAN_SILENCE_WINDOW_MS = 2 * 3600 * 1000;
 
 async function autoReply(env, merchantId, phone, incomingText, contactName) {
+  const lastHumanReplyAt = env.DB ? await getLastHumanReplyAt(env, merchantId, phone).catch(() => null) : null;
+  if (lastHumanReplyAt && Date.now() - new Date(`${lastHumanReplyAt}Z`).getTime() < HUMAN_SILENCE_WINDOW_MS) {
+    return null;
+  }
+
   const history = env.DB ? await recentWaHistory(env, merchantId, phone).catch(() => []) : [];
   const memories = await recallSimilar({ env, storeId: merchantId, question: incomingText }).catch(() => []);
   const ragContext = memories.length
@@ -104,7 +112,7 @@ export async function onRequestPost(context) {
       for (const echo of echoes) {
         if (!echo.text) continue;
         try {
-          await recordWaOutbound(env, { merchantId, phone: echo.to, body: echo.text, waMessageId: echo.id });
+          await recordWaOutbound(env, { merchantId, phone: echo.to, body: echo.text, waMessageId: echo.id, source: "human" });
         } catch (err) {
           console.error("[wa-webhook-echo]", err);
         }
@@ -123,7 +131,7 @@ export async function onRequestPost(context) {
             const reply = await autoReply(env, merchantId, msg.from, msg.text, msg.name);
             if (reply) {
               const outId = await sendWaText(env, { to: msg.from, body: reply });
-              await recordWaOutbound(env, { merchantId, phone: msg.from, body: reply, waMessageId: outId });
+              await recordWaOutbound(env, { merchantId, phone: msg.from, body: reply, waMessageId: outId, source: "bot" });
             }
           }
         } catch (err) {
