@@ -94,7 +94,11 @@ export async function sendWaInteractiveList(env, { to, bodyText, buttonText, row
         body: { text: bodyText },
         action: {
           button: buttonText,
-          sections: [{ title: "الفتحات المتاحة", rows }]
+          // WhatsApp's Cloud API hard-caps interactive lists at 10 rows total —
+          // truncate defensively so a future WEEKLY_SLOTS growth bug fails safe
+          // (a shorter list) instead of a hard 400 from Meta that drops the
+          // whole send.
+          sections: [{ title: "الفتحات المتاحة", rows: rows.slice(0, 10) }]
         }
       }
     })

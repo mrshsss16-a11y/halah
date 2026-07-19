@@ -164,6 +164,8 @@ export async function onRequestPost(context) {
               const confirmText = `تم حجز استشارتك ${slotLabel} ✅ فريقنا بيتواصل معك بالوقت المحدد.`;
               const outId = await sendWaText(env, { to: msg.from, body: confirmText });
               await recordWaOutbound(env, { merchantId, phone: msg.from, body: confirmText, waMessageId: outId, source: "bot" });
+            } else {
+              console.error("[wa-webhook] unmatched list_reply", msg.listReplyId);
             }
             continue;
           }

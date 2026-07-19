@@ -232,10 +232,13 @@ export async function getLastHumanReplyAt(env, merchantId, phone) {
 
 /**
  * Counts inbound messages from this phone in the last `sinceMinutes` that
- * arrived after the most recent escalation (or since the window start if
- * there was none). A code-level safety net: if the model never emits
- * [ESCALATE] but the customer keeps messaging unanswered, this forces
- * escalation regardless of what the model decided.
+ * arrived after the most recent "resolution" — either an escalation or a
+ * successful consultation booking (consultation_bookings is a global table,
+ * not merchant-scoped, so it's matched on phone only). A code-level safety
+ * net: if the model never emits [ESCALATE] but the customer keeps messaging
+ * unanswered, this forces escalation regardless of what the model decided —
+ * but a customer who just booked shouldn't be force-escalated for asking a
+ * couple of follow-up questions right after.
  */
 export async function countRecentInboundWithoutResolution(env, merchantId, phone, sinceMinutes = 60) {
   const row = await env.DB.prepare(
@@ -243,12 +246,17 @@ export async function countRecentInboundWithoutResolution(env, merchantId, phone
      WHERE merchant_id = ? AND phone = ? AND direction = 'in'
        AND created_at > datetime('now', ?)
        AND created_at > COALESCE(
-         (SELECT MAX(created_at) FROM whatsapp_messages
-          WHERE merchant_id = ? AND phone = ? AND direction = 'out' AND source = 'escalated'),
+         (SELECT MAX(t) FROM (
+            SELECT MAX(created_at) AS t FROM whatsapp_messages
+             WHERE merchant_id = ? AND phone = ? AND direction = 'out' AND source = 'escalated'
+            UNION ALL
+            SELECT MAX(created_at) AS t FROM consultation_bookings
+             WHERE phone = ?
+         )),
          '1970-01-01'
        )`
   )
-    .bind(merchantId || "hala", phone, `-${sinceMinutes} minutes`, merchantId || "hala", phone)
+    .bind(merchantId || "hala", phone, `-${sinceMinutes} minutes`, merchantId || "hala", phone, phone)
     .first();
   return row ? row.n : 0;
 }
