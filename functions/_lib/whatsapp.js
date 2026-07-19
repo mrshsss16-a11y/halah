@@ -96,3 +96,29 @@ export function parseInbound(payload) {
   }
   return out;
 }
+
+/**
+ * Extract "echo" events from a webhook payload — messages sent from the
+ * WhatsApp Business consumer app itself (or a linked companion device) on a
+ * Coexistence-enabled number, not via this Cloud API. Meta's smb_message_echoes
+ * field: object -> entry[] -> changes[] -> value -> message_echoes[].
+ * Without this, anything a human types from the phone app vanishes from our
+ * conversation history/RAG context — the AI would "forget" half the thread.
+ */
+export function parseEchoes(payload) {
+  const out = [];
+  for (const entry of payload.entry || []) {
+    for (const change of entry.changes || []) {
+      const value = change.value || {};
+      for (const echo of value.message_echoes || []) {
+        out.push({
+          to: echo.to,
+          text: echo.type === "text" ? echo.text && echo.text.body : null,
+          type: echo.type,
+          id: echo.id
+        });
+      }
+    }
+  }
+  return out;
+}

@@ -4,7 +4,7 @@
 // Inbound flow: verify X-Hub-Signature-256 → record → auto-reply with the
 // marketer persona (this is the "customer-service AI connected to WhatsApp").
 // Replies only within the 24h service window (free-form allowed there).
-import { verifyWaSignature, parseInbound, sendWaText, waConfigured } from "../../_lib/whatsapp.js";
+import { verifyWaSignature, parseInbound, parseEchoes, sendWaText, waConfigured } from "../../_lib/whatsapp.js";
 import { askWorkersAI } from "../../_lib/workersAI.js";
 import { PERSONA_SYSTEM_PROMPT, HALA_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, dialectLabel } from "../../_lib/persona.js";
 import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking } from "../../_lib/db.js";
@@ -92,10 +92,23 @@ export async function onRequestPost(context) {
 
   const merchantId = env.WHATSAPP_MERCHANT_ID || "hala";
   const inbound = parseInbound(payload);
+  // Coexistence numbers also fire smb_message_echoes for anything a human
+  // sends from the WhatsApp Business phone app itself — record those too so
+  // the conversation history/RAG context the bot sees stays complete instead
+  // of silently missing every message the human typed manually.
+  const echoes = parseEchoes(payload);
 
   // Ack immediately; process in the background (Meta expects a fast 200).
   context.waitUntil(
     (async () => {
+      for (const echo of echoes) {
+        if (!echo.text) continue;
+        try {
+          await recordWaOutbound(env, { merchantId, phone: echo.to, body: echo.text, waMessageId: echo.id });
+        } catch (err) {
+          console.error("[wa-webhook-echo]", err);
+        }
+      }
       for (const msg of inbound) {
         if (!msg.text) continue;
         try {
