@@ -3,10 +3,10 @@
 // Validates the credentials with a REAL API call before saving anything —
 // a bad key never lands in the database. Creates the merchant row when the
 // store isn't linked to anything yet.
-import { withApi } from "../../_lib/respond.js";
-import { verifyConnection } from "../../_lib/trendyol.js";
-import { getMerchant, savePlatformConnection } from "../../_lib/db.js";
-import { resolveStoreId } from "../../_lib/session.js";
+import { withApi } from "../../_lib/core/respond.js";
+import { verifyConnection } from "../../_lib/integrations/trendyol.js";
+import { getMerchant, savePlatformConnection } from "../../_lib/core/db.js";
+import { resolveStoreId } from "../../_lib/core/session.js";
 
 async function connectHandler(body, env, request) {
   const sellerId = (body.sellerId || "").toString().trim();

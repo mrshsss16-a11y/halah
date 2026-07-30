@@ -1,0 +1,46 @@
+---
+---
+<header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200/80 px-6 py-3.5">
+  <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+    <!-- Brand Logo & Tagline -->
+    <div class="flex items-center gap-3.5">
+      <div class="relative w-9 h-9 bg-gradient-to-br from-[#0A192F] to-[#0066FF] rounded-[10px] flex items-center justify-center text-white shadow-[0_4px_12px_rgba(0,102,255,0.25)]">
+        <svg class="w-6 h-6 fill-current text-white" viewBox="0 0 24 24">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-lg text-gray-900 tracking-tight">أورا للتسويق</span>
+          <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-[#EFF6FF] text-[#1D4ED8] border border-[#BFDBFE]">Aura Marketing</span>
+        </div>
+        <p class="text-xs text-gray-500 font-medium">مستقبل التسويق الذكي | The Future of Marketing Intelligence</p>
+      </div>
+    </div>
+
+    <!-- Intelligence Status Badge -->
+    <div class="hidden md:flex items-center gap-6 text-sm">
+      <div class="flex items-center gap-2 bg-blue-50 text-blue-900 px-3.5 py-1.5 rounded-full border border-blue-200 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-cyan-500 animate-pulse"></span>
+        <span>شبكة الذكاء الاصطناعي: نشطة (5ms)</span>
+      </div>
+      <div class="flex items-center gap-2 text-gray-600 text-xs">
+        <span class="material-symbols-outlined text-base text-blue-600">psychology</span>
+        <span>من الإبداع إلى الذكاء</span>
+      </div>
+    </div>
+
+    <!-- Merchant & Store Switcher -->
+    <div class="flex items-center gap-3">
+      <select id="storeSelector" class="bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold">
+        <option value="hala">👑 أورا الرئيسية (Aura Master Core)</option>
+        <option value="store_demo_1">🏪 متجر سلة التجريبي (Salla Demo)</option>
+        <option value="store_demo_2">🛍️ متجر زد التجريبي (Zid Demo)</option>
+      </select>
+      <button onclick="toggleSandboxModal()" class="aura-btn-primary px-4.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">smart_toy</span>
+        <span>تجربة البوت الذكي</span>
+      </button>
+    </div>
+  </div>
+</header>

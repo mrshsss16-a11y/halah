@@ -3,10 +3,12 @@
 // Hala's own site support/sales chat. Answers visitor questions about Hala and
 // funnels to WhatsApp. Detects the [WHATSAPP_CTA] marker the persona emits and
 // returns a structured flag so the widget can render a WhatsApp button.
-import { withApi } from "../_lib/respond.js";
-import { askWorkersAI } from "../_lib/workersAI.js";
-import { HALA_SUPPORT_PROMPT } from "../_lib/persona.js";
-import { recallSimilar } from "../_lib/memory.js";
+import { withApi, ApiError } from "../_lib/core/respond.js";
+import { askWorkersAI } from "../_lib/ai/gateway.js";
+import { HALA_SUPPORT_PROMPT } from "../_lib/ai/persona.js";
+import { recallSimilar } from "../_lib/ai/memory.js";
+import { sanitizeInput, verifyTurnstileToken } from "../_lib/core/security.js";
+import { checkRateLimit } from "../_lib/core/rateLimit.js";
 
 const CTA_MARKER = "[WHATSAPP_CTA]";
 
@@ -21,12 +23,25 @@ function stripFabricatedPricing(reply) {
   return "الأسعار بعد التجربة تختلف حسب حجم متجرك — فريقنا يحددها لك مباشرة على واتساب.\n\n" + CTA_MARKER;
 }
 
-async function supportHandler(body, env) {
+async function supportHandler(body, env, request) {
+  const clientIp = request?.headers?.get("cf-connecting-ip") || request?.headers?.get("x-forwarded-for") || "127.0.0.1";
+  const rateCheck = await checkRateLimit(env, clientIp, "support_chat", 20, 60);
+  if (!rateCheck.allowed) {
+    throw new ApiError(429, "تجاوزت عدد طلبات المحادثة المسموحة. انتظر دقيقة وكرر المحاولة.", "RATE_LIMIT_EXCEEDED");
+  }
+
+  if (body.turnstileToken) {
+    const turnstileResult = await verifyTurnstileToken(env, body.turnstileToken, clientIp);
+    if (!turnstileResult.success) {
+      throw new ApiError(400, "فشل التحقق من عدم كونك بوت سبام.", "TURNSTILE_FAILED");
+    }
+  }
+
   const incoming = Array.isArray(body.messages) ? body.messages : [];
   const turns = incoming
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && m.content)
     .slice(-8)
-    .map((m) => ({ role: m.role, content: String(m.content).slice(0, 800) }));
+    .map((m) => ({ role: m.role, content: sanitizeInput(String(m.content), 800) }));
 
   if (!turns.length || turns[turns.length - 1].role !== "user") {
     return { error: "ما فيه رسالة." };

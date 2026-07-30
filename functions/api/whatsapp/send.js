@@ -3,10 +3,10 @@
 // Manual/merchant-triggered outbound WhatsApp message (e.g. abandoned-cart
 // recovery). Free-form text only works inside the 24h window; outside it, pass
 // a pre-approved template name instead.
-import { withApi, ApiError } from "../../_lib/respond.js";
-import { sendWaText, sendWaTemplate, waConfigured } from "../../_lib/whatsapp.js";
-import { isWaWindowOpen, recordWaOutbound } from "../../_lib/db.js";
-import { requireAdmin } from "../../_lib/session.js";
+import { withApi, ApiError } from "../../_lib/core/respond.js";
+import { sendWaText, sendWaTemplate, waConfigured } from "../../_lib/integrations/whatsapp.js";
+import { isWaWindowOpen, recordWaOutbound } from "../../_lib/core/db.js";
+import { requireAdmin } from "../../_lib/core/session.js";
 
 async function sendHandler(body, env, request) {
   // Outbound messages go out from the platform's own WhatsApp number

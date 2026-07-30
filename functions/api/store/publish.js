@@ -1,9 +1,9 @@
 // POST /api/store/publish — body: { storeId, productId, description }
 // Closes the loop: AI-generated copy from studio.html written straight onto
 // the live Salla product (requires products.read_write scope).
-import { withApi } from "../../_lib/respond.js";
-import { updateProduct } from "../../_lib/salla.js";
-import { resolveStoreId } from "../../_lib/session.js";
+import { withApi } from "../../_lib/core/respond.js";
+import { updateProduct } from "../../_lib/integrations/salla.js";
+import { resolveStoreId } from "../../_lib/core/session.js";
 
 async function publishHandler(body, env, request) {
   const merchantId = await resolveStoreId(request, env, body.storeId);

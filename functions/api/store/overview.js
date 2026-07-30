@@ -3,10 +3,10 @@
 // Merchant API), Trendyol synced products (D1), abandoned carts, recent
 // webhook events. Every section degrades independently — one platform being
 // down or unlinked must not blank the whole dashboard.
-import { withApi } from "../../_lib/respond.js";
-import { getMerchant, getTokens, getPlatformConnection, listAbandonedCarts } from "../../_lib/db.js";
-import { listProducts, listOrders } from "../../_lib/salla.js";
-import { resolveStoreId } from "../../_lib/session.js";
+import { withApi } from "../../_lib/core/respond.js";
+import { getMerchant, getTokens, getPlatformConnection, listAbandonedCarts } from "../../_lib/core/db.js";
+import { listProducts, listOrders } from "../../_lib/integrations/salla.js";
+import { resolveStoreId } from "../../_lib/core/session.js";
 
 async function overviewHandler(body, env, request) {
   const merchantId = await resolveStoreId(request, env, body.storeId);

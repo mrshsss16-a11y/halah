@@ -1,0 +1,75 @@
+---
+---
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Left Column: FAQ & Dialect Config (1 Col) -->
+  <div class="aura-card rounded-2xl p-6 space-y-6">
+    <div>
+      <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-600">tune</span>
+        <span>تخصيص لهجة البراند والـ FAQs</span>
+      </h3>
+      <p class="text-xs text-gray-500 mt-1">اختر اللهجة التي تناسب جمهورك وأضف الأسئلة الشائعة</p>
+    </div>
+
+    <!-- Dialect Selector -->
+    <div class="space-y-2">
+      <label class="text-xs font-bold text-gray-700">لهجة البراند المحددة:</label>
+      <select id="dialectSelect" class="w-full bg-gray-50 border border-gray-300 text-gray-800 text-xs rounded-xl p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold">
+        <option value="saudi_najdi">🇸🇦 سعودية بيضاء بميلان نجدي ودودة (الافتراضي)</option>
+        <option value="saudi_hijazi">🌴 سعودية بيضاء بميلان حجازي (جدة ومكة)</option>
+        <option value="fusha_friendly">📜 فصحى عصرية ودية ورسمية</option>
+      </select>
+    </div>
+
+    <!-- Add Custom FAQ Form -->
+    <div class="space-y-3 pt-3 border-t border-gray-100">
+      <label class="text-xs font-bold text-gray-700">إضافة سؤال شائع جديد لشبكة RAG:</label>
+      <input id="faqQuestion" type="text" placeholder="مثال: هل يوجد ضمان على العطور؟" class="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl p-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+      <textarea id="faqAnswer" rows="2" placeholder="مثال: نعم، ضمان سنتين حقيقي واسترجاع مجاني خلال 7 أيام." class="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl p-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"></textarea>
+      
+      <button onclick="addCustomFaq()" class="w-full aura-btn-primary py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+        <span class="material-symbols-outlined text-sm">add_circle</span>
+        <span>حفظ في ذاكرة RAG المتجر</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Right Column: Interactive Chat Sandbox (2 Cols) -->
+  <div class="lg:col-span-2 aura-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-gray-100">
+      <div>
+        <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
+          <span class="material-symbols-outlined text-blue-600">forum</span>
+          <span>بيئة تجربة واختبار البوت (Live Playground)</span>
+        </h3>
+        <p class="text-xs text-gray-500 mt-1">اختبر ردود هالة واسألها عن الشحن والمنتجات والمواعيد مباشرة</p>
+      </div>
+      <span class="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
+        وضع الاختبار الحي ⚡
+      </span>
+    </div>
+
+    <!-- Chat Stream Window -->
+    <div id="chatStream" class="flex-1 min-h-[260px] max-h-[340px] overflow-y-auto bg-slate-50/70 rounded-xl p-4 space-y-3 border border-gray-100">
+      <!-- Bot Welcome Msg -->
+      <div class="flex items-start gap-2.5 max-w-[85%]">
+        <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
+          أ
+        </div>
+        <div class="bg-white border border-gray-200 p-3 rounded-2xl rounded-tr-none text-xs text-gray-800 shadow-sm leading-relaxed">
+          يا هلا والله! أنا هالة مساعد أورا للتسويق، كيف أقدر أساعدك اليوم في خدمات أورا أو إدارة متجرك؟ 😊
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Input Bar -->
+    <div class="flex items-center gap-2 pt-2">
+      <input id="sandboxInput" type="text" placeholder="اكتب سؤالاً لاختبار البوت (مثال: متى يوصل الطلب؟ أو حجز استشارة)..." class="flex-1 bg-gray-50 border border-gray-200 text-xs rounded-xl px-4 py-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none" onkeypress="if(event.key==='Enter') sendSandboxMessage()"/>
+      
+      <button onclick="sendSandboxMessage()" class="aura-btn-primary px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-1 shrink-0">
+        <span>إرسال</span>
+        <span class="material-symbols-outlined text-sm">send</span>
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,165 @@
+---
+---
+<!-- Merchant Custom Agent Persona & Skill Studio Component -->
+<section id="agentStudioBox" class="sleek-white-card rounded-3xl p-7 space-y-6 shadow-sm border border-black">
+  
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+    <div>
+      <div class="inline-flex items-center gap-2 text-xs font-bold text-white bg-black px-3 py-1 rounded-full mb-1">
+        <span class="material-symbols-outlined text-base">face</span>
+        <span>باني واستوديو شخصية الموظفة | Agent Persona Studio</span>
+      </div>
+      <h2 class="text-xl font-black text-black">تصميم وتخصيص شخصية ومزايا موظفتك الرقمية</h2>
+      <p class="text-xs text-slate-600 font-medium">حدد اسمها، لهجتها، أسلوب مبيعاتها، والمهارات التفاعلية المفعلة لخدمة متجرك</p>
+    </div>
+
+    <button onclick="saveAgentPersonaConfig()" class="sleek-btn-black px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-sm">
+      <span class="material-symbols-outlined text-base">save</span>
+      <span>حفظ وتفعيل الشخصية</span>
+    </button>
+  </div>
+
+  <form id="personaForm" onsubmit="event.preventDefault(); saveAgentPersonaConfig();" class="grid grid-cols-1 md:grid-cols-2 gap-6 text-right text-xs">
+    
+    <!-- Left Column: Basic Persona Profile -->
+    <div class="space-y-4">
+      
+      <!-- Agent Name -->
+      <div class="space-y-1.5">
+        <label class="block font-bold text-black">اسم الموظفة الرقمية:</label>
+        <input id="personaAgentName" type="text" value="نورة — مسوقة المتجر الذكية" placeholder="مثال: نورة، سارة، فيصل، هالة" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black"/>
+      </div>
+
+      <!-- Dialect / Tone -->
+      <div class="space-y-1.5">
+        <label class="block font-bold text-black">اللهجة ونبرة الصوت:</label>
+        <select id="personaDialect" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
+          <option value="saudi_najdi">🇸🇦 سعودي أبيض - نجدي ("أبشر، عيني وراسي")</option>
+          <option value="saudi_hijazi">🇸🇦 سعودي أبيض - حجازي ("يا هلا وغلا، حياك الله")</option>
+          <option value="saudi_janubi">🇸🇦 سعودي أبيض - جنوبي ("أبشر بعزك، يا مرحب")</option>
+          <option value="fusha_friendly">🇸🇦 فصحى عصرية ودية وراقية</option>
+          <option value="luxury">✨ نبرة فخامة وحصرية للماركات</option>
+        </select>
+      </div>
+
+      <!-- Sales Behavior -->
+      <div class="space-y-1.5">
+        <label class="block font-bold text-black">سلوك وشخصية المبيعات:</label>
+        <select id="personaBehavior" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
+          <option value="persuasive_helper">مستشار مبيعات ودود ومقنع (يقترح منتجات طبيعياً)</option>
+          <option value="fast_seller">بائع سريع ومباشر (يركز على إتمام الدفع فوراً)</option>
+          <option value="support_expert">خبير دعم فني دقيق (يقدم معلومات الشحن والمنتجات)</option>
+        </select>
+      </div>
+
+      <!-- Custom Prompt Notes -->
+      <div class="space-y-1.5">
+        <label class="block font-bold text-black">تعليمات وتوجيهات التاجر الخاصة:</label>
+        <textarea id="personaNotes" rows="3" placeholder="أدخل أي ملاحظات خاصة بمتجرك (مثال: نوه دايماً إن الشحن مجاني للطلبات فوق 200 ريال)..." class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Active Skills Toggles -->
+    <div class="space-y-4">
+      <label class="block font-bold text-black border-b border-slate-200 pb-2">مهارات الموظفة المفعلة (Skills Inventory):</label>
+      
+      <div class="space-y-2.5">
+        
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100 transition">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-black">credit_card</span>
+            <div>
+              <span class="font-bold text-black block">مهارة استرداد سلات تمارا وتابي</span>
+              <span class="text-[10px] text-slate-500 block">تحفيز الدفع الآجل وتقسيط 4 دفعات</span>
+            </div>
+          </div>
+          <input type="checkbox" checked id="skillTamara" class="w-4 h-4 accent-black"/>
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100 transition">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-black">qr_code_2</span>
+            <div>
+              <span class="font-bold text-black block">مهارة الفاتورة الإلكترونية ZATCA Stage 2</span>
+              <span class="text-[10px] text-slate-500 block">توليد إشعار فاتورة هيئة الزكاة والضريبة بـ QR</span>
+            </div>
+          </div>
+          <input type="checkbox" checked id="skillZatca" class="w-4 h-4 accent-black"/>
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100 transition">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-black">local_shipping</span>
+            <div>
+              <span class="font-bold text-black block">مهارة التتبع اللحظي لشركات الشحن السعودية</span>
+              <span class="text-[10px] text-slate-500 block">تنبيهات خروج الشحنة مع مندوب سبل وسمسا</span>
+            </div>
+          </div>
+          <input type="checkbox" checked id="skillShipping" class="w-4 h-4 accent-black"/>
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100 transition">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-black">event_available</span>
+            <div>
+              <span class="font-bold text-black block">مهارة عروض المواسم السعودية</span>
+              <span class="text-[10px] text-slate-500 block">حملات يوم التأسيس والاليوم الوطني ورمضان</span>
+            </div>
+          </div>
+          <input type="checkbox" checked id="skillSeasons" class="w-4 h-4 accent-black"/>
+        </label>
+
+        <label class="flex items-center justify-between p-3 bg-slate-50 border border-slate-300 rounded-xl cursor-pointer hover:bg-slate-100 transition">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-black">edit_note</span>
+            <div>
+              <span class="font-bold text-black block">مهارة صياغة أوصاف السيو لمعايير سلة وزد</span>
+              <span class="text-[10px] text-slate-500 block">توليد الميتا ديسكربشن والمواصفات المعيارية</span>
+            </div>
+          </div>
+          <input type="checkbox" checked id="skillSeo" class="w-4 h-4 accent-black"/>
+        </label>
+
+      </div>
+    </div>
+
+  </form>
+
+  <div id="personaStatus" class="hidden p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-black text-center"></div>
+
+</section>
+
+<script is:inline>
+  async function saveAgentPersonaConfig() {
+    const name = document.getElementById('personaAgentName')?.value?.trim();
+    const dialect = document.getElementById('personaDialect')?.value;
+    const behavior = document.getElementById('personaBehavior')?.value;
+    const notes = document.getElementById('personaNotes')?.value?.trim();
+    const status = document.getElementById('personaStatus');
+
+    if (status) {
+      status.classList.remove('hidden');
+      status.innerText = 'جاري حفظ وتفعيل الشخصية والمزايا... ⏳';
+    }
+
+    try {
+      const res = await fetch('/api/store/persona', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentName: name,
+          dialect,
+          salesBehavior: behavior,
+          customPromptNotes: notes
+        })
+      });
+      const data = await res.json();
+      if (data?.ok) {
+        if (status) status.innerText = `🎉 ${data.message || 'تم التحديث بنجاح!'}`;
+      }
+    } catch (err) {
+      if (status) status.innerText = 'تعذر الحفظ حالياً.';
+    }
+  }
+</script>

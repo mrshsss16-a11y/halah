@@ -20,24 +20,26 @@
 ```
 *.html              صفحات الواجهة — تمر بمعالج #include (انظر partials/) ثم تُنسخ لـ dist/ عبر scripts/stage.mjs
 partials/           مكونات مشتركة تُدمج وقت البناء بـ <!--#include partials/x.html -->:
-                      fouc-theme.html  سكربت منع وميض الثيم (كان مكرر/متباعد بـ 8 صفحات، الآن مصدر واحد)
-                      app-shell.html   السايدبار + هيدر الجوال + الدرج + بانر Sandbox لصفحات dashboard/communication
-                      (تفعيل الرابط النشط بجافاسكربت وقت التشغيل حسب اسم الصفحة، مو hardcoded — صفحة جديدة ما تحتاج تعدّل غير data-nav)
-style.css theme.js  التنسيق + نظام الثيم الموحد (HalaTheme — لا ثيم مخصص بأي صفحة)
+                      fouc-theme.html  سكربت منع وميض الثيم
+                      app-shell.html   السايدبار + هيدر الجوال + الدرج
+style.css theme.js  التنسيق + نظام الثيم الموحد (HalaTheme)
 functions/
-  _lib/             persona · workersAI · memory (RAG) · db · salla · trendyol · respond · meter (حصص) · imageProvider (klein+HF) · auth (تجزئة كلمة مرور) · session (كوكي موقّع + resolveStoreId)
+  _lib/
+    ai/             gateway (Workers AI → Groq → OpenRouter + KV Cache) · persona · memory
+    integrations/   whatsapp · salla · trendyol
+    core/           db · meter · crypto · session · auth · respond
   api/
     chat.js         شات المسوقة: استرجاع → توليد → نقد ذاتي → تحسين → حارس → حفظ بالذاكرة
     copy.js         كتابة أوصاف منتجات
     image.js        صور منتجات AI حقيقية (klein أساسي، Hugging Face احتياطي) — يحفظ هوية المنتج
-    usage.js        رصيد الحصة اليومية المتبقي (يغذي شريط studio.html)
-    stats.js        عدد التجار الحقيقي (اجتماعي صادق بصفحة الدخول)
+    usage.js        رصيد الحصة اليومية المتبقي
+    stats.js        عدد التجار الحقيقي
     auth/           signup · login · logout · me — حسابات حقيقية بجلسة موقّعة
     webhooks/salla.js   استقبال أحداث سلة (تحقق توقيع HMAC إلزامي)
     store/          status · config · context · overview · publish · logo (شعار المتجر)
     trendyol/       connect (تحقق حقيقي قبل الحفظ) · sync (منتجات/أسعار/طلبات)
 migrations/         مخطط D1 (الجداول الجديدة TEXT merchant ids — القديمة legacy)
-persona/            نسخة مرجعية للشخصية (التشغيلية بـ functions/_lib/persona.js — عدّل الاثنين)
+persona/            نسخة مرجعية للشخصية (التشغيلية بـ functions/_lib/ai/persona.js — عدّل الاثنين)
 docs/               قرارات التصميم (ثيم/حركة)
 scripts/stage.mjs   بناء dist/ — المصدر الوحيد لما يُنشر
 ```
@@ -66,6 +68,14 @@ npx wrangler d1 migrations apply halah-tr-db --remote   # تطبيق مخطط ج
 | `HF_TOKEN` | **اختياري** — مزود احتياطي لتوليد صور المنتجات (Hugging Face) لو خلصت حصة Cloudflare اليومية. النظام يشتغل بدونه بحدود Cloudflare وحدها. رصيده المجاني رمزي جداً ($0.10/شهر ≈ 3-4 صور) — مكافأة نادرة مو سعة أساسية |
 | `ADMIN_EMAILS` | إيميلات مفصولة بفاصلة، تحدد مين يقدر يفتح `/admin.html` — بدون عمود role بقاعدة البيانات |
 | `ENCRYPTION_KEY` | مفتاح AES-256-GCM (32 بايت، base64) لتشفير مفاتيح Trendyol/توكنات سلة بقاعدة البيانات — بدونه، حفظ اتصال منصة جديد يفشل. أنشئه بـ`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"` |
+| `GROQ_API_KEY` | مفتاح API لخدمة Groq (المستوى الثاني من بوابة الذكاء الاصطناعي) |
+| `OPENROUTER_API_KEY` | مفتاح API لخدمة OpenRouter (المستوى الثالث من بوابة الذكاء الاصطناعي) |
+
+## نظام AI Gateway الثلاثي
+يستخدم النظام بوابة ذكاء اصطناعي (`_lib/ai/gateway.js`) توفر:
+1. **الاعتمادية**: انتقال تلقائي من Workers AI (أساسي) إلى Groq ثم OpenRouter عند الفشل.
+2. **السرعة**: نظام كاش (KV Cache) لمنع إعادة طلب نفس المحتوى.
+3. **التوحيد**: واجهة موحدة لجميع النماذج.
 
 تُضاف بـ: `npx wrangler pages secret put SALLA_WEBHOOK_SECRET --project-name hala-ai-os`
 

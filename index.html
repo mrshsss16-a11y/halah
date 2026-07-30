@@ -1,798 +1,369 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar" data-shell="marketing" data-theme="dark">
+<html dir="rtl" lang="ar" data-theme="light">
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>هالة | ذكاء اصطناعي يخدم تجارتك</title>
-  <meta name="description" content="هالة: ذكاء اصطناعي سعودي يكتشف خسائر متجرك ويصلحها تلقائياً. افحص متجرك مجاناً خلال ٣٠ ثانية."/>
-  <!--#include partials/fouc-theme.html -->
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com" rel="preconnect"/>
-  <link crossorigin href="https://fonts.gstatic.com" rel="preconnect"/>
+  
+  <!-- SEO Primary Meta Tags -->
+  <title>هالة | كم سلة متروكة ضاعت عليك أرباحها هذا الأسبوع؟ - Hala AI OS</title>
+  <meta name="title" content="هالة | كم سلة متروكة ضاعت عليك أرباحها هذا الأسبوع؟ - Hala AI OS"/>
+  <meta name="description" content="منصة هالة (Hala AI OS) — استرداد السلات المتروكة في سلة وزد مجاناً 100% وبدون أي تكلفة عبر الواتساب."/>
+  <meta name="keywords" content="استرداد السلات المتروكة بالواتساب, زيادة مبيعات متجر سلة, زيادة مبيعات متجر زد, هالة AI OS"/>
+  <meta name="robots" content="index, follow"/>
+  <link rel="canonical" href="https://hala.sa/"/>
+
+  <!-- Fonts: DIN Next LT Arabic + Universal Google Fonts Alternatives (IBM Plex Sans Arabic, Tajawal, Readex Pro, Alexandria) -->
   <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <script>
-    /* PR4: Marketing GSAP gate، decide before paint so CSS enter can own mobile */
-    (function () {
-      function allowMarketingGSAP() {
-        if (document.documentElement.getAttribute("data-reduce-motion") === "1") return false;
-        if (matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
-        if (navigator.connection && navigator.connection.saveData) return false;
-        if (!matchMedia("(pointer: fine)").matches) return false;
-        if (navigator.deviceMemory !== undefined && navigator.deviceMemory < 4) return false;
-        return true;
-      }
-      window.allowMarketingGSAP = allowMarketingGSAP;
-      document.documentElement.setAttribute(
-        "data-marketing-gsap",
-        allowMarketingGSAP() ? "1" : "0"
-      );
-    })();
-  </script>
-  <style>
-    /* PR4: CSS-only enter visual parity when GSAP is gated off (mobile / reduce / saveData / low-mem) */
-    html[data-marketing-gsap="0"] .gsap-hero-item,
-    html[data-marketing-gsap="0"] .gsap-reveal-text {
-      animation: motionEnterY var(--dur-enter, 600ms) var(--ease-standard, cubic-bezier(0.22, 1, 0.36, 1)) both;
-    }
-    html[data-marketing-gsap="0"] .hero-badge.gsap-hero-item { animation-delay: calc(var(--stagger-step, 80ms) * 0); }
-    html[data-marketing-gsap="0"] .gsap-reveal-text { animation-delay: calc(var(--stagger-step, 80ms) * 1); }
-    html[data-marketing-gsap="0"] .hero-sub.gsap-hero-item { animation-delay: calc(var(--stagger-step, 80ms) * 2); }
-    html[data-marketing-gsap="0"] .scanner-card.gsap-hero-item { animation-delay: calc(var(--stagger-step, 80ms) * 3); }
-    html[data-marketing-gsap="0"] .btn-trial-ghost.gsap-hero-item { animation-delay: calc(var(--stagger-step, 80ms) * 4); }
-
-    html[data-marketing-gsap="0"] #hero-stage {
-      animation: motionEnterY var(--dur-enter, 600ms) var(--ease-standard, cubic-bezier(0.22, 1, 0.36, 1)) both;
-      animation-delay: calc(var(--stagger-step, 80ms) * 2);
-    }
-    /* Restore CSS float when GSAP is off (style.css disables .parallax-card float for GSAP ownership) */
-    html[data-marketing-gsap="0"] .parallax-card {
-      animation: floatCard 5.5s ease-in-out infinite !important;
-      animation-delay: calc(var(--i, 0) * 0.7s) !important;
-      will-change: auto;
-    }
-
-    /* AOS replacement: features + trial CSS enter (all devices) */
-    .features-section .section-head.motion-enter,
-    .trial-section.motion-enter {
-      animation: motionEnterY var(--dur-enter, 600ms) var(--ease-standard, cubic-bezier(0.22, 1, 0.36, 1)) both;
-    }
-
-    html[data-reduce-motion="1"] .gsap-hero-item,
-    html[data-reduce-motion="1"] .gsap-reveal-text,
-    html[data-reduce-motion="1"] #hero-stage,
-    html[data-reduce-motion="1"] #hero-stage .parallax-card,
-    html[data-reduce-motion="1"] .features-section .section-head.motion-enter,
-    html[data-reduce-motion="1"] .features-section .motion-stagger > *,
-    html[data-reduce-motion="1"] .trial-section.motion-enter {
-      animation: none !important;
-      opacity: 1 !important;
-      transform: none !important;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html:not([data-reduce-motion="0"]) .gsap-hero-item,
-      html:not([data-reduce-motion="0"]) .gsap-reveal-text,
-      html:not([data-reduce-motion="0"]) #hero-stage,
-      html:not([data-reduce-motion="0"]) #hero-stage .parallax-card,
-      html:not([data-reduce-motion="0"]) .features-section .section-head.motion-enter,
-      html:not([data-reduce-motion="0"]) .features-section .motion-stagger > *,
-      html:not([data-reduce-motion="0"]) .trial-section.motion-enter {
-        animation: none !important;
-        opacity: 1 !important;
-        transform: none !important;
-      }
-    }
-  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      darkMode: "class",
       theme: {
         extend: {
           colors: {
-            "space": "#F9FBFC",
-            "neon-cyan": "#2A6E93",
-            "neon-teal": "#2E7A87",
-            "deep-indigo": "#438FB3",
-            "on-primary-container": "#ffffff",
-            "surface-container-low": "#f3f6f8",
-            "outline-variant": "#d0d8e0",
-            "surface-bright": "#ffffff",
-            "surface-container": "#eef2f5",
-            "surface-container-high": "#e6ebf0",
-            "surface-tint": "#2A6E93",
-            "on-surface-variant": "#64748b",
-            "surface": "#F9FBFC",
-            "background": "#F9FBFC",
-            "secondary": "#2E7A87",
-            "primary-fixed": "#DCEBF1",
-            "outline": "#94a3b8",
-            "on-background": "#1E293B",
-            "surface-container-highest": "#dde3e9",
-            "surface-container-lowest": "#ffffff",
-            "on-surface": "#1E293B",
-            "surface-variant": "#e8eef2",
-            "secondary-container": "#d5f5f0",
-            "on-secondary-container": "#0f3d3a",
-            "primary": "#2A6E93",
-            "primary-container": "#438FB3",
-            "error": "#b42318",
-            "primary-fixed-variant": "#a8d4e4"
-          },
-          borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", "2xl": "1rem", "3xl": "1.5rem", full: "9999px" },
-          spacing: {
-            "container-padding-mobile": "16px",
-            gutter: "24px",
-            "section-gap": "80px",
-            "container-padding-desktop": "32px"
+            wire: {
+              bg: '#FFFFFF',
+              surface: '#F8FAFC',
+              border: '#E2E8F0',
+              text: '#0F172A',
+              muted: '#64748B',
+              dark: '#1E293B'
+            }
           },
           fontFamily: {
-            "title-md": ["IBM Plex Sans Arabic"],
-            "headline-lg-mobile": ["IBM Plex Sans Arabic"],
-            "headline-lg": ["IBM Plex Sans Arabic"],
-            "label-sm": ["IBM Plex Sans Arabic"],
-            "body-md": ["IBM Plex Sans Arabic"],
-            "display-lg": ["IBM Plex Sans Arabic"],
-            "body-lg": ["IBM Plex Sans Arabic"]
-          },
-          fontSize: {
-            "title-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
-            "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }],
-            "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
-            "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
-            "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
-            "display-lg": ["48px", { lineHeight: "60px", letterSpacing: "-0.02em", fontWeight: "700" }],
-            "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }]
+            sans: ['DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', 'Alexandria', 'sans-serif']
           }
         }
       }
-    };
+    }
   </script>
-  <link href="style.css" rel="stylesheet"/>
-</head>
-<body class="antialiased min-h-[100dvh] flex flex-col relative overflow-x-hidden page-enter">
-
-  <!-- Soft pastel blobs، light default (premium cream) -->
-  <div class="light-aurora" aria-hidden="true">
-    <div class="light-blob light-blob-rose"></div>
-    <div class="light-blob light-blob-teal"></div>
-    <div class="light-blob light-blob-gold"></div>
-  </div>
-
-  <!-- Neon gradient blobs، dark theme only -->
-  <div class="aurora-bg" aria-hidden="true">
-    <div class="aurora-blob aurora-blob-teal"></div>
-    <div class="aurora-blob aurora-blob-indigo"></div>
-    <div class="aurora-blob aurora-blob-cyan"></div>
-    <div class="aurora-noise"></div>
-  </div>
-
-  <div class="announcement-neon" id="announcement-bar" role="button" tabindex="0">
-    <span class="announcement-pulse"></span>
-    افحص متجرك مجاناً خلال ٣٠ ثانية واكتشف أخطاء الظهور
-    <span class="material-symbols-outlined text-sm">arrow_back</span>
-  </div>
-
-  <header class="nav-shell">
-    <nav class="nav-glass" aria-label="القائمة الرئيسية">
-      <a href="index.html" class="nav-brand">
-        <span class="material-symbols-outlined nav-logo-icon" style="font-variation-settings:'FILL' 1;" aria-hidden="true">auto_awesome</span>
-        <span class="brand-ar nav-brand-text">هالة</span>
-      </a>
-      <div class="nav-links">
-        <a class="nav-link is-active" href="index.html">الرئيسية</a>
-        <a class="nav-link" href="#features">المزايا</a>
-        <a class="nav-link" href="#trial">التجربة المجانية</a>
-      </div>
-      <div class="nav-actions">
-        <div class="hala-prefs" role="group" aria-label="تفضيلات المظهر">
-          <label class="hala-prefs-field">
-            <span class="hala-prefs-label">المظهر</span>
-            <select class="hala-theme-select" data-hala-theme-select aria-label="المظهر">
-              <option value="light">فاتح</option>
-              <option value="dark">داكن</option>
-              <option value="system">تلقائي</option>
-            </select>
-          </label>
-          <label class="hala-prefs-motion">
-            <input type="checkbox" data-hala-reduce-motion />
-            <span>تقليل الحركة</span>
-          </label>
-        </div>
-        <a href="login.html" class="nav-cta">تسجيل الدخول</a>
-      </div>
-    </nav>
-  </header>
-
-  <main class="landing-main">
-
-    <!-- HERO -->
-    <section class="hero-section">
-      <!-- Text + scanner (RTL start = right) -->
-      <div class="hero-copy" id="hero-copy">
-        <div class="hero-badge gsap-hero-item">
-          <span class="hero-badge-dot"></span>
-          <span class="material-symbols-outlined text-sm">auto_awesome</span>
-          <span>ذكاء اصطناعي سعودي للتجارة الإلكترونية</span>
-        </div>
-
-        <h1 class="hero-title gsap-reveal-text">
-          ذكاء اصطناعي
-          <span class="hero-title-glow">يخدم تجارتك</span>
-        </h1>
-
-        <p class="hero-sub gsap-hero-item">
-          متجرك يفقد <span class="hero-loss-num">زيارات ومبيعات</span> كل يوم من أخطاء ظهور ما تشوفها.
-          هالة تكتشفها وتصلحها تلقائياً.
-        </p>
-
-        <form id="scan-form" class="scanner-card neon-pulse-border gsap-hero-item">
-          <div class="scanner-card-inner">
-            <div class="scanner-input-row">
-              <span class="material-symbols-outlined scanner-icon">link</span>
-              <input
-                id="store-url"
-                type="url"
-                dir="ltr"
-                placeholder="https://oud-riyadh.salla.sa"
-                value="https://oud-riyadh.salla.sa"
-                class="scanner-input"
-                required
-                aria-label="رابط المتجر"
-              />
-            </div>
-            <button type="submit" class="btn-scan-now">
-              <span>افحص الآن</span>
-              <span class="material-symbols-outlined">radar</span>
-            </button>
-          </div>
-          <p class="scanner-hint">مجاني · بدون بطاقة · نتائج خلال ٣٠ ثانية</p>
-        </form>
-
-        <a href="onboarding.html" class="btn-trial-ghost gsap-hero-item">
-          <span class="material-symbols-outlined text-[20px]">rocket_launch</span>
-          ابدأ التجربة المجانية
-        </a>
-      </div>
-
-      <!-- Visual stage with hero image + floating glass cards -->
-      <div class="hero-stage" id="hero-stage">
-        <div class="hero-orbit" aria-hidden="true"></div>
-        <div class="hero-glow-ring" aria-hidden="true"></div>
-
-        <div class="hero-image-frame">
-          <img
-            alt="لوحة تحكم هالة لتحليل متاجر التجارة الإلكترونية السعودية"
-            class="hero-image"
-            src="saudi_ecommerce_ai_hero.png"
-            width="640"
-            height="640"
-          />
-          <div class="hero-image-sheen" aria-hidden="true"></div>
-        </div>
-
-        <!-- Floating 3D glass cards (GSAP parallax targets) -->
-        <article class="float-card float-card-whatsapp parallax-card" style="--i: 0" data-depth="0.035">
-          <div class="float-card-icon wa-icon">
-            <span class="material-symbols-outlined">chat</span>
-          </div>
-          <div class="float-card-body">
-            <p class="float-card-label">استعادة واتساب</p>
-            <p class="float-card-title">سلة متروكة رجعت تشتري</p>
-            <p class="float-card-meta">رسالة استعادة أُرسلت تلقائياً بلهجة متجرك</p>
-          </div>
-          <span class="float-card-status">تلقائي</span>
-        </article>
-
-        <article class="float-card float-card-dialect parallax-card" style="--i: 1" data-depth="0.055">
-          <div class="float-card-icon dialect-icon">
-            <span class="material-symbols-outlined">translate</span>
-          </div>
-          <div class="float-card-body">
-            <p class="float-card-label">مقارنة اللهجة السعودية</p>
-            <div class="dialect-compare">
-              <div class="dialect-row before">
-                <span class="dialect-tag">قبل</span>
-                <span>المنتج متوفر حالياً</span>
-              </div>
-              <div class="dialect-row after">
-                <span class="dialect-tag">بعد</span>
-                <span>جاهز عندك الحين، توصيل فوري</span>
-              </div>
-            </div>
-          </div>
-        </article>
-
-        <article class="float-card float-card-stats parallax-card" style="--i: 2" data-depth="0.08">
-          <div class="float-card-icon stats-icon">
-            <span class="material-symbols-outlined">trending_up</span>
-          </div>
-          <div class="float-card-body">
-            <p class="float-card-label">تقرير الفحص</p>
-            <p class="float-card-stat">فرص تحسين مكتشفة</p>
-            <div class="mini-bars" aria-hidden="true">
-              <span style="--h: 40%"></span>
-              <span style="--h: 55%"></span>
-              <span style="--h: 48%"></span>
-              <span style="--h: 72%"></span>
-              <span style="--h: 88%"></span>
-              <span style="--h: 100%"></span>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <!-- Capability strip (honest — describes real features, no invented metrics) -->
-    <section class="ticker-section" aria-label="قدرات هالة">
-      <div class="ticker-fade ticker-fade-start"></div>
-      <div class="ticker-fade ticker-fade-end"></div>
-      <div class="marquee-track ticker-track" id="social-proof-ticker"></div>
-    </section>
-
-    <!-- Features -->
-    <section id="features" class="features-section">
-      <div class="section-head motion-enter">
-        <h2 class="section-title">حلول ذكية لنمو متجرك</h2>
-        <p class="section-sub">نحلل بيانات متجرك ونقدّم توصيات قابلة للتنفيذ فوراً، دون تعقيد تقني.</p>
-      </div>
-      <!-- Bento: 5 cells (2fr+1fr / 1fr+1fr+1fr)، flagship large + image cell for background diversity -->
-      <div class="features-bento motion-stagger">
-        <article class="feature-card feature-card-accent bento-flagship" style="--i: 0">
-          <div class="feature-icon">
-            <span class="material-symbols-outlined">edit_note</span>
-          </div>
-          <h3>أوصاف منتجات بلهجة سعودية</h3>
-          <p>مساعدة تسويقية تكتب وصف يبيع: لهجة بيضاء طبيعية، كلمات مفتاحية تظهر بالبحث، ونسخة واتساب جاهزة. كل وصف يمر بمراجعة ذاتية قبل ما يوصلك.</p>
-          <div class="dialect-compare">
-            <div class="dialect-row before">
-              <span class="dialect-tag">قبل</span>
-              <span>المنتج متوفر حالياً بجودة عالية</span>
-            </div>
-            <div class="dialect-row after">
-              <span class="dialect-tag">بعد</span>
-              <span>عود كمبودي أصلي، ريحته تثبت وتدوم. جاهز عندك الحين</span>
-            </div>
-          </div>
-        </article>
-        <article class="feature-card bento-image-cell" style="--i: 1">
-          <img src="coffee_preset.png" alt="صورة منتج معالجة باستوديو هالة" loading="lazy"/>
-          <div class="bento-image-overlay">
-            <h3>استوديو الصور</h3>
-            <p>خلفيات احترافية بستايل متجرك، ومنتجك يبقى كما هو.</p>
-          </div>
-        </article>
-        <article class="feature-card" style="--i: 2">
-          <div class="feature-icon">
-            <span class="material-symbols-outlined">chat</span>
-          </div>
-          <h3>رد تلقائي على عملائك</h3>
-          <p>مساعد يرد بلهجة متجرك ويسترد السلات المتروكة عبر واتساب.</p>
-        </article>
-        <article class="feature-card" style="--i: 3">
-          <div class="feature-icon">
-            <span class="material-symbols-outlined">search_insights</span>
-          </div>
-          <h3>فحص الظهور</h3>
-          <p>تحليل الكلمات المفتاحية وأداء الصفحات لاكتشاف فرص ظهور متجرك.</p>
-        </article>
-        <article class="feature-card" style="--i: 4">
-          <div class="feature-icon">
-            <span class="material-symbols-outlined">sync_alt</span>
-          </div>
-          <h3>ربط سلة وترينديول</h3>
-          <p>مزامنة المنتجات والأسعار والمخزون بين منصاتك تلقائياً.</p>
-        </article>
-      </div>
-    </section>
-
-    <!-- Trial / trust -->
-    <section id="trial" class="trial-section motion-enter">
-      <div class="trial-panel neon-pulse-border-soft">
-        <h2 class="trial-heading">يشتغل مع منصتك من أول يوم</h2>
-        <div class="platform-logos">
-          <span>سلة</span>
-          <span>زد</span>
-          <span>ترينديول</span>
-        </div>
-        <div class="trial-stats">
-          <div class="trial-stat">
-            <p class="trial-stat-num">٢٠٠</p>
-            <p class="trial-stat-label">وصف منتج بالتجربة</p>
-          </div>
-          <div class="trial-stat">
-            <p class="trial-stat-num teal">٤٠٠</p>
-            <p class="trial-stat-label">صورة استوديو</p>
-          </div>
-          <div class="trial-stat">
-            <p class="trial-stat-num">٥٠</p>
-            <p class="trial-stat-label">رسالة واتساب</p>
-          </div>
-        </div>
-        <a href="onboarding.html" class="btn-scan-now btn-trial-lg">
-          ابدأ التجربة المجانية
-          <span class="material-symbols-outlined">rocket_launch</span>
-        </a>
-        <p class="trial-fine">٣٠ يوماً كاملة، بدون بطاقة ائتمان</p>
-      </div>
-    </section>
-  </main>
-
-  <footer class="landing-footer">
-    <div class="brand-ar footer-brand">هالة</div>
-    <div class="footer-links">
-      <a href="privacy.html">سياسة الخصوصية</a>
-      <a href="#features">المزايا</a>
-      <a href="#" id="footer-contact">تواصل معنا</a>
-    </div>
-    <div class="footer-copy">© ٢٠٢٦ هالة. جميع الحقوق محفوظة. ذكاء اصطناعي سعودي للتجارة.</div>
-  </footer>
-
-  <!-- Floating AI support widget (real chat → funnels to WhatsApp) -->
-  <div class="ai-fab-wrap">
-    <div class="hala-support-panel glass-card" id="hala-support-panel" aria-hidden="true">
-      <div class="hala-support-head">
-        <div class="hala-support-title">
-          <span class="hala-support-avatar" aria-hidden="true">
-            <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">support_agent</span>
-          </span>
-          <div>
-            <strong>مساعدة هالة</strong>
-            <span class="hala-support-status">متصلة الآن</span>
-          </div>
-        </div>
-        <button type="button" id="hala-support-close" aria-label="إغلاق">
-          <span class="material-symbols-outlined">close</span>
-        </button>
-      </div>
-      <div class="hala-support-body" id="hala-support-body" role="log" aria-live="polite"></div>
-      <form class="hala-support-input" id="hala-support-form">
-        <input type="text" id="hala-support-text" placeholder="اسألي عن هالة..." autocomplete="off" aria-label="رسالتك"/>
-        <button type="submit" aria-label="إرسال">
-          <span class="material-symbols-outlined">send</span>
-        </button>
-      </form>
-    </div>
-    <button type="button" class="ai-fab floating-widget-glow" id="ai-agent-btn" aria-label="فتح مساعد هالة">
-      <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1;font-size:26px;" aria-hidden="true">support_agent</span>
-      <span class="ai-fab-dot"></span>
-    </button>
-  </div>
 
   <style>
-    /* Hala self-support chat panel، self-contained so it works on the dark marketing shell */
-    .hala-support-panel{position:absolute;bottom:74px;inset-inline-end:0;width:min(360px,calc(100vw - 32px));
-      max-height:min(70vh,560px);display:flex;flex-direction:column;border-radius:20px;overflow:hidden;
-      opacity:0;transform:translateY(12px) scale(.96);pointer-events:none;transition:opacity .28s,transform .28s;
-      background:rgba(12,17,23,.92);border:1px solid rgba(88, 168, 180,.22);box-shadow:0 24px 60px rgba(0,0,0,.5);backdrop-filter:blur(14px);}
-    .hala-support-panel.is-open{opacity:1;transform:translateY(0) scale(1);pointer-events:auto;}
-    .hala-support-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,.08);background:rgba(88, 168, 180,.06);}
-    .hala-support-title{display:flex;align-items:center;gap:10px;color:#e6f6fb;}
-    .hala-support-title strong{display:block;font-size:.92rem;}
-    .hala-support-status{font-size:.68rem;color:#58A8B4;}
-    .hala-support-avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
-      background:linear-gradient(135deg,#58A8B4,#58A8B4);color:#04222a;}
-    .hala-support-head button{background:none;border:none;color:#9fb4bd;cursor:pointer;display:grid;place-items:center;}
-    .hala-support-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
-    .hs-msg{max-width:82%;padding:9px 12px;border-radius:14px;font-size:.85rem;line-height:1.6;white-space:pre-wrap;}
-    .hs-msg.bot{align-self:flex-start;background:rgba(255,255,255,.07);color:#e6f6fb;border-bottom-inline-start:2px solid #58A8B4;}
-    .hs-msg.user{align-self:flex-end;background:rgba(88, 168, 180,.16);color:#eafcff;}
-    .hs-msg.typing{color:#9fb4bd;font-style:italic;}
-    .hs-wa{align-self:flex-start;display:inline-flex;align-items:center;gap:7px;margin-top:2px;padding:9px 14px;
-      border-radius:12px;background:#25d366;color:#04241a;font-weight:700;font-size:.82rem;text-decoration:none;}
-    .hala-support-input{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,.08);}
-    .hala-support-input input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
-      border-radius:12px;padding:10px 12px;color:#eafcff;font-family:inherit;font-size:.85rem;outline:none;}
-    .hala-support-input input:focus{border-color:#58A8B4;}
-    .hala-support-input button{background:linear-gradient(135deg,#58A8B4,#58A8B4);border:none;border-radius:12px;
-      width:42px;color:#04222a;cursor:pointer;display:grid;place-items:center;}
-    @media (prefers-reduced-motion: reduce){.hala-support-panel{transition:opacity .2s;transform:none;}}
+    html, body {
+      font-family: 'DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', 'Alexandria', sans-serif;
+      background-color: #FFFFFF;
+      color: #0F172A;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      width: 100%;
+    }
+    .wire-box {
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+    }
+    .wire-btn {
+      background: #0F172A;
+      color: #FFFFFF;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .wire-btn:hover {
+      background: #334155;
+      transform: translateY(-1px);
+    }
+    /* Multi-Spectral Soothing Low-Contrast Mesh Aura System */
+    .spectrum-orb {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1;
+      border-radius: 50%;
+      will-change: transform, opacity;
+    }
+    .spectrum-1 {
+      top: 35%;
+      left: 35%;
+      width: 70vw;
+      height: 70vw;
+      max-width: 800px;
+      max-height: 800px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(0, 194, 255, 0.08) 0%, rgba(0, 194, 255, 0.015) 55%, transparent 85%);
+      filter: blur(150px);
+    }
+    .spectrum-2 {
+      top: 65%;
+      left: 65%;
+      width: 75vw;
+      height: 75vw;
+      max-width: 850px;
+      max-height: 850px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(0, 102, 255, 0.06) 0%, rgba(0, 102, 255, 0.01) 55%, transparent 85%);
+      filter: blur(160px);
+    }
+    .spectrum-3 {
+      top: 50%;
+      left: 50%;
+      width: 60vw;
+      height: 60vw;
+      max-width: 700px;
+      max-height: 700px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(56, 189, 248, 0.07) 0%, rgba(56, 189, 248, 0.015) 55%, transparent 85%);
+      filter: blur(150px);
+    }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
   </style>
+</head>
+<body class="bg-slate-50 overflow-x-hidden w-full relative">
+
+  <!-- Multi-Spectral Ambient Blue Orbs -->
+  <div class="spectrum-orb spectrum-1"></div>
+  <div class="spectrum-orb spectrum-2"></div>
+  <div class="spectrum-orb spectrum-3"></div>
+
+  <!-- ── Minimal Sticky Navigation Corners (Right: Logo, Left: Simple Login) ── -->
+  <div id="floatingNav" class="fixed top-6 left-6 right-6 z-50 flex items-center justify-between pointer-events-none opacity-0 transition-opacity duration-500">
+    
+    <!-- Top Right: Minimal Logo Icon -->
+    <a href="index.html" class="pointer-events-auto flex items-center gap-2.5 bg-white/90 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm hover:border-slate-300 transition-all">
+      <div class="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white font-bold text-xs">
+        هـ
+      </div>
+      <span class="font-bold text-slate-900 text-xs tracking-tight">منصة هالة</span>
+    </a>
+
+    <!-- Top Left: Simple Login Icon -->
+    <a href="login.html" class="pointer-events-auto flex items-center gap-1.5 bg-white/90 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm text-xs font-bold text-slate-700 hover:text-slate-900 hover:border-slate-300 transition-all">
+      <span class="material-symbols-outlined text-base">login</span>
+      <span>تسجيل الدخول</span>
+    </a>
+
+  </div>
+
+  <!-- ── PINNED MULTI-BEAT GSAP STORYTELLING SECTION ─────────── -->
+  <main class="w-full relative bg-transparent z-10">
+    
+    <div id="pinWrapper" class="w-full relative bg-transparent">
+      <div id="pinContainer" class="h-screen w-full flex items-center justify-center overflow-hidden bg-transparent relative">
+        
+        <!-- ── BEAT 1: Hero Pain Question ────────────────────────── -->
+        <div id="beat1" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-transparent w-full">
+          <div id="heroTextContainer" class="max-w-5xl space-y-8 mx-auto px-6">
+            <div class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-600 tracking-wider bg-white/80 backdrop-blur-md border border-slate-200/80 px-4 py-1.5 rounded-full shadow-sm">
+              <span class="material-symbols-outlined text-sm text-slate-500">help_outline</span>
+              <span>سؤال حاسم لكل صاحب متجر إلكتروني</span>
+            </div>
+
+            <h1 class="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-snug tracking-tight max-w-4xl mx-auto">
+              كم سلة متروكة ضاعت عليك أرباحها هذا الأسبوع؟
+            </h1>
+
+            <p class="text-slate-600 text-base md:text-xl leading-relaxed max-w-2xl mx-auto font-medium">
+              70% من زوار متجرك يضيفون المنتجات إلى السلة ثم يغادرون دون أن يرجعوا أبداً...
+            </p>
+          </div>
+
+          <div id="scrollIndicator" class="absolute bottom-8 left-0 right-0 w-full flex flex-col items-center justify-center gap-1.5 text-slate-400 cursor-pointer animate-bounce z-20 pointer-events-auto">
+            <span class="text-xs font-bold tracking-wider text-slate-500">مرر لأسفل لمشاهدة الحل</span>
+            <span class="material-symbols-outlined text-2xl text-slate-700">expand_more</span>
+          </div>
+        </div>
+
+        <!-- ── BEAT 2: "لو قلت لك إن الحل سهل وبسيط..." ────────────── -->
+        <div id="beat2" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-transparent opacity-0 pointer-events-none w-full">
+          <div class="max-w-4xl space-y-8 mx-auto px-6">
+            <div class="inline-flex items-center gap-1.5 text-xs font-bold text-slate-700 bg-white/80 backdrop-blur-md border border-slate-200/80 px-4 py-1.5 rounded-full shadow-sm">
+              <span class="material-symbols-outlined text-sm text-slate-600">lightbulb</span>
+              <span>حقيقة تريحك</span>
+            </div>
+            
+            <h2 class="text-3xl md:text-5xl lg:text-6xl font-bold text-slate-900 leading-snug max-w-3xl mx-auto">
+              لو قلت لك إن الحل سهل وبسيط...
+            </h2>
+            
+            <p class="text-slate-600 text-base md:text-xl leading-relaxed font-medium max-w-xl mx-auto">
+              بدون توظيف فريق مبيعات كامل ولا التعقيد مع شركات البرمجة!
+            </p>
+          </div>
+        </div>
+
+        <!-- ── BEAT 3: "تدري الصدمة وين؟ إنه مجاني 100%" ────────────── -->
+        <div id="beat3" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-transparent opacity-0 pointer-events-none w-full">
+          <div class="max-w-4xl space-y-8 mx-auto px-6">
+            <h2 class="text-3xl md:text-5xl lg:text-6xl font-black text-slate-900 leading-snug tracking-tight">
+              تدري الصدمة وين؟
+            </h2>
+            
+            <div class="inline-flex items-center gap-2 text-lg md:text-3xl font-extrabold text-slate-900 bg-white/90 backdrop-blur-md border border-slate-200 px-8 py-3.5 rounded-full shadow-md">
+              <span class="material-symbols-outlined text-xl md:text-2xl text-slate-700">verified</span>
+              <span>إنه مجاني 100% وبدون أي تكلفة!</span>
+            </div>
+            
+            <p class="text-slate-600 text-base md:text-lg leading-relaxed max-w-xl mx-auto font-medium">
+              ترد على عملائك بالواتساب فوراً، وتسترد سلاتك المتروكة بلهجة سعودية بيضاء محببة.
+            </p>
+          </div>
+        </div>
+
+        <!-- ── BEAT 4: Store URL Generator Box (Reveals AFTER Beat 3) ── -->
+        <div id="beat4" class="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-transparent opacity-0 pointer-events-none w-full overflow-y-auto">
+          <div class="max-w-4xl space-y-8 mx-auto px-6 py-8">
+            
+            <div id="generatorBox" class="wire-box rounded-2xl p-6 md:p-8 space-y-6 max-w-xl mx-auto text-right bg-white/90 backdrop-blur-xl shadow-2xl border border-slate-200/80">
+              
+              <div class="space-y-2 text-center sm:text-right">
+                <h3 class="text-lg md:text-2xl font-bold text-slate-900 flex items-center justify-center sm:justify-start gap-2">
+                  <span class="material-symbols-outlined text-xl text-slate-800">auto_awesome</span>
+                  <span>جرب موظفتك الرقمية الآن مجاناً</span>
+                </h3>
+                <p class="text-xs md:text-sm text-slate-600 font-medium leading-relaxed">
+                  أدخل رابط متجرك أو سجل مباشرة بضغطة زر واحدة لبناء الموظفة خلال 3 ثوانٍ:
+                </p>
+              </div>
+
+              <!-- 1-Click Quick Auth Buttons -->
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <a href="/api/auth/salla/install" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm">
+                  <span class="material-symbols-outlined text-base">storefront</span>
+                  <span>الدخول بمتجر سلة (Salla)</span>
+                </a>
+                <a href="/api/auth/zid/install" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                  <span class="material-symbols-outlined text-base">shopping_bag</span>
+                  <span>الدخول بمتجر زد (Zid)</span>
+                </a>
+              </div>
+
+              <div class="relative flex py-1 items-center">
+                <div class="flex-grow border-t border-slate-200"></div>
+                <span class="flex-shrink mx-3 text-[11px] text-slate-400 font-bold">أو أدخل الرابط مباشرة</span>
+                <div class="flex-grow border-t border-slate-200"></div>
+              </div>
+
+              <div class="space-y-2">
+                <label class="block text-xs font-bold text-slate-800">
+                  رابط متجرك الإلكتروني:
+                </label>
+                
+                <div class="flex flex-col sm:flex-row items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                  <input id="storeUrlInput" type="text" placeholder="salla.sa/mystore أو brand.com" class="w-full bg-transparent text-xs md:text-sm font-medium text-slate-900 focus:outline-none px-3 py-2.5"/>
+                  <button onclick="generateInstantAgentAndRedirect()" class="w-full sm:w-auto wire-btn px-6 py-3 rounded-xl text-xs font-bold shrink-0 flex items-center justify-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">bolt</span>
+                    <span>اصنع موظفتك الآن</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-center gap-4 pt-2 text-[11px] text-slate-500 font-medium border-t border-slate-100">
+                <span class="flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-sm text-slate-700">verified_user</span>
+                  <span>بياناتك مشفرة ومحمية 100% (AES-256)</span>
+                </span>
+                <span>•</span>
+                <span class="flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-sm text-slate-700">lock</span>
+                  <span>ربط رسمي مع سلة وزد</span>
+                </span>
+              </div>
+
+              <p class="text-[11px] text-slate-400 text-center leading-relaxed">
+                سوف تنتقل فوراً لصفحة المحاكاة لاختبار وتدريب موظفتك وإضافة معلومات متجرك.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 py-8 text-center text-xs text-slate-500 space-y-2">
+    <p>منصة هالة AI OS — نظام التشغيل الذكي للمتاجر الإلكترونية بالسعودية</p>
+    <p>حقوق الطبع والنشر © 2026 <strong>منصة هالة (Hala AI OS)</strong> — جميع الحقوق محفوظة.</p>
+  </footer>
 
   <script>
+    async function generateInstantAgentAndRedirect() {
+      const storeUrl = document.getElementById('storeUrlInput').value.trim();
+      if (!storeUrl) {
+        alert('أدخل رابط متجرك الإلكتروني أولاً.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/store/instant_agent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storeUrl })
+        });
+        const data = await res.json();
+        
+        const storeId = data.storeId || 'instant_store';
+        window.location.href = `dashboard.html?storeId=${storeId}&agentName=${encodeURIComponent(data.agentName || 'موظفة المتجر')}`;
+      } catch (err) {
+        window.location.href = 'dashboard.html';
+      }
+    }
+  </script>
+
+  <!-- GSAP 3 & ScrollTrigger CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  
+  <script>
     document.addEventListener("DOMContentLoaded", () => {
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      gsap.registerPlugin(ScrollTrigger);
 
-      /* Theme: HalaTheme (theme.js)، no persist on load */
+      // Entrance Anim for Beat 1
+      gsap.from("#heroTextContainer div", { y: -20, opacity: 0, duration: 0.8, ease: "power3.out" });
+      gsap.from("#heroTextContainer h1", { y: 30, opacity: 0, duration: 1, ease: "power3.out", delay: 0.2 });
+      gsap.from("#heroTextContainer p", { y: 20, opacity: 0, duration: 0.8, ease: "power3.out", delay: 0.4 });
 
-      /* ── Existing page logic ── */
-      // Capability strip — what Hala actually does today, no fabricated
-      // social-proof numbers (project honesty rule, same as /api/stats).
-      const tickerData = [
-        "وصف منتج بلهجة سعودية جاهز خلال ثوانٍ",
-        "صور منتجات باستوديو ذكاء اصطناعي يحافظ على منتجك",
-        "رد تلقائي على عملائك بلهجة متجرك",
-        "استعادة السلات المتروكة برسائل واتساب",
-        "ربط مباشر مع سلة وترينديول",
-        "فحص مجاني يكشف أخطاء ظهور متجرك"
-      ];
-      const tickerEl = document.getElementById("social-proof-ticker");
-      const fullTickerData = [...tickerData, ...tickerData, ...tickerData];
-      tickerEl.innerHTML = fullTickerData
-        .map((msg) => `<span class="ticker-item">${msg}</span>`)
-        .join("");
-
-      /* ── Hala self-support chat (real AI → funnels to WhatsApp) ── */
-      // Hala's own WhatsApp number for the support funnel. Set to the real
-      // business number (international format, no +). Placeholder for now.
-      const HALA_WA_PHONE = "966500000000";
-      const supportPanel = document.getElementById("hala-support-panel");
-      const supportBody = document.getElementById("hala-support-body");
-      const supportForm = document.getElementById("hala-support-form");
-      const supportText = document.getElementById("hala-support-text");
-      const agentBtn = document.getElementById("ai-agent-btn");
-      const supportHistory = [];
-      let supportGreeted = false;
-
-      function supportAddMsg(text, cls) {
-        const el = document.createElement("div");
-        el.className = "hs-msg " + cls;
-        el.textContent = text;
-        supportBody.appendChild(el);
-        supportBody.scrollTop = supportBody.scrollHeight;
-        return el;
-      }
-      function supportAddWhatsApp(waText) {
-        const a = document.createElement("a");
-        a.className = "hs-wa";
-        a.href = "https://wa.me/" + HALA_WA_PHONE + "?text=" + encodeURIComponent(waText || "مرحباً فريق هالة");
-        a.target = "_blank";
-        a.rel = "noopener";
-        a.innerHTML = '<span class="material-symbols-outlined" style="font-size:18px;">chat</span> تواصل معنا على واتساب';
-        supportBody.appendChild(a);
-        supportBody.scrollTop = supportBody.scrollHeight;
-      }
-      function openSupport() {
-        supportPanel.classList.add("is-open");
-        supportPanel.setAttribute("aria-hidden", "false");
-        if (!supportGreeted) {
-          supportGreeted = true;
-          supportAddMsg("هلا فيك 👋 أنا مساعدة هالة. تبي تعرف كيف نساعد متجرك يبيع أكثر؟", "bot");
-        }
-        supportText.focus();
-      }
-      function closeSupport() {
-        supportPanel.classList.remove("is-open");
-        supportPanel.setAttribute("aria-hidden", "true");
-      }
-      agentBtn.addEventListener("click", () => {
-        supportPanel.classList.contains("is-open") ? closeSupport() : openSupport();
-      });
-      document.getElementById("hala-support-close").addEventListener("click", closeSupport);
-      const footerContact = document.getElementById("footer-contact");
-      if (footerContact) footerContact.addEventListener("click", (e) => { e.preventDefault(); openSupport(); });
-
-      async function supportSend(text) {
-        supportAddMsg(text, "user");
-        supportHistory.push({ role: "user", content: text });
-        const typing = supportAddMsg("تكتب...", "bot typing");
-        try {
-          const res = await fetch("/api/support", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages: supportHistory })
-          });
-          const data = await res.json();
-          typing.remove();
-          if (data.result) {
-            supportAddMsg(data.result, "bot");
-            supportHistory.push({ role: "assistant", content: data.result });
-            if (data.whatsappCta) supportAddWhatsApp(data.whatsappText);
-          } else {
-            throw new Error(data.error || "no result");
-          }
-        } catch (err) {
-          typing.remove();
-          // Offline/static fallback، still funnel to WhatsApp.
-          supportAddMsg("أقدر أوصلك بفريقنا مباشرة على واتساب يساعدك خطوة بخطوة 👇", "bot");
-          supportAddWhatsApp("مرحباً فريق هالة، عندي استفسار عن الخدمة");
-        }
-      }
-      supportForm.addEventListener("submit", (e) => {
-        e.preventDefault();
-        const t = supportText.value.trim();
-        if (!t) return;
-        supportText.value = "";
-        supportSend(t);
-      });
-
-      function goToScanner(url) {
-        const storeUrl = url || document.getElementById("store-url").value || "https://oud-riyadh.salla.sa";
-        sessionStorage.setItem("hala_store_url", storeUrl);
-        document.body.classList.add("page-transition-out");
-        setTimeout(() => {
-          window.location.href = "scanner.html";
-        }, 280);
-      }
-
-      document.getElementById("scan-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        goToScanner();
-      });
-      document.getElementById("announcement-bar").addEventListener("click", () => goToScanner());
-      document.getElementById("announcement-bar").addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          goToScanner();
-        }
-      });
-      /* ── PR4: GSAP desktop PE only (lazy, gated)، durations ≤ 900ms for LCP ── */
-      function showHeroCssFallback() {
-        document.querySelectorAll(".gsap-reveal-text, .gsap-hero-item").forEach((el) => {
-          el.style.visibility = "visible";
-          el.style.opacity = "1";
-          el.style.transform = "none";
-        });
-        document.documentElement.setAttribute("data-marketing-gsap", "0");
-      }
-
-      function initGSAP() {
-        if (typeof gsap === "undefined" || !window.allowMarketingGSAP || !window.allowMarketingGSAP()) {
-          showHeroCssFallback();
-          return;
-        }
-
-        const ease = "power3.out";
-
-        // Staggered hero items، total perceived ≤ 900ms
-        const heroItems = gsap.utils.toArray(".gsap-hero-item");
-        gsap.set(heroItems, { opacity: 0, y: 20 });
-        gsap.to(heroItems, {
-          opacity: 1,
-          y: 0,
-          duration: 0.55,
-          stagger: 0.05,
-          ease,
-          delay: 0.05
-        });
-
-        // Smooth text reveal on hero title (line clip + rise)، ≤ 900ms total
-        const title = document.querySelector(".gsap-reveal-text");
-        if (title) {
-          const line1 = document.createElement("span");
-          line1.className = "gsap-split-line";
-          const line1Inner = document.createElement("span");
-          line1Inner.textContent = "ذكاء اصطناعي";
-          line1.appendChild(line1Inner);
-
-          const line2 = document.createElement("span");
-          line2.className = "gsap-split-line";
-          const line2Inner = document.createElement("span");
-          line2Inner.className = "hero-title-glow";
-          line2Inner.textContent = "يخدم تجارتك";
-          line2.appendChild(line2Inner);
-
-          title.textContent = "";
-          title.appendChild(line1);
-          title.appendChild(line2);
-
-          gsap.set([line1Inner, line2Inner], { yPercent: 115, opacity: 0 });
-          gsap.to([line1Inner, line2Inner], {
-            yPercent: 0,
-            opacity: 1,
-            duration: 0.6,
-            stagger: 0.08,
-            ease: "power4.out",
-            delay: 0.04
-          });
-        }
-
-        // Hero stage + image enter، ≤ 900ms
-        const stage = document.getElementById("hero-stage");
-        if (stage) {
-          gsap.from(stage, {
-            opacity: 0,
-            scale: 0.96,
-            y: 24,
-            duration: 0.55,
-            ease,
-            delay: 0.08
-          });
-        }
-
-        const parallaxCards = gsap.utils.toArray(".parallax-card");
-        gsap.from(parallaxCards, {
-          opacity: 0,
-          y: 28,
-          scale: 0.95,
-          duration: 0.5,
-          stagger: 0.06,
-          ease,
-          delay: 0.15
-        });
-
-        // Mouse-tracking parallax (desktop PE only; never on mobile path)
-        const heroStage = document.getElementById("hero-stage");
-        if (heroStage && parallaxCards.length) {
-          const pointer = { x: 0, y: 0 };
-          const target = { x: 0, y: 0 };
-          let tickerActive = true;
-
-          heroStage.addEventListener(
-            "pointermove",
-            (e) => {
-              const rect = heroStage.getBoundingClientRect();
-              target.x = (e.clientX - rect.left) / rect.width - 0.5;
-              target.y = (e.clientY - rect.top) / rect.height - 0.5;
-            },
-            { passive: true }
-          );
-
-          heroStage.addEventListener("pointerleave", () => {
-            target.x = 0;
-            target.y = 0;
-          });
-
-          document.addEventListener("visibilitychange", () => {
-            tickerActive = document.visibilityState === "visible";
-          });
-
-          gsap.ticker.add(() => {
-            if (!tickerActive) return;
-            pointer.x += (target.x - pointer.x) * 0.08;
-            pointer.y += (target.y - pointer.y) * 0.08;
-            parallaxCards.forEach((card) => {
-              const depth = parseFloat(card.dataset.depth || "0.05");
-              const floatY = Math.sin(gsap.ticker.time * 0.9 + depth * 12) * 4;
-              gsap.set(card, {
-                x: pointer.x * depth * 220,
-                y: pointer.y * depth * 160 + floatY,
-                rotateX: pointer.y * -6 * (depth * 20),
-                rotateY: pointer.x * 8 * (depth * 20),
-                transformPerspective: 900,
-                force3D: true
-              });
-            });
-          });
-        }
-
-        // Nav enter، ≤ 900ms
-        gsap.from(".nav-glass", {
-          y: -16,
-          opacity: 0,
-          duration: 0.5,
-          ease,
-          delay: 0.02
-        });
-      }
-
-      function loadMarketingGSAP() {
-        return new Promise((resolve, reject) => {
-          if (typeof gsap !== "undefined") {
-            resolve();
-            return;
-          }
-          const s = document.createElement("script");
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js";
-          s.async = true;
-          s.onload = () => resolve();
-          s.onerror = () => reject(new Error("GSAP load failed"));
-          document.head.appendChild(s);
-        });
-      }
-
-      function bootMotion() {
-        if (!window.allowMarketingGSAP || !window.allowMarketingGSAP()) {
-          showHeroCssFallback();
-          return;
-        }
-        // Lazy-load GSAP only when gate passes (desktop PE)
-        loadMarketingGSAP()
-          .then(() => {
-            if (!window.allowMarketingGSAP()) {
-              showHeroCssFallback();
-              return;
+      // Dedicated ScrollTrigger timeline controlling both beats and ambient blue aura glow motion
+      const pinTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: "#pinWrapper",
+          start: "top top",
+          end: "+=3200",
+          pin: true,
+          pinSpacing: true,
+          scrub: 1,
+          onUpdate: (self) => {
+            const nav = document.getElementById("floatingNav");
+            if (self.progress > 0.08) {
+              nav.classList.remove("opacity-0", "pointer-events-none");
+              nav.classList.add("opacity-100");
+            } else {
+              nav.classList.add("opacity-0", "pointer-events-none");
+              nav.classList.remove("opacity-100");
             }
-            document.documentElement.setAttribute("data-marketing-gsap", "1");
-            initGSAP();
-          })
-          .catch(() => {
-            showHeroCssFallback();
-          });
-      }
-      bootMotion();
+          }
+        }
+      });
+
+      // 1. Beat 1 -> Beat 2: Spectrums float & sway gracefully in sync with Hero scroll
+      pinTimeline.to(".spectrum-1", { x: "18vw", y: "-12vh", scale: 1.3, duration: 1 })
+                 .to(".spectrum-2", { x: "-15vw", y: "10vh", scale: 1.2, duration: 1 }, "-=1")
+                 .to(".spectrum-3", { x: "8vw", y: "15vh", scale: 1.35, duration: 1 }, "-=1")
+                 .to("#beat1", { opacity: 0, scale: 0.95, duration: 1 }, "-=1")
+                 .to("#beat2", { opacity: 1, scale: 1, pointerEvents: "auto", duration: 1 }, "-=0.5")
+
+      // 2. Beat 2 -> Beat 3: Spectrums morph & shift positions smoothly
+                 .to(".spectrum-1", { x: "-14vw", y: "16vh", scale: 1.4, duration: 1 })
+                 .to(".spectrum-2", { x: "18vw", y: "-14vh", scale: 1.3, duration: 1 }, "-=1")
+                 .to(".spectrum-3", { x: "-10vw", y: "-10vh", scale: 1.2, duration: 1 }, "-=1")
+                 .to("#beat2", { opacity: 0, scale: 0.95, pointerEvents: "none", duration: 1 }, "-=1")
+                 .to("#beat3", { opacity: 1, scale: 1, pointerEvents: "auto", duration: 1 }, "-=0.5")
+
+      // 3. Beat 3 -> Beat 4: Spectrums converge harmoniously behind the Action Box
+                 .to(".spectrum-1", { x: "0vw", y: "0vh", scale: 1.1, duration: 1 })
+                 .to(".spectrum-2", { x: "0vw", y: "0vh", scale: 1.15, duration: 1 }, "-=1")
+                 .to(".spectrum-3", { x: "0vw", y: "0vh", scale: 1.2, duration: 1 }, "-=1")
+                 .to("#beat3", { opacity: 0, scale: 0.95, pointerEvents: "none", duration: 1 }, "-=1")
+                 .to("#beat4", { opacity: 1, scale: 1, pointerEvents: "auto", duration: 1 }, "-=0.5");
     });
   </script>
+
 </body>
 </html>

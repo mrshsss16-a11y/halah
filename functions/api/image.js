@@ -3,10 +3,10 @@
 // imageBase64: raw base64 (no data: prefix) of the product photo, resized
 // client-side to ≤512x512 (Workers AI reference-image constraint).
 // style: one of STYLE_PRESETS keys ("طابع العميل" — customer brand identity).
-import { withApi } from "../_lib/respond.js";
-import { checkAndConsume, COSTS } from "../_lib/meter.js";
+import { withApi } from "../_lib/core/respond.js";
+import { checkAndConsume, COSTS } from "../_lib/core/meter.js";
 import { generateProductImage, STYLE_PRESETS } from "../_lib/imageProvider.js";
-import { resolveStoreId } from "../_lib/session.js";
+import { resolveStoreId } from "../_lib/core/session.js";
 
 async function imageHandler(body, env, request) {
   const merchantId = await resolveStoreId(request, env, body.storeId);

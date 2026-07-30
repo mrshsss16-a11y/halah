@@ -1,7 +1,7 @@
 // POST /api/admin/overview — dashboard counters only, no raw query surface.
-import { withApi } from "../../_lib/respond.js";
-import { requireAdmin } from "../../_lib/session.js";
-import { adminStats } from "../../_lib/db.js";
+import { withApi } from "../../_lib/core/respond.js";
+import { requireAdmin } from "../../_lib/core/session.js";
+import { adminStats } from "../../_lib/core/db.js";
 
 async function overviewHandler(body, env, request) {
   const admin = await requireAdmin(request, env);

@@ -36,7 +36,6 @@ function resolveIncludes(html, fromFile, depth = 0) {
   });
 }
 
-rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
 // style.css is authored as numbered sections under styles/ (01-base,

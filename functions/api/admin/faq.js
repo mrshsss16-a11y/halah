@@ -1,9 +1,9 @@
 // POST /api/admin/faq
 // body: { action: "list" } | { action: "save", id?, question, answer } | { action: "delete", id } | { action: "reembed" }
-import { withApi } from "../../_lib/respond.js";
-import { requireAdmin } from "../../_lib/session.js";
-import { listHalaFaq, saveHalaFaqEntry, deleteHalaFaqEntry } from "../../_lib/db.js";
-import { reembedHalaFaq, deleteHalaFaqEmbedding } from "../../_lib/memory.js";
+import { withApi } from "../../_lib/core/respond.js";
+import { requireAdmin } from "../../_lib/core/session.js";
+import { listHalaFaq, saveHalaFaqEntry, deleteHalaFaqEntry } from "../../_lib/core/db.js";
+import { reembedHalaFaq, deleteHalaFaqEmbedding } from "../../_lib/ai/memory.js";
 
 async function faqHandler(body, env, request) {
   const admin = await requireAdmin(request, env);

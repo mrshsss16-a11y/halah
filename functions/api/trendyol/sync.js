@@ -8,10 +8,10 @@
 //   payload hash stored on product_sync.
 // - batch-status: { batchRequestId } → poll async result, update sync_status.
 // - orders: pull one page of shipment packages.
-import { withApi } from "../../_lib/respond.js";
-import { getPlatformConnection } from "../../_lib/db.js";
-import { createProducts, updatePriceAndInventory, getBatchResult, getShipmentPackages } from "../../_lib/trendyol.js";
-import { resolveStoreId } from "../../_lib/session.js";
+import { withApi } from "../../_lib/core/respond.js";
+import { getPlatformConnection } from "../../_lib/core/db.js";
+import { createProducts, updatePriceAndInventory, getBatchResult, getShipmentPackages } from "../../_lib/integrations/trendyol.js";
+import { resolveStoreId } from "../../_lib/core/session.js";
 
 async function sha256Hex(text) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));

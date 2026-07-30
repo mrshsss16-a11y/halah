@@ -6,8 +6,14 @@
   "type": "module",
   "scripts": {
     "stage": "node scripts/stage.mjs",
-    "dev": "node scripts/stage.mjs && wrangler pages dev",
-    "deploy": "node scripts/stage.mjs && wrangler pages deploy --project-name hala-ai-os"
+    "build": "node scripts/stage.mjs && astro build",
+    "dev": "node scripts/stage.mjs && wrangler pages dev dist",
+    "preview": "astro preview",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name hala-ai-os"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^12.0.0",
+    "astro": "^5.0.0"
   },
   "devDependencies": {
     "wrangler": "^3.90.0"

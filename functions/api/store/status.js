@@ -2,9 +2,9 @@
 // Used by onboarding.html to poll whether the app.store.authorize webhook
 // has landed after the merchant installs the app from the Salla store.
 // Returns the canonical merchant id so the frontend can persist hala_store_id.
-import { withApi } from "../../_lib/respond.js";
-import { getMerchant, getMerchantBySalla, getTokens, getPlatformConnection, getAccountEmail } from "../../_lib/db.js";
-import { getSessionMerchantId } from "../../_lib/session.js";
+import { withApi } from "../../_lib/core/respond.js";
+import { getMerchant, getMerchantBySalla, getTokens, getPlatformConnection, getAccountEmail } from "../../_lib/core/db.js";
+import { getSessionMerchantId } from "../../_lib/core/session.js";
 
 async function statusHandler(body, env, request) {
   let merchant = null;

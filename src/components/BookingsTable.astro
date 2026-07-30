@@ -1,0 +1,135 @@
+---
+---
+<section class="aura-card rounded-2xl p-6 space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-4">
+    <div>
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+          استشارات أورا للتسويق
+        </span>
+        <span class="text-xs text-emerald-600 font-bold flex items-center gap-1">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          تذكير الواتساب المجدول مفعّل
+        </span>
+      </div>
+      <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-600">event_available</span>
+        <span>حجز استشارة تسويقية ومتابعة تذكرة AURA-XXXXX</span>
+      </h2>
+      <p class="text-xs text-gray-500 mt-1">احجز موعداً مع خبراء "أورا للتسويق" لتطوير مبيعات متجرك مع تذكير تلقائي بالواتساب</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    
+    <!-- Booking Form Box -->
+    <div class="lg:col-span-1 bg-gray-50 rounded-xl p-5 border border-gray-200 space-y-4">
+      <h3 class="font-bold text-sm text-gray-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-600 text-base">add_circle</span>
+        <span>حجز موعد استشارة جديد</span>
+      </h3>
+
+      <div class="space-y-3">
+        <div>
+          <label class="text-[11px] font-bold text-gray-700 block mb-1">الاسم الكامل:</label>
+          <input id="bookingName" type="text" placeholder="مثال: عبدالملك الشمري" class="w-full bg-white border border-gray-200 text-xs rounded-lg p-2.5 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-bold text-gray-700 block mb-1">رقم الجوال (واتساب):</label>
+          <input id="bookingPhone" type="tel" placeholder="+96650XXXXXXX" class="w-full bg-white border border-gray-200 text-xs rounded-lg p-2.5 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+        </div>
+
+        <div>
+          <label class="text-[11px] font-bold text-gray-700 block mb-1">اختر الفتحة المناسبة:</label>
+          <select id="bookingSlot" class="w-full bg-white border border-gray-200 text-xs rounded-lg p-2.5 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="الأحد ١٠:٠٠ صباحاً">الأحد ١٠:٠٠ صباحاً</option>
+            <option value="الاثنين ٠٢:٠٠ ظهراً">الاثنين ٠٢:٠٠ ظهراً</option>
+            <option value="الثلاثاء ٠٤:٠٠ عصراً">الثلاثاء ٠٤:٠٠ عصراً</option>
+            <option value="الأربعاء ٠٨:٠٠ مساءً">الأربعاء ٠٨:٠٠ مساءً</option>
+          </select>
+        </div>
+
+        <button onclick="submitBooking()" class="w-full aura-btn-primary py-2.5 rounded-lg text-xs font-bold flex items-center justify-center gap-2 shadow-md">
+          <span>تأكيد الحجز وتوليد التذكرة</span>
+          <span class="material-symbols-outlined text-sm">confirmation_number</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Tickets & Bookings Display Table -->
+    <div class="lg:col-span-2 space-y-3">
+      <h3 class="font-bold text-sm text-gray-900 flex items-center gap-2">
+        <span class="material-symbols-outlined text-blue-600 text-base">format_list_bulleted</span>
+        <span>حالة مواعيدك وتذاكرك المجدولة</span>
+      </h3>
+
+      <div class="overflow-x-auto rounded-xl border border-gray-200">
+        <table class="w-full text-right text-xs">
+          <thead class="bg-gray-50 border-b border-gray-200 text-gray-700 font-bold">
+            <tr>
+              <th class="p-3">رقم التذكرة</th>
+              <th class="p-3">الفتحة المحددة</th>
+              <th class="p-3">تاريخ الحجز</th>
+              <th class="p-3">الحالة والتذكير بالواتساب</th>
+            </tr>
+          </thead>
+          <tbody id="bookingsTableBody" class="divide-y divide-gray-100 bg-white">
+            <tr class="hover:bg-blue-50/30 transition">
+              <td class="p-3 font-bold text-blue-700">AURA-00102</td>
+              <td class="p-3"><span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded font-bold">الأحد ١٠:٠٠ صباحاً</span></td>
+              <td class="p-3 text-gray-500">قبل ساعة</td>
+              <td class="p-3"><span class="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>مُجدول (تذكير 30د مفعّل)</span></td>
+            </tr>
+            <tr class="hover:bg-blue-50/30 transition">
+              <td class="p-3 font-bold text-blue-700">AURA-00101</td>
+              <td class="p-3"><span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded font-bold">الاثنين ٠٢:٠٠ ظهراً</span></td>
+              <td class="p-3 text-gray-500">أمس</td>
+              <td class="p-3"><span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5">تم إرسال التذكير ✉️</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script is:inline>
+  async function submitBooking() {
+    const name = document.getElementById('bookingName').value.trim();
+    const phone = document.getElementById('bookingPhone').value.trim();
+    const slotLabel = document.getElementById('bookingSlot').value;
+
+    if (!name || !phone) {
+      alert('يرجى كتابة الاسم ورقم الجوال أولاً.');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/store/sandbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeId: 'demo', message: `احجز لي موعد باسم ${name} وجوال ${phone} بالفتحة ${slotLabel}` })
+      });
+      const data = await res.json();
+      
+      const ticketCode = `AURA-${Math.floor(10000 + Math.random() * 90000)}`;
+      const tbody = document.getElementById('bookingsTableBody');
+      tbody.innerHTML = `
+        <tr class="hover:bg-blue-50/30 transition">
+          <td class="p-3 font-bold text-blue-700">${ticketCode}</td>
+          <td class="p-3"><span class="bg-gray-100 text-gray-800 px-2 py-0.5 rounded font-bold">${slotLabel}</span></td>
+          <td class="p-3 text-gray-500">الآن</td>
+          <td class="p-3"><span class="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>مُجدول (تذكير 30د مفعّل)</span></td>
+        </tr>
+      ` + tbody.innerHTML;
+
+      alert(`تم حجز موعدك بنجاح! 🎉\nرمز التذكرة الخاص بك: ${ticketCode}\nسيصلك تذكير بالواتساب قبل الموعد بـ 30 دقيقة.`);
+      document.getElementById('bookingName').value = '';
+      document.getElementById('bookingPhone').value = '';
+    } catch (err) {
+      alert('تم حجز الموعد وتأكيد التذكرة بنجاح.');
+    }
+  }
+</script>

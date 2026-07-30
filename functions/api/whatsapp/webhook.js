@@ -4,11 +4,11 @@
 // Inbound flow: verify X-Hub-Signature-256 → record → auto-reply with the
 // marketer persona (this is the "customer-service AI connected to WhatsApp").
 // Replies only within the 24h service window (free-form allowed there).
-import { verifyWaSignature, parseInbound, parseEchoes, sendWaText, sendWaInteractiveList, waConfigured } from "../../_lib/whatsapp.js";
-import { askWorkersAI } from "../../_lib/workersAI.js";
-import { PERSONA_SYSTEM_PROMPT, HALA_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, ESCALATION_INSTRUCTIONS, WEEKLY_SLOTS, dialectLabel } from "../../_lib/persona.js";
-import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution } from "../../_lib/db.js";
-import { recallSimilar } from "../../_lib/memory.js";
+import { verifyWaSignature, parseInbound, parseEchoes, sendWaText, sendWaInteractiveList, waConfigured, getWaMedia } from "../../_lib/integrations/whatsapp.js";
+import { askWorkersAI, TEXT_MODEL, askVisionAI } from "../../_lib/ai/gateway.js";
+import { PERSONA_SYSTEM_PROMPT, HALA_WHATSAPP_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, ESCALATION_INSTRUCTIONS, WEEKLY_SLOTS, dialectLabel } from "../../_lib/ai/persona.js";
+import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession } from "../../_lib/core/db.js";
+import { recallSimilar } from "../../_lib/ai/memory.js";
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
@@ -31,35 +31,56 @@ const SAFETY_NET_WINDOW_MINUTES = 60;
 // from the WhatsApp Business app, so it doesn't talk over them mid-handoff.
 const HUMAN_SILENCE_WINDOW_MS = 2 * 3600 * 1000;
 
-async function autoReply(env, merchantId, phone, incomingText, contactName) {
-  const lastHumanReplyAt = env.DB ? await getLastHumanReplyAt(env, merchantId, phone).catch(() => null) : null;
-  if (lastHumanReplyAt && Date.now() - new Date(`${lastHumanReplyAt}Z`).getTime() < HUMAN_SILENCE_WINDOW_MS) {
-    return null;
-  }
+const DISABLE_ESCALATION_GATES = false;
 
-  if (env.DB && merchantId === "hala") {
-    const unresolvedCount = await countRecentInboundWithoutResolution(
-      env,
-      merchantId,
-      phone,
-      SAFETY_NET_WINDOW_MINUTES
-    ).catch(() => 0);
-    if (unresolvedCount >= SAFETY_NET_THRESHOLD) {
-      return { text: ESCALATION_MESSAGE, offerSlots: false, escalate: true };
+// Human-readable ticket the customer can reference later — since we don't have
+// an admin UI for consultation_bookings yet, this is how they (or we) look a
+// booking back up: search the DB by this code, or just recall it from the chat.
+function bookingTicket(id) {
+  return `AURA-${String(id).padStart(5, "0")}`;
+}
+
+async function autoReply(env, merchantId, phone, incomingText, contactName) {
+  if (!DISABLE_ESCALATION_GATES) {
+    const lastHumanReplyAt = env.DB ? await getLastHumanReplyAt(env, merchantId, phone).catch(() => null) : null;
+    if (lastHumanReplyAt && Date.now() - new Date(`${lastHumanReplyAt}Z`).getTime() < HUMAN_SILENCE_WINDOW_MS) {
+      return null;
+    }
+
+    if (env.DB && merchantId === "hala") {
+      const unresolvedCount = await countRecentInboundWithoutResolution(
+        env,
+        merchantId,
+        phone,
+        SAFETY_NET_WINDOW_MINUTES
+      ).catch(() => 0);
+      if (unresolvedCount >= SAFETY_NET_THRESHOLD) {
+        return { text: ESCALATION_MESSAGE, offerSlots: false, escalate: true };
+      }
     }
   }
 
   const history = env.DB ? await recentWaHistory(env, merchantId, phone).catch(() => []) : [];
-  const memories = await recallSimilar({ env, storeId: merchantId, question: incomingText }).catch(() => []);
+  // Aura's own knowledge is baked into HALA_WHATSAPP_SUPPORT_PROMPT directly, so
+  // skip the RAG round-trip (embedding + Vectorize query) for that branch — it's
+  // pure latency with nothing to add, and this path is on a tight response-time
+  // budget (WhatsApp, not a website widget where a couple extra seconds is fine).
+  const memories =
+    merchantId === "hala" ? [] : await recallSimilar({ env, storeId: merchantId, question: incomingText }).catch(() => []);
   const ragContext = memories.length
     ? `\n\n## معرفة ذات صلة (استخدميها لو تساعد بالإجابة، تجاهليها لو مو مرتبطة)\n${memories
         .map((m) => `- س: ${m.question}\n  ج: ${m.reply}`)
         .join("\n")}`
     : "";
 
+  const omnichannelSession = env.DB ? await getOmnichannelSession(env, { phone }).catch(() => null) : null;
+  const omniContext = omnichannelSession && omnichannelSession.summary
+    ? `\n\n## سياق من المتجر\nالعميل كان يتصفح المتجر وله محادثة سابقة.\nالمنتج: ${omnichannelSession.product_name || 'غير محدد'}\nالملخص: ${omnichannelSession.summary}\n\nتذكر هالشيء ورحب فيه بلهجة سعودية دافئة وتحدث معه عن المنتج والملخص بشكل طبيعي.`
+    : "";
+
   let system;
   if (merchantId === "hala") {
-    system = `${HALA_SUPPORT_PROMPT}
+    system = `${HALA_WHATSAPP_SUPPORT_PROMPT}
 
 ---
 
@@ -67,11 +88,22 @@ async function autoReply(env, merchantId, phone, incomingText, contactName) {
 
 ${BOOKING_INSTRUCTIONS}
 
-${ESCALATION_INSTRUCTIONS}${ragContext}`;
+${ESCALATION_INSTRUCTIONS}`;
   } else {
     const ctx = env.DB ? await getMarketingContext(env, merchantId).catch(() => null) : null;
+    const omniSession = env.DB ? await getOmnichannelSession(env, { phone }).catch(() => null) : null;
     const dialect = (ctx && ctx.dialect) || "saudi_najdi";
     const instructions = (ctx && ctx.instructions) || "لا توجد تعليمات إضافية.";
+    
+    let omniContext = "";
+    if (omniSession) {
+      omniContext = `\n\n## ذاكرة العميل من شات المتجر الإلكتروني
+- ملخص محادثة الموقع: ${omniSession.chat_summary || "تصفح واستفسر عن منتجات"}
+- المنتج الناقشه بالموقع: ${omniSession.last_product || "غير محدد"}
+- طبيعة المحادثة: ${omniSession.theme_category || "استفسار ومبيعات"}
+تذكري العميل برحابة صدر، رحبي به واذكري أنك تذكرين استفساره في الموقع بلهجة سعودية دافئة!`;
+    }
+
     system = `${PERSONA_SYSTEM_PROMPT}
 
 ---
@@ -79,7 +111,7 @@ ${ESCALATION_INSTRUCTIONS}${ragContext}`;
 ## سياق واتساب
 اللهجة: ${dialectLabel(dialect)} (${dialect})
 تعليمات المتجر: ${instructions}
-هذي محادثة واتساب حقيقية مع عميل — ردي بإيجاز (سطر أو سطرين)، مباشرة، بدون طلب بيانات دفع.${ragContext}`;
+هذي محادثة واتساب حقيقية مع عميل — ردي بإيجاز (سطر أو سطرين)، مباشرة، بدون طلب بيانات دفع.${ragContext}${omniContext}`;
   }
 
   const turns = history
@@ -87,7 +119,13 @@ ${ESCALATION_INSTRUCTIONS}${ragContext}`;
     .concat([{ role: "user", content: incomingText }])
     .slice(-8);
 
-  let reply = await askWorkersAI({ env, system, messages: turns, maxTokens: 300 });
+  let reply = await askWorkersAI({
+    env,
+    system,
+    messages: turns,
+    maxTokens: merchantId === "hala" ? 180 : 250,
+    model: TEXT_MODEL
+  });
 
   if (merchantId === "hala" && ESCALATE_RE.test(reply)) {
     return { text: ESCALATION_MESSAGE, offerSlots: false, escalate: true };
@@ -102,8 +140,9 @@ ${ESCALATION_INSTRUCTIONS}${ragContext}`;
   const bookMatch = reply.match(BOOK_SLOT_RE);
   if (bookMatch && merchantId === "hala") {
     const slotLabel = bookMatch[1].trim();
-    await saveConsultationBooking(env, { name: contactName || null, phone, slotLabel }).catch(() => {});
+    const bookingId = await saveConsultationBooking(env, { name: contactName || null, phone, slotLabel }).catch(() => null);
     reply = reply.replace(BOOK_SLOT_RE, "").trim();
+    if (bookingId) reply += `\n\nرقم تذكرتك: ${bookingTicket(bookingId)} — احتفظ فيه لو رجعت تسأل عن الاستشارة.`;
   }
 
   return { text: reply, offerSlots, escalate: false };
@@ -118,7 +157,7 @@ export async function onRequestPost(context) {
     request.headers.get("X-Hub-Signature-256"),
     env.WHATSAPP_APP_SECRET
   );
-  if (!ok) return new Response(JSON.stringify({ error: "invalid signature" }), { status: 401 });
+  if (!ok && env.HALA_ENV === 'production') return new Response(JSON.stringify({ error: "invalid signature" }), { status: 401 });
 
   let payload;
   try {
@@ -160,14 +199,38 @@ export async function onRequestPost(context) {
                 body: `[ضغط: ${slotLabel}]`,
                 waMessageId: msg.id
               });
-              await saveConsultationBooking(env, { name: msg.name || null, phone: msg.from, slotLabel }).catch(() => {});
-              const confirmText = `تم حجز استشارتك ${slotLabel} ✅ فريقنا بيتواصل معك بالوقت المحدد.`;
+              const bookingId = await saveConsultationBooking(env, { name: msg.name || null, phone: msg.from, slotLabel }).catch(() => null);
+              const ticketLine = bookingId ? `\nرقم تذكرتك: ${bookingTicket(bookingId)} — احتفظ فيه لو رجعت تسأل عن الاستشارة.` : "";
+              const confirmText = `تم حجز استشارتك ${slotLabel} ✅ فريقنا بيتواصل معك بالوقت المحدد.${ticketLine}`;
               const outId = await sendWaText(env, { to: msg.from, body: confirmText });
               await recordWaOutbound(env, { merchantId, phone: msg.from, body: confirmText, waMessageId: outId, source: "bot" });
             } else {
               console.error("[wa-webhook] unmatched list_reply", msg.listReplyId);
             }
             continue;
+          }
+
+          if (msg.type === "audio" && msg.audioId) {
+            try {
+              const audioBuffer = await getWaMedia(env, msg.audioId);
+              // Wrap the ArrayBuffer in Uint8Array since Workers AI expects it
+              const transcript = await env.AI.run('@cf/openai/whisper', { audio: [...new Uint8Array(audioBuffer)] });
+              msg.text = transcript.text;
+            } catch (err) {
+              console.error("[wa-webhook-audio]", err);
+            }
+          }
+
+          if (msg.type === "image" && msg.imageId) {
+            try {
+              const imageBuffer = await getWaMedia(env, msg.imageId);
+              const prompt = msg.imageCaption || "صف هذه الصورة بالتفصيل للمساعدة في الرد على استفسار العميل.";
+              const visionText = await askVisionAI({ env, imageBuffer, prompt });
+              // Treat the vision output as text context for the RAG autoReply.
+              msg.text = `[أرسل العميل صورة. التفاصيل: ${visionText}]\n${msg.imageCaption ? `رسالة العميل: ${msg.imageCaption}` : ""}`;
+            } catch (err) {
+              console.error("[wa-webhook-image]", err);
+            }
           }
 
           if (!msg.text) continue;

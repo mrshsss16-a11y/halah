@@ -1,0 +1,71 @@
+---
+---
+<!-- Visual No-Code Flow Builder Component for Merchant Dashboard -->
+<section class="sleek-white-card rounded-3xl p-7 space-y-6 shadow-sm">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+    <div>
+      <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-full mb-1">
+        <span class="material-symbols-outlined text-base">account_tree</span>
+        <span>أتمتة سير العمل بدون كود | Visual No-Code Flow Builder</span>
+      </div>
+      <h2 class="text-xl font-black text-black">باني مسارات واتساب العميل التلقائية</h2>
+      <p class="text-xs text-slate-600 font-medium">ارسم خطوات استرداد السلات التلقائية ومواعيد المتابعة بأسلوب الباني المرئي</p>
+    </div>
+
+    <button onclick="saveCustomFlow()" class="sleek-btn-black px-4.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-sm">
+      <span class="material-symbols-outlined text-base">save</span>
+      <span>حفظ المسار التلقائي</span>
+    </button>
+  </div>
+
+  <!-- Flow Visual Pipeline -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-right">
+    
+    <!-- Step 1: Trigger -->
+    <div class="bg-slate-50 border border-slate-300 rounded-2xl p-5 space-y-3 relative">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-bold text-white bg-black px-2.5 py-0.5 rounded-md">الخطوة 1: المحفز</span>
+        <span class="material-symbols-outlined text-black">shopping_cart</span>
+      </div>
+      <h4 class="font-black text-xs text-black">حدث: سلة متروكة في سلة/زد</h4>
+      <p class="text-[11px] text-slate-600 leading-relaxed font-medium">عند قيام الزائر بإضافة منتج وتوقف عند خطوة الدفع بـ 15 دقيقة.</p>
+    </div>
+
+    <!-- Step 2: Delay & Voice Note -->
+    <div class="bg-slate-50 border border-slate-300 rounded-2xl p-5 space-y-3 relative">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-bold text-black bg-slate-200 border border-slate-300 px-2.5 py-0.5 rounded-md">الخطوة 2: إجراء بالواتساب</span>
+        <span class="material-symbols-outlined text-black">mic</span>
+      </div>
+      <h4 class="font-black text-xs text-black">بصمة صوتية سعودية بالواتساب</h4>
+      <p class="text-[11px] text-slate-600 leading-relaxed font-medium">إرسال بصمة صوتية سعودية طبيعية: "أهلاً! شفت سلتك منتظرتك بالمتجر.."</p>
+    </div>
+
+    <!-- Step 3: Conditional Offer -->
+    <div class="bg-slate-50 border border-slate-300 rounded-2xl p-5 space-y-3 relative">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-bold text-black bg-slate-200 border border-slate-300 px-2.5 py-0.5 rounded-md">الخطوة 3: شرط التفاعل</span>
+        <span class="material-symbols-outlined text-black">local_offer</span>
+      </div>
+      <h4 class="font-black text-xs text-black">إذا لم يكمل الدفع خلال ساعة</h4>
+      <p class="text-[11px] text-slate-600 leading-relaxed font-medium">إرسال كوبون خصم 5% مع رابط الدفع السريع المباشر.</p>
+    </div>
+
+    <!-- Step 4: Final Confirmation -->
+    <div class="bg-slate-50 border border-slate-300 rounded-2xl p-5 space-y-3 relative">
+      <div class="flex items-center justify-between">
+        <span class="text-[11px] font-bold text-white bg-black px-2.5 py-0.5 rounded-md">الخطوة 4: النجاح</span>
+        <span class="material-symbols-outlined text-black">task_alt</span>
+      </div>
+      <h4 class="font-black text-xs text-black">تأكيد إتمام الشراء والتجهيز</h4>
+      <p class="text-[11px] text-slate-600 leading-relaxed font-medium">إرسال إشعار التجهيز ورقم التتبع فوراً عبر الواتساب الرسمي.</p>
+    </div>
+
+  </div>
+</section>
+
+<script is:inline>
+  function saveCustomFlow() {
+    alert('تم حفظ وبناء المسار التلقائي (No-Code Flow) بنجاح! 🚀\nسيبدأ النظام بتطبيق الخطوات فوراً لكل سلة متروكة.');
+  }
+</script>

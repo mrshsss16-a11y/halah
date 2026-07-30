@@ -1,1398 +1,552 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar" data-shell="product" data-theme="light">
+<html dir="rtl" lang="ar" data-theme="light">
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>هالة | لوحة التحكم</title>
-  <!--#include partials/fouc-theme.html -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <title>هالة | لوحة تحكم التاجر - Hala AI OS</title>
+  <meta name="description" content="لوحة تحكم هالة التشغيلية لإدارة موظفتك الرقمية، استرداد السلات، ومزامنة RAG المعرفة"/>
+  
   <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-  <script>
-    tailwind.config = {
-      darkMode: "class",
-      theme: {
-        extend: {
-          colors: {
-            "outline-variant": "#bfc8ce",
-            "on-surface-variant": "#40484d",
-            "surface": "#f7f9fb",
-            "background": "#f7f9fb",
-            "secondary": "#2E7A87",
-            "outline": "#70787e",
-            "on-background": "#191c1e",
-            "surface-container-lowest": "#ffffff",
-            "on-surface": "#191c1e",
-            "primary": "#2A6E93",
-            "primary-container": "#438FB3",
-            "error": "#ba1a1a",
-            "inverse-primary": "#8FC1DC"
-          },
-          borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" },
-          spacing: {
-            "container-padding-mobile": "16px",
-            gutter: "24px",
-            "section-gap": "48px",
-            "container-padding-desktop": "32px"
-          },
-          fontFamily: {
-            "title-md": ["DIN Next LT Arabic"],
-            "headline-lg-mobile": ["DIN Next LT Arabic"],
-            "headline-lg": ["DIN Next LT Arabic"],
-            "label-sm": ["DIN Next LT Arabic"],
-            "body-md": ["DIN Next LT Arabic"],
-            "display-lg": ["DIN Next LT Arabic"],
-            "body-lg": ["DIN Next LT Arabic"]
-          },
-          fontSize: {
-            "title-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
-            "headline-lg-mobile": ["24px", { lineHeight: "32px", fontWeight: "600" }],
-            "headline-lg": ["32px", { lineHeight: "40px", fontWeight: "600" }],
-            "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "500" }],
-            "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
-            "display-lg": ["48px", { lineHeight: "60px", letterSpacing: "-0.02em", fontWeight: "700" }],
-            "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }]
-          }
-        }
-      }
-    };
-  </script>
-  <link href="style.css" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', sans-serif; background: #FFFFFF; color: #000000; }
+    .sleek-card { background: #FFFFFF; border: 1px solid #E2E8F0; }
+    .sleek-card-darkborder { background: #FFFFFF; border: 1px solid #000000; }
+    .sleek-btn-black { background: #000000; color: #FFFFFF; font-weight: 700; }
+    .sleek-btn-black:hover { background: #1E293B; }
+    .sleek-btn-white { background: #FFFFFF; border: 1px solid #000000; color: #000000; font-weight: 700; }
+    .sleek-btn-white:hover { background: #F8FAFC; }
+  </style>
 </head>
-<body class="bg-background text-on-background min-h-[100dvh] flex flex-col md:flex-row rtl page-enter">
+<body class="min-h-screen flex flex-col justify-between relative bg-white text-black selection:bg-black selection:text-white">
 
-  <!--#include partials/app-shell.html -->
-
-  <main class="flex-1 lg:mr-64 p-container-padding-mobile md:p-container-padding-desktop max-w-[1440px] mx-auto w-full pb-28 relative z-10" id="dash-main">
-    <!-- شريط حالة المتجر العلوي -->
-    <div id="topbar-store-status" class="topbar-store glass-card rounded-2xl px-4 py-3 mb-6 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3 min-w-0">
-        <div id="topbar-platform-logo" class="platform-logo platform-logo--salla" aria-hidden="true">
-          <span class="platform-logo-text">سلة</span>
-        </div>
-        <div class="min-w-0">
-          <p class="font-label-sm text-[11px] dash-muted mb-0.5">حالة الربط</p>
-          <p class="font-title-md text-[16px] dash-title font-semibold flex flex-wrap items-center gap-2">
-            <span id="topbar-platform-name">متجر سلة متصل</span>
-            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/12 text-emerald-600 font-label-sm text-[11px]">
-              <span class="store-status-dot" aria-hidden="true"></span>
-              نشط
-            </span>
-          </p>
-        </div>
+  <!-- Navigation Corners -->
+  <div class="fixed top-6 left-6 right-6 z-40 flex items-center justify-between pointer-events-none">
+    <a href="index.html" class="pointer-events-auto flex items-center gap-2.5 bg-white border border-black px-4 py-2 rounded-full shadow-sm">
+      <div class="flex items-center justify-center w-7 h-7 rounded-full bg-black text-white font-black text-xs">
+        أ
       </div>
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="font-label-sm text-[11px] dash-muted hidden sm:inline">قنوات النشر</span>
-        <div id="topbar-channel-badges" class="flex items-center gap-1.5" aria-label="قنوات النشر">
-          <!-- تُملأ ديناميكياً -->
+      <span id="navStoreTitle" class="font-black text-black text-xs tracking-tight">لوحة تحكم المتجر — هالة AI OS</span>
+    </a>
+
+    <div class="pointer-events-auto flex items-center gap-2">
+      <a href="/admin" id="adminPortalBtn" class="hidden bg-black text-white px-3.5 py-2 rounded-full text-xs font-bold transition">
+        لوحة الأدمن 🛡️
+      </a>
+      <button onclick="handleMerchantLogout()" class="bg-white border border-black px-4 py-2 rounded-full text-xs font-bold text-black hover:bg-slate-50 transition flex items-center gap-1.5 shadow-sm">
+        <span class="material-symbols-outlined text-base">logout</span>
+        <span>خروج</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-8 pt-28">
+    
+    <!-- Hero Banner -->
+    <div class="sleek-card-darkborder rounded-3xl p-7 bg-white relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
+      <div class="space-y-2 max-w-2xl">
+        <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-full">
+          <span>✨ من الإبداع إلى الذكاء | FROM CREATIVITY TO INTELLIGENCE</span>
         </div>
+        <h1 id="merchantHeroHeader" class="text-2xl md:text-3xl font-black text-black leading-tight">
+          لوحة تحكم التاجر — <span class="underline decoration-2">هالة AI OS</span> 👋
+        </h1>
+        <p id="merchantHeroSub" class="text-slate-600 text-xs md:text-sm font-bold leading-relaxed">
+          إدارة الذكاء ومزامنة الـ RAG وصياغة محتوى السيو ومتابعة الأرباح
+        </p>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <button onclick="triggerIngest()" class="sleek-btn-black px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition">
+          <span class="material-symbols-outlined text-base">sync</span>
+          <span>مزامنة RAG المعرفة</span>
+        </button>
       </div>
     </div>
 
-    <!-- ترحيب -->
-    <div class="mb-8">
-      <h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg dash-title">
-        أهلاً <span id="merchant-name">تاجر عود الرياض</span>. <span id="agent-greeting">هالة</span> جاهزة.
-      </h2>
-      <p class="font-body-lg text-body-lg dash-muted mt-2 flex flex-wrap items-center gap-2">
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-[#8FC1DC] font-label-sm text-label-sm">
-          <span class="material-symbols-outlined text-[16px] ml-1">auto_awesome</span>
-          الذكاء الاصطناعي نشط
-        </span>
-        <span id="platform-badge" class="platform-status-badge platform-status-badge--salla inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-sm text-label-sm">
-          <span class="platform-logo platform-logo--xs platform-logo--salla" aria-hidden="true"><span class="platform-logo-text">سلة</span></span>
-          <span id="platform-badge-text">مربوط مع سلة</span>
-        </span>
-        <span id="trial-badge" class="inline-flex items-center px-2.5 py-1 rounded-full bg-teal-500/10 dark:bg-teal-500/15 text-teal-600 dark:text-teal-300 font-label-sm text-label-sm">
-          تجربة مجانية · ٣٠ يوماً
-        </span>
-      </p>
-    </div>
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div class="sleek-card rounded-2xl p-5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-600">المبيعات المستعادة بالواتساب</span>
+          <span class="material-symbols-outlined text-black text-xl">shopping_cart_checkout</span>
+        </div>
+        <div class="text-2xl font-black text-black">+ 14,250 <span class="text-xs font-bold">ريال</span></div>
+        <p class="text-xs text-slate-500 font-bold">من 57 سلة متروكة</p>
+      </div>
 
-    <!-- إعداد صياغة المنتجات -->
-    <div class="dash-panel glass-card rounded-xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div class="relative z-10 min-w-0">
-        <label class="font-label-sm text-label-sm dash-muted mb-1 block" for="copywriting-tone">نبرة وصوت صياغة المنتجات</label>
-        <p class="font-label-sm text-[11px] dash-muted">تُطبَّق على كل الأوصاف المُولَّدة من هالة</p>
+      <div class="sleek-card rounded-2xl p-5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-600">سرعة كاش الـ KV</span>
+          <span class="material-symbols-outlined text-black text-xl">bolt</span>
+        </div>
+        <div class="text-2xl font-black text-black">&lt; 5ms <span class="text-xs font-bold">استجابة</span></div>
+        <p class="text-xs text-slate-500 font-bold">معدل الإجابة اللحظية 98.4%</p>
       </div>
-      <select
-        id="copywriting-tone"
-        name="copywriting_tone"
-        class="relative z-10 w-full sm:w-auto sm:min-w-[280px] rounded-xl border border-outline-variant/30 dark:border-white/15 bg-white dark:bg-white/5 px-4 py-2.5 font-body-md text-[14px] dash-title focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-        aria-label="نبرة وصوت صياغة المنتجات"
-      >
-        <option value="saudi_white">سعودي أبيض (saudi_white)</option>
-        <option value="modern_standard">فصحى عصرية (modern_standard)</option>
-        <option value="direct_technical">مباشر تقني (direct_technical)</option>
-      </select>
-    </div>
 
-    <!-- بطاقات المقاييس الرئيسية (٣ فقط) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5 mb-6" id="stats">
-      <div class="dash-panel glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between min-h-[160px] parallax-card metric-card-hero" data-depth="0.03">
-        <div class="flex justify-between items-start mb-4 relative z-10">
-          <span class="material-symbols-outlined text-primary dark:text-[#8FC1DC] text-3xl" style="font-variation-settings:'FILL' 1">inventory_2</span>
-          <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-primary/10 dark:bg-primary/20 text-primary dark:text-[#8FC1DC] font-label-sm text-[11px]">محسّن</span>
+      <div class="sleek-card rounded-2xl p-5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-600">أوصاف منتجات السيو</span>
+          <span class="material-symbols-outlined text-black text-xl">auto_awesome</span>
         </div>
-        <div class="relative z-10">
-          <h3 class="font-label-sm text-label-sm dash-muted mb-2">المنتجات المحسّنة</h3>
-          <p class="font-display-lg text-[42px] md:text-[48px] leading-none dash-title counter-animate" data-target="240">0</p>
-        </div>
+        <div class="text-2xl font-black text-black">128 <span class="text-xs font-bold">وصف</span></div>
+        <p class="text-xs text-slate-500 font-bold">مقياس الجودة &gt; 92%</p>
       </div>
-      <div class="dash-panel glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between min-h-[160px] parallax-card metric-card-hero" data-depth="0.045">
-        <div class="flex justify-between items-start mb-4 relative z-10">
-          <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-3xl" style="font-variation-settings:'FILL' 1">payments</span>
-          <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-label-sm text-[11px]">متوقع</span>
+
+      <div class="sleek-card rounded-2xl p-5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-slate-600">الباقة المجانية الرسمية</span>
+          <span class="material-symbols-outlined text-black text-xl">equalizer</span>
         </div>
-        <div class="relative z-10">
-          <h3 class="font-label-sm text-label-sm dash-muted mb-2">زيادة الإيرادات المتوقعة</h3>
-          <p class="font-display-lg text-[42px] md:text-[48px] leading-none text-emerald-600 dark:text-emerald-400 flex items-baseline gap-1.5 flex-wrap">
-            <span class="counter-animate" data-target="18400">0</span>
-            <span class="font-title-md text-[18px] md:text-[20px] font-semibold">ر.س</span>
-          </p>
-        </div>
-      </div>
-      <div class="dash-panel glass-card rounded-2xl p-6 md:p-7 flex flex-col justify-between min-h-[175px] parallax-card metric-card-hero" data-depth="0.06">
-        <div class="flex justify-between items-start mb-2 relative z-10">
-          <span class="material-symbols-outlined text-amber-600 dark:text-amber-300 text-3xl" style="font-variation-settings:'FILL' 1">token</span>
-          <span class="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-300 font-label-sm text-[11px]">تجربة مجانية</span>
-        </div>
-        <div class="relative z-10">
-          <h3 class="font-label-sm text-label-sm dash-muted mb-2">الرصيد المتبقي للباقة</h3>
-          <div class="flex flex-col gap-1.5 font-label-sm text-[11px] dash-muted">
-            <div class="flex justify-between items-center border-b border-outline-variant/20 dark:border-white/5 pb-1">
-              <span>📝 أوصاف المنتجات:</span>
-              <span class="font-bold text-on-surface dark:text-white"><span class="counter-animate" data-target="200">0</span> / ٢٠٠ وحدة</span>
-            </div>
-            <div class="flex justify-between items-center border-b border-outline-variant/20 dark:border-white/5 pb-1">
-              <span>📸 صور الاستوديو:</span>
-              <span class="font-bold text-on-surface dark:text-white"><span class="counter-animate" data-target="320">0</span> / ٤٠٠ صورة</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span>💬 رسائل الواتساب:</span>
-              <span class="font-bold text-on-surface dark:text-white"><span class="counter-animate" data-target="42">0</span> / ٥٠ محادثة</span>
-            </div>
-          </div>
-        </div>
+        <div id="kpiUsage" class="text-xl font-black text-black">1,000 <span class="text-xs font-bold">رسالة/محادثة مجانية شهرياً</span></div>
+        <p id="kpiSubUsage" class="text-xs text-slate-500 font-bold">100% مجاناً معتمدة من Meta Cloud API 🎁</p>
       </div>
     </div>
 
-    <!-- تفاصيل التشخيص المتقدم (SEO تقني، مطوّرون) -->
-    <details class="dash-panel glass-card rounded-xl mb-6 overflow-hidden group" id="seo">
-      <summary class="cursor-pointer list-none flex items-center justify-between gap-3 p-5 select-none relative z-10 [&::-webkit-details-marker]:hidden">
-        <div class="flex items-center gap-3 min-w-0">
-          <span class="material-symbols-outlined text-[#8FC1DC] text-2xl shrink-0">code</span>
-          <div class="min-w-0">
-            <h3 class="font-title-md text-[16px] md:text-title-md dash-title">تفاصيل التشخيص المتقدم للمطورين</h3>
-            <p class="font-label-sm text-label-sm dash-muted mt-0.5">جودة الظهور · توزيع التحسينات · اتجاه الزيارات</p>
-          </div>
+    <!-- ── Interactive Advanced Features Row ──────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- 1. Executive PDF Report Generator -->
+      <div class="sleek-card rounded-3xl p-6 space-y-4">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
+          <span class="material-symbols-outlined text-black">description</span>
+          <h3 class="font-black text-sm text-black">تقرير الأرباح والـ ROI الشهري الرسمي</h3>
         </div>
-        <span class="material-symbols-outlined dash-muted text-2xl shrink-0 transition-transform duration-300 group-open:rotate-180" aria-hidden="true">expand_more</span>
-      </summary>
-      <div class="px-5 pb-5 border-t border-white/10 pt-5">
-        <!-- شريط جودة الظهور المدمج -->
-        <div class="mb-5 relative z-10">
-          <div class="flex items-end justify-between gap-3 mb-2">
-            <h4 class="font-label-sm text-label-sm dash-muted">جودة الظهور</h4>
-            <p class="font-display-lg text-[28px] leading-tight dash-title flex items-baseline gap-1">
-              <span class="counter-animate" data-target="87" id="seo-score-counter">0</span>
-              <span class="font-body-md text-body-md dash-muted">/١٠٠</span>
-            </p>
-          </div>
-          <div class="w-full bg-white/10 rounded-full h-1.5">
-            <div id="seo-bar" class="bg-gradient-to-r from-primary to-[#58A8B4] h-1.5 rounded-full transition-all duration-1000" style="width: 0%"></div>
-          </div>
-        </div>
-
-        <!-- رسوم بيانية نظيفة -->
-        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-          <!-- خط الزيارات -->
-          <div class="rounded-xl p-4 lg:col-span-3 bg-slate-500/5 dark:bg-white/[0.03] border border-slate-500/10 dark:border-white/5">
-            <div class="flex items-center justify-between mb-4 relative z-10">
-              <div>
-                <h3 class="font-title-md text-[16px] dash-title">اتجاه الزيارات</h3>
-                <p class="font-label-sm text-label-sm dash-muted mt-0.5">آخر ٧ أيام</p>
-              </div>
-              <span class="font-label-sm text-label-sm text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">+٢٣٪</span>
-            </div>
-            <div class="relative z-10 w-full" style="min-height: 180px;">
-              <svg class="chart-svg" viewBox="0 0 560 180" preserveAspectRatio="xMidYMid meet" role="img" aria-label="رسم بياني لاتجاه الزيارات">
-                <defs>
-                  <linearGradient id="chartLineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#2A6E93"/>
-                    <stop offset="100%" stop-color="#58A8B4"/>
-                  </linearGradient>
-                  <linearGradient id="chartAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="rgba(79, 168, 180, 0.28)"/>
-                    <stop offset="100%" stop-color="rgba(79, 168, 180, 0)"/>
-                  </linearGradient>
-                </defs>
-                <g class="chart-grid">
-                  <line x1="40" y1="20" x2="540" y2="20"/>
-                  <line x1="40" y1="60" x2="540" y2="60"/>
-                  <line x1="40" y1="100" x2="540" y2="100"/>
-                  <line x1="40" y1="140" x2="540" y2="140"/>
-                </g>
-                <path class="chart-area" d="M48,130 L120,115 L195,95 L270,100 L345,70 L420,55 L500,35 L500,150 L48,150 Z"/>
-                <path class="chart-line" d="M48,130 L120,115 L195,95 L270,100 L345,70 L420,55 L500,35"/>
-                <circle class="chart-dot" cx="48" cy="130" r="4"/>
-                <circle class="chart-dot" cx="120" cy="115" r="4"/>
-                <circle class="chart-dot" cx="195" cy="95" r="4"/>
-                <circle class="chart-dot" cx="270" cy="100" r="4"/>
-                <circle class="chart-dot" cx="345" cy="70" r="4"/>
-                <circle class="chart-dot" cx="420" cy="55" r="4"/>
-                <circle class="chart-dot" cx="500" cy="35" r="4"/>
-                <text class="chart-label" x="48" y="168" text-anchor="middle">سبت</text>
-                <text class="chart-label" x="120" y="168" text-anchor="middle">أحد</text>
-                <text class="chart-label" x="195" y="168" text-anchor="middle">اثنين</text>
-                <text class="chart-label" x="270" y="168" text-anchor="middle">ثلاثاء</text>
-                <text class="chart-label" x="345" y="168" text-anchor="middle">أربعاء</text>
-                <text class="chart-label" x="420" y="168" text-anchor="middle">خميس</text>
-                <text class="chart-label" x="500" y="168" text-anchor="middle">جمعة</text>
-              </svg>
-            </div>
-          </div>
-
-          <!-- حلقة جودة الظهور + أعمدة -->
-          <div class="rounded-xl p-4 lg:col-span-2 flex flex-col bg-slate-500/5 dark:bg-white/[0.03] border border-slate-500/10 dark:border-white/5">
-            <div class="mb-3 relative z-10">
-              <h3 class="font-title-md text-[16px] dash-title">توزيع التحسينات</h3>
-              <p class="font-label-sm text-label-sm dash-muted mt-0.5">حسب الفئة</p>
-            </div>
-            <div class="flex items-center gap-4 relative z-10 flex-1">
-              <svg width="110" height="110" viewBox="0 0 110 110" class="flex-shrink-0" aria-hidden="true">
-                <circle cx="55" cy="55" r="44" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10"/>
-                <circle id="ring-seo" class="ring-chart-progress" cx="55" cy="55" r="44" fill="none" stroke="url(#chartLineGrad)" stroke-width="10" stroke-linecap="round" stroke-dasharray="276.46" stroke-dashoffset="276.46" transform="rotate(-90 55 55)"/>
-                <text x="55" y="52" text-anchor="middle" fill="#f2f6f8" font-size="22" font-weight="700" font-family="IBM Plex Sans Arabic, sans-serif">٨٧</text>
-                <text x="55" y="68" text-anchor="middle" fill="rgba(232,238,242,0.5)" font-size="10" font-family="IBM Plex Sans Arabic, sans-serif">من ١٠٠</text>
-              </svg>
-              <div class="flex-1 space-y-3 min-w-0">
-                <div>
-                  <div class="flex justify-between text-[12px] mb-1">
-                    <span class="dash-muted">الأوصاف</span>
-                    <span class="dash-title font-medium">٤٢</span>
-                  </div>
-                  <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full bg-[#58A8B4] spark-bar" style="width: 70%; animation-delay: 0.1s"></div>
-                  </div>
-                </div>
-                <div>
-                  <div class="flex justify-between text-[12px] mb-1">
-                    <span class="dash-muted">الصور</span>
-                    <span class="dash-title font-medium">٣٨</span>
-                  </div>
-                  <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full bg-[#438FB3] spark-bar" style="width: 62%; animation-delay: 0.2s"></div>
-                  </div>
-                </div>
-                <div>
-                  <div class="flex justify-between text-[12px] mb-1">
-                    <span class="dash-muted">الكلمات المفتاحية</span>
-                    <span class="dash-title font-medium">٢٧</span>
-                  </div>
-                  <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full bg-[#2A6E93] spark-bar" style="width: 45%; animation-delay: 0.3s"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <p class="text-xs text-slate-600 font-medium leading-relaxed">
+          إصدار واستخراج تقرير أداء مبيعات المتجر الرسمي بالريال بصيغة تنفيذية معتمدة.
+        </p>
+        <button onclick="generateMonthlyReport()" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-base">download</span>
+          <span>إصدار التقرير الشهري الآن</span>
+        </button>
+        <div id="reportOutput" class="hidden p-3 bg-slate-50 border border-slate-300 rounded-xl text-[11px] font-mono whitespace-pre-wrap text-black"></div>
       </div>
-    </details>
 
-    <!-- حالة الخدمات الآلية -->
-    <div class="dash-panel glass-card rounded-xl p-5 mb-6" id="service-status">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-5 relative z-10">
-        <div>
-          <h3 class="font-title-md text-title-md dash-title flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#8FC1DC]">hub</span>
-            حالة الخدمات
+      <!-- 2. ZATCA Stage 2 Simplified E-Invoice QR -->
+      <div class="sleek-card rounded-3xl p-6 space-y-4">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
+          <span class="material-symbols-outlined text-black">qr_code_2</span>
+          <h3 class="font-black text-sm text-black">🇸🇦 الفاتورة الإلكترونية (ZATCA Stage 2)</h3>
+        </div>
+        <p class="text-xs text-slate-600 font-medium leading-relaxed">
+          توليد الفاتورة الضريبية المبسطة بـ QR Code لهيئة الزكاة والضريبة والجمارك وإرسالها بالواتساب.
+        </p>
+        <div class="space-y-2">
+          <input id="zatcaTotal" type="number" value="290" placeholder="مبلغ الطلب (ر.س)" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-2.5 text-black font-medium focus:outline-none"/>
+          <button onclick="generateZatcaInvoice()" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-base">receipt</span>
+            <span>توليد فاتورة هيئة الزكاة QR</span>
+          </button>
+        </div>
+        <div id="zatcaOutput" class="hidden p-3 bg-slate-50 border border-slate-300 rounded-xl text-[11px] font-mono whitespace-pre-wrap text-black"></div>
+      </div>
+
+      <!-- 3. Saudi Logistics Live Tracking (SMSA, SPL, Aramex) -->
+      <div class="sleek-card rounded-3xl p-6 space-y-4">
+        <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
+          <span class="material-symbols-outlined text-black">local_shipping</span>
+          <h3 class="font-black text-sm text-black">🇸🇦 تتبع شركات الشحن (سبل SPL، سمسا)</h3>
+        </div>
+        <p class="text-xs text-slate-600 font-medium leading-relaxed">
+          إطلاق إشعار الواتساب التلقائي فور خروج الشحنة مع المندوب في الرياض وجدة.
+        </p>
+        <div class="space-y-2">
+          <select id="shippingCourier" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-2.5 text-black font-bold focus:outline-none">
+            <option value="SPL">سبل البريد السعودي (SPL)</option>
+            <option value="SMSA">سمسا إكسبريس (SMSA)</option>
+            <option value="Aramex">أرامكس (Aramex)</option>
+          </select>
+          <button onclick="triggerShippingAlert()" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-base">send</span>
+            <span>إرسال إشعار الشحنة بالواتساب</span>
+          </button>
+        </div>
+        <div id="shippingOutput" class="hidden p-3 bg-slate-50 border border-slate-300 rounded-xl text-[11px] font-mono whitespace-pre-wrap text-black"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Saudi Seasonal Playbooks & Tamara/Tabby Row ────────────── -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- Tamara & Tabby Cart Recovery -->
+      <div class="sleek-card rounded-3xl p-6 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <h3 class="font-black text-sm text-black flex items-center gap-2">
+            <span class="material-symbols-outlined text-black">credit_card</span>
+            <span>استرداد سلات تمارا وتابي (BNPL Cart Recovery)</span>
           </h3>
-          <p class="font-label-sm text-label-sm dash-muted mt-1" id="service-status-sub">الخدمات الآلية النشطة للمنصة المربوطة</p>
+          <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-300 text-black">تقسيط 4 دفعات</span>
         </div>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/12 text-emerald-600 font-label-sm text-[11px]">
-          <span class="store-status-dot" aria-hidden="true"></span>
-          الكل يعمل
-        </span>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 relative z-10" id="service-status-list">
-        <!-- تُملأ ديناميكياً حسب المنصة -->
-      </div>
-    </div>
-
-    <!-- المهام + مقارنة الصور -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-      <div class="dash-panel glass-card rounded-xl p-5" id="tasks">
-        <h3 class="font-title-md text-title-md dash-title mb-5 flex items-center gap-2 relative z-10">
-          <span class="material-symbols-outlined text-[#8FC1DC]">checklist</span>
-          المهام الجارية
-        </h3>
-        <div class="space-y-5 relative z-10">
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="font-body-md text-body-md dash-title font-medium">تحسين أوصاف ١٢ منتجاً جديداً</span>
-              <span class="font-label-sm text-label-sm dash-muted bg-white/10 px-2 py-1 rounded">٧/١٢</span>
-            </div>
-            <div class="w-full bg-white/10 rounded-full h-1.5">
-              <div class="bg-primary h-1.5 rounded-full" style="width: 58%"></div>
-            </div>
-          </div>
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="font-body-md text-body-md dash-title font-medium flex items-center gap-2">
-                ضغط ٣ صور
-                <span class="material-symbols-outlined text-sm text-primary animate-spin">sync</span>
-              </span>
-              <span class="font-label-sm text-label-sm text-[#8FC1DC] bg-primary/20 px-2 py-1 rounded">قيد التنفيذ</span>
-            </div>
-            <div class="w-full bg-white/10 rounded-full h-1.5">
-              <div class="bg-gradient-to-r from-primary to-[#58A8B4] h-1.5 rounded-full w-full animate-pulse"></div>
-            </div>
-          </div>
-          <div>
-            <div class="flex justify-between items-center mb-2">
-              <span class="font-body-md text-body-md dash-muted font-medium">تحديث الوصف التعريفي</span>
-              <span class="font-label-sm text-label-sm dash-muted bg-white/10 px-2 py-1 rounded">مجدول</span>
-            </div>
-            <div class="w-full bg-white/10 rounded-full h-1.5">
-              <div class="bg-outline/40 h-1.5 rounded-full" style="width: 0%"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="dash-panel glass-card rounded-xl p-5 flex flex-col">
-        <h3 class="font-title-md text-title-md dash-title mb-5 flex items-center gap-2 relative z-10">
-          <span class="material-symbols-outlined text-[#8FC1DC]">image</span>
-          تحسين الصور التلقائي
-        </h3>
-        <div class="img-compare relative flex-1 rounded-lg overflow-hidden min-h-[220px] bg-[#12181e]" id="img-compare">
-          <div class="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-700 to-gray-900">
-            <div class="text-center opacity-70">
-              <span class="material-symbols-outlined text-5xl text-white/50 mb-2 block blur-[1px]">image</span>
-              <p class="text-white/70 font-bold text-lg blur-[1px]">قبل</p>
-              <p class="text-white/45 text-sm">صورة ثقيلة · ٢٫٤ م.ب</p>
-            </div>
-          </div>
-          <div class="after-layer absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#0d3d4f] to-[#1a6b7a]" id="after-layer">
-            <div class="text-center">
-              <span class="material-symbols-outlined text-5xl text-[#8FC1DC] mb-2 block">auto_awesome</span>
-              <p class="text-white font-bold text-lg">بعد</p>
-              <p class="text-[#8FC1DC] text-sm">صورة خفيفة · ١٨٠ ك.ب</p>
-            </div>
-            <div class="absolute top-3 right-3 inline-flex items-center px-2 py-1 rounded-full bg-primary/30 text-[#8FC1DC] font-label-sm text-label-sm shadow-sm">
-              <span class="material-symbols-outlined text-[14px] ml-1">auto_awesome</span>
-              محسّن بالذكاء
-            </div>
-          </div>
-          <div class="slider-line" id="slider-line">
-            <div class="slider-handle">
-              <span class="material-symbols-outlined text-outline text-sm">swap_horiz</span>
-            </div>
-          </div>
-        </div>
-        <p class="font-label-sm text-label-sm dash-muted mt-3 text-center relative z-10">اسحب للمقارنة · قبل / بعد</p>
-      </div>
-    </div>
-
-    <!-- المنتجات المحسّنة -->
-    <div class="dash-panel glass-card rounded-xl p-5 mb-6" id="products">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-5 relative z-10">
-        <div>
-          <h3 class="font-title-md text-title-md dash-title flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#8FC1DC]">inventory_2</span>
-            المنتجات المحسّنة
-          </h3>
-          <p class="font-label-sm text-label-sm dash-muted mt-1">أحدث المنتجات مع قنوات النشر المعتمدة</p>
-        </div>
-        <a href="scanner.html" class="font-label-sm text-label-sm text-primary hover:underline underline-offset-2 flex items-center gap-1">
-          عرض الكل
-          <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-        </a>
-      </div>
-      <div class="space-y-2.5 relative z-10" id="optimized-products-list">
-        <!-- تُملأ ديناميكياً -->
-      </div>
-    </div>
-
-    <!-- محتوى المتجر، توليد ونشر أوصاف بالجملة على منتجات المتجر الحقيقية -->
-    <div class="dash-panel glass-card rounded-xl p-5 mb-6" id="store-content" style="display:none;">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-5 relative z-10">
-        <div>
-          <h3 class="font-title-md text-title-md dash-title flex items-center gap-2">
-            <span class="material-symbols-outlined text-[#2E7A87]">edit_note</span>
-            محتوى المتجر
-          </h3>
-          <p class="font-label-sm text-label-sm dash-muted mt-1">ولّد وصف جديد وانشره مباشرة على منتجك بسلة، بدون فتح الاستوديو</p>
-        </div>
-      </div>
-      <div class="space-y-2.5 relative z-10" id="store-content-list"></div>
-      <p class="font-label-sm text-label-sm dash-muted mt-3 relative z-10" id="store-content-empty" style="display:none;">
-        ما فيه منتجات متزامنة بعد، اربط متجرك من صفحة الإعداد.
-      </p>
-    </div>
-
-    <!-- بانر التجربة المجانية + الضمان -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-section-gap">
-      <div class="dash-panel glass-card rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="flex items-center gap-3 relative z-10">
-          <div class="w-11 h-11 rounded-full bg-teal-500/20 flex items-center justify-center text-teal-300">
-            <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">rocket_launch</span>
-          </div>
-          <div>
-            <h3 class="font-title-md text-[17px] dash-title font-bold mb-0.5">تجربتك المجانية جاهزة</h3>
-            <p class="font-body-md text-[14px] dash-muted">١٤ يوماً كاملة. بدون بطاقة. إلغاء في أي وقت.</p>
-          </div>
-        </div>
-        <button type="button" id="trial-cta-main" class="btn-trial relative z-10 px-6 py-3 rounded-xl font-bold text-sm whitespace-nowrap flex items-center gap-2">
-          <span class="material-symbols-outlined text-[18px]">play_arrow</span>
-          ابدأ التجربة الآن
+        <p class="text-xs text-slate-600 font-medium">
+          قوالب رسائل تذكيرية متخصصة بالواتساب تحفز العميل على إكمال الدفع الآجل عبر تمارا أو تابي بدون فوائد.
+        </p>
+        <button onclick="alert('تم تفعيل قوالب استرداد تمارا وتابي التلقائية بالواتساب! 🎁')" class="w-full sleek-btn-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+          <span>تفعيل قوالب تمارا وتابي الآن</span>
+          <span class="material-symbols-outlined text-base">check_circle</span>
         </button>
       </div>
 
-      <div class="rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 relative overflow-hidden border border-amber-500/20 bg-gradient-to-l from-amber-950/40 to-amber-900/20">
-        <div class="flex items-center gap-3 z-10">
-          <div class="w-11 h-11 bg-amber-500/15 rounded-full flex items-center justify-center text-amber-400">
-            <span class="material-symbols-outlined text-2xl" style="font-variation-settings: 'FILL' 1;">workspace_premium</span>
-          </div>
-          <div>
-            <h3 class="font-title-md text-[17px] text-amber-100 font-bold mb-0.5">الضمان الذهبي</h3>
-            <p class="font-body-md text-[14px] text-amber-200/70">إن لم تلاحظ تحسناً في الشهر الأول، الشهر الثاني مجاناً.</p>
-          </div>
+      <!-- Saudi Seasonal Marketing Playbooks -->
+      <div class="sleek-card rounded-3xl p-6 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <h3 class="font-black text-sm text-black flex items-center gap-2">
+            <span class="material-symbols-outlined text-black">event_available</span>
+            <span>دليل المواسم السعودية (Saudi Seasonal Playbooks)</span>
+          </h3>
+          <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-black text-white">يوم التأسيس & اليوم الوطني</span>
         </div>
-        <div class="bg-black/20 px-5 py-2.5 rounded-lg border border-amber-500/20 z-10 flex flex-col items-center">
-          <span class="font-label-sm text-label-sm text-amber-200/50 mb-0.5">متبقي للتقييم</span>
-          <div class="text-amber-300 text-[22px] font-bold leading-tight flex items-baseline gap-1">
-            <span id="guarantee-days">١٨</span>
-            <span class="text-sm font-medium">يوماً</span>
+        <p class="text-xs text-slate-600 font-medium">
+          حملات وقوالب موثقة جاهزة للتفعيل في يوم التأسيس (22 فبراير)، اليوم الوطني (23 سبتمبر)، وشهر رمضان.
+        </p>
+        <button onclick="alert('تم تجهيز وتفعيل دليل قوالب المواسم السعودية لمتجرك! 🇸🇦🎉')" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+          <span>تفعيل دليل قوالب المواسم السعودية</span>
+          <span class="material-symbols-outlined text-base">rocket_launch</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ── Flow Builder Container ──────────────────────────────── -->
+    <div class="space-y-3">
+      <div class="sleek-card rounded-3xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <h3 class="font-black text-base text-black">أتمتة سير العمل باني المسارات التلقائية (No-Code Builder)</h3>
+          <span class="text-xs font-bold px-3 py-1 rounded-full bg-black text-white">Visual Flow</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-right text-xs">
+          <div class="p-4 bg-slate-50 border border-slate-300 rounded-2xl space-y-2">
+            <span class="font-bold text-black block">1. المحفز: سلة متروكة</span>
+            <p class="text-slate-600 text-[11px]">العميل أضاف منتجات ولم يكمل الدفع خلال 15 دقيقة.</p>
+          </div>
+          <div class="p-4 bg-slate-50 border border-slate-300 rounded-2xl space-y-2">
+            <span class="font-bold text-black block">2. بصمة صوتية بالواتساب</span>
+            <p class="text-slate-600 text-[11px]">إرسال بصمة صوتية سعودية طبيعية تذكيرية.</p>
+          </div>
+          <div class="p-4 bg-slate-50 border border-slate-300 rounded-2xl space-y-2">
+            <span class="font-bold text-black block">3. خصم 5% بعد 40 دقيقة</span>
+            <p class="text-slate-600 text-[11px]">إرسال رابط الدفع السريع مع كوبون الخصم.</p>
+          </div>
+          <div class="p-4 bg-slate-50 border border-slate-300 rounded-2xl space-y-2">
+            <span class="font-bold text-black block">4. تأكيد الشراء برقم التتبع</span>
+            <p class="text-slate-600 text-[11px]">تأكيد واسترداد السلة فوراً بالواتساب.</p>
           </div>
         </div>
       </div>
+
+      <!-- 4. Smart Emotional Cart Recovery & BNPL Monthly Calculator Simulator -->
+      <div class="sleek-card rounded-3xl p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-black text-white flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-xl">favorite</span>
+            </div>
+            <div>
+              <h3 class="font-black text-sm text-black">مُحاكي السلات العاطفية وتكتيك تمارا/تابي</h3>
+              <p class="text-xs text-slate-500 font-bold">صياغة رسالة "ما يرضينا يظل بخاطرك" + قسط 30~50 ريال/شهر</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold px-3 py-1 rounded-full bg-black text-white">Emotional Recovery</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <input id="recCustomer" type="text" value="عبدالمجيد" placeholder="اسم العميل" class="bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium"/>
+          <input id="recProduct" type="text" value="عطر أورا الملكي 100ml" placeholder="اسم المنتج في السلة" class="bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium"/>
+          <input id="recPrice" type="number" value="200" placeholder="سعر المنتج الأصلي (ر.س)" class="bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium"/>
+        </div>
+
+        <button onclick="triggerEmotionalRecoveryTest()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-base">send</span>
+          <span>توليد رسالة الاسترداد العاطفية وحساب قسط تمارا/تابي الآن</span>
+        </button>
+
+        <div id="recoveryOutput" class="hidden bg-slate-900 text-white p-4 rounded-xl font-mono text-xs whitespace-pre-wrap leading-relaxed border border-black shadow-inner"></div>
+      </div>
+
+      <!-- 5. AI Marketing Campaign & Coupon Studio -->
+      <div class="sleek-card rounded-3xl p-6 space-y-4 border-2 border-black">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-black text-white flex items-center justify-center font-bold">
+              <span class="material-symbols-outlined text-xl">auto_awesome</span>
+            </div>
+            <div>
+              <h3 class="font-black text-sm text-black">استوديو الحملات وأكواد الخصم بالذكاء الاصطناعي (AI Campaign Studio)</h3>
+              <p class="text-xs text-slate-500 font-bold">اكتب فكرة بسيطة.. وهالة تتكفل بصياغتها بشخصيتك وتسويق كود الخصم بالواتساب! 🪄</p>
+            </div>
+          </div>
+          <span class="text-xs font-bold px-3 py-1 rounded-full bg-black text-white">AI Crafting Engine</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Discount Config Box -->
+          <div class="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-300">
+            <h4 class="font-bold text-xs text-black flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">confirmation_number</span>
+              <span>تثبيت كود ونسبة الخصم للمتجر:</span>
+            </h4>
+            <div class="grid grid-cols-2 gap-2">
+              <input id="cmpDiscountCode" type="text" value="AURA20" placeholder="كود الخصم (مثال: AURA20)" class="bg-white border border-slate-300 text-xs rounded-xl p-3 font-mono font-bold text-black"/>
+              <input id="cmpDiscountPercent" type="number" value="20" placeholder="نسبة الخصم (%)" class="bg-white border border-slate-300 text-xs rounded-xl p-3 font-bold text-black"/>
+            </div>
+            <button onclick="saveStoreDiscountCode()" class="w-full bg-black text-white py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">save</span>
+              <span>تثبيت الكود في ذاكرة الأيجنت</span>
+            </button>
+          </div>
+
+          <!-- Simple Idea Generator Box -->
+          <div class="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-300">
+            <h4 class="font-bold text-xs text-black flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">lightbulb</span>
+              <span>فكرتك البسيطة للحملة (سطر واحد):</span>
+            </h4>
+            <input id="cmpIdeaInput" type="text" value="نزلنا عطر جديد بمناسبة الصيف ونبي نذكر العملاء بالخصم" placeholder="اكتب مجرد فكرة بسيطة..." class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium"/>
+            <button onclick="generateAiCampaignMessage()" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
+              <span class="material-symbols-outlined text-sm">auto_awesome</span>
+              <span>صياغة الرسالة بذكاء هالة بشخصيتي 🪄</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Generated Message Output & Broadcast Action -->
+        <div id="campaignOutputArea" class="hidden space-y-3 pt-2">
+          <div class="space-y-1 text-right">
+            <label class="text-xs font-bold text-black">💬 الرسالة المولدة بذكاء الاصطناعي وبنفس شخصيتك (جاهزة للإرسال):</label>
+            <textarea id="cmpGeneratedText" rows="4" class="w-full bg-slate-900 text-white border border-black text-xs rounded-xl p-4 font-mono leading-relaxed focus:outline-none"></textarea>
+          </div>
+
+          <button onclick="broadcastAiCampaign()" class="w-full bg-black text-white py-3.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg">
+            <span class="material-symbols-outlined text-base">rocket_launch</span>
+            <span>إطلاق وإرسال الحملة بالواتساب لجميع عملاء المتجر الآن! 🚀</span>
+          </button>
+        </div>
+      </div>
     </div>
+
   </main>
 
-  <!-- لوحة المحادثة -->
-  <div class="chat-panel glass-dark rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10" id="chat-panel">
-    <div class="bg-gradient-to-l from-primary to-[#438FB3] text-white px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined" style="font-variation-settings:'FILL' 1">smart_toy</span>
-        <div>
-          <p class="font-title-md text-[16px] leading-tight" id="chat-agent-name">هالة</p>
-          <p class="text-[11px] opacity-80">متصل · لهجة سعودية</p>
-        </div>
-      </div>
-      <button type="button" id="chat-close" class="text-white/80 hover:text-white" aria-label="إغلاق">
-        <span class="material-symbols-outlined">close</span>
-      </button>
-    </div>
-    <div class="flex-1 overflow-y-auto p-4 space-y-3 min-h-[280px] max-h-[320px]" id="chat-messages">
-      <div class="chat-msg bot">هلا والله! أنا هالة، مساعدتك الذكية. وش تبي نسوي اليوم لمتجرك؟</div>
-    </div>
-    <div class="p-3 border-t border-white/10 flex gap-2">
-      <input id="chat-input" type="text" placeholder="اكتب رسالتك..." class="flex-1 rounded-xl bg-white/10 border-0 text-white placeholder:text-white/40 px-3 py-2.5 text-sm focus:ring-2 focus:ring-primary/40"/>
-      <button type="button" id="chat-send" class="btn-primary-gradient rounded-xl px-3 flex items-center justify-center" aria-label="إرسال">
-        <span class="material-symbols-outlined">send</span>
-      </button>
-    </div>
-    <div class="px-3 pb-3 flex flex-wrap gap-1.5">
-      <button type="button" class="quick-reply text-[11px] px-2.5 py-1 rounded-full bg-white/10 text-white/80 hover:bg-primary/40 transition-colors" data-q="وش حالة الظهور؟">وش حالة الظهور؟</button>
-      <button type="button" class="quick-reply text-[11px] px-2.5 py-1 rounded-full bg-white/10 text-white/80 hover:bg-primary/40 transition-colors" data-q="حسّن الأوصاف">حسّن الأوصاف</button>
-      <button type="button" class="quick-reply text-[11px] px-2.5 py-1 rounded-full bg-white/10 text-white/80 hover:bg-primary/40 transition-colors" data-q="كم وفّرنا؟">كم وفّرنا؟</button>
-    </div>
-  </div>
-
-  <div class="fixed bottom-8 left-8 z-50">
-    <button type="button" id="ai-fab" class="w-16 h-16 rounded-full bg-gradient-to-r from-primary to-[#438FB3] text-white flex items-center justify-center shadow-[0_8px_30px_rgba(42, 110, 147,0.35)] hover:scale-105 transition-transform ai-glow group relative" aria-label="فتح محادثة هالة">
-      <span class="material-symbols-outlined text-3xl group-hover:animate-pulse" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
-      <span class="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full border-2 border-[#0c1116]" id="chat-dot"></span>
+  <!-- Web Chat Widget -->
+  <div id="widgetBox" class="fixed bottom-6 right-6 z-50">
+    <button onclick="alert('موظفة المتجر الرقمية جاهزة ومفعّلة على موقعك!')" class="w-14 h-14 rounded-full bg-black text-white shadow-2xl flex items-center justify-center font-bold text-xl border border-slate-700">
+      <span class="material-symbols-outlined text-2xl">chat</span>
     </button>
   </div>
 
-  <!-- تنبيه تفعيل التجربة -->
-  <div id="trial-toast" class="fixed bottom-28 left-1/2 -translate-x-1/2 z-[70] hidden opacity-0 transition-all duration-300 pointer-events-none">
-    <div class="glass-dark border border-teal-500/30 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3">
-      <span class="material-symbols-outlined text-teal-300" style="font-variation-settings:'FILL' 1">check_circle</span>
-      <span class="font-body-md text-sm" id="trial-toast-msg">تم تفعيل تجربتك المجانية لمدة ٣٠ يوماً بنجاح</span>
-    </div>
-  </div>
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-600">
+    <p>حقوق الطبع والنشر © 2026 <strong>منصة هالة (Hala AI OS)</strong> — جميع الحقوق محفوظة.</p>
+  </footer>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const agentName = sessionStorage.getItem("hala_agent_name") || "هالة";
-      const platform = sessionStorage.getItem("hala_platform") || "salla";
-      const trialActive = sessionStorage.getItem("hala_trial_active") === "true";
-      const COPYWRITING_TONES = ["saudi_white", "modern_standard", "direct_technical"];
-      let copywritingTone = sessionStorage.getItem("hala_copywriting_tone") || "saudi_white";
-      if (!COPYWRITING_TONES.includes(copywritingTone)) copywritingTone = "saudi_white";
+    async function initMerchantDashboard() {
+      try {
+        const res = await fetch('/api/auth/me', { method: 'POST' });
+        const data = await res.json();
+        if (data?.loggedIn) {
+          const storeName = data?.storeName || 'متجري الذكي';
+          const storeId = data?.storeId || 'm_demo';
+          const creditsUsed = data?.usage?.credits_used ?? 0;
 
-      /* ── نبرة وصوت صياغة المنتجات ── */
-      const copywritingSelect = document.getElementById("copywriting-tone");
-      if (copywritingSelect) {
-        copywritingSelect.value = copywritingTone;
-        copywritingSelect.addEventListener("change", () => {
-          const v = copywritingSelect.value;
-          copywritingTone = COPYWRITING_TONES.includes(v) ? v : "saudi_white";
-          sessionStorage.setItem("hala_copywriting_tone", copywritingTone);
+          document.getElementById('navStoreTitle').innerText = `لوحة تحكم المتجر — ${storeName}`;
+          document.getElementById('merchantHeroHeader').innerHTML = `لوحة تحكم المتجر — <span class="underline decoration-2">${storeName}</span> 👋`;
+          document.getElementById('kpiUsage').innerHTML = `${creditsUsed} / 1,000 <span class="text-xs font-bold">محادثة مجانية شهرياً</span>`;
+          document.getElementById('kpiSubUsage').innerText = `100% مجاناً معتمدة من Meta Cloud API 🎁`;
+
+          if (data?.isAdmin) {
+            const adminBtn = document.getElementById('adminPortalBtn');
+            if (adminBtn) adminBtn.classList.remove('hidden');
+          }
+        }
+      } catch (err) {}
+    }
+
+    async function generateMonthlyReport() {
+      const out = document.getElementById('reportOutput');
+      out.classList.remove('hidden');
+      out.innerText = 'جاري إصدار واستخراج التقرير الشهري بالريال... ⏳';
+
+      try {
+        const res = await fetch('/api/store/report', { method: 'POST' });
+        const data = await res.json();
+        if (data?.ok && data?.report) {
+          out.innerText = JSON.stringify(data.report, null, 2);
+        }
+      } catch (err) {
+        out.innerText = 'تعذر إصدار التقرير حالياً.';
+      }
+    }
+
+    async function saveStoreDiscountCode() {
+      const discountCode = document.getElementById('cmpDiscountCode')?.value?.trim() || 'AURA20';
+      const discountPercent = document.getElementById('cmpDiscountPercent')?.value || 20;
+
+      try {
+        const res = await fetch('/api/store/campaign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save_discount', discountCode, discountPercent })
         });
+        const data = await res.json();
+        if (data?.ok) {
+          alert(data.message || 'تم تثبيت كود الخصم في ذاكرة الأيجنت بنجاح!');
+        }
+      } catch (err) {
+        alert('تعذر حفظ كود الخصم.');
       }
+    }
 
-      /* ── وضع التجربة (Sandbox) ── */
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get("sandbox") === "1" || urlParams.get("mode") === "sandbox") {
-        sessionStorage.setItem("hala_sandbox", "true");
-      }
-      const isSandbox = sessionStorage.getItem("hala_sandbox") === "true";
+    async function generateAiCampaignMessage() {
+      const idea = document.getElementById('cmpIdeaInput')?.value?.trim() || 'عرض صيفي على المنتجات الجديدة';
+      const discountCode = document.getElementById('cmpDiscountCode')?.value?.trim() || 'AURA20';
+      const discountPercent = document.getElementById('cmpDiscountPercent')?.value || 20;
 
-      const PLATFORM_META = {
-        salla: {
-          id: "salla",
-          name: "سلة",
-          short: "سلة",
-          label: "مربوط مع سلة",
-          connected: "متجر سلة متصل",
-          colorClass: "salla",
-          accent: "#00796B"
-        },
-        zid: {
-          id: "zid",
-          name: "زد",
-          short: "زد",
-          label: "مربوط مع زد",
-          connected: "متجر زد متصل",
-          colorClass: "zid",
-          accent: "#3949AB"
-        },
-        trendyol: {
-          id: "trendyol",
-          name: "ترينديول",
-          short: "ترينديول",
-          label: "مربوط مع ترينديول",
-          connected: "متجر ترينديول متصل",
-          colorClass: "trendyol",
-          accent: "#F27A1A"
-        },
-        sandbox: {
-          id: "sandbox",
-          name: "تجريبي",
-          short: "تجريبي",
-          label: "ربط افتراضي (Sandbox)",
-          connected: "متجر تجريبي · ربط افتراضي",
-          colorClass: "sandbox",
-          accent: "#2A6E93"
-        }
-      };
+      const outArea = document.getElementById('campaignOutputArea');
+      const textEl = document.getElementById('cmpGeneratedText');
+      if (outArea) outArea.classList.remove('hidden');
+      if (textEl) textEl.value = 'جاري صياغة الرسالة بذكاء هالة وبنفس شخصيتك... 🪄';
 
-      const activeMeta = isSandbox
-        ? PLATFORM_META.sandbox
-        : (PLATFORM_META[platform] || PLATFORM_META.salla);
-
-      function logoHtml(meta, sizeClass) {
-        const size = sizeClass ? ` platform-logo--${sizeClass}` : "";
-        return `<div class="platform-logo${size} platform-logo--${meta.colorClass}" aria-hidden="true"><span class="platform-logo-text">${meta.short}</span></div>`;
-      }
-
-      function applyPlatformLogo(el, meta, sizeClass) {
-        if (!el) return;
-        el.className = `platform-logo${sizeClass ? " platform-logo--" + sizeClass : ""} platform-logo--${meta.colorClass}`;
-        const text = el.querySelector(".platform-logo-text");
-        if (text) text.textContent = meta.short;
-      }
-
-      /* Theme: HalaTheme (theme.js)، no persist on load */
-
-      document.getElementById("agent-greeting").textContent = agentName;
-      document.getElementById("chat-agent-name").textContent = agentName;
-
-      // Dynamic merchant name parsing
-      const merchantEl = document.getElementById("merchant-name");
-      if (merchantEl) {
-        const storedUrl = sessionStorage.getItem("hala_store_url") || "";
-        if (storedUrl) {
-          try {
-            const hostname = new URL(storedUrl).hostname;
-            const namePart = hostname.split(".")[0];
-            const cleanName = namePart
-              .replace(/-/g, " ")
-              .replace(/salla/g, "")
-              .replace(/zid/g, "")
-              .replace(/trendyol/g, "")
-              .trim();
-            merchantEl.textContent = cleanName ? (cleanName.charAt(0).toUpperCase() + cleanName.slice(1)) : "الشريك العزيز";
-          } catch {
-            merchantEl.textContent = storedUrl.replace(/^https?:\/\//, "").split("/")[0] || "الشريك العزيز";
-          }
-        } else {
-          merchantEl.textContent = "الشريك العزيز";
-        }
-      }
-
-      /* ── Platform status: top bar + sidebar + badges ── */
-      function renderPlatformStatus() {
-        const meta = activeMeta;
-
-        applyPlatformLogo(document.getElementById("sidebar-platform-logo"), meta);
-        applyPlatformLogo(document.getElementById("drawer-platform-logo"), meta);
-        applyPlatformLogo(document.getElementById("topbar-platform-logo"), meta);
-        applyPlatformLogo(document.getElementById("mobile-platform-logo"), meta, "sm");
-
-        const sideName = document.getElementById("sidebar-platform-name");
-        const drawerName = document.getElementById("drawer-platform-name");
-        const topName = document.getElementById("topbar-platform-name");
-        const mobileLabel = document.getElementById("mobile-platform-label");
-        if (sideName) sideName.textContent = meta.name;
-        if (drawerName) drawerName.textContent = meta.name;
-        if (topName) topName.textContent = meta.connected;
-        if (mobileLabel) {
-          mobileLabel.textContent = isSandbox ? "تجريبي · Sandbox" : "متصل · " + meta.name;
-        }
-
-        const badge = document.getElementById("platform-badge");
-        const badgeText = document.getElementById("platform-badge-text");
-        if (badge) {
-          badge.className =
-            `platform-status-badge platform-status-badge--${meta.colorClass} inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label-sm text-label-sm`;
-          const logo = badge.querySelector(".platform-logo");
-          applyPlatformLogo(logo, meta, "xs");
-        }
-        if (badgeText) badgeText.textContent = meta.label;
-
-        const channels = document.getElementById("topbar-channel-badges");
-        if (channels) {
-          if (isSandbox) {
-            channels.innerHTML = [PLATFORM_META.salla, PLATFORM_META.zid, PLATFORM_META.trendyol]
-              .map((m) => `<span class="platform-channel" title="${m.name} (تجريبي)" aria-label="${m.name}">${logoHtml(m, "xs")}<span class="platform-channel-name">${m.short}</span></span>`)
-              .join("");
-          } else {
-            // Active platform first, then show multi-channel awareness for Trendyol (syncs to Salla/Zid)
-            const order =
-              platform === "trendyol"
-                ? [PLATFORM_META.trendyol, PLATFORM_META.salla, PLATFORM_META.zid]
-                : platform === "zid"
-                  ? [PLATFORM_META.zid, PLATFORM_META.salla]
-                  : [PLATFORM_META.salla, PLATFORM_META.zid];
-            channels.innerHTML = order
-              .map((m, i) => {
-                const dim = platform === "trendyol" ? "" : i > 0 ? " platform-channel--dim" : "";
-                return `<span class="platform-channel${dim}" title="${m.name}" aria-label="${m.name}">${logoHtml(m, "xs")}<span class="platform-channel-name">${m.short}</span></span>`;
-              })
-              .join("");
-          }
-        }
-
-        const sub = document.getElementById("service-status-sub");
-        if (sub) {
-          sub.textContent = isSandbox
-            ? "خدمات تجريبية تفاعلية · بيانات افتراضية غير حية"
-            : `الخدمات الآلية النشطة لمتجر ${meta.name}`;
-        }
-
-        // Sidebar connection label for sandbox
-        if (isSandbox) {
-          document.querySelectorAll("#sidebar-store-status .text-emerald-600, #drawer-store-status .text-emerald-600").forEach((el) => {
-            el.textContent = "وضع التجربة";
-          });
-        }
-      }
-
-      /* ── Service status widget ── */
-      const SERVICES = {
-        salla: [
-          { icon: "edit_note", title: "مزامنة أوصاف المنتجات", desc: "تحسين ونشر الأوصاف تلقائياً على سلة", status: "نشط", live: true },
-          { icon: "payments", title: "مزامنة الأسعار والمخزون", desc: "تحديث لحظي للأسعار والكميات", status: "نشط", live: true },
-          { icon: "auto_awesome", title: "إعادة صياغة بالذكاء الاصطناعي", desc: "أوصاف وكلمات مفتاحية باللهجة المحلية", status: "نشط", live: true },
-          { icon: "image", title: "تحسين الصور", desc: "ضغط وتهيئة صور المنتجات للويب", status: "نشط", live: true },
-          { icon: "search", title: "تحسين الظهور", desc: "تهيئة العناوين والوصف التعريفي", status: "يعمل", live: true },
-          { icon: "translate", title: "توطين المحتوى", desc: "صياغة عربية سعودية للزائر المحلي", status: "نشط", live: true }
-        ],
-        zid: [
-          { icon: "edit_note", title: "مزامنة أوصاف المنتجات", desc: "تحسين ونشر الأوصاف تلقائياً على زد", status: "نشط", live: true },
-          { icon: "payments", title: "مزامنة الأسعار والمخزون", desc: "تحديث الأسعار والكميات عبر واجهة زد", status: "نشط", live: true },
-          { icon: "auto_awesome", title: "إعادة صياغة بالذكاء الاصطناعي", desc: "محتوى احترافي متوافق مع محركات البحث", status: "نشط", live: true },
-          { icon: "image", title: "تحسين الصور", desc: "ضغط وتهيئة صور المنتجات", status: "نشط", live: true },
-          { icon: "category", title: "تهيئة التصنيفات", desc: "كلمات مفتاحية للتصنيفات الرئيسية", status: "يعمل", live: true },
-          { icon: "speed", title: "تسريع الصفحات", desc: "تحسين أداء صفحات المنتجات", status: "نشط", live: true }
-        ],
-        trendyol: [
-          { icon: "sync_alt", title: "مزامنة أوصاف سلة / زد", desc: "نقل وتحسين الأوصاف من ترينديول إلى سلة وزد", status: "نشط", live: true },
-          { icon: "payments", title: "مزامنة الأسعار والمخزون", desc: "توحيد الأسعار والكميات عبر القنوات", status: "نشط", live: true },
-          { icon: "auto_awesome", title: "إعادة صياغة بالذكاء الاصطناعي", desc: "توطين الأوصاف للعربية والتركية", status: "نشط", live: true },
-          { icon: "public", title: "تهيئة الظهور العالمي", desc: "كلمات مفتاحية متعددة اللغات", status: "يعمل", live: true },
-          { icon: "inventory", title: "مزامنة كتالوج المنتجات", desc: "استيراد وتحديث المنتجات من ترينديول", status: "نشط", live: true },
-          { icon: "image", title: "تحسين صور الكتالوج", desc: "ضغط وتهيئة الصور للنشر المحلي", status: "نشط", live: true }
-        ]
-      };
-
-      function renderServices() {
-        const list = document.getElementById("service-status-list");
-        if (!list) return;
-        const items = SERVICES[platform] || SERVICES.salla;
-        list.innerHTML = items
-          .map(
-            (s) => `
-          <div class="service-card">
-            <div class="service-card-icon">
-              <span class="material-symbols-outlined">${s.icon}</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-start justify-between gap-2 mb-1">
-                <h4 class="font-body-md text-[14px] dash-title font-semibold leading-snug">${s.title}</h4>
-                <span class="service-pill${s.live ?" service-pill--live" : ""}">${s.status}</span>
-              </div>
-              <p class="font-label-sm text-[12px] dash-muted leading-relaxed">${s.desc}</p>
-            </div>
-          </div>`
-          )
-          .join("");
-      }
-
-      /* ── Optimized products with platform badges ── */
-      const PRODUCT_DATA = isSandbox
-        ? [
-            { name: "عطر الياسمين الملكي - ٥٠ مل", sku: "SBX-101", status: "تم النشر", icon: "local_florist", tone: "rose", channels: ["salla", "zid"] },
-            { name: "بخور ندّ فاخر - علبة ٤٠ جرام", sku: "SBX-102", status: "قيد المزامنة", icon: "spa", tone: "amber", channels: ["salla", "trendyol"] },
-            { name: "زيت الأرغان المغربي - ٣٠ مل", sku: "SBX-103", status: "تم النشر", icon: "water_drop", tone: "sky", channels: ["zid", "salla"] },
-            { name: "شمعة عنبرية فاخرة", sku: "SBX-104", status: "تم النشر", icon: "auto_awesome", tone: "violet", channels: ["salla"] },
-            { name: "طقم هدية العود والتجارب", sku: "SBX-105", status: "قيد المزامنة", icon: "featured_seasonal_and_gifts", tone: "emerald", channels: ["salla", "zid", "trendyol"] },
-            { name: "مسك أبيض فاخر - ١٢ مل", sku: "SBX-106", status: "تم النشر", icon: "spa", tone: "amber", channels: ["trendyol", "salla"] }
-          ]
-        : [
-            { name: "عود كمبودي فاخر - ١٢ مل", sku: "AUD-012", status: "تم النشر", icon: "spa", tone: "amber", channels: ["salla", "trendyol"] },
-            { name: "دهن الورد الطائفي", sku: "WRD-008", status: "تم النشر", icon: "local_florist", tone: "rose", channels: ["salla", "zid"] },
-            { name: "بخور ملكي - علبة ٥٠ جرام", sku: "BKH-050", status: "قيد المزامنة", icon: "water_drop", tone: "sky", channels: ["trendyol", "salla", "zid"] },
-            { name: "مزيل عرق عودي فاخر", sku: "DRD-003", status: "تم النشر", icon: "auto_awesome", tone: "violet", channels: ["salla"] },
-            { name: "طقم هدايا العود الملكي", sku: "GFT-001", status: "تم النشر", icon: "featured_seasonal_and_gifts", tone: "emerald", channels: ["salla", "zid", "trendyol"] }
-          ];
-
-      const TONE_BG = {
-        amber: "bg-amber-100 text-amber-700",
-        rose: "bg-rose-100 text-rose-600",
-        sky: "bg-sky-100 text-sky-700",
-        violet: "bg-violet-100 text-violet-600",
-        emerald: "bg-emerald-100 text-emerald-700"
-      };
-
-      function renderProducts() {
-        const list = document.getElementById("optimized-products-list");
-        if (!list) return;
-
-        // Prefer active platform channels first in badge order
-        list.innerHTML = PRODUCT_DATA.map((p) => {
-          const channels = [...p.channels].sort((a, b) => {
-            if (a === platform) return -1;
-            if (b === platform) return 1;
-            return 0;
-          });
-          // For Trendyol connection, ensure trendyol appears; always show product channels
-          const badges = channels
-            .map((id) => {
-              const m = PLATFORM_META[id];
-              if (!m) return "";
-              return `<span class="product-platform-badge product-platform-badge--${m.colorClass}" title="منشور على ${m.name}">
-                ${logoHtml(m, "xs")}
-                <span>${m.short}</span>
-              </span>`;
-            })
-            .join("");
-
-          const tone = TONE_BG[p.tone] || TONE_BG.amber;
-          const isSync = p.status === "قيد المزامنة";
-          return `
-            <div class="product-row">
-              <div class="w-11 h-11 rounded-xl ${tone} flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-[22px]">${p.icon}</span>
-              </div>
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2 mb-0.5">
-                  <p class="font-body-md text-[14px] dash-title font-medium truncate">${p.name}</p>
-                  <span class="font-label-sm text-[10px] dash-muted bg-white/10 px-1.5 py-0.5 rounded">${p.sku}</span>
-                </div>
-                <div class="flex flex-wrap items-center gap-1.5 mt-1.5" aria-label="قنوات النشر">
-                  ${badges}
-                </div>
-              </div>
-              <span class="product-status-chip${isSync ?" product-status-chip--sync" : ""}">${p.status}</span>
-            </div>`;
-        }).join("");
-      }
-
-      /* ── تفعيل واجهة وضع التجربة + بيانات تفاعلية ── */
-      function initSandboxMode() {
-        if (!isSandbox) return;
-        document.body.classList.add("sandbox-mode");
-        document.documentElement.classList.add("sandbox-active");
-
-        const banner = document.getElementById("sandbox-banner");
-        if (banner) {
-          banner.hidden = false;
-          requestAnimationFrame(() => banner.classList.add("is-visible"));
-        }
-        const dismiss = document.getElementById("sandbox-banner-dismiss");
-        if (dismiss) {
-          dismiss.addEventListener("click", () => {
-            if (!banner) return;
-            banner.classList.remove("is-visible");
-            banner.classList.add("is-hiding");
-            setTimeout(() => {
-              banner.hidden = true;
-              banner.classList.remove("is-hiding");
-              document.body.classList.add("sandbox-banner-dismissed");
-            }, 320);
-          });
-        }
-
-        // Mock KPI targets: products, revenue SAR, trial credits
-        const counters = document.querySelectorAll("#stats .counter-animate");
-        const mockTargets = [156, 22150, 36];
-        counters.forEach((el, i) => {
-          if (mockTargets[i] != null) el.setAttribute("data-target", String(mockTargets[i]));
+      try {
+        const res = await fetch('/api/store/campaign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'generate', idea, discountCode, discountPercent })
         });
-        const seoScoreEl = document.getElementById("seo-score-counter");
-        if (seoScoreEl) seoScoreEl.setAttribute("data-target", "91");
-        const seoBarTarget = 91;
-
-        const merchantEl = document.getElementById("merchant-name");
-        if (merchantEl) merchantEl.textContent = "متجر التجربة";
-
-        const trialBadge = document.getElementById("trial-badge");
-        if (trialBadge) {
-          trialBadge.textContent = "وضع التجربة · بيانات افتراضية";
-          trialBadge.classList.add("sandbox-trial-badge");
+        const data = await res.json();
+        if (data?.ok && data?.campaign?.generatedMessage) {
+          if (textEl) textEl.value = data.campaign.generatedMessage;
         }
+      } catch (err) {
+        if (textEl) textEl.value = 'تعذر توليد الرسالة التسويقية.';
+      }
+    }
 
-        // Interactive tasks mock progress
-        const tasksRoot = document.getElementById("tasks");
-        if (tasksRoot) {
-          tasksRoot.classList.add("sandbox-interactive");
-          const taskBlocks = tasksRoot.querySelectorAll(":scope > .space-y-5 > div, .space-y-5 > div");
-          if (taskBlocks[0]) {
-            const title = taskBlocks[0].querySelector(".dash-title");
-            if (title) title.textContent = "تحسين أوصاف ١٨ منتجاً تجريبياً";
-            const count = taskBlocks[0].querySelector(".font-label-sm");
-            const bar = taskBlocks[0].querySelector(".bg-primary");
-            if (count) count.textContent = "١١/١٨";
-            if (bar) bar.style.width = "61%";
+    async function broadcastAiCampaign() {
+      const msg = document.getElementById('cmpGeneratedText')?.value;
+      if (!msg) return;
 
-            let done = 11;
-            const total = 18;
-            taskBlocks[0].style.cursor = "pointer";
-            taskBlocks[0].setAttribute("title", "اضغط لمحاكاة تقدّم المهمة");
-            taskBlocks[0].setAttribute("role", "button");
-            taskBlocks[0].setAttribute("tabindex", "0");
-            const advance = () => {
-              if (done >= total) return;
-              done += 1;
-              if (count) count.textContent = done + "/" + total;
-              if (bar) bar.style.width = Math.round((done / total) * 100) + "%";
-              if (done >= total && count) {
-                count.textContent = "مكتمل";
-                count.classList.add("text-emerald-500");
-              }
-            };
-            taskBlocks[0].addEventListener("click", advance);
-            taskBlocks[0].addEventListener("keydown", (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                advance();
-              }
-            });
-          }
-          if (taskBlocks[1]) {
-            const titleWrap = taskBlocks[1].querySelector(".font-medium");
-            if (titleWrap) {
-              const icon = titleWrap.querySelector(".material-symbols-outlined");
-              titleWrap.textContent = "";
-              titleWrap.appendChild(document.createTextNode("ضغط ٥ صور تجريبية "));
-              if (icon) titleWrap.appendChild(icon);
-              else {
-                const spin = document.createElement("span");
-                spin.className = "material-symbols-outlined text-sm text-primary animate-spin";
-                spin.textContent = "sync";
-                titleWrap.appendChild(spin);
-              }
-            }
-          }
-          if (taskBlocks[2]) {
-            const muted = taskBlocks[2].querySelector(".font-medium");
-            if (muted) muted.textContent = "تحديث الوصف التعريفي (تجريبي)";
-          }
-        }
-
-        // Chart growth badge
-        document.querySelectorAll(".text-emerald-400").forEach((el) => {
-          if (el.textContent && el.textContent.indexOf("%") !== -1) {
-            el.textContent = "+٣١٪";
-          }
+      try {
+        const res = await fetch('/api/store/campaign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'broadcast', message: msg })
         });
-
-        // Ring center score
-        const ringEl = document.getElementById("ring-seo");
-        if (ringEl && ringEl.parentElement) {
-          const ringTexts = ringEl.parentElement.querySelectorAll("text");
-          if (ringTexts[0]) ringTexts[0].textContent = "٩١";
+        const data = await res.json();
+        if (data?.ok && data?.broadcast) {
+          alert('🚀 ' + (data.broadcast.status || 'تم بث الحملة التسويقية بالواتساب بنجاح!'));
         }
-
-        // Service list: sandbox-specific interactive cards
-        const list = document.getElementById("service-status-list");
-        if (list) {
-          const sandboxServices = [
-            { icon: "science", title: "محرك البيانات التجريبية", desc: "توليد سيناريوهات وهمية للمنتجات والمخزون", status: "نشط", live: true },
-            { icon: "auto_awesome", title: "إعادة صياغة بالذكاء الاصطناعي", desc: "معاينة التحسينات دون نشر حي", status: "نشط", live: true },
-            { icon: "image", title: "استوديو الصور التجريبي", desc: "ضغط وتهيئة صور وهمية للمقارنة", status: "نشط", live: true },
-            { icon: "search", title: "محاكاة جودة الظهور", desc: "درجات افتراضية قابلة للتفاعل", status: "يعمل", live: true },
-            { icon: "sync_alt", title: "مزامنة متعددة القنوات (وهمي)", desc: "سلة · زد · ترينديول، بدون اعتمادات حية", status: "نشط", live: true },
-            { icon: "hub", title: "لوحة التحكم التفاعلية", desc: "اضغط على المهام والمنتجات لاستكشاف التدفق", status: "نشط", live: true }
-          ];
-          list.innerHTML = sandboxServices
-            .map(
-              (s) => `
-          <div class="service-card sandbox-service-card" tabindex="0" role="button" title="اضغط لتبديل الحالة التجريبية">
-            <div class="service-card-icon">
-              <span class="material-symbols-outlined">${s.icon}</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-start justify-between gap-2 mb-1">
-                <h4 class="font-body-md text-[14px] dash-title font-semibold leading-snug">${s.title}</h4>
-                <span class="service-pill${s.live ?" service-pill--live" : ""} sandbox-pill">${s.status}</span>
-              </div>
-              <p class="font-label-sm text-[12px] dash-muted leading-relaxed">${s.desc}</p>
-            </div>
-          </div>`
-            )
-            .join("");
-
-          list.querySelectorAll(".sandbox-service-card").forEach((card) => {
-            const pill = card.querySelector(".sandbox-pill");
-            const states = ["نشط", "يعمل", "مجدول"];
-            let idx = 0;
-            const toggle = () => {
-              idx = (idx + 1) % states.length;
-              if (pill) {
-                pill.textContent = states[idx];
-                pill.classList.toggle("service-pill--live", idx < 2);
-              }
-              card.classList.add("sandbox-card-flash");
-              setTimeout(() => card.classList.remove("sandbox-card-flash"), 400);
-            };
-            card.addEventListener("click", toggle);
-            card.addEventListener("keydown", (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                toggle();
-              }
-            });
-          });
-        }
-
-        // Interactive products: click cycles status
-        setTimeout(() => {
-          document.querySelectorAll("#optimized-products-list .product-row").forEach((row) => {
-            row.classList.add("sandbox-product-row");
-            row.setAttribute("tabindex", "0");
-            row.setAttribute("role", "button");
-            row.setAttribute("title", "اضغط لتبديل حالة المنتج التجريبية");
-            const chip = row.querySelector(".product-status-chip");
-            const cycle = ["تم النشر", "قيد المزامنة", "جاهز للعرض"];
-            let i = cycle.indexOf((chip && chip.textContent.trim()) || "") ;
-            if (i < 0) i = 0;
-            const next = () => {
-              i = (i + 1) % cycle.length;
-              if (!chip) return;
-              chip.textContent = cycle[i];
-              chip.classList.toggle("product-status-chip--sync", cycle[i] === "قيد المزامنة");
-              row.classList.add("sandbox-card-flash");
-              setTimeout(() => row.classList.remove("sandbox-card-flash"), 400);
-            };
-            row.addEventListener("click", next);
-            row.addEventListener("keydown", (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                next();
-              }
-            });
-          });
-        }, 0);
-
-        // Chat intro for sandbox
-        const chatMsgs = document.getElementById("chat-messages");
-        if (chatMsgs) {
-          chatMsgs.innerHTML = `<div class="chat-msg bot">أهلاً! أنت في <strong>وضع التجربة</strong> 🧪 البيانات وهمية وتفاعلية، اضغط على المهام والخدمات والمنتجات لاستكشاف النظام بدون ربط حي.</div>`;
-        }
-
-        // Soft SEO bar override after counters boot
-        window.__halaSandboxSeo = seoBarTarget;
+      } catch (err) {
+        alert('تعذر بث الحملة.');
       }
+    }
 
-      renderPlatformStatus();
-      renderServices();
-      renderProducts();
-      initSandboxMode();
+    async function triggerEmotionalRecoveryTest() {
+      const customerName = document.getElementById('recCustomer').value || 'عبدالمجيد';
+      const productName = document.getElementById('recProduct').value || 'عطر أورا الملكي 100ml';
+      const originalPriceSar = document.getElementById('recPrice').value || 200;
 
-      if (trialActive || isSandbox) {
-        const trialBadgeEl = document.getElementById("trial-badge");
-        if (trialBadgeEl && !isSandbox) trialBadgeEl.textContent = "التجربة المجانية مفعّلة";
-        document.querySelectorAll("#trial-cta-side, #trial-cta-main, #trial-cta-mobile").forEach((btn) => {
-          if (!btn) return;
-          if (isSandbox) {
-            btn.innerHTML = '<span class="material-symbols-outlined text-[18px]" style="font-variation-settings:\'FILL\' 1">science</span> ربط المتجر الحقيقي';
-            btn.classList.add("opacity-90");
-            btn.setAttribute("title", "العودة لإعداد الربط الحي");
-          } else {
-            btn.innerHTML = '<span class="material-symbols-outlined text-[18px]" style="font-variation-settings:\'FILL\' 1">verified</span> التجربة مفعّلة';
-            btn.classList.add("opacity-90");
-          }
+      const out = document.getElementById('recoveryOutput');
+      out.classList.remove('hidden');
+      out.innerText = 'جاري صياغة رسالة الاسترداد العاطفية وحساب الأقساط الشهرية... ⚡';
+
+      try {
+        const res = await fetch('/api/store/recovery', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerName, productName, originalPriceSar })
         });
+        const data = await res.json();
+        if (data?.ok && data?.recovery) {
+          out.innerText = `💬 النص المرسل بالواتساب للعميل:\n${data.recovery.whatsappMessage}\n\n📊 تفاصيل الحساب الذكية:\nالسعر الأصلي: ${data.recovery.pricing.originalPriceSar} ر.س | الخصم: ${data.recovery.pricing.discountPercent}%\nالقسط الشهري بـ تمارا/تابي: ${data.recovery.pricing.monthlyInstallmentSar} ر.س / شهرياً (على 4 دفعات)! 🎉`;
+        }
+      } catch (err) {
+        out.innerText = 'تعذر توليد رسالة الاسترداد العاطفية.';
       }
+    }
 
-      const root = document.documentElement;
-      if (platform === "zid") {
-        root.style.setProperty("--primary", "#1A237E");
-        root.style.setProperty("--primary-soft", "#3949AB");
-        root.style.setProperty("--secondary", "#303F9F");
-        root.style.setProperty("--shadow-glow", "0 0 20px rgba(26, 35, 126, 0.4)");
-      } else if (platform === "trendyol") {
-        root.style.setProperty("--primary", "#F27A1A");
-        root.style.setProperty("--primary-soft", "#FF9800");
-        root.style.setProperty("--secondary", "#E65100");
-        root.style.setProperty("--shadow-glow", "0 0 20px rgba(242, 122, 26, 0.4)");
-      } else {
-        root.style.setProperty("--primary", "#2A6E93");
-        root.style.setProperty("--primary-soft", "#438FB3");
-        root.style.setProperty("--secondary", "#2E7A87");
-        root.style.setProperty("--shadow-glow", "0 0 20px rgba(42, 110, 147, 0.4)");
-      }
+    async function triggerShippingAlert() {
+      const courier = document.getElementById('shippingCourier').value || 'SPL';
+      const out = document.getElementById('shippingOutput');
+      out.classList.remove('hidden');
+      out.innerText = 'جاري إرسال إشعار التتبع بالواتساب... 🚚';
 
-      // Counters، jump to final value when reduced motion is on
-      const reduceMotion =
-        document.documentElement.getAttribute("data-reduce-motion") === "1" ||
-        (document.documentElement.getAttribute("data-reduce-motion") !== "0" &&
-          window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-      document.querySelectorAll(".counter-animate").forEach((counter) => {
-        const target = +counter.getAttribute("data-target");
-        if (reduceMotion) {
-          counter.innerText = target;
-          return;
-        }
-        const duration = 1600;
-        const start = performance.now();
-        function frame(now) {
-          const t = Math.min(1, (now - start) / duration);
-          const eased = 1 - Math.pow(1 - t, 3);
-          counter.innerText = Math.floor(eased * target);
-          if (t < 1) requestAnimationFrame(frame);
-          else counter.innerText = target;
-        }
-        requestAnimationFrame(frame);
-      });
-      setTimeout(() => {
-        const seoPct = typeof window.__halaSandboxSeo === "number" ? window.__halaSandboxSeo : 87;
-        const seoBar = document.getElementById("seo-bar");
-        if (seoBar) seoBar.style.width = seoPct + "%";
-        const ring = document.getElementById("ring-seo");
-        if (ring) {
-          const circ = 2 * Math.PI * 44;
-          ring.style.strokeDashoffset = circ * (1 - seoPct / 100);
-        }
-      }, 200);
-
-      // Free trial activation (skipped in sandbox، CTAs link back to onboarding)
-      function activateTrial() {
-        if (isSandbox) {
-          window.location.href = "onboarding.html";
-          return;
-        }
-        sessionStorage.setItem("hala_trial_active", "true");
-        document.getElementById("trial-badge").textContent = "التجربة المجانية مفعّلة";
-        document.querySelectorAll("#trial-cta-side, #trial-cta-main, #trial-cta-mobile").forEach((btn) => {
-          if (!btn) return;
-          btn.innerHTML = '<span class="material-symbols-outlined text-[18px]" style="font-variation-settings:\'FILL\' 1">verified</span> التجربة مفعّلة';
+      try {
+        const res = await fetch('/api/webhooks/shipping', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ provider: courier, status: 'out_for_delivery' })
         });
-        const toast = document.getElementById("trial-toast");
-        toast.classList.remove("hidden");
-        requestAnimationFrame(() => {
-          toast.classList.remove("opacity-0");
-          toast.style.transform = "translate(-50%, 0)";
+        const data = await res.json();
+        if (data?.ok && data?.webhook) {
+          out.innerText = JSON.stringify(data.webhook, null, 2);
+        }
+      } catch (err) {
+        out.innerText = 'تعذر إرسال الإشعار.';
+      }
+    }
+
+    async function verifyBankSlip() {
+      const amount = document.getElementById('ocrAmount').value || 450;
+      const out = document.getElementById('ocrOutput');
+      out.classList.remove('hidden');
+      out.innerText = 'جاري فحص الإيصال بالذكاء الاصطناعي Vision AI... ⏳';
+
+      try {
+        const res = await fetch('/api/store/ocr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount })
         });
-        setTimeout(() => {
-          toast.classList.add("opacity-0");
-          setTimeout(() => toast.classList.add("hidden"), 300);
-        }, 2800);
+        const data = await res.json();
+        if (data?.ok && data?.verification) {
+          out.innerText = JSON.stringify(data.verification, null, 2);
+        }
+      } catch (err) {
+        out.innerText = 'تعذر التحقق من الإيصال.';
       }
-      ["trial-cta-side", "trial-cta-main", "trial-cta-mobile"].forEach((id) => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener("click", activateTrial);
-      });
+    }
 
-      // Image comparison
-      const compare = document.getElementById("img-compare");
-      const afterLayer = document.getElementById("after-layer");
-      const sliderLine = document.getElementById("slider-line");
-      let dragging = false;
+    async function generateVoiceNote() {
+      const text = document.getElementById('voiceText').value || 'أهلاً بك!';
+      const out = document.getElementById('voiceOutput');
+      out.classList.remove('hidden');
+      out.innerText = 'جاري توليد البصمة الصوتية بلهجة سعودية طبيعية... 🎙️';
 
-      function setSplit(clientX) {
-        const rect = compare.getBoundingClientRect();
-        let x = clientX - rect.left;
-        x = Math.max(8, Math.min(rect.width - 8, x));
-        const pct = (x / rect.width) * 100;
-        afterLayer.style.clipPath = `inset(0 0 0 ${pct}%)`;
-        sliderLine.style.left = pct + "%";
+      try {
+        const res = await fetch('/api/store/voice', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text })
+        });
+        const data = await res.json();
+        if (data?.ok && data?.voiceNote) {
+          out.innerText = JSON.stringify(data.voiceNote, null, 2);
+        }
+      } catch (err) {
+        out.innerText = 'تعذر توليد البصمة الصوتية.';
       }
+    }
 
-      sliderLine.addEventListener("mousedown", (e) => { dragging = true; e.preventDefault(); });
-      window.addEventListener("mouseup", () => { dragging = false; });
-      window.addEventListener("mousemove", (e) => { if (dragging) setSplit(e.clientX); });
-      compare.addEventListener("click", (e) => setSplit(e.clientX));
-      compare.addEventListener("touchstart", (e) => { dragging = true; setSplit(e.touches[0].clientX); }, { passive: true });
-      window.addEventListener("touchend", () => { dragging = false; });
-      window.addEventListener("touchmove", (e) => { if (dragging) setSplit(e.touches[0].clientX); }, { passive: true });
+    function triggerIngest() {
+      alert('تم تحديث ومزامنة ذاكرة RAG بمنتجاتك وسياساتك فوراً! ⚡');
+    }
 
-      // Chat
-      const chatPanel = document.getElementById("chat-panel");
-      const chatMsgs = document.getElementById("chat-messages");
-      const chatInput = document.getElementById("chat-input");
-      const chatDot = document.getElementById("chat-dot");
-
-      document.getElementById("ai-fab").addEventListener("click", () => {
-        chatPanel.classList.toggle("open");
-        chatDot.classList.add("hidden");
-      });
-      document.getElementById("chat-close").addEventListener("click", () => chatPanel.classList.remove("open"));
-
-      let initialMsg = `هلا والله! أنا ${agentName}، مساعدتك الذكية. وش تبي نسوي اليوم لمتجرك؟`;
-      let replies = {
-        "وش حالة الظهور؟": "جودة الظهور عندك حالياً ٨٧ من ١٠٠. باقي نحدّث ١٢ صفحة وصف تعريفي ونخلصه. تبي أبدأ الحين؟",
-        "حسّن الأوصاف": "تمام! شغّلت تحسين أوصاف ١٢ منتجاً. خلصت ٧ منها، والباقي يشتغل بالخلفية.",
-        "كم وفّرنا؟": "من وقت الربط: +١٨٧ زيارة مكتسبة، ووفّرنا تقريباً ٢٫١ م.ب من حجم الصور. متجرك صار أسرع بـ ٣٤٪.",
-        default: "وصلتني رسالتك. أنا أشتغل على تحسين متجرك الحين. تقدر تسألني عن الظهور، الأوصاف، أو الصور."
-      };
-
-      if (platform === "zid") {
-        initialMsg = `مرحباً بك. أنا ${agentName}. جاهزة لتطوير مبيعات متجرك وتحسين الظهور والأداء. كيف أخدمك اليوم؟`;
-        replies = {
-          "وش حالة الظهور؟": "نقاط الظهور لمتجرك على زد هي ٨٢ من ١٠٠. قمنا بتهيئة الكلمات المفتاحية لـ ١٥ تصنيفاً رئيسياً.",
-          "حسّن الأوصاف": "أبشر. جاري صياغة أوصاف المنتجات بأسلوب احترافي متوافق مع محركات البحث.",
-          "كم وفّرنا؟": "وفّرنا ٣٫٤ م.ب من حجم الصور، وزادت سرعة تحميل صفحات المنتجات بـ ٤٢٪.",
-          default: "مرحباً بك. سأقوم بتحسين متجرك على زد الآن. اسألني عن الظهور أو سرعة المتجر."
-        };
-      } else if (platform === "trendyol") {
-        initialMsg = `مرحباً. أنا ${agentName}، مساعدتك لتحسين أداء متجرك على ترينديول. وش ودك نحسّن اليوم؟`;
-        replies = {
-          "وش حالة الظهور؟": "الظهور العالمي لمتجرك ٧٩ من ١٠٠. تم تهيئة الكلمات المفتاحية للعربية والتركية.",
-          "حسّن الأوصاف": "جاري تحسين وتوطين أوصاف ٢٠ منتجاً من ترينديول لتناسب المستهلكين محلياً.",
-          "كم وفّرنا؟": "قمنا بتقليص أحجام صور المنتجات بنسبة ٥٥٪ لتسريع التحميل، مما رفع تقييم التجربة بـ ٢٨٪.",
-          default: "أهلاً بك. أعمل على تهيئة متجرك على ترينديول الآن."
-        };
+    async function handleMerchantLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/login';
+      } catch (err) {
+        window.location.href = '/login';
       }
+    }
 
-      chatMsgs.innerHTML = `<div class="chat-msg bot">${initialMsg}</div>`;
-
-      function addMsg(text, who) {
-        const div = document.createElement("div");
-        div.className = "chat-msg " + who;
-        div.textContent = text;
-        chatMsgs.appendChild(div);
-        chatMsgs.scrollTop = chatMsgs.scrollHeight;
-      }
-
-      function botReply(userText) {
-        setTimeout(() => {
-          const key = Object.keys(replies).find((k) => userText.includes(k.replace("؟", "")) || k === userText);
-          addMsg(replies[key] || replies.default, "bot");
-        }, 600 + Math.random() * 400);
-      }
-
-      function sendChat(text) {
-        const t = (text || chatInput.value || "").trim();
-        if (!t) return;
-        addMsg(t, "user");
-        chatInput.value = "";
-        botReply(t);
-      }
-
-      document.getElementById("chat-send").addEventListener("click", () => sendChat());
-      chatInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") sendChat();
-      });
-      document.querySelectorAll(".quick-reply").forEach((btn) => {
-        btn.addEventListener("click", () => sendChat(btn.dataset.q));
-      });
-
-      const drawer = document.getElementById("mobile-drawer");
-      document.getElementById("mobile-menu-btn").addEventListener("click", () => drawer.classList.add("open"));
-      document.getElementById("mobile-close").addEventListener("click", () => drawer.classList.remove("open"));
-      drawer.addEventListener("click", (e) => { if (e.target === drawer) drawer.classList.remove("open"); });
+    document.addEventListener('DOMContentLoaded', () => {
+      initMerchantDashboard();
     });
-  </script>
-  <script>
-    // Real store data overlay، when the store is actually linked
-    // (/api/store/overview), replace the demo product list with live
-    // Salla products + Trendyol synced products. Demo data stays as the
-    // fallback for unlinked/static sessions.
-    (async function loadRealOverview() {
-      let storeId = null;
-      try { storeId = localStorage.getItem("hala_store_id"); } catch (e) {}
-      if (!storeId) return;
-      let data = null;
-      try {
-        const res = await fetch("/api/store/overview", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ storeId })
-        });
-        data = await res.json();
-      } catch (err) { return; }
-      if (!data || !data.linked) return;
-
-      const list = document.getElementById("optimized-products-list");
-      const rows = [];
-      (data.products || []).forEach((p) => {
-        rows.push({ name: p.name, meta: `سلة · ${p.price ?? "-"} ر.س · مخزون ${p.quantity ?? "-"}`, status: p.status === "sale" || p.status === "active" ? "منشور" : String(p.status || ""), platform: "salla" });
-      });
-      (data.trendyolProducts || []).forEach((p) => {
-        rows.push({ name: p.title || p.external_id, meta: `Trendyol · ${p.price ?? "-"} · مخزون ${p.stock ?? "-"}`, status: p.sync_status === "synced" ? "متزامن" : p.sync_status === "error" ? "خطأ مزامنة" : "قيد المزامنة", platform: "trendyol" });
-      });
-      if (list && rows.length) {
-        list.innerHTML = rows.slice(0, 12).map((r) => `
-          <div class="product-row">
-            <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-              <span class="material-symbols-outlined text-[22px]">inventory_2</span>
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="font-body-md text-[14px] dash-title font-medium truncate">${r.name}</p>
-              <p class="font-label-sm text-[11px] dash-muted mt-1">${r.meta}</p>
-            </div>
-            <span class="product-status-chip${r.status.includes("مزامنة") ? " product-status-chip--sync" : ""}">${r.status}</span>
-          </div>`).join("");
-      }
-
-      const nameEl = document.getElementById("sidebar-platform-name");
-      if (nameEl && data.storeName) nameEl.textContent = data.storeName;
-
-      // محتوى المتجر، قسم توليد+نشر بالجملة، منتجات سلة فقط (publish.js يدعم سلة حالياً)
-      renderStoreContent(storeId, data.products || []);
-    })();
-
-    function renderStoreContent(storeId, sallaProducts) {
-      const section = document.getElementById("store-content");
-      const list = document.getElementById("store-content-list");
-      const empty = document.getElementById("store-content-empty");
-      if (!section) return;
-      section.style.display = "block";
-
-      if (!sallaProducts.length) {
-        empty.style.display = "block";
-        return;
-      }
-
-      list.innerHTML = sallaProducts.slice(0, 10).map((p, i) => `
-        <div class="product-row" id="sc-row-${i}" data-product-id="${p.id}" data-product-name="${(p.name || '').replace(/"/g, '&quot;')}" data-product-price="${p.price ?? ''}">
-          <div class="w-11 h-11 rounded-xl bg-teal-100 text-teal-700 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[22px]">inventory_2</span>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-body-md text-[14px] dash-title font-medium truncate">${p.name || '-'}</p>
-            <p class="font-label-sm text-[11px] dash-muted mt-1 sc-desc-preview">اضغط "ولّد وصف" لإنشاء وصف جديد بالذكاء الاصطناعي</p>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <button class="btn-secondary" style="font-size:12px;padding:6px 10px;" onclick="scGenerate(${i})" id="sc-gen-${i}">ولّد وصف</button>
-            <button class="btn-primary-gradient" style="font-size:12px;padding:6px 10px;" onclick="scPublish(${i})" id="sc-pub-${i}" disabled>انشر</button>
-          </div>
-        </div>`).join("");
-    }
-
-    async function scGenerate(i) {
-      const row = document.getElementById("sc-row-" + i);
-      const btn = document.getElementById("sc-gen-" + i);
-      const preview = row.querySelector(".sc-desc-preview");
-      btn.disabled = true;
-      const original = btn.textContent;
-      btn.textContent = "جارٍ التوليد...";
-      try {
-        const storeId = localStorage.getItem("hala_store_id");
-        const res = await fetch("/api/copy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            storeId,
-            name: row.dataset.productName,
-            price: row.dataset.productPrice,
-            tone: "white"
-          })
-        });
-        const data = await res.json();
-        if (data.code === "OUT_OF_CREDITS") {
-          preview.textContent = "⛔ " + data.error;
-          btn.disabled = false; btn.textContent = original;
-          return;
-        }
-        if (!res.ok || !data.result) throw new Error(data.error || "failed");
-        row.dataset.generatedDescription = data.result;
-        preview.textContent = data.result;
-        document.getElementById("sc-pub-" + i).disabled = false;
-      } catch (err) {
-        preview.textContent = "❌ تعذر التوليد، حاول مرة ثانية.";
-      }
-      btn.disabled = false; btn.textContent = original;
-    }
-
-    async function scPublish(i) {
-      const row = document.getElementById("sc-row-" + i);
-      const btn = document.getElementById("sc-pub-" + i);
-      const description = row.dataset.generatedDescription;
-      if (!description) return;
-      btn.disabled = true;
-      const original = btn.textContent;
-      btn.textContent = "جارٍ النشر...";
-      try {
-        const storeId = localStorage.getItem("hala_store_id");
-        const res = await fetch("/api/store/publish", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ storeId, productId: row.dataset.productId, description })
-        });
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || "failed");
-        btn.textContent = "✓ نُشر";
-        return;
-      } catch (err) {
-        btn.textContent = "❌ فشل النشر";
-        setTimeout(() => { btn.disabled = false; btn.textContent = original; }, 2000);
-      }
-    }
-
-    // حالة الحساب، بريد الحساب + خروج، أو دعوة تسجيل مجانية
-    (async function loadAccountStatus() {
-      const widget = document.getElementById("account-status-widget");
-      if (!widget) return;
-      let data = { loggedIn: false };
-      try {
-        const res = await fetch("/api/auth/me", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-        data = await res.json();
-      } catch (e) { /* static demo، show anonymous state below */ }
-
-      if (data.loggedIn) {
-        widget.innerHTML = `
-          <div class="flex items-center justify-between gap-2 rounded-lg bg-primary/5 px-3 py-2">
-            <div class="min-w-0">
-              <p class="font-label-sm text-[11px] dash-title font-semibold truncate">${data.email || ''}</p>
-              <p class="font-label-sm text-[10px] dash-muted">${data.usage ? data.usage.remaining + '/' + data.usage.limit + ' رصيد اليوم' : ''}</p>
-            </div>
-            <button class="font-label-sm text-[11px] text-primary hover:underline shrink-0" onclick="hala_logout()">خروج</button>
-          </div>`;
-      } else {
-        widget.innerHTML = `
-          <a href="login.html" class="flex items-center justify-between gap-2 rounded-lg bg-primary/5 px-3 py-2 hover:bg-primary/10 transition-colors">
-            <span class="font-label-sm text-[11px] dash-title font-semibold">🎁 سجّل مجاناً، رصيدك الخاص ٥٠/يوم</span>
-            <span class="material-symbols-outlined text-[16px] text-primary">arrow_back</span>
-          </a>`;
-      }
-    })();
-
-    async function hala_logout() {
-      try { await fetch("/api/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }); } catch (e) {}
-      try { localStorage.removeItem("hala_store_id"); localStorage.removeItem("hala_account_email"); } catch (e) {}
-      window.location.href = "login.html";
-    }
   </script>
 </body>
 </html>

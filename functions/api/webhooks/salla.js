@@ -11,7 +11,7 @@
 //   app.installed       → upsert merchant
 //   abandoned.cart      → store cart for the WhatsApp recovery feature
 //   order.created       → log (dashboard feed reads webhook_log for now)
-import { upsertMerchantFromSalla, saveTokens, logWebhook, saveAbandonedCart } from "../../_lib/db.js";
+import { upsertMerchantFromSalla, saveTokens, logWebhook, saveAbandonedCart } from "../../_lib/core/db.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {

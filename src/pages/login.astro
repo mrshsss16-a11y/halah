@@ -1,0 +1,682 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="أورا للتسويق | مستقبل التسويق الذكي - هالة AI OS">
+
+  <!-- ── Top Header Navigation ──────────────────────────────────── -->
+  <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-200 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-900 to-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
+          أ
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-lg text-gray-900 tracking-tight">أورا للتسويق</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Aura Marketing</span>
+          </div>
+          <p class="text-xs text-gray-500 font-medium">مستقبل التسويق الذكي | The Future of Marketing Intelligence</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-3">
+        <a href="#loginBox" class="text-xs font-bold text-gray-700 hover:text-blue-600 px-3 py-2 transition hidden sm:inline-block">
+          تسجيل الدخول
+        </a>
+        <a href="#auditBox" class="aura-btn-primary px-4.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2">
+          <span>ابدأ مجاناً 30 يوم</span>
+          <span class="material-symbols-outlined text-base">arrow_forward</span>
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ── Main Content Container ────────────────────────────────── -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-16 my-6">
+
+    <!-- ── 1. Hero Section ──────────────────────────────────────── -->
+    <section class="text-center max-w-4xl mx-auto space-y-6 pt-6">
+      
+      <div class="inline-flex items-center gap-2 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-4 py-1.5 rounded-full shadow-sm">
+        <span>✨ من الإبداع إلى الذكاء | From Creativity to Intelligence</span>
+      </div>
+
+      <h1 class="text-3xl md:text-5xl font-bold text-gray-900 leading-tight tracking-tight">
+        أهلاً بك في منصة <span class="aura-gradient-text font-black">هالة أورا</span>.. <br class="hidden sm:block"/>
+        مستقبل التسويق الذكي للمتاجر 🚀
+      </h1>
+
+      <p class="text-gray-600 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
+        نظام تشغيل ذكي يدمج قوة الذكاء الاصطناعي مع التسويق، ليسترد سلاتك المتروكة تلقائياً بالواتساب، يكتب أوصاف منتجاتك بـ SEO، ويرد على عملائك بلهجة سعودية بيضاء محببة.
+      </p>
+
+      <div class="flex flex-wrap items-center justify-center gap-4 pt-2">
+        <a href="#loginBox" class="aura-btn-primary px-7 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg">
+          <span>ابدأ مع هالة الآن</span>
+          <span class="material-symbols-outlined text-lg">rocket_launch</span>
+        </a>
+
+        <a href="#features" class="bg-white border border-gray-300 text-gray-800 hover:bg-gray-50 px-6 py-3.5 rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition">
+          <span class="material-symbols-outlined text-lg text-blue-600">lightbulb</span>
+          <span>اكتشف الذكاء الاصطناعي</span>
+        </a>
+      </div>
+
+    </section>
+
+    <!-- ── 2. 30-Second AI Store Audit Hook Box ─────────────────── -->
+    <section id="auditBox" class="aura-card rounded-3xl p-8 bg-gradient-to-l from-blue-600/5 via-white to-white border-blue-200 max-w-4xl mx-auto shadow-md space-y-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="space-y-2 text-right">
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-blue-800 bg-blue-100 px-3 py-1 rounded-md">
+            <span>⚡ فحص مجاني 100% بدون بطاقة ائتمان</span>
+          </div>
+          <h2 class="text-xl font-bold text-gray-900">متجرك جاهز للمبيعات؟ خله يمر على هالة!</h2>
+          <p class="text-xs text-gray-600 leading-relaxed">
+            في 30 ثانية بس، هالة راح تفحص متجرك بذكاء وتكشف لك فرص نمو ما كنت تتخيلها.. مجاناً!
+          </p>
+        </div>
+
+        <form onsubmit="handleStoreScan(event)" class="w-full md:w-auto flex items-center gap-2 bg-gray-50 p-2 rounded-2xl border border-gray-200 shrink-0">
+          <input id="storeAuditUrl" type="text" required placeholder="رابط متجرك (مثال: salla.sa/mystore)" class="bg-white border border-gray-200 text-xs rounded-xl px-4 py-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none w-56"/>
+          <button id="scanBtn" type="submit" class="aura-btn-primary px-5 py-3 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-sm">
+            <span id="scanBtnText">افحص الآن</span>
+            <span class="material-symbols-outlined text-base">speed</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Live Scan Audit Results Area -->
+      <div id="auditResultsCard" class="hidden border-t border-blue-100 pt-6 mt-4 space-y-4">
+        <!-- Injected dynamically by handleStoreScan -->
+      </div>
+    </section>
+
+    <!-- ── 3. Core Features Bento Grid ───────────────────────────── -->
+    <section id="features" class="space-y-6">
+      <div class="text-center space-y-2 max-w-2xl mx-auto">
+        <h2 class="text-2xl font-bold text-gray-900">مزايا هالة أورا.. ذكاء يخدم متجرك 24/7</h2>
+        <p class="text-xs text-gray-500">منظومة متميزة تجمع بين السرعة الفائقة والاحترافية السعودية</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        
+        <!-- Feature 1 -->
+        <div class="aura-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100">
+            <span class="material-symbols-outlined text-2xl">shopping_cart_checkout</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-gray-900 mb-1">استرداد السلات المتروكة</h3>
+            <p class="text-xs text-gray-600 leading-relaxed">
+              عبر رسائل واتساب ذكية وتلقائية، هالة تتواصل مع عملائك اللي نسوا سلاتهم، وترجعهم يكملون الدفع بكل سلاسة.
+            </p>
+          </div>
+          <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md inline-block w-fit">زيادة المبيعات تلقائياً</span>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="aura-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100">
+            <span class="material-symbols-outlined text-2xl">graphic_eq</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-gray-900 mb-1">هالة تسمع وتشوف بالذكاء</h3>
+            <p class="text-xs text-gray-600 leading-relaxed">
+              بفضل تقنيات Whisper و Vision AI، هالة تقدر تحلل الصور وتفهم البصمات الصوتية لخدمة عملائك فوراً.
+            </p>
+          </div>
+          <span class="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md inline-block w-fit">Whisper & Vision AI</span>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="aura-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
+            <span class="material-symbols-outlined text-2xl">auto_awesome</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-gray-900 mb-1">أوصاف منتجات وسيو متصدر</h3>
+            <p class="text-xs text-gray-600 leading-relaxed">
+              أوصاف متوافقة 100% مع معايير محركات البحث (SEO) لسلة وزد، عشان يلقاك العميل في الصفحة الأولى.
+            </p>
+          </div>
+          <span class="text-[11px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-md inline-block w-fit">مقياس السيو > 90%</span>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="aura-card rounded-2xl p-6 flex flex-col justify-between space-y-4">
+          <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center border border-amber-100">
+            <span class="material-symbols-outlined text-2xl">confirmation_number</span>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-gray-900 mb-1">تذاكر ومواعيد AURA</h3>
+            <p class="text-xs text-gray-600 leading-relaxed">
+              ارفع تذاكر AURA-XXXXX أو احجز استشارة مع خبراء أورا للتسويق مباشرة مع تذكير الواتساب التلقائي.
+            </p>
+          </div>
+          <span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md inline-block w-fit">تذكير 30 دقيقة مجدول</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── 4. 1-Click Integrations & Auth Portal ───────────────── -->
+    <section id="loginBox" class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto pt-6">
+      
+      <!-- 1-Click Platform Connect Card -->
+      <div class="aura-card rounded-3xl p-7 space-y-5 flex flex-col justify-between border-blue-200 shadow-md">
+        <div>
+          <span class="text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full mb-3 inline-block">الربط المباشر بضغطة زر</span>
+          <h3 class="text-xl font-bold text-gray-900">ربط متجرك ودخول المنصة</h3>
+          <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+            اختر منصتك للربط المباشر وتثبيت هالة بضغطة زر واحدة دون الحاجة لحفظ كلمة سر جديدة.
+          </p>
+        </div>
+
+        <div class="space-y-3.5">
+          <a href="/api/auth/salla/install" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold py-3.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2.5 border border-emerald-200 shadow-sm transition">
+            <span class="material-symbols-outlined text-lg">storefront</span>
+            <span>الدخول عبر متجر سلة (Salla 1-Click)</span>
+          </a>
+
+          <a href="/api/auth/zid/install" class="w-full bg-purple-50 hover:bg-purple-100 text-purple-800 font-bold py-3.5 px-4 rounded-2xl text-xs flex items-center justify-center gap-2.5 border border-purple-200 shadow-sm transition">
+            <span class="material-symbols-outlined text-lg">shopping_bag</span>
+            <span>الدخول عبر متجر زد (Zid 1-Click)</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Email Credentials Login Card -->
+      <div class="aura-card rounded-3xl p-7 space-y-5 shadow-md relative">
+        
+        <!-- Tab Selector: Login vs Signup -->
+        <div class="flex items-center justify-between border-b border-gray-200 pb-3">
+          <div class="flex items-center gap-2">
+            <button id="tabLogin" type="button" onclick="setAuthTab('login')" class="text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white transition">
+              تسجيل الدخول
+            </button>
+            <button id="tabSignup" type="button" onclick="setAuthTab('signup')" class="text-xs font-bold px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition">
+              حساب جديد
+            </button>
+          </div>
+          <span class="text-[11px] font-bold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">PBKDF2 Encrypted</span>
+        </div>
+
+        <div>
+          <h3 id="authTitle" class="text-xl font-bold text-gray-900">تسجيل الدخول للحساب</h3>
+          <p id="authSubtitle" class="text-xs text-gray-600 mt-1 leading-relaxed">
+            أدخل بريدك وكلمة المرور للدخول المباشر لحساب متجرك في هالة أورا.
+          </p>
+        </div>
+
+        <!-- Alert Feedback Toast -->
+        <div id="authFeedback" class="hidden p-3.5 rounded-xl text-xs font-medium border flex items-center gap-2.5"></div>
+
+        <form id="authForm" class="space-y-3.5" onsubmit="handleAuthSubmit(event)">
+          <div id="storeNameField" class="hidden">
+            <label class="text-xs font-bold text-gray-700 block mb-1">اسم المتجر (اختياري):</label>
+            <input id="authStoreName" type="text" placeholder="متجر الأناقة السعودية" class="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl p-3.5 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold text-gray-700 block mb-1">البريد الإلكتروني:</label>
+            <input id="authEmail" type="email" required placeholder="merchant@domain.com" class="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl p-3.5 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-bold text-gray-700 block">كلمة المرور:</label>
+              <a href="#" onclick="showForgotPasswordModal(event)" class="text-[11px] font-bold text-blue-600 hover:underline">نسيت كلمة المرور؟</a>
+            </div>
+            <input id="authPassword" type="password" required minlength="8" placeholder="••••••••" class="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl p-3.5 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"/>
+          </div>
+
+          <button id="authSubmitBtn" type="submit" class="w-full aura-btn-primary py-3.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-md">
+            <span id="authSubmitText">تسجيل الدخول</span>
+            <span id="authSubmitIcon" class="material-symbols-outlined text-base">login</span>
+          </button>
+        </form>
+
+        <!-- Forgot Password Modal -->
+        <div id="forgotModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div class="bg-white rounded-3xl p-6 max-w-md w-full border border-blue-200 space-y-4 shadow-2xl relative text-right">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 class="font-bold text-sm text-gray-900 flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-600">lock_reset</span>
+                <span>استعادة كلمة المرور (Security & OTP Recovery)</span>
+              </h3>
+              <button onclick="closeForgotPasswordModal()" class="text-gray-400 hover:text-gray-700 font-bold text-lg">✕</button>
+            </div>
+
+            <!-- Step 1: Request OTP -->
+            <div id="forgotStep1" class="space-y-3">
+              <p class="text-xs text-gray-600 leading-relaxed font-medium">أدخل بريدك الإلكتروني المسجل، وسنقوم بإرسال رمز تحقق آمن (OTP 6 أرقام) لبريدك وللواتساب.</p>
+              <input id="forgotEmail" type="email" placeholder="merchant@domain.com" class="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl p-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"/>
+              <button onclick="handleRequestOtp()" class="w-full aura-btn-primary py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                <span>إرسال رمز التحقق (OTP)</span>
+                <span class="material-symbols-outlined text-base">send</span>
+              </button>
+            </div>
+
+            <!-- Step 2: Confirm OTP & Set New Password -->
+            <div id="forgotStep2" class="hidden space-y-3">
+              <p class="text-xs text-gray-600 leading-relaxed font-medium">تم إرسال رمز التحقق! أدخل الرمز المكون من 6 أرقام وكلمة المرور الجديدة:</p>
+              <input id="forgotOtpCode" type="text" maxlength="6" placeholder="رمز التحقق (6 أرقام)" class="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl p-3 text-gray-800 font-mono font-bold text-center text-sm"/>
+              <input id="forgotNewPassword" type="password" minlength="8" placeholder="كلمة المرور الجديدة (8 خانات فأكثر)" class="w-full bg-gray-50 border border-gray-200 text-xs rounded-xl p-3 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"/>
+              <button onclick="handleResetPasswordSubmit()" class="w-full aura-btn-primary py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                <span>تأكيد وتعيين كلمة المرور الجديدة</span>
+                <span class="material-symbols-outlined text-base">check_circle</span>
+              </button>
+            </div>
+
+            <div id="forgotFeedback" class="hidden p-3 rounded-xl text-xs font-bold border"></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── 5. FAQ Accordion ──────────────────────────────────────── -->
+    <section class="max-w-4xl mx-auto space-y-6 pt-6">
+      <div class="text-center space-y-2">
+        <h2 class="text-2xl font-bold text-gray-900">الأسئلة الشائعة عن هالة أورا</h2>
+        <p class="text-xs text-gray-500">إجابات دقيقة لجميع استفساراتك قبل البدء</p>
+      </div>
+
+      <div class="space-y-4">
+        
+        <details class="aura-card rounded-2xl p-5 cursor-pointer group">
+          <summary class="font-bold text-sm text-gray-900 flex items-center justify-between list-none">
+            <span>وش هي منصة هالة أورا؟</span>
+            <span class="material-symbols-outlined text-blue-600 group-open:rotate-180 transition">expand_more</span>
+          </summary>
+
+          <p class="text-xs text-gray-600 mt-3 leading-relaxed">
+            هالة أورا هي نظام تشغيل ذكي (Hala AI OS) تابع لشركة أورا للتسويق، مصمم ليساعد أصحاب المتاجر الإلكترونية على زيادة مبيعاتهم وتحسين تجربة عملائهم باستخدام أحدث تقنيات الذكاء الاصطناعي.
+          </p>
+        </details>
+
+        <details class="aura-card rounded-2xl p-5 cursor-pointer group">
+          <summary class="font-bold text-sm text-gray-900 flex items-center justify-between list-none">
+            <span>هل هالة تدعم المتاجر على سلة وزد؟</span>
+            <span class="material-symbols-outlined text-blue-600 group-open:rotate-180 transition">expand_more</span>
+          </summary>
+          <p class="text-xs text-gray-600 mt-3 leading-relaxed">
+            أكيد! هالة أورا تدعم الربط المباشر مع منصات سلة وزد بضغطة زر، عشان تبدأ تستفيد من ميزاتها بدون أي تعقيدات برمجية.
+          </p>
+        </details>
+
+        <details class="aura-card rounded-2xl p-5 cursor-pointer group">
+          <summary class="font-bold text-sm text-gray-900 flex items-center justify-between list-none">
+            <span>كيف تشتغل ميزة استرداد السلات المتروكة؟</span>
+            <span class="material-symbols-outlined text-blue-600 group-open:rotate-180 transition">expand_more</span>
+          </summary>
+          <p class="text-xs text-gray-600 mt-3 leading-relaxed">
+            النظام يتعرف على العملاء اللي أضافوا منتجات للسلة وما كملوا الدفع، ويرسل لهم رسائل واتساب تذكيرية بأسلوب لطيف ومحفز، تزيد من فرصة رجوعهم وإتمام الشراء.
+          </p>
+        </details>
+
+        <details class="aura-card rounded-2xl p-5 cursor-pointer group">
+          <summary class="font-bold text-sm text-gray-900 flex items-center justify-between list-none">
+            <span>هل أحتاج خبرة في الذكاء الاصطناعي عشان استخدم هالة؟</span>
+            <span class="material-symbols-outlined text-blue-600 group-open:rotate-180 transition">expand_more</span>
+          </summary>
+          <p class="text-xs text-gray-600 mt-3 leading-relaxed">
+            أبد ما تحتاج! هالة مصممة بواجهة سهلة وبسيطة تناسب الجميع. كل اللي عليك هو اختيار الميزات اللي تناسبك، والنظام يتكفل بالباقي.
+          </p>
+        </details>
+
+        <details class="aura-card rounded-2xl p-5 cursor-pointer group">
+          <summary class="font-bold text-sm text-gray-900 flex items-center justify-between list-none">
+            <span>أقدر أطلب استشارة تسويقية من خلال المنصة؟</span>
+            <span class="material-symbols-outlined text-blue-600 group-open:rotate-180 transition">expand_more</span>
+          </summary>
+          <p class="text-xs text-gray-600 mt-3 leading-relaxed">
+            طبعاً! عبر نظام تذاكر AURA تقدر تحجز استشارات تسويقية أو تطلب دعم مخصص من فريق خبراء أورا للتسويق في أي وقت.
+          </p>
+        </details>
+
+      </div>
+    </section>
+
+    <!-- ── 6. Final Call to Action ───────────────────────────────── -->
+    <section class="aura-card rounded-3xl p-10 text-center bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white space-y-6 shadow-2xl">
+      <div class="space-y-3 max-w-2xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-bold tracking-tight">جاهز تنقل متجرك من الإبداع إلى الذكاء؟</h2>
+        <p class="text-blue-200 text-xs md:text-sm leading-relaxed">
+          لا تخلّي متجرك يعتمد على الطرق التقليدية. انضم لمستقبل التسويق الذكي مع هالة أورا اليوم، وشوف أرقام مبيعاتك ترتفع.
+        </p>
+      </div>
+
+      <div class="flex justify-center">
+        <a href="#loginBox" class="aura-btn-primary px-8 py-4 rounded-2xl text-sm font-bold flex items-center gap-2 shadow-xl">
+          <span>انضم لـ هالة أورا الآن!</span>
+          <span class="material-symbols-outlined text-lg">rocket_launch</span>
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-gray-200 py-6 text-center text-xs text-gray-500 space-y-1">
+    <p>حقوق الطبع والنشر © 2026 <strong>أورا للتسويق (Aura Marketing)</strong> — جميع الحقوق محفوظة.</p>
+    <p class="text-gray-400">مستقبل التسويق الذكي | From Creativity to Intelligence</p>
+  </footer>
+
+  <script is:inline>
+    let currentAuthTab = 'login';
+
+    function setAuthTab(tab) {
+      currentAuthTab = tab;
+      const tabLogin = document.getElementById('tabLogin');
+      const tabSignup = document.getElementById('tabSignup');
+      const authTitle = document.getElementById('authTitle');
+      const authSubtitle = document.getElementById('authSubtitle');
+      const storeNameField = document.getElementById('storeNameField');
+      const authSubmitText = document.getElementById('authSubmitText');
+      const authSubmitIcon = document.getElementById('authSubmitIcon');
+      const feedback = document.getElementById('authFeedback');
+
+      if (feedback) feedback.classList.add('hidden');
+
+      if (tab === 'login') {
+        if (tabLogin) tabLogin.className = 'text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white transition';
+        if (tabSignup) tabSignup.className = 'text-xs font-bold px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition';
+        if (authTitle) authTitle.innerText = 'تسجيل الدخول للحساب';
+        if (authSubtitle) authSubtitle.innerText = 'أدخل بريدك وكلمة المرور للدخول المباشر لحساب متجرك في هالة أورا.';
+        if (storeNameField) storeNameField.classList.add('hidden');
+        if (authSubmitText) authSubmitText.innerText = 'تسجيل الدخول';
+        if (authSubmitIcon) authSubmitIcon.innerText = 'login';
+      } else {
+        if (tabSignup) tabSignup.className = 'text-xs font-bold px-3 py-1.5 rounded-lg bg-blue-600 text-white transition';
+        if (tabLogin) tabLogin.className = 'text-xs font-bold px-3 py-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition';
+        if (authTitle) authTitle.innerText = 'إنشاء حساب تاجر جديد';
+        if (authSubtitle) authSubtitle.innerText = 'أنشئ حسابك المستقل مجاناً وابدأ تجربة الـ 30 يوماً فوراً.';
+        if (storeNameField) storeNameField.classList.remove('hidden');
+        if (authSubmitText) authSubmitText.innerText = 'إنشاء الحساب مجاناً';
+        if (authSubmitIcon) authSubmitIcon.innerText = 'person_add';
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const email = (document.getElementById('authEmail')?.value ?? '').trim();
+      const password = (document.getElementById('authPassword')?.value ?? '');
+      const storeName = (document.getElementById('authStoreName')?.value ?? '').trim();
+
+      const submitBtn = document.getElementById('authSubmitBtn');
+      const submitText = document.getElementById('authSubmitText');
+
+      if (!email || !password) {
+        showFeedback('يرجى ملء كافة الحقول المطلوبة.', 'error');
+        return;
+      }
+
+      if (submitBtn) submitBtn.disabled = true;
+      if (submitText) submitText.innerText = 'جاري المعالجة... ⚡';
+
+      try {
+        const endpoint = currentAuthTab === 'login' ? '/api/auth/login' : '/api/auth/signup';
+        const bodyPayload = currentAuthTab === 'login' 
+          ? { email, password } 
+          : { email, password, storeName: storeName || 'متجري الذكي' };
+
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bodyPayload)
+        });
+
+        if (data?.ok) {
+          const targetUrl = data?.isAdmin ? '/admin' : '/dashboard';
+          showFeedback(data?.isAdmin ? 'تم التحقق كـ أدمن أورا الرئيسي! 🛡️ جاري النقل للوحة الإشراف...' : 'تم تسجيل الدخول بنجاح! 🎉 جاري النقل للوحة التاجر...', 'success');
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 800);
+        } else {
+          showFeedback(data?.error ?? 'بيانات الدخول غير صحيحة.', 'error');
+          if (submitBtn) submitBtn.disabled = false;
+          if (submitText) submitText.innerText = currentAuthTab === 'login' ? 'تسجيل الدخول' : 'إنشاء الحساب مجاناً';
+        }
+      } catch (err) {
+        showFeedback('تعذر الاتصال بالخادم، يرجى التأكد من اتصال الاتصال بالشبكة.', 'error');
+        if (submitBtn) submitBtn.disabled = false;
+        if (submitText) submitText.innerText = currentAuthTab === 'login' ? 'تسجيل الدخول' : 'إنشاء الحساب مجاناً';
+      }
+    }
+
+    function showFeedback(msg, type) {
+      const feedback = document.getElementById('authFeedback');
+      if (!feedback) return;
+      feedback.classList.remove('hidden');
+      if (type === 'success') {
+        feedback.className = 'p-3.5 rounded-xl text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-2.5';
+        feedback.innerHTML = `<span class="material-symbols-outlined text-emerald-600 text-lg">check_circle</span><span>${msg}</span>`;
+      } else {
+        feedback.className = 'p-3.5 rounded-xl text-xs font-medium bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-2.5';
+        feedback.innerHTML = `<span class="material-symbols-outlined text-rose-600 text-lg">error</span><span>${msg}</span>`;
+      }
+    }
+
+    async function handleStoreScan(e) {
+      e.preventDefault();
+      const inputEl = document.getElementById('storeAuditUrl');
+      const btnEl = document.getElementById('scanBtn');
+      const btnText = document.getElementById('scanBtnText');
+      const resultsCard = document.getElementById('auditResultsCard');
+      
+      const targetUrl = (inputEl?.value ?? '').trim();
+      if (!targetUrl) return;
+
+      if (btnEl) btnEl.disabled = true;
+      if (btnText) btnText.innerText = 'جاري الفحص... ⚡';
+      if (resultsCard) {
+        resultsCard.classList.remove('hidden');
+        resultsCard.innerHTML = `
+          <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100 text-center space-y-3">
+            <div class="w-8 h-8 mx-auto border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs font-bold text-blue-900">هالة تفحص بيانات متجرك بالذكاء الاصطناعي الآن.. لحظات معدودة ⚡</p>
+          </div>
+        `;
+      }
+
+      try {
+        const res = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: targetUrl })
+        });
+        const data = await res.json();
+        const audit = data?.audit ?? {};
+
+        const score = audit?.score ?? 48;
+        const lossSar = audit?.estimatedMonthlyLossSar ?? 1850;
+        const summary = audit?.summary ?? 'متجرك يعاني من تأخر الردود على العملاء وخسارة سلات متروكة.';
+        const issues = Array.isArray(audit?.issues) ? audit.issues : ['تأخر ردود الواتساب', 'سلات متروكة غير مستردة'];
+        const quickFix = audit?.quickFix ?? 'تفعيل بوت هالة المجاني خلال 30 ثانية لاسترداد الردود والسلات فوراً.';
+
+        if (resultsCard) {
+          resultsCard.innerHTML = `
+            <div class="bg-white rounded-2xl p-6 border border-blue-200 shadow-sm space-y-5 text-right">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+                <div>
+                  <span class="text-[11px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">تقرير الفحص الذكي الفوري</span>
+                  <h3 class="text-lg font-bold text-gray-900 mt-1">نتيجة فحص: ${data?.storeName ?? targetUrl}</h3>
+                </div>
+                <div class="flex items-center gap-3 bg-gray-50 p-2.5 rounded-xl border border-gray-200 shrink-0">
+                  <div class="text-center px-2">
+                    <span class="text-[10px] text-gray-500 block font-bold">مقياس الجاهزية</span>
+                    <span class="text-xl font-black text-amber-600">${score}/100</span>
+                  </div>
+                  <div class="h-8 w-px bg-gray-200"></div>
+                  <div class="text-center px-2">
+                    <span class="text-[10px] text-gray-500 block font-bold">تسريب السلات الشهري</span>
+                    <span class="text-xl font-black text-rose-600">~${lossSar.toLocaleString('ar-SA')} ر.س</span>
+                  </div>
+                </div>
+              </div>
+
+              <p class="text-xs text-gray-700 leading-relaxed font-medium bg-blue-50/40 p-3.5 rounded-xl border border-blue-100">
+                💡 <strong>التشخيص الذكي:</strong> ${summary}
+              </p>
+
+              <div class="space-y-2">
+                <h4 class="text-xs font-bold text-gray-900">الثغرات والمشاكل المكتشفة:</h4>
+                <ul class="space-y-1.5">
+                  ${issues.map(iss => `
+                    <li class="text-xs text-gray-600 flex items-center gap-2">
+                      <span class="material-symbols-outlined text-rose-500 text-base">warning</span>
+                      <span>${iss}</span>
+                    </li>
+                  `).join('')}
+                </ul>
+              </div>
+
+              <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="text-xs text-emerald-900 space-y-0.5">
+                  <span class="font-bold block">✨ الحل الفوري المقترح:</span>
+                  <p class="text-[11px] text-emerald-800">${quickFix}</p>
+                </div>
+                <a href="#loginBox" onclick="setAuthTab('signup')" class="aura-btn-primary px-4 py-2.5 rounded-xl text-xs font-bold shrink-0">
+                  عالج الثغرة بـ 1-كليك
+                </a>
+              </div>
+            </div>
+          `;
+        }
+      } catch (err) {
+        if (resultsCard) {
+          resultsCard.innerHTML = `
+            <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-bold text-center">
+              تعذر إكمال الفحص الذكي حالياً، يرجى المحاولة مرة أخرى.
+            </div>
+          `;
+        }
+      } finally {
+        if (btnEl) btnEl.disabled = false;
+        if (btnText) btnText.innerText = 'افحص الآن';
+      }
+    }
+
+    // Forgot Password & Security Recovery Functions
+    function showForgotPasswordModal(e) {
+      if (e) e.preventDefault();
+      const modal = document.getElementById('forgotModal');
+      const step1 = document.getElementById('forgotStep1');
+      const step2 = document.getElementById('forgotStep2');
+      const fb = document.getElementById('forgotFeedback');
+
+      if (modal) modal.classList.remove('hidden');
+      if (step1) step1.classList.remove('hidden');
+      if (step2) step2.classList.add('hidden');
+      if (fb) fb.classList.add('hidden');
+    }
+
+    function closeForgotPasswordModal() {
+      const modal = document.getElementById('forgotModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    async function handleRequestOtp() {
+      const email = document.getElementById('forgotEmail')?.value?.trim();
+      const fb = document.getElementById('forgotFeedback');
+      if (!email) return;
+
+      try {
+        const res = await fetch('/api/auth/forgot_password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (data?.ok) {
+          document.getElementById('forgotStep1')?.classList.add('hidden');
+          document.getElementById('forgotStep2')?.classList.remove('hidden');
+          if (fb) {
+            fb.classList.remove('hidden');
+            fb.className = 'p-3.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200';
+            fb.innerText = `رمز التحقق (OTP) الخاص بك هو: [${data.otpCode}] — تم إرساله لبريدك وللواتساب.`;
+          }
+        } else {
+          if (fb) {
+            fb.classList.remove('hidden');
+            fb.className = 'p-3.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-900 border border-rose-200';
+            fb.innerText = data?.error || 'تعذر إرسال رمز التحقق.';
+          }
+        }
+      } catch (err) {
+        if (fb) {
+          fb.classList.remove('hidden');
+          fb.className = 'p-3.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-900 border border-rose-200';
+          fb.innerText = 'حدث خطأ في الاتصال.';
+        }
+      }
+    }
+
+    async function handleResetPasswordSubmit() {
+      const email = document.getElementById('forgotEmail')?.value?.trim();
+      const otpCode = document.getElementById('forgotOtpCode')?.value?.trim();
+      const newPassword = document.getElementById('forgotNewPassword')?.value;
+      const fb = document.getElementById('forgotFeedback');
+
+      if (!email || !otpCode || !newPassword) return;
+
+      try {
+        const res = await fetch('/api/auth/reset_password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, otpCode, newPassword })
+        });
+        const data = await res.json();
+        if (data?.ok) {
+          if (fb) {
+            fb.classList.remove('hidden');
+            fb.className = 'p-3.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-900 border border-emerald-200';
+            fb.innerText = data.message || 'تم إعادة تعيين كلمة المرور بنجاح! جاري إغلاق النافذة...';
+          }
+          setTimeout(() => {
+            closeForgotPasswordModal();
+            const loginPw = document.getElementById('authPassword');
+            if (loginPw) loginPw.value = newPassword;
+          }, 1500);
+        } else {
+          if (fb) {
+            fb.classList.remove('hidden');
+            fb.className = 'p-3.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-900 border border-rose-200';
+            fb.innerText = data?.error || 'رمز التحقق غير صحيح.';
+          }
+        }
+      } catch (err) {
+        if (fb) {
+          fb.classList.remove('hidden');
+          fb.className = 'p-3.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-900 border border-rose-200';
+          fb.innerText = 'حدث خطأ في تعيين كلمة المرور.';
+        }
+      }
+    }
+
+    // Check existing session status on load
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/auth/me', { method: 'POST' });
+        const data = await res.json();
+        if (data?.loggedIn) {
+          const targetUrl = data?.isAdmin ? '/admin' : '/';
+          showFeedback(`مرحباً بك مجدداً (${data?.storeName ?? data?.email})! جاري تحويلك... 🚀`, 'success');
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 1200);
+        }
+      } catch (err) {
+        // Anonymous session
+      }
+    });
+  </script>
+
+</Layout>

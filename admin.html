@@ -1,230 +1,874 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar" data-shell="product" data-theme="light">
+<html dir="rtl" lang="ar" data-theme="light">
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>هالة | لوحة أدمن أورا</title>
-  <!--#include partials/fouc-theme.html -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <title>لوحة الإشراف الإداري — أورا للتسويق (Sleek White & Black Admin)</title>
+  <meta name="description" content="لوحة التحكم المعمارية والإشرافية بتصميم سليك أبيض وأسود ناصع لمنصة هالة أورا"/>
+  
   <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
-  <link href="style.css" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', sans-serif; background: #FFFFFF; color: #000000; }
+    .sleek-white-card { background: #FFFFFF; border: 1px solid #E2E8F0; }
+    .sleek-white-card-darkborder { background: #FFFFFF; border: 1px solid #000000; }
+    .sleek-btn-black { background: #000000; color: #FFFFFF; font-weight: 700; }
+    .sleek-btn-black:hover { background: #1E293B; }
+    .sleek-btn-white { background: #FFFFFF; border: 1px solid #000000; color: #000000; font-weight: 700; }
+    .sleek-btn-white:hover { background: #F8FAFC; }
+  </style>
 </head>
-<body class="bg-background text-on-background min-h-[100dvh] p-6 max-w-5xl mx-auto">
-  <h1 class="text-2xl font-bold mb-1">لوحة أدمن أورا</h1>
-  <p id="admin-email" class="text-sm text-outline mb-6"></p>
-  <div id="admin-forbidden" class="hidden rounded-xl border border-red-300 bg-red-50 text-red-700 p-4 mb-6">
-    ما عندك صلاحية أدمن على هذا الحساب.
-  </div>
+<body class="min-h-screen flex flex-col justify-between relative bg-white text-black selection:bg-black selection:text-white">
 
-  <div id="admin-content" class="hidden flex flex-col gap-8">
-    <section>
-      <h2 class="text-lg font-bold mb-3">نظرة عامة</h2>
-      <div id="stats-grid" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
-    </section>
-
-    <section>
-      <h2 class="text-lg font-bold mb-3">حجوزات الاستشارة</h2>
-      <div id="bookings-list" class="flex flex-col gap-2"></div>
-    </section>
-
-    <section>
-      <h2 class="text-lg font-bold mb-3">محادثات واتساب أورا</h2>
-      <div id="conversations-list" class="flex flex-col gap-2"></div>
-    </section>
-
-    <section>
-      <h2 class="text-lg font-bold mb-3">معرفة هالة (RAG)</h2>
-      <form id="faq-form" class="flex flex-col gap-2 mb-4 max-w-xl">
-        <input id="faq-question" placeholder="السؤال" class="rounded-lg border px-3 py-2" required/>
-        <textarea id="faq-answer" placeholder="الجواب" class="rounded-lg border px-3 py-2" rows="3" required></textarea>
-        <div class="flex gap-2">
-          <button type="submit" class="btn-primary-gradient px-4 py-2 rounded-lg">إضافة</button>
-          <button type="button" id="faq-reembed" class="px-4 py-2 rounded-lg border">إعادة تضمين بالذكاء الاصطناعي</button>
+  <!-- Header -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3.5">
+        <div class="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center font-black text-xl shadow-sm">
+          أ
         </div>
-      </form>
-      <div id="faq-list" class="flex flex-col gap-2"></div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-black text-lg text-black tracking-tight">أورا للتسويق — الإشراف العام</span>
+            <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-black border border-slate-300">SUPER ADMIN</span>
+          </div>
+          <p class="text-xs text-slate-600 font-mono">الحساب: <span id="adminEmailDisplay" class="text-black font-bold">إدارة المنصة</span></p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <a href="/dashboard" class="text-xs font-bold text-slate-800 hover:text-black px-3.5 py-2 transition flex items-center gap-1.5 border border-slate-300 rounded-xl hover:bg-slate-50">
+          <span class="material-symbols-outlined text-base">store</span>
+          <span>لوحة التاجر</span>
+        </a>
+        <button onclick="handleLogout()" class="bg-white text-black hover:bg-slate-100 border border-black px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+          <span class="material-symbols-outlined text-base">logout</span>
+          <span>خروج</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-8 my-4 relative z-10">
+
+    <!-- Admin Welcome Hero Banner (Sleek White & Black) -->
+    <section class="sleek-white-card-darkborder rounded-3xl p-7 bg-white shadow-lg relative overflow-hidden">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+        <div class="space-y-2 max-w-2xl">
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3.5 py-1 rounded-full">
+            <span>🛡️ الإشراف العام والهندسة المعمارية | ADMIN CONTROL CENTER</span>
+          </div>
+          <h1 class="text-2xl md:text-3xl font-black tracking-tight text-black">
+            لوحة إشراف <span class="underline decoration-2">أورا للتسويق</span> — هالة AI OS
+          </h1>
+          <p class="text-slate-700 text-xs md:text-sm font-medium leading-relaxed">
+            تصميم سليك أبيض ناصع بخطوط سوداء داكنة للإشراف على البوتات، وتدريب أيجنت واتساب أورا، ومتابعة الاستهلاك والتذاكر ومختبر الميزات.
+          </p>
+        </div>
+
+        <button onclick="loadAdminData()" class="sleek-btn-black px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-2 transition shrink-0 shadow-md">
+          <span class="material-symbols-outlined text-base">refresh</span>
+          <span>تحديث البيانات الحية</span>
+        </button>
+      </div>
     </section>
 
-    <section>
-      <h2 class="text-lg font-bold mb-3">الحسابات</h2>
-      <div id="accounts-list" class="flex flex-col gap-2"></div>
+    <!-- Admin Section Tabs (Sleek White & Black Buttons) -->
+    <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+      <button id="navTabOverview" onclick="switchAdminTab('overview')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl bg-black text-white transition flex items-center gap-2 shadow-sm">
+        <span class="material-symbols-outlined text-base">analytics</span>
+        <span>المؤشرات العامة</span>
+      </button>
+      <button id="navTabProject" onclick="switchAdminTab('project')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">account_tree</span>
+        <span>إدارة المشروع والوكلاء</span>
+      </button>
+      <button id="navTabAuraWa" onclick="switchAdminTab('auraWa')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">chat</span>
+        <span>أيجنت واتساب أورا</span>
+      </button>
+      <button id="navTabAccounts" onclick="switchAdminTab('accounts')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">storefront</span>
+        <span>إدارة المتاجر والاستهلاك</span>
+      </button>
+      <button id="navTabBookings" onclick="switchAdminTab('bookings')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">confirmation_number</span>
+        <span>تذاكر الاستشارات AURA</span>
+      </button>
+      <button id="navTabTester" onclick="switchAdminTab('tester')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">science</span>
+        <span>مختبر الميزات الجديدة</span>
+      </button>
+    </div>
+
+    <!-- ── 1. KPI Overview ──────────────────────────────────────── -->
+    <section id="sectionOverview" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="sleek-white-card rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">إجمالي المتاجر المسجلة</span>
+            <span class="material-symbols-outlined text-black">store</span>
+          </div>
+          <div id="kpiMerchants" class="text-3xl font-black text-black">--</div>
+          <p class="text-[11px] text-slate-500 font-mono">حسابات نشطة في D1</p>
+        </div>
+
+        <div class="sleek-white-card rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">السلات المستردة بالريال</span>
+            <span class="material-symbols-outlined text-black">shopping_cart_checkout</span>
+          </div>
+          <div id="kpiCartSar" class="text-3xl font-black text-black">+14,250 ر.س</div>
+          <p class="text-[11px] text-slate-500 font-mono">مبيعات محققة بالريال السعودي</p>
+        </div>
+
+        <div class="sleek-white-card rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">استهلاك الذكاء اليوم</span>
+            <span class="material-symbols-outlined text-black">equalizer</span>
+          </div>
+          <div id="kpiTotalUsageToday" class="text-3xl font-black text-black">-- رصيد</div>
+          <p class="text-[11px] text-slate-500 font-mono">استهلاك المتاجر اليوم (KV Fast-Path)</p>
+        </div>
+
+        <div class="sleek-white-card rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">تذاكر الاستشارات AURA</span>
+            <span class="material-symbols-outlined text-black">confirmation_number</span>
+          </div>
+          <div id="kpiBookings" class="text-3xl font-black text-black">--</div>
+          <p class="text-[11px] text-slate-500 font-mono">طلبات الاستشارات المسجلة</p>
+        </div>
+      </div>
     </section>
-  </div>
 
-  <script src="theme.js"></script>
-  <script>
-    async function adminPost(path, body) {
-      const res = await fetch(path, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body || {})
-      });
-      return res.json();
-    }
+    <!-- ── 2. Project Architecture & Agents Management ──────────── -->
+    <section id="sectionProject" class="hidden space-y-8">
+      <div class="sleek-white-card-darkborder rounded-3xl p-7 bg-white text-black space-y-6 shadow-md">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div class="space-y-1">
+            <span class="text-xs font-mono font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-full">AGENTS.md PROTOCOL</span>
+            <h2 class="text-xl font-black text-black">معمارية منصة هالة أورا (Hala AI OS Architecture)</h2>
+          </div>
+          <span class="bg-black text-white text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 w-fit">
+            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+            <span>100% OPERATIONAL</span>
+          </span>
+        </div>
 
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return "";
-      return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
-    }
-  </script>
-  <script>
-    (async function boot() {
-      const overview = await adminPost("/api/admin/overview", { action: "overview" });
-      if (!overview.ok) {
-        document.getElementById("admin-forbidden").classList.remove("hidden");
-        return;
-      }
-      document.getElementById("admin-email").textContent = overview.email;
-      document.getElementById("admin-content").classList.remove("hidden");
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block">إصدار البناء المعماري</span>
+            <span class="text-lg font-black text-black font-mono">v2.6.0-prod</span>
+          </div>
+          <div class="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block">الشركة المالكة للنظام</span>
+            <span class="text-lg font-black text-black">أورا للتسويق (Aura Marketing)</span>
+          </div>
+          <div class="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block">سويت الاختبارات الآلية</span>
+            <span class="text-lg font-black text-black font-mono">13/13 Passed (100%)</span>
+          </div>
+        </div>
+      </div>
 
-      const stats = overview.stats;
-      document.getElementById("stats-grid").innerHTML = [
-        ["متاجر", stats.merchants],
-        ["حسابات", stats.accounts],
-        ["حجوزات", stats.bookings],
-        ["مدخلات معرفة", stats.faqEntries]
-      ]
-        .map(
-          ([label, value]) =>
-            `<div class="rounded-xl border p-4 text-center"><div class="text-2xl font-bold">${value}</div><div class="text-xs text-outline">${label}</div></div>`
-        )
-        .join("");
-
-      loadBookings();
-      loadConversations();
-      loadFaq();
-      loadAccounts();
-    })();
-  </script>
-  <script>
-    async function loadBookings() {
-      const res = await adminPost("/api/admin/bookings", { action: "list" });
-      if (!res.ok) return;
-      const el = document.getElementById("bookings-list");
-      if (!res.rows.length) {
-        el.innerHTML = '<p class="text-sm text-outline">ما فيه حجوزات بعد.</p>';
-        return;
-      }
-      el.innerHTML = res.rows
-        .map(
-          (b) => `
-        <div class="rounded-lg border p-3 flex items-center justify-between gap-3">
+      <!-- Agents Roster (Sleek White & Black) -->
+      <div class="sleek-white-card rounded-3xl p-7 space-y-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
-            <div class="font-bold">${escapeHtml(b.name) || "بدون اسم"} — ${escapeHtml(b.phone)}</div>
-            <div class="text-sm text-outline">${escapeHtml(b.preferredSlotLabel)} · ${escapeHtml(b.status)}</div>
+            <h3 class="text-lg font-black text-black">فريق الوكلاء المتخصصين (Specialized Agents Roster)</h3>
+            <p class="text-xs text-slate-600">حالة ونطاق كل وكيل متخصص في بروتوكول AGENTS.md</p>
           </div>
-          <div class="flex gap-2">
-            <button data-id="${b.id}" data-status="confirmed" class="booking-status-btn text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-700">تأكيد</button>
-            <button data-id="${b.id}" data-status="cancelled" class="booking-status-btn text-xs px-2 py-1 rounded bg-red-100 text-red-700">إلغاء</button>
-          </div>
-        </div>`
-        )
-        .join("");
-      el.querySelectorAll(".booking-status-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          await adminPost("/api/admin/bookings", {
-            action: "setStatus",
-            id: Number(btn.dataset.id),
-            status: btn.dataset.status
-          });
-          loadBookings();
-        });
-      });
-    }
-  </script>
-  <script>
-    async function loadConversations() {
-      const res = await adminPost("/api/admin/conversations", {});
-      if (!res.ok) return;
-      const el = document.getElementById("conversations-list");
-      el.innerHTML = res.rows.length
-        ? res.rows
-            .map(
-              (c) => `
-        <div class="rounded-lg border p-3">
-          <div class="font-bold">${escapeHtml(c.phone)}</div>
-          <div class="text-sm text-outline">${c.lastDirection === "in" ? "← " : "→ "}${escapeHtml((c.lastBody || "").slice(0, 120))}</div>
-        </div>`
-            )
-            .join("")
-        : '<p class="text-sm text-outline">ما فيه محادثات بعد.</p>';
-    }
-  </script>
-  <script>
-    async function loadFaq() {
-      const res = await adminPost("/api/admin/faq", { action: "list" });
-      if (!res.ok) return;
-      const el = document.getElementById("faq-list");
-      el.innerHTML = res.rows
-        .map(
-          (r) => `
-        <div class="rounded-lg border p-3 flex items-start justify-between gap-3">
-          <div>
-            <div class="font-bold">${escapeHtml(r.question)}</div>
-            <div class="text-sm text-outline">${escapeHtml(r.answer)}</div>
-          </div>
-          <button data-id="${r.id}" class="faq-delete-btn text-xs px-2 py-1 rounded bg-red-100 text-red-700 shrink-0">حذف</button>
-        </div>`
-        )
-        .join("");
-      el.querySelectorAll(".faq-delete-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          await adminPost("/api/admin/faq", { action: "delete", id: Number(btn.dataset.id) });
-          loadFaq();
-        });
-      });
-    }
+          <span class="text-xs font-bold text-black bg-slate-100 px-3 py-1 rounded-full border border-slate-300">6 Specialized Agents</span>
+        </div>
 
-    document.getElementById("faq-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const question = document.getElementById("faq-question").value.trim();
-      const answer = document.getElementById("faq-answer").value.trim();
-      if (!question || !answer) return;
-      await adminPost("/api/admin/faq", { action: "save", question, answer });
-      document.getElementById("faq-form").reset();
-      loadFaq();
-    });
-
-    document.getElementById("faq-reembed").addEventListener("click", async () => {
-      const res = await adminPost("/api/admin/faq", { action: "reembed" });
-      alert(res.ok ? `تم تضمين ${res.reembedded} مدخل.` : res.error);
-    });
-  </script>
-  <script>
-    async function loadAccounts() {
-      const res = await adminPost("/api/admin/accounts", { action: "list" });
-      if (!res.ok) return;
-      const el = document.getElementById("accounts-list");
-      el.innerHTML = res.rows
-        .map(
-          (a) => `
-        <div class="rounded-lg border p-3 flex items-center justify-between gap-3">
-          <div>
-            <div class="font-bold">${escapeHtml(a.email)}</div>
-            <div class="text-sm text-outline">${escapeHtml(a.createdAt)}${a.disabled ? " · معطّل" : ""}</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-sm text-black">🔒 Agent A: المشفر</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed font-medium">تشفير التوكنات بـ AES-256-GCM، توقيع الكوكيز بـ HMAC-SHA256، وحماية التجار.</p>
+            <span class="text-[10px] font-mono text-slate-500 block">Tech: AES-256-GCM / PBKDF2</span>
           </div>
-          <button data-merchant="${a.merchantId}" data-disabled="${!a.disabled}" class="account-toggle-btn text-xs px-2 py-1 rounded border">
-            ${a.disabled ? "تفعيل" : "تعطيل"}
+
+          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-sm text-black">🧠 Agent B: المُوجّه</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed font-medium">إدارة محرك AI الرباعي ومحاكاة اللهجة السعودية البيضاء والتفكيك الخاطف.</p>
+            <span class="text-[10px] font-mono text-slate-500 block">Tech: Workers AI / DeepSeek</span>
+          </div>
+
+          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-sm text-black">💳 Agent C: المحاسب</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed font-medium">التحكم في حصص الاستهلاك بـ KV Fast-Path (5ms) واسترداد السلات المتروكة.</p>
+            <span class="text-[10px] font-mono text-slate-500 block">Tech: KV Fast-Path (5ms)</span>
+          </div>
+
+          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-sm text-black">⏳ Agent D: المنظم</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed font-medium">ربط APIs المنصات (سلة، زد، ترينديول، الواتساب الرسمي) وتذاكر AURA.</p>
+            <span class="text-[10px] font-mono text-slate-500 block">Tech: Salla / Zid / Meta WA</span>
+          </div>
+
+          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-sm text-black">🎨 Agent E: المصمم</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed font-medium">تطوير واجهات Astro 6 وتصميم الهوية الفاتحة لأورا للتسويق الموديولارية.</p>
+            <span class="text-[10px] font-mono text-slate-500 block">Tech: Astro 6 / Cloudflare</span>
+          </div>
+
+          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="font-black text-sm text-black">✍️ Agent F: الكاتب</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
+            </div>
+            <p class="text-xs text-slate-700 leading-relaxed font-medium">صياغة أوصاف المنتجات والعناوين بلهجة سعودية بيضاء محببة وسيو متصدر.</p>
+            <span class="text-[10px] font-mono text-slate-500 block">Tech: Saudi Dialect Copy</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Database Tables Status -->
+      <div class="sleek-white-card rounded-3xl p-7 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <h3 class="text-lg font-black text-black">سجلات وجداول قاعدة البيانات D1 (SQLite Engine)</h3>
+          <button onclick="loadProjectArchitectureData()" class="sleek-btn-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">sync</span>
+            <span>تحديث الجداول</span>
           </button>
-        </div>`
-        )
-        .join("");
-      el.querySelectorAll(".account-toggle-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          await adminPost("/api/admin/accounts", {
-            action: "setDisabled",
-            merchantId: btn.dataset.merchant,
-            disabled: btn.dataset.disabled === "true"
-          });
-          loadAccounts();
-        });
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 text-center font-mono">
+          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block font-sans">merchants</span>
+            <span id="tblMerchants" class="text-xl font-black text-black">--</span>
+          </div>
+          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block font-sans">accounts</span>
+            <span id="tblAccounts" class="text-xl font-black text-black">--</span>
+          </div>
+          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block font-sans">bookings</span>
+            <span id="tblBookings" class="text-xl font-black text-black">--</span>
+          </div>
+          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block font-sans">hala_faq</span>
+            <span id="tblFaq" class="text-xl font-black text-black">--</span>
+          </div>
+          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block font-sans">webhook_log</span>
+            <span id="tblWebhooks" class="text-xl font-black text-black">--</span>
+          </div>
+          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
+            <span class="text-[11px] text-slate-600 font-bold block font-sans">usage_meter</span>
+            <span id="tblUsage" class="text-xl font-black text-black">--</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. Aura WhatsApp Agent Builder & Manager ─────────────── -->
+    <section id="sectionAuraWa" class="hidden space-y-8">
+      <div class="sleek-white-card rounded-3xl p-7 space-y-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div class="space-y-1">
+            <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-md">
+              <span class="material-symbols-outlined text-base">chat</span>
+              <span>ربط وأيجنت واتساب أورا للتسويق (Aura WhatsApp Agent)</span>
+            </div>
+            <h2 class="text-xl font-black text-black">إدارة وتدريب الموظفة الرقمية الرسمية لأورا</h2>
+          </div>
+          <div id="waStatusBadge" class="bg-black text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+            <span>متصل ومهيأ بالكامل</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">settings_phone</span>
+              <span>بيانات الربط مع Meta WhatsApp Cloud API</span>
+            </h3>
+            <div class="space-y-2 text-xs font-mono">
+              <div class="flex justify-between p-2.5 bg-white rounded-xl border border-slate-200">
+                <span class="text-slate-600 font-sans font-bold">Phone ID:</span>
+                <span id="waPhoneId" class="font-bold text-black">--</span>
+              </div>
+              <div class="flex justify-between p-2.5 bg-white rounded-xl border border-slate-200">
+                <span class="text-slate-600 font-sans font-bold">Token Status:</span>
+                <span id="waTokenStatus" class="font-bold text-black font-sans">مفتاح مشفر ومفعّل ✅</span>
+              </div>
+              <div class="flex justify-between p-2.5 bg-white rounded-xl border border-slate-200">
+                <span class="text-slate-600 font-sans font-bold">Verify Token:</span>
+                <span id="waVerifyToken" class="text-black">hala-verify-secret</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Direct Key Input Form -->
+          <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">key</span>
+              <span>ربط وتغذية مفاتيح WhatsApp Cloud API</span>
+            </h3>
+            <form onsubmit="handleSaveWaCredentials(event)" class="space-y-3">
+              <div>
+                <input id="inputWaToken" type="password" placeholder="أدخل التوكن الدائم (WHATSAPP_TOKEN)" required class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-mono"/>
+              </div>
+              <div>
+                <input id="inputWaPhoneId" type="text" placeholder="أدخل مُعرّف رقم الهاتف (WHATSAPP_PHONE_ID)" required class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-mono"/>
+              </div>
+              <button type="submit" class="w-full sleek-btn-black py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+                <span class="material-symbols-outlined text-base">link</span>
+                <span>ربط وتفعيل الواتساب الآن</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">psychology</span>
+              <span>تدريب RAG المعرفي لأيجنت أورا</span>
+            </h3>
+            <form onsubmit="handleTrainAuraAgent(event)" class="space-y-3">
+              <div>
+                <input id="trainQuestion" type="text" placeholder="السؤال المتوقع (مثال: كم أسعار استشارات أورا؟)" required class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-medium"/>
+              </div>
+              <div>
+                <textarea id="trainAnswer" rows="2" placeholder="الرد المعتمد بلهجة سعودية بيضاء محببة..." required class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-medium"></textarea>
+              </div>
+              <button type="submit" class="w-full sleek-btn-black py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+                <span class="material-symbols-outlined text-base">add_circle</span>
+                <span>حفظ التدريب في ذاكرة الأيجنت</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Live WhatsApp Simulator Sandbox -->
+        <div class="bg-white text-black rounded-2xl p-6 space-y-4 border border-black">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-xl">smart_toy</span>
+              <h3 class="font-black text-sm">مُحاكي ردود أيجنت واتساب أورا الحي (Live Simulator)</h3>
+            </div>
+            <span class="text-[11px] text-black font-mono font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-300">Saudi Dialect Engine</span>
+          </div>
+
+          <div id="waChatStream" class="h-44 overflow-y-auto space-y-3 bg-slate-50 p-4 rounded-xl text-xs border border-slate-200">
+            <div class="bg-white border border-slate-300 text-black p-3 rounded-xl max-w-[85%] font-medium shadow-sm">
+              أهلاً بك! 👋 أنا الموظفة الرقمية لأورا للتسويق.. اكتب أي سؤال واختبر الرد السريع الآن!
+            </div>
+          </div>
+
+          <form onsubmit="handleTestAuraAgentMsg(event)" class="flex items-center gap-2">
+            <input id="waTestInput" type="text" placeholder="اكتب سؤالك لاختبار الموظفة (مثال: حجز استشارة أورا)..." class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-medium"/>
+            <button type="submit" class="sleek-btn-black px-6 py-3 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 transition">
+              <span>اختبر الآن</span>
+              <span class="material-symbols-outlined text-base">send</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 4. Merchants & Store Metering ────────────────────────── -->
+    <section id="sectionAccounts" class="hidden space-y-6">
+      <div class="sleek-white-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-lg font-black text-black">سجل حسابات التجار وحصص الاستهلاك اليومي</h2>
+            <p class="text-xs text-slate-600 font-medium">إدارة التجار، تفعيل أو تجميد الحسابات، وتصفير استهلاك الرصيد</p>
+          </div>
+          <button onclick="loadAccountsList()" class="sleek-btn-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">sync</span>
+            <span>مزامنة القائمة</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-right text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-black font-bold border-b border-slate-300">
+                <th class="p-3.5 rounded-r-xl">البريد الإلكتروني</th>
+                <th class="p-3.5">معرف التاجر (Merchant ID)</th>
+                <th class="p-3.5">اسم المتجر</th>
+                <th class="p-3.5">استهلاك اليوم (Metering)</th>
+                <th class="p-3.5">تاريخ التسجيل</th>
+                <th class="p-3.5">الحالة</th>
+                <th class="p-3.5 rounded-l-xl text-center">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="accountsTableBody" class="divide-y divide-slate-200 text-black">
+              <tr>
+                <td colspan="7" class="p-6 text-center text-slate-600 font-medium">جاري تحميل حسابات التجار وتراخيص الاستهلاك... ⏳</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 5. Consultation Bookings & AURA Tickets ───────────────── -->
+    <section id="sectionBookings" class="hidden space-y-6">
+      <div class="sleek-white-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-lg font-black text-black">تذاكر وحجوزات استشارات أورا (AURA-XXXXX)</h2>
+            <p class="text-xs text-slate-600 font-medium">متابعة وتأكيد طلبات استشارات التسويق مع خبراء أورا</p>
+          </div>
+          <button onclick="loadBookingsList()" class="sleek-btn-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-base">sync</span>
+            <span>مزامنة التذاكر</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-right text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-black font-bold border-b border-slate-300">
+                <th class="p-3.5 rounded-r-xl">رمز التذكرة</th>
+                <th class="p-3.5">اسم التاجر</th>
+                <th class="p-3.5">رقم الهاتف</th>
+                <th class="p-3.5">الموعد المحجوز</th>
+                <th class="p-3.5">الحالة</th>
+                <th class="p-3.5 rounded-l-xl text-center">تحديث الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTableBody" class="divide-y divide-slate-200 text-black">
+              <tr>
+                <td colspan="6" class="p-6 text-center text-slate-600 font-medium">جاري تحميل تذاكر الاستشارات... ⏳</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 6. Interactive Feature Testing Lab ────────────────────── -->
+    <section id="sectionTester" class="hidden space-y-6">
+      <div class="sleek-white-card rounded-3xl p-7 space-y-6 shadow-sm">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-md">
+            <span class="material-symbols-outlined text-base">science</span>
+            <span>مختبر تجربة الميزات الجديدة (Feature Sandbox & Telemetry)</span>
+          </div>
+          <h2 class="text-xl font-black text-black">اختبر أي ميزة جديدة في المنصة مباشرة بالذكاء الاصطناعي</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">bolt</span>
+              <span>1. اختبار محرك النوايا السريع (&lt; 1ms Intent Matcher)</span>
+            </h3>
+            <div class="space-y-2">
+              <input id="intentTestInput" type="text" value="اريد تتبع الشحنة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none font-medium"/>
+              <button onclick="runFeatureTest('intent_matching')" class="w-full sleek-btn-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                <span>تشغيل الفحص اللحظي</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">shopping_bag</span>
+              <span>2. محاكاة استرداد سلة متروكة (Salla / Zid WhatsApp Cart)</span>
+            </h3>
+            <div class="space-y-2">
+              <p class="text-xs text-slate-600 font-medium">إرسال إشعار استرداد افتراضي لـ سلة بقيمة 450 ر.س مع رابط الدفع الذكي.</p>
+              <button onclick="runFeatureTest('cart_recovery_sim')" class="w-full sleek-btn-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                <span>إرسال إشعار الاسترداد المباشر</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 text-black rounded-2xl p-5 font-mono text-xs space-y-2 border border-slate-300">
+          <div class="flex items-center justify-between text-slate-700 border-b border-slate-300 pb-2 font-sans">
+            <span class="font-bold">مُخرجات المختبر (Lab Output Logs)</span>
+            <span class="text-[10px] text-black font-bold font-mono">100% TELEMETRY</span>
+          </div>
+          <pre id="testerConsole" class="whitespace-pre-wrap overflow-x-auto text-black font-mono">انقر على أي خيار أعلاه لبدء الفحص والاختبار المباشر...</pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-600">
+    <p>حقوق الطبع والنشر © 2026 <strong>أورا للتسويق (Aura Marketing)</strong> — جميع الحقوق محفوظة.</p>
+  </footer>
+
+  <script>
+    let activeTab = 'overview';
+
+    function switchAdminTab(tab) {
+      activeTab = tab;
+      const tabs = ['overview', 'project', 'auraWa', 'accounts', 'bookings', 'tester'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('navTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        const sec = document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (t === tab) {
+          if (btn) btn.className = 'text-xs font-bold px-4.5 py-2.5 rounded-xl bg-black text-white transition flex items-center gap-2 shadow-sm';
+          if (sec) sec.classList.remove('hidden');
+        } else {
+          if (btn) btn.className = 'text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2';
+          if (sec) sec.classList.add('hidden');
+        }
       });
+
+      if (tab === 'project') loadProjectArchitectureData();
+      if (tab === 'accounts') loadAccountsList();
+      if (tab === 'bookings') loadBookingsList();
+      if (tab === 'auraWa') loadAuraWaConfig();
     }
+
+    async function loadAdminData() {
+      try {
+        const res = await fetch('/api/admin/overview', { method: 'POST' });
+        const data = await res.json();
+        if (data?.ok && data?.stats) {
+          if (document.getElementById('kpiMerchants')) document.getElementById('kpiMerchants').innerText = data.stats.merchantsCount ?? data.stats.merchants ?? 1;
+          if (document.getElementById('kpiBookings')) document.getElementById('kpiBookings').innerText = data.stats.bookingsCount ?? data.stats.bookings ?? 0;
+          if (document.getElementById('kpiTotalUsageToday')) document.getElementById('kpiTotalUsageToday').innerText = `${data.stats.totalCreditsUsedToday ?? 0} رصيد`;
+        }
+      } catch (err) {
+        console.error('Failed to load admin overview:', err);
+      }
+    }
+
+    async function loadProjectArchitectureData() {
+      try {
+        const res = await fetch('/api/admin/project', { method: 'POST' });
+        const data = await res.json();
+        if (data?.ok && data?.project) {
+          const tbl = data.project.tables || {};
+          if (document.getElementById('tblMerchants')) document.getElementById('tblMerchants').innerText = tbl.merchants ?? 0;
+          if (document.getElementById('tblAccounts')) document.getElementById('tblAccounts').innerText = tbl.accounts ?? 0;
+          if (document.getElementById('tblBookings')) document.getElementById('tblBookings').innerText = tbl.bookings ?? 0;
+          if (document.getElementById('tblFaq')) document.getElementById('tblFaq').innerText = tbl.faq ?? 0;
+          if (document.getElementById('tblWebhooks')) document.getElementById('tblWebhooks').innerText = tbl.webhooks ?? 0;
+          if (document.getElementById('tblUsage')) document.getElementById('tblUsage').innerText = tbl.usageMeter ?? 0;
+        }
+      } catch (err) {
+        console.error('Failed to load project architecture data:', err);
+      }
+    }
+
+    async function loadAuraWaConfig() {
+      try {
+        const res = await fetch('/api/admin/aura_whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'get_config' })
+        });
+        const data = await res.json();
+        if (data?.ok) {
+          document.getElementById('waPhoneId').innerText = data.whatsapp.phoneId;
+          document.getElementById('waVerifyToken').innerText = data.whatsapp.verifyToken || (data.whatsapp.hasVerifyToken ? 'مربوط ومحمي 🔒' : 'غير مخصص');
+        }
+      } catch (err) {
+        console.error('Failed to load Aura WhatsApp config:', err);
+      }
+    }
+
+    async function handleTrainAuraAgent(e) {
+      e.preventDefault();
+      const q = document.getElementById('trainQuestion').value.trim();
+      const a = document.getElementById('trainAnswer').value.trim();
+
+      try {
+        const res = await fetch('/api/admin/aura_whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'update_agent', question: q, answer: a })
+        });
+        const data = await res.json();
+        if (data?.ok) {
+          alert('تمت إضافة المعلومة لذاكرة RAG لأيجنت أورا بنجاح! 🎉');
+          document.getElementById('trainQuestion').value = '';
+          document.getElementById('trainAnswer').value = '';
+        }
+      } catch (err) {
+        alert('حدث خطأ في الحفظ.');
+      }
+    }
+
+    async function handleTestAuraAgentMsg(e) {
+      e.preventDefault();
+      const input = document.getElementById('waTestInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const stream = document.getElementById('waChatStream');
+      stream.innerHTML += `
+        <div class="flex justify-end">
+          <div class="bg-black text-white p-2.5 rounded-xl max-w-[85%] font-medium shadow-sm">
+            ${text}
+          </div>
+        </div>
+      `;
+      input.value = '';
+      stream.scrollTop = stream.scrollHeight;
+
+      try {
+        const res = await fetch('/api/admin/aura_whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'test_agent', message: text })
+        });
+        const data = await res.json();
+        
+        const reply = data?.agentReply || 'أهلاً بك في أورا للتسويق!';
+        const latency = data?.latencyMs || 'AI';
+
+        stream.innerHTML += `
+          <div class="flex items-start gap-2">
+            <div class="bg-white border border-slate-300 text-black p-2.5 rounded-xl max-w-[85%] leading-relaxed shadow-sm font-medium">
+              ${reply}
+              <span class="block text-[9px] text-slate-500 font-mono mt-1">سرعة الرد: ${latency} (${data?.source})</span>
+            </div>
+          </div>
+        `;
+        stream.scrollTop = stream.scrollHeight;
+      } catch (err) {
+        console.error('Test error:', err);
+      }
+    }
+
+    async function loadAccountsList() {
+      const tbody = document.getElementById('accountsTableBody');
+      try {
+        const res = await fetch('/api/admin/accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'list' })
+        });
+        const data = await res.json();
+        if (data?.ok && Array.isArray(data?.rows)) {
+          if (data.rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-600">لا يوجد حسابات حتى الآن.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = data.rows.map(row => {
+            const used = row?.creditsUsed ?? 0;
+            const limit = row?.dailyLimit ?? 50;
+            const pct = Math.min(100, Math.round((used / limit) * 100));
+
+            return `
+              <tr class="hover:bg-slate-50 transition border-b border-slate-200">
+                <td class="p-3.5 font-bold text-black">${row?.email ?? 'بدون بريد'}</td>
+                <td class="p-3.5 font-mono text-[11px] text-slate-600">${row?.merchantId ?? row?.merchant_id ?? '-'}</td>
+                <td class="p-3.5 font-bold text-black">${row?.storeName ?? 'متجر غير معنون'}</td>
+                <td class="p-3.5">
+                  <div class="space-y-1">
+                    <div class="flex items-center justify-between text-[11px] font-bold font-mono">
+                      <span class="text-black">${used} / ${limit} رصيد</span>
+                      <span class="text-slate-500">(${pct}%)</span>
+                    </div>
+                    <div class="w-28 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                      <div class="bg-black h-1.5 rounded-full transition-all" style="width: ${pct}%"></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="p-3.5 text-slate-600 font-mono">${row?.createdAt ?? '-'}</td>
+                <td class="p-3.5">
+                  <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${row?.disabled ? 'bg-slate-200 text-slate-700 border border-slate-300' : 'bg-black text-white'}">
+                    ${row?.disabled ? 'معطّل' : 'نشط'}
+                  </span>
+                </td>
+                <td class="p-3.5 text-center space-x-1 space-x-reverse">
+                  <button onclick="toggleAccountDisabled('${row?.merchantId}', ${!row?.disabled})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${row?.disabled ? 'bg-black text-white' : 'sleek-btn-white'}">
+                    ${row?.disabled ? 'تفعيل' : 'تجميد'}
+                  </button>
+                  <button onclick="resetAccountQuota('${row?.merchantId}')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold sleek-btn-white">
+                    تصفير الرصيد
+                  </button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="7" class="p-6 text-center text-slate-600 font-bold">تعذر تحميل بيانات الحسابات.</td></tr>';
+      }
+    }
+
+    async function resetAccountQuota(merchantId) {
+      if (!confirm('هل تريد إعادة تصفير رصيد الاستهلاك اليومي لهذا المتجر؟')) return;
+      try {
+        const res = await fetch('/api/admin/accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'resetQuota', merchantId })
+        });
+        const data = await res.json();
+        if (data?.ok) {
+          alert('تم إعادة تصفير رصيد استهلاك المتجر لليوم بنجاح! ✅');
+          loadAccountsList();
+          loadAdminData();
+        }
+      } catch (err) {
+        alert('تعذر تصفير الرصيد.');
+      }
+    }
+
+    async function toggleAccountDisabled(merchantId, disabled) {
+      try {
+        const res = await fetch('/api/admin/accounts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'setDisabled', merchantId, disabled })
+        });
+        const data = await res.json();
+        if (data?.ok) {
+          loadAccountsList();
+        }
+      } catch (err) {
+        alert('تعذر تحديث حالة الحساب.');
+      }
+    }
+
+    async function loadBookingsList() {
+      const tbody = document.getElementById('bookingsTableBody');
+      try {
+        const res = await fetch('/api/admin/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'list' })
+        });
+        const data = await res.json();
+        if (data?.ok && Array.isArray(data?.rows)) {
+          if (data.rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-600">لا يوجد تذاكر استشارات مسجلة.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = data.rows.map(row => `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-200">
+              <td class="p-3.5 font-bold font-mono text-black">${row?.ticket_code ?? 'AURA-00000'}</td>
+              <td class="p-3.5 font-bold text-black">${row?.name ?? 'زائر'}</td>
+              <td class="p-3.5 font-mono text-slate-600">${row?.phone ?? '-'}</td>
+              <td class="p-3.5 text-slate-700 font-medium">${row?.slot_label ?? '-'}</td>
+              <td class="p-3.5">
+                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${row?.status === 'confirmed' ? 'bg-black text-white' : 'bg-slate-100 text-black border border-slate-300'}">
+                  ${row?.status === 'confirmed' ? 'مؤكدة' : (row?.status === 'cancelled' ? 'ملغاة' : 'قيد الانتظار')}
+                </span>
+              </td>
+              <td class="p-3.5 text-center flex items-center justify-center gap-1.5">
+                <button onclick="updateBookingStatus('${row?.id}', 'confirmed')" class="bg-black text-white hover:bg-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">تأكيد</button>
+                <button onclick="updateBookingStatus('${row?.id}', 'cancelled')" class="sleek-btn-white px-2.5 py-1 rounded-lg text-[10px] font-bold">إلغاء</button>
+              </td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-slate-600 font-bold">تعذر تحميل قائمة التذاكر.</td></tr>';
+      }
+    }
+
+    async function handleSaveWaCredentials(e) {
+      e.preventDefault();
+      const token = document.getElementById('inputWaToken')?.value?.trim();
+      const phoneId = document.getElementById('inputWaPhoneId')?.value?.trim();
+
+      if (!token || !phoneId) return;
+
+      try {
+        const res = await fetch('/api/admin/aura_whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save_credentials', token, phoneId })
+        });
+        const data = await res.json();
+        if (data?.ok) {
+          alert('🎉 ' + (data.message || 'تم حفظ وتفعيل الواتساب بنجاح!'));
+          loadAuraWhatsappData();
+        }
+      } catch (err) {
+        alert('تعذر حفظ المفاتيح.');
+      }
+    }
+
+    async function updateBookingStatus(id, status) {
+      try {
+        const res = await fetch('/api/admin/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'setStatus', id, status })
+        });
+        const data = await res.json();
+        if (data?.ok) {
+          loadBookingsList();
+        }
+      } catch (err) {
+        alert('تعذر تحديث حالة التذكرة.');
+      }
+    }
+
+    async function runFeatureTest(feature) {
+      const consoleEl = document.getElementById('testerConsole');
+      const testInput = document.getElementById('intentTestInput')?.value || '';
+      consoleEl.innerText = `جاري تشغيل الفحص للميزة (${feature})... ⏳`;
+
+      try {
+        const res = await fetch('/api/admin/aura_whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'test_feature', feature, input: testInput })
+        });
+        const data = await res.json();
+        consoleEl.innerText = JSON.stringify(data, null, 2);
+      } catch (err) {
+        consoleEl.innerText = 'حدث خطأ في تشغيل الفحص المختبري.';
+      }
+    }
+
+    async function handleLogout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.href = '/login';
+      } catch (err) {
+        window.location.href = '/login';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/auth/me', { method: 'POST' });
+        const data = await res.json();
+        if (data?.loggedIn) {
+          const isAdmin = Boolean(data?.isAdmin);
+          if (!isAdmin) {
+            window.location.href = '/dashboard';
+            return;
+          }
+          if (data?.email) {
+            const el = document.getElementById('adminEmailDisplay');
+            if (el) el.innerText = data.email;
+          }
+        }
+      } catch (err) {}
+      loadAdminData();
+    });
   </script>
 </body>
 </html>

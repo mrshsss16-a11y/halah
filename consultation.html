@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>هالة | حجز الاستشارات وتذاكر المواعيد - Hala AI OS</title>
+  
+  <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', 'Alexandria', sans-serif; background: #FFFFFF; color: #0F172A; }
+    .wire-box { background: #FFFFFF; border: 1px solid #E2E8F0; }
+    .wire-btn { background: #0F172A; color: #FFFFFF; }
+    .ambient-glow {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: 80vw;
+      height: 80vw;
+      max-width: 800px;
+      max-height: 800px;
+      transform: translate(-50%, -50%);
+      background: radial-gradient(circle, rgba(0, 194, 255, 0.14) 0%, rgba(0, 102, 255, 0.05) 50%, transparent 80%);
+      filter: blur(120px);
+      will-change: transform, opacity;
+      pointer-events: none;
+      z-index: 0;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative bg-white">
+
+  <!-- Ambient Blue Aura Glow Background -->
+  <div class="ambient-glow"></div>
+
+  <!-- ── Minimal Sticky Navigation Corners (Right: Logo, Left: Dashboard) ── -->
+  <div class="fixed top-6 left-6 right-6 z-50 flex items-center justify-between pointer-events-none">
+    
+    <!-- Top Right: Minimal Logo Icon -->
+    <a href="index.html" class="pointer-events-auto flex items-center gap-2.5 bg-white/90 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm hover:border-slate-300 transition-all">
+      <div class="flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-white font-bold text-xs">
+        هـ
+      </div>
+      <span class="font-bold text-slate-900 text-xs tracking-tight">منصة هالة | الاستشارات</span>
+    </a>
+
+    <!-- Top Left: Simple Dashboard Icon -->
+    <a href="dashboard.html" class="pointer-events-auto flex items-center gap-1.5 bg-white/90 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm text-xs font-bold text-slate-700 hover:text-slate-900 hover:border-slate-300 transition-all">
+      <span class="material-symbols-outlined text-base">dashboard</span>
+      <span>لوحة التاجر</span>
+    </a>
+
+  </div>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+    <div class="wire-box rounded-xl p-5 space-y-1">
+      <h1 class="text-xl font-bold text-slate-900">حجز الجلسات الاستشارية وتتبع تذاكر هالة</h1>
+      <p class="text-xs text-slate-500">حجز الاستشارات المخصصة لمساعدتك في نمو المتاجر مع تذكير آلي بالواتساب قبل الموعد بـ 30 دقيقة</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="wire-box rounded-xl p-5 space-y-3">
+        <h3 class="font-bold text-sm text-slate-900">حجز استشارة مجانية جديدة مع هالة</h3>
+        
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">اسم العميل / المتجر:</label>
+          <input id="bName" type="text" placeholder="أحمد الشمري" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 py-2"/>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">رقم الجوال (واتساب):</label>
+          <input id="bPhone" type="text" placeholder="+966501234567" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 py-2"/>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">اختر الموعد المناسب:</label>
+          <select id="bSlot" class="w-full bg-slate-50 border border-slate-200 text-xs rounded-lg px-3 py-2 font-medium">
+            <option value="الأحد ١٠ص">الأحد ١٠ص</option>
+            <option value="الأحد ١٢م">الأحد ١٢م</option>
+            <option value="الاثنين ١٠ص">الاثنين ١٠ص</option>
+            <option value="الاثنين ١٢م">الاثنين ١٢م</option>
+          </select>
+        </div>
+
+        <button onclick="bookConsultation()" class="w-full wire-btn py-2.5 rounded-lg text-xs font-bold">
+          تأكيد الحجز وتوليد التذكرة
+        </button>
+      </div>
+
+      <div class="lg:col-span-2 wire-box rounded-xl p-5 space-y-3">
+        <h3 class="font-bold text-sm text-slate-900">سجل تذاكر استشارات هالة المجدولة</h3>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-right text-xs">
+            <thead>
+              <tr class="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold">
+                <th class="p-2.5">رقم التذكرة</th>
+                <th class="p-2.5">العميل / الجوال</th>
+                <th class="p-2.5">الفتحة المحددة</th>
+                <th class="p-2.5">الحالة والتذكير</th>
+              </tr>
+            </thead>
+            <tbody id="ticketsTbody" class="divide-y divide-slate-100">
+              <tr>
+                <td class="p-2.5 font-bold text-blue-600">HALA-00102</td>
+                <td class="p-2.5">أحمد الشمري (+966501234567)</td>
+                <td class="p-2.5">الأحد ١٠ص</td>
+                <td class="p-2.5"><span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[10px]">مُجدول (تذكير 30د مفعّل ✉️)</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+    <p>حقوق الطبع والنشر © 2026 <strong>منصة هالة (Hala AI OS)</strong> — جميع الحقوق محفوظة.</p>
+  </footer>
+
+  <script>
+    function bookConsultation() {
+      const name = document.getElementById('bName').value.trim();
+      const phone = document.getElementById('bPhone').value.trim();
+      const slot = document.getElementById('bSlot').value;
+      if (!name || !phone) { alert('أدخل الاسم والجوال أولاً.'); return; }
+      const ticketNum = `HALA-00${Math.floor(103 + Math.random() * 800)}`;
+      const tbody = document.getElementById('ticketsTbody');
+      tbody.innerHTML = `
+        <tr>
+          <td class="p-2.5 font-bold text-blue-600">${ticketNum}</td>
+          <td class="p-2.5">${name} (${phone})</td>
+          <td class="p-2.5">${slot}</td>
+          <td class="p-2.5"><span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[10px]">مُجدول (تذكير 30د مفعّل ✉️)</span></td>
+        </tr>
+      ` + tbody.innerHTML;
+      alert(`تم حجز الاستشارة بنجاح مع هالة! 🎉\nتذكرتك: ${ticketNum}`);
+    }
+  </script>
+</body>
+</html>

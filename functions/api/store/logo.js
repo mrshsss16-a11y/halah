@@ -1,9 +1,9 @@
 // POST /api/store/logo
 // body: { storeId, logoDataUrl? } — if logoDataUrl present, saves it; always
 // returns the current saved logo (so a save-then-load round trip is one call).
-import { withApi } from "../../_lib/respond.js";
-import { getStoreLogo, saveStoreLogo } from "../../_lib/db.js";
-import { resolveStoreId } from "../../_lib/session.js";
+import { withApi } from "../../_lib/core/respond.js";
+import { getStoreLogo, saveStoreLogo } from "../../_lib/core/db.js";
+import { resolveStoreId } from "../../_lib/core/session.js";
 
 const MAX_LOGO_BYTES = 500_000; // data URL length cap — small watermark, not a full asset
 

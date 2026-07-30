@@ -1,9 +1,9 @@
 // POST /api/auth/signup — body: { email, password, storeName? }
 // Creates a merchant + account, sets the session cookie. One step, two
 // fields — minimum friction (Commitment & Consistency: small first ask).
-import { json } from "../../_lib/respond.js";
-import { hashPassword } from "../../_lib/auth.js";
-import { createSessionToken, sessionCookieHeader } from "../../_lib/session.js";
+import { json } from "../../_lib/core/respond.js";
+import { hashPassword } from "../../_lib/core/auth.js";
+import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
