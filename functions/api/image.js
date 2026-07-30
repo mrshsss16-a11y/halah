@@ -3,12 +3,19 @@
 // imageBase64: raw base64 (no data: prefix) of the product photo, resized
 // client-side to ≤512x512 (Workers AI reference-image constraint).
 // style: one of STYLE_PRESETS keys ("طابع العميل" — customer brand identity).
-import { withApi } from "../_lib/core/respond.js";
+import { withApi, json } from "../_lib/core/respond.js";
 import { checkAndConsume, COSTS } from "../_lib/core/meter.js";
 import { generateProductImage, STYLE_PRESETS } from "../_lib/imageProvider.js";
 import { resolveStoreId } from "../_lib/core/session.js";
+import { checkRateLimit } from "../_lib/core/rateLimit.js";
 
 async function imageHandler(body, env, request) {
+  const clientIp = request.headers.get("cf-connecting-ip") || "127.0.0.1";
+  const rateCheck = await checkRateLimit(env, clientIp, "image_generation", 10, 60);
+  if (!rateCheck.allowed) {
+    return json({ ok: false, error: "تجاوزت حد طلبات التوليد المسموح به. يرجى الانتظار دقيقة." }, { status: 429 });
+  }
+
   const merchantId = await resolveStoreId(request, env, body.storeId);
   const imageBase64 = (body.imageBase64 || "").toString();
   const mime = (body.mime || "image/png").toString();

@@ -5,8 +5,8 @@ async function shippingWebhookHandler(body, env, request) {
   const provider = body?.provider || body?.courier || "SMSA"; // SMSA, SPL, Aramex, Barq
   const trackingNo = body?.trackingNo || body?.tracking_number || `SPL-${Math.floor(10000000 + Math.random() * 90000000)}`;
   const status = body?.status || "out_for_delivery";
-  const customerName = body?.customerName || "عبدالمجيد الشمري";
-  const phone = body?.phone || "+966501234567";
+  const customerName = body?.customerName || "عميل تجريبي (Simulation)";
+  const phone = body?.phone || "+966500000000";
   const city = body?.city || "الرياض";
 
   const startTime = performance.now();

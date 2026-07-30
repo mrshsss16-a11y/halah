@@ -4,9 +4,9 @@ import { withApi, json } from "../../_lib/core/respond.js";
 
 async function trendyolWebhookHandler(body, env, request) {
   const event = body?.event || body?.eventType || "order_created";
-  const orderId = body?.orderNumber || body?.id || "TY-992384";
-  const customerName = body?.customerFirstName ? `${body.customerFirstName} ${body.customerLastName}` : "عميل ترينديول السعودية";
-  const totalPriceSar = body?.totalPrice || body?.grossAmount || 340;
+  const orderId = body?.orderNumber || body?.id || "TY-SIM-000000";
+  const customerName = body?.customerFirstName ? `${body.customerFirstName} ${body.customerLastName}` : "عميل تجريبي (Simulation)";
+  const totalPriceSar = body?.totalPrice || body?.grossAmount || 0;
 
   const startTime = performance.now();
   const duration = (performance.now() - startTime).toFixed(2);

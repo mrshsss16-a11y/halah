@@ -453,7 +453,8 @@ export async function saveConsultationBooking(env, { name, phone, slotLabel }) {
   
   await env.DB.prepare("UPDATE consultation_bookings SET ticket_code = ? WHERE id = ?")
     .bind(ticketCode, id)
-    .run();
+    .run()
+    .catch(() => {});
     
   return id;
 }
