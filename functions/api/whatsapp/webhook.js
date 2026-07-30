@@ -157,7 +157,7 @@ export async function onRequestPost(context) {
     request.headers.get("X-Hub-Signature-256"),
     env.WHATSAPP_APP_SECRET
   );
-  if (!ok && env.HALA_ENV === 'production') return new Response(JSON.stringify({ error: "invalid signature" }), { status: 401 });
+  if (!ok) return new Response(JSON.stringify({ error: "invalid signature" }), { status: 401, headers: { "content-type": "application/json" } });
 
   let payload;
   try {

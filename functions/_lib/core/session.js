@@ -31,8 +31,11 @@ function getSessionSecret(env) {
   if (env?.SESSION_SECRET) {
     return env.SESSION_SECRET;
   }
-  // Stable HMAC secret key for worker isolates
-  return "hala-aura-stable-session-secret-2026";
+  const derived = env?.WHATSAPP_TOKEN || env?.SALLA_CLIENT_SECRET || env?.ZID_CLIENT_SECRET;
+  if (derived) {
+    return derived;
+  }
+  throw new ApiError(500, "متغير البيئة SESSION_SECRET غير معرف. يرجى ضبطه في إعدادات البيئة.", "SESSION_SECRET_MISSING");
 }
 
 export async function createSessionToken(env, merchantId) {
