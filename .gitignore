@@ -3,6 +3,9 @@
 dist
 node_modules
 
+# Astro generated types — regenerated on build
+.astro
+
 # Secrets — never commit
 .env
 .env*.local
