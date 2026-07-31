@@ -13,7 +13,7 @@ export function waConfigured(env) {
 
 /** Verify the X-Hub-Signature-256 header against the raw request body. */
 export async function verifyWaSignature(rawBody, signatureHeader, appSecret) {
-  if (!appSecret) return true; // Graceful degradation if secret isn't configured yet
+  if (!appSecret) return false; // Fail closed: no secret means we cannot verify, so reject.
   if (!signatureHeader) return false;
   const expected = signatureHeader.replace(/^sha256=/, "");
   const key = await crypto.subtle.importKey(

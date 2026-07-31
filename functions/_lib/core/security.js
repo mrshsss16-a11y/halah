@@ -8,7 +8,11 @@
 export async function verifyTurnstileToken(env, token, clientIp = "") {
   const secretKey = env?.TURNSTILE_SECRET_KEY;
   if (!secretKey) {
-    // Development or bypass mode if key is not configured
+    // Turnstile is a supplementary bot-defense layer only — the real login
+    // protection (rate limiting + account lockout in rateLimit.js / db.js) is
+    // independent and always on. When the key isn't configured we pass so the
+    // flow isn't blocked, but flag it so it's visible this layer is inactive.
+    console.warn("[security] TURNSTILE_SECRET_KEY not configured — bot verification layer inactive");
     return { success: true, bypass: true };
   }
 

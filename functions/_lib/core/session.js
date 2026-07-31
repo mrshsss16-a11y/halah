@@ -31,10 +31,9 @@ function getSessionSecret(env) {
   if (env?.SESSION_SECRET) {
     return env.SESSION_SECRET;
   }
-  const derived = env?.WHATSAPP_TOKEN || env?.SALLA_CLIENT_SECRET || env?.ZID_CLIENT_SECRET;
-  if (derived) {
-    return derived;
-  }
+  // No derivation from other secrets: WHATSAPP_TOKEN rotates (hourly for temp
+  // tokens) which would silently invalidate every session, and reusing an
+  // integration secret weakens session integrity. Fail closed instead.
   throw new ApiError(500, "متغير البيئة SESSION_SECRET غير معرف. يرجى ضبطه في إعدادات البيئة.", "SESSION_SECRET_MISSING");
 }
 
