@@ -73,17 +73,19 @@ scripts/stage.mjs    بناء dist/ للنظام الثابت القديم
 يحوّل Cloudflare Pages إلى **Advanced Mode**، وفيه **يتجاهل مجلد `functions/` بالكامل**.
 النتيجة: كل `/api/*` يرجّع 404 — بما فيه ويبهوك واتساب وتسجيل الدخول.
 
-### القاعدة الحالية (اتبعها حرفياً)
+### القاعدة الحالية
 
 ```bash
-node scripts/stage.mjs                                              # ابنِ dist/ الثابت فقط
-npx wrangler pages deploy dist --project-name hala-ai-os --branch=main
+npm run deploy      # آمن: build (stage.mjs) → verify-dist → نشر على main
 ```
 
+هذا الأمر **محروس آلياً**: `scripts/verify-dist.mjs` يفحص `dist/` قبل النشر ويرفض
+(exit 1) لو وجد `_worker.js` أو `_routes.json`. اللغم لا يمكن أن ينفجر مرة أخرى عبره.
+
 - ✅ `dist/` يجب أن يحتوي HTML + `_headers` فقط — **لا `_worker.js` ولا `_routes.json`**.
-- ✅ يجب أن يطبع النشر `✨ Uploading Functions bundle`. لو ما طبعها، الـ API لن يعمل.
-- ❌ **لا تشغّل `astro build`** حتى تكتمل هجرة كل الـ endpoints إلى `src/pages/api/`.
-- ❌ `npm run build` و `npm run deploy` يستدعيان `astro build` — **لا تستخدمهما حالياً**.
+- ✅ يجب أن يطبع النشر `✔ dist/ is safe` ثم `✨ Uploading Functions bundle`.
+- ❌ **لا تشغّل `astro build`** حتى تكتمل هجرة كل الـ endpoints إلى `src/pages/api/`
+  (سكربت `_astro:build` محجوب عمداً برسالة تشرح السبب).
 
 ### التحقق الإلزامي بعد أي نشر
 
@@ -140,6 +142,9 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   `is_admin` في قاعدة البيانات** — عمداً: لا مسار لمنح صلاحية أدمن بالكتابة للـ DB.
 - **تواقيع الـ webhooks:** سلة (`X-Salla-Signature`) وواتساب (`X-Hub-Signature-256`) —
   HMAC-SHA256 على الـ body الخام، مقارنة timing-safe. رفض صارم (401) عند الفشل.
+- **OAuth CSRF:** تدفقات سلة وزد تمرّر `state` موقّع HMAC (`core/oauthState.js`) مربوط
+  بكوكي `hala_oauth_state` قصير العمر (١٠ دقائق، استخدام واحد). الـ callback يرفض (400)
+  أي طلب بلا state صالح ومطابق للكوكي — يمنع ربط متجر المهاجم بجلسة الضحية.
 
 ### قواعد ذهبية للأمن (لا تكسرها)
 - لا أسرار مكتوبة بالكود، لا قيم افتراضية للأسرار. غياب السر = رمي خطأ، لا "تمرير برشاقة".

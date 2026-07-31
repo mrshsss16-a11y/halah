@@ -8,7 +8,8 @@
     "stage": "node scripts/stage.mjs",
     "build": "node scripts/stage.mjs",
     "dev": "node scripts/stage.mjs && wrangler pages dev dist",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name hala-ai-os --branch=main",
+    "verify:dist": "node scripts/verify-dist.mjs",
+    "deploy": "npm run build && npm run verify:dist && wrangler pages deploy dist --project-name hala-ai-os --branch=main",
     "_astro:build": "echo 'BLOCKED: astro build emits dist/_worker.js which puts Pages in Advanced Mode and disables ALL functions/ endpoints. See AGENT.md section 4.' && exit 1"
   },
   "dependencies": {
