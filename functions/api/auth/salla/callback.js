@@ -57,7 +57,7 @@ export async function onRequestGet(context) {
         const merchantId = userData.data.merchant.id.toString();
 
         // 3. Save tokens in D1 using existing saveTokens
-        const { saveTokens } = await import("../../../../_lib/core/db.js");
+        const { saveTokens } = await import("../../../_lib/core/db.js");
         
         await saveTokens(env, {
             merchantId,

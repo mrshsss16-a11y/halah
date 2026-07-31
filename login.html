@@ -294,17 +294,28 @@
         feedback.innerText = 'جاري تسجيل الدخول التلقائي بحساب جوجل... ⚡';
       }
 
+      // The server verifies a Google-issued ID token (`credential`) — it will not
+      // accept an identity supplied by this page. Google Identity Services must
+      // be loaded and configured with GOOGLE_CLIENT_ID for this flow to work.
+      const credential = window.__googleCredential;
+      if (!credential) {
+        if (feedback) feedback.innerText = 'الدخول بجوجل غير مفعّل حالياً — استخدم البريد وكلمة المرور.';
+        return;
+      }
+
       try {
         const res = await fetch('/api/auth/google', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: 'merchant.google@gmail.com', name: 'تاجر أورا (Google)', googleId: 'g_10923847293847' })
+          body: JSON.stringify({ credential })
         });
         const data = await res.json();
         if (data?.ok) {
           const targetUrl = data?.isAdmin ? '/admin' : '/dashboard';
           if (feedback) feedback.innerText = 'تم تسجيل الدخول بحساب جوجل بنجاح! 🚀 جاري التحويل...';
           setTimeout(() => { window.location.href = targetUrl; }, 800);
+        } else {
+          if (feedback) feedback.innerText = data?.error || 'تعذر الدخول بحساب جوجل.';
         }
       } catch (err) {
         if (feedback) feedback.innerText = 'تعذر الدخول بحساب جوجل.';

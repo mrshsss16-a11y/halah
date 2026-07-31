@@ -50,7 +50,7 @@ export async function onRequestGet(context) {
     const merchantId = storeId;
 
     // 2. Save tokens in D1
-    const { saveTokens } = await import("../../../../_lib/core/db.js");
+    const { saveTokens } = await import("../../../_lib/core/db.js");
     await saveTokens(env, {
       merchantId,
       platform: "zid",
