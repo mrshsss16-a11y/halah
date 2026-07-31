@@ -2,19 +2,15 @@
   "name": "hala-ai-os",
   "version": "1.0.0",
   "private": true,
-  "description": "Hala AI OS — Saudi e-commerce AI marketer on Cloudflare Pages Functions + Workers AI + Vectorize",
+  "description": "Hala AI OS — Saudi AI customer-service agent for Aura Marketing, on Cloudflare Pages Functions + Workers AI + Vectorize",
   "type": "module",
   "scripts": {
     "stage": "node scripts/stage.mjs",
     "build": "node scripts/stage.mjs",
     "dev": "node scripts/stage.mjs && wrangler pages dev dist",
+    "test": "node tests/api.test.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
-    "deploy": "npm run build && npm run verify:dist && wrangler pages deploy dist --project-name hala-ai-os --branch=main",
-    "_astro:build": "echo 'BLOCKED: astro build emits dist/_worker.js which puts Pages in Advanced Mode and disables ALL functions/ endpoints. See AGENT.md section 4.' && exit 1"
-  },
-  "dependencies": {
-    "@astrojs/cloudflare": "^12.0.0",
-    "astro": "^5.0.0"
+    "deploy": "npm run build && npm run verify:dist && wrangler pages deploy dist --project-name hala-ai-os --branch=main"
   },
   "devDependencies": {
     "wrangler": "^3.90.0"

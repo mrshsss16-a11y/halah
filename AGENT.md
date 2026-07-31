@@ -21,7 +21,7 @@
 | الطبقة | التقنية |
 |---|---|
 | الاستضافة | Cloudflare Pages (مشروع `hala-ai-os`, فرع الإنتاج **`main`**) |
-| الواجهة | **هجين:** HTML ثابت (جذر المستودع) + Astro (`src/`) — انظر §4 |
+| الواجهة | HTML ثابت (جذر المستودع) + `partials/` عبر `#include` → `scripts/stage.mjs` |
 | الـ API | Pages Functions: `functions/api/*` → `/api/*` |
 | توليد النصوص | AI Gateway متعدد المزودين (`functions/_lib/ai/gateway.js`) — انظر §5 |
 | ذاكرة RAG | Vectorize `halah-tr-faq` (embeddings `@cf/baai/bge-m3`, عزل بـ metadata `storeId`) |
@@ -54,7 +54,7 @@ functions/
     chat · copy · image · scan · support · usage · stats · health
     cron/reminders.js       (تذكير مواعيد — لكن لا cron trigger مضبوط في wrangler.toml بعد)
     security/pdpl_audit.js   (تقييم تقني، وليس شهادة امتثال قانوني)
-src/                 نظام Astro (pages/ + components/ + layouts/) — انظر §4 للتحذير
+docs/archive/         تجارب مؤرشفة لا تُبنى ولا تُنشر (astro-experiment/ — انظر §4)
 *.html               صفحات ثابتة قديمة تمر بـ #include ثم scripts/stage.mjs → dist/
 partials/            مكونات #include (fouc-theme, app-shell)
 migrations/          مخطط D1 (0001..0010) — انظر §6
@@ -65,27 +65,30 @@ scripts/stage.mjs    بناء dist/ للنظام الثابت القديم
 
 ---
 
-## 4. 🚨 تحذير البناء — `astro build` **يُسقط كل الـ API**
+## 4. البناء والنشر — نظام واحد فقط
 
-**هذا أخطر لغم في المشروع. حدث فعلياً وأسقط ٥٦ endpoint على الإنتاج (2026-07-31).**
-
-`astro build` مع محوّل Cloudflare ينتج `dist/_worker.js`. وجود `_worker.js` في مجلد المخرجات
-يحوّل Cloudflare Pages إلى **Advanced Mode**، وفيه **يتجاهل مجلد `functions/` بالكامل**.
-النتيجة: كل `/api/*` يرجّع 404 — بما فيه ويبهوك واتساب وتسجيل الدخول.
-
-### القاعدة الحالية
+**قرار معماري محسوم (2026-07-31): HTML ثابت + `functions/`. لا Astro.**
+تجربة Astro مؤرشفة في `docs/archive/astro-experiment/` (لا تُبنى ولا تُنشر).
 
 ```bash
-npm run deploy      # آمن: build (stage.mjs) → verify-dist → نشر على main
+npm run deploy      # build (stage.mjs) → verify-dist → نشر على main
 ```
 
-هذا الأمر **محروس آلياً**: `scripts/verify-dist.mjs` يفحص `dist/` قبل النشر ويرفض
-(exit 1) لو وجد `_worker.js` أو `_routes.json`. اللغم لا يمكن أن ينفجر مرة أخرى عبره.
+### ⚠️ اللغم الذي فرض هذا القرار
 
-- ✅ `dist/` يجب أن يحتوي HTML + `_headers` فقط — **لا `_worker.js` ولا `_routes.json`**.
-- ✅ يجب أن يطبع النشر `✔ dist/ is safe` ثم `✨ Uploading Functions bundle`.
-- ❌ **لا تشغّل `astro build`** حتى تكتمل هجرة كل الـ endpoints إلى `src/pages/api/`
-  (سكربت `_astro:build` محجوب عمداً برسالة تشرح السبب).
+`astro build` مع محوّل Cloudflare ينتج `dist/_worker.js`. وجوده يحوّل Cloudflare Pages إلى
+**Advanced Mode**، وفيه **يتجاهل مجلد `functions/` بالكامل**. حدث فعلياً وأسقط كل الـ ٥٦
+endpoint إلى 404 على الإنتاج — بما فيها ويبهوك واتساب وتسجيل الدخول.
+
+**الحماية الآلية:** `scripts/verify-dist.mjs` يعمل داخل `npm run deploy` ويرفض النشر
+(exit 1) لو وجد `_worker.js` أو `_routes.json`. لا يمكن تكرار العطل عبر المسار الطبيعي.
+
+- ✅ `dist/` = HTML + `_headers` فقط.
+- ✅ النشر يطبع `✔ dist/ is safe` ثم `✨ Uploading Functions bundle`.
+- ✅ **انشر دائماً بـ `--branch=main`** (مضمّن في `npm run deploy`) — بدونها يذهب لفرع
+  Preview ولا يراه أحد على الدومين الحي.
+- ❌ لا تُعِد إدخال Astro أو أي أداة تنتج `_worker.js` بدون هجرة كاملة ومقصودة لكل
+  الـ endpoints (اقرأ `docs/archive/astro-experiment/README.md` أولاً).
 
 ### التحقق الإلزامي بعد أي نشر
 
@@ -93,16 +96,9 @@ npm run deploy      # آمن: build (stage.mjs) → verify-dist → نشر عل�
 curl -s -o /dev/null -w "%{http_code}\n" https://hala-ai-os.pages.dev/api/health   # 200
 curl -s -o /dev/null -w "%{http_code}\n" -X POST \
   https://hala-ai-os.pages.dev/api/whatsapp/webhook -d '{}'                        # 401
+npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 ```
-404 على أي منهما = الـ API ساقط، ارجع فوراً لبناء `stage.mjs` فقط.
-
-**انشر دائماً بـ `--branch=main`** — بدونها يذهب لفرع Preview ولا يراه أحد على الدومين الحي.
-تحقق: `npx wrangler pages deployment list --project-name hala-ai-os | grep Production`.
-
-### قرار معماري معلّق
-النظام الهجين (HTML ثابت + Astro) غير قابل للاستمرار: لا يمكن تشغيل `_worker.js` و
-`functions/` معاً. إمّا هجرة كل الـ endpoints إلى Astro، أو إزالة Astro. انظر
-`docs/UPGRADE_PLAN.md` المرحلة 6.
+404 على أي منهما = الـ API ساقط.
 
 ---
 
@@ -201,10 +197,11 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST \
 ## 12. سير العمل
 
 ```bash
-npm run stage      # بناء dist/ (الثابت)
-npm run build      # stage + astro build
-npm run deploy     # build + نشر للإنتاج (main)
-npm test           # node tests/api.test.mjs
+npm run build      # بناء dist/ (stage.mjs)
+npm run verify:dist # فحص أمان المخرجات (يعمل تلقائياً ضمن deploy)
+npm run deploy     # build + verify + نشر للإنتاج (main)
+npm test           # tests/api.test.mjs
+npm run dev        # تشغيل محلي (wrangler pages dev)
 npx wrangler d1 migrations apply halah-tr-db --remote   # تطبيق المخطط
 graphify query "<سؤال>"   # فهم البنية قبل أي تعديل (إلزامي)
 graphify update .          # تحديث الجراف بعد التعديل (AST فقط، بلا تكلفة)
