@@ -65,18 +65,42 @@ scripts/stage.mjs    بناء dist/ للنظام الثابت القديم
 
 ---
 
-## 4. ⚠️ تحذير البناء — نظامان يستهدفان `dist/`
+## 4. 🚨 تحذير البناء — `astro build` **يُسقط كل الـ API**
 
-المشروع في مرحلة انتقال من HTML ثابت إلى Astro. الاثنان يبنيان إلى `dist/`:
+**هذا أخطر لغم في المشروع. حدث فعلياً وأسقط ٥٦ endpoint على الإنتاج (2026-07-31).**
 
-- `npm run stage` → `scripts/stage.mjs` (النظام الثابت القديم — الصفحات في جذر المستودع)
-- `npm run build` → `stage.mjs` **ثم** `astro build` (النظام الجديد)
-- `npm run deploy` → `build` + `wrangler pages deploy dist --branch=main`
+`astro build` مع محوّل Cloudflare ينتج `dist/_worker.js`. وجود `_worker.js` في مجلد المخرجات
+يحوّل Cloudflare Pages إلى **Advanced Mode**، وفيه **يتجاهل مجلد `functions/` بالكامل**.
+النتيجة: كل `/api/*` يرجّع 404 — بما فيه ويبهوك واتساب وتسجيل الدخول.
 
-**قواعد صارمة:**
-1. **انشر دائماً بـ `--branch=main`** — بدونها ينشر لفرع Preview ولا يراه أحد على الدومين الحي.
-2. لا تشغّل `astro build` وحده على نظام ثابت أو العكس — استخدم `npm run deploy` الموحّد.
-3. تحقق بعد النشر: `npx wrangler pages deployment list ... | grep Production`.
+### القاعدة الحالية (اتبعها حرفياً)
+
+```bash
+node scripts/stage.mjs                                              # ابنِ dist/ الثابت فقط
+npx wrangler pages deploy dist --project-name hala-ai-os --branch=main
+```
+
+- ✅ `dist/` يجب أن يحتوي HTML + `_headers` فقط — **لا `_worker.js` ولا `_routes.json`**.
+- ✅ يجب أن يطبع النشر `✨ Uploading Functions bundle`. لو ما طبعها، الـ API لن يعمل.
+- ❌ **لا تشغّل `astro build`** حتى تكتمل هجرة كل الـ endpoints إلى `src/pages/api/`.
+- ❌ `npm run build` و `npm run deploy` يستدعيان `astro build` — **لا تستخدمهما حالياً**.
+
+### التحقق الإلزامي بعد أي نشر
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" https://hala-ai-os.pages.dev/api/health   # 200
+curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+  https://hala-ai-os.pages.dev/api/whatsapp/webhook -d '{}'                        # 401
+```
+404 على أي منهما = الـ API ساقط، ارجع فوراً لبناء `stage.mjs` فقط.
+
+**انشر دائماً بـ `--branch=main`** — بدونها يذهب لفرع Preview ولا يراه أحد على الدومين الحي.
+تحقق: `npx wrangler pages deployment list --project-name hala-ai-os | grep Production`.
+
+### قرار معماري معلّق
+النظام الهجين (HTML ثابت + Astro) غير قابل للاستمرار: لا يمكن تشغيل `_worker.js` و
+`functions/` معاً. إمّا هجرة كل الـ endpoints إلى Astro، أو إزالة Astro. انظر
+`docs/UPGRADE_PLAN.md` المرحلة 6.
 
 ---
 

@@ -6,10 +6,10 @@
   "type": "module",
   "scripts": {
     "stage": "node scripts/stage.mjs",
-    "build": "node scripts/stage.mjs && astro build",
+    "build": "node scripts/stage.mjs",
     "dev": "node scripts/stage.mjs && wrangler pages dev dist",
-    "preview": "astro preview",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name hala-ai-os --branch=main"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name hala-ai-os --branch=main",
+    "_astro:build": "echo 'BLOCKED: astro build emits dist/_worker.js which puts Pages in Advanced Mode and disables ALL functions/ endpoints. See AGENT.md section 4.' && exit 1"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.0.0",
