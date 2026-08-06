@@ -211,7 +211,9 @@ graphify update .          # تحديث الجراف بعد التعديل (AST 
 
 ## 13. المشاكل المفتوحة (محدّثة 2026-07-31)
 
-راجع `docs/UPGRADE_PLAN.md` للخطة الكاملة. ملخص الأولويات:
+**خارطة الإطلاق المرجعية: [`docs/ROADMAP.md`](docs/ROADMAP.md)** — الترتيب والأولويات
+والمسؤوليات من هناك. `docs/UPGRADE_PLAN.md` و`PRODUCT_PLAN.md` و`LAUNCH_PLAN.md` للتفاصيل
+والحيثيات. ملخص الدَين التقني:
 
 **متوسط (متانة):**
 - `verifyWaSignature` يرجّع `true` عند غياب `WHATSAPP_APP_SECRET` — الأأمن `false`.
