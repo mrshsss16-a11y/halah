@@ -4,14 +4,14 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>هالة | لوحة تحكم التاجر - Hala AI OS</title>
-  <meta name="description" content="لوحة تحكم هالة التشغيلية لإدارة موظفتك الرقمية، استرداد السلات، ومزامنة RAG المعرفة"/>
-  
+  <meta name="description" content="لوحة تحكم هالة: وصف منتجات مثالي بالسيو، وكيل خدمة عملاء بلهجة سعودية، وربط متجر سلة"/>
+
   <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
-  
+
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', sans-serif; background: #FFFFFF; color: #000000; }
@@ -21,23 +21,22 @@
     .sleek-btn-black:hover { background: #1E293B; }
     .sleek-btn-white { background: #FFFFFF; border: 1px solid #000000; color: #000000; font-weight: 700; }
     .sleek-btn-white:hover { background: #F8FAFC; }
+    .tab-on { background:#000; color:#fff; }
+    .tab-off { color:#334155; }
+    .tab-off:hover { background:#F1F5F9; color:#000; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between relative bg-white text-black selection:bg-black selection:text-white">
 
-  <!-- Navigation Corners -->
+  <!-- Navigation -->
   <div class="fixed top-6 left-6 right-6 z-40 flex items-center justify-between pointer-events-none">
-    <a href="index.html" class="pointer-events-auto flex items-center gap-2.5 bg-white border border-black px-4 py-2 rounded-full shadow-sm">
-      <div class="flex items-center justify-center w-7 h-7 rounded-full bg-black text-white font-black text-xs">
-        أ
-      </div>
+    <a href="/" class="pointer-events-auto flex items-center gap-2.5 bg-white border border-black px-4 py-2 rounded-full shadow-sm">
+      <div class="flex items-center justify-center w-7 h-7 rounded-full bg-black text-white font-black text-xs">أ</div>
       <span id="navStoreTitle" class="font-black text-black text-xs tracking-tight">لوحة تحكم المتجر — هالة AI OS</span>
     </a>
 
     <div class="pointer-events-auto flex items-center gap-2">
-      <a href="/admin" id="adminPortalBtn" class="hidden bg-black text-white px-3.5 py-2 rounded-full text-xs font-bold transition">
-        لوحة الأدمن 🛡️
-      </a>
+      <a href="/admin" id="adminPortalBtn" class="hidden bg-black text-white px-3.5 py-2 rounded-full text-xs font-bold transition">لوحة الأدمن 🛡️</a>
       <button onclick="handleMerchantLogout()" class="bg-white border border-black px-4 py-2 rounded-full text-xs font-bold text-black hover:bg-slate-50 transition flex items-center gap-1.5 shadow-sm">
         <span class="material-symbols-outlined text-base">logout</span>
         <span>خروج</span>
@@ -45,508 +44,418 @@
     </div>
   </div>
 
-  <!-- Content -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-8 pt-28">
-    
-    <!-- Hero Banner -->
-    <div class="sleek-card-darkborder rounded-3xl p-7 bg-white relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
-      <div class="space-y-2 max-w-2xl">
-        <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-full">
-          <span>✨ من الإبداع إلى الذكاء | FROM CREATIVITY TO INTELLIGENCE</span>
-        </div>
-        <h1 id="merchantHeroHeader" class="text-2xl md:text-3xl font-black text-black leading-tight">
-          لوحة تحكم التاجر — <span class="underline decoration-2">هالة AI OS</span> 👋
-        </h1>
-        <p id="merchantHeroSub" class="text-slate-600 text-xs md:text-sm font-bold leading-relaxed">
-          إدارة الذكاء ومزامنة الـ RAG وصياغة محتوى السيو ومتابعة الأرباح
-        </p>
+  <main class="flex-1 max-w-6xl w-full mx-auto p-6 space-y-6 pt-28">
+
+    <!-- Header + store status -->
+    <div class="sleek-card-darkborder rounded-3xl p-7 bg-white flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-sm">
+      <div class="space-y-2">
+        <h1 id="merchantHeroHeader" class="text-2xl md:text-3xl font-black text-black leading-tight">لوحة تحكم متجرك</h1>
+        <p id="merchantHeroSub" class="text-xs text-slate-600 font-medium">وصف منتجات بالسيو · وكيل خدمة عملاء سعودي · ربط سلة</p>
       </div>
-      <div class="flex items-center gap-3 shrink-0">
-        <button onclick="triggerIngest()" class="sleek-btn-black px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition">
-          <span class="material-symbols-outlined text-base">sync</span>
-          <span>مزامنة RAG المعرفة</span>
-        </button>
+      <div class="flex items-center gap-3">
+        <div class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
+          <span class="block text-[11px] text-slate-600 font-bold">رصيد اليوم</span>
+          <span id="kpiUsage" class="text-lg font-black text-black">--</span>
+        </div>
+        <div id="storeLinkBadge" class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
+          <span class="block text-[11px] text-slate-600 font-bold">حالة المتجر</span>
+          <span id="storeLinkState" class="text-xs font-black text-black">جاري الفحص…</span>
+        </div>
       </div>
     </div>
 
-    <!-- KPIs -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-      <div class="sleek-card rounded-2xl p-5 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-600">المبيعات المستعادة بالواتساب</span>
-          <span class="material-symbols-outlined text-black text-xl">shopping_cart_checkout</span>
-        </div>
-        <div class="text-2xl font-black text-black">+ 14,250 <span class="text-xs font-bold">ريال</span></div>
-        <p class="text-xs text-slate-500 font-bold">من 57 سلة متروكة</p>
-      </div>
-
-      <div class="sleek-card rounded-2xl p-5 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-600">سرعة كاش الـ KV</span>
-          <span class="material-symbols-outlined text-black text-xl">bolt</span>
-        </div>
-        <div class="text-2xl font-black text-black">&lt; 5ms <span class="text-xs font-bold">استجابة</span></div>
-        <p class="text-xs text-slate-500 font-bold">معدل الإجابة اللحظية 98.4%</p>
-      </div>
-
-      <div class="sleek-card rounded-2xl p-5 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-600">أوصاف منتجات السيو</span>
-          <span class="material-symbols-outlined text-black text-xl">auto_awesome</span>
-        </div>
-        <div class="text-2xl font-black text-black">128 <span class="text-xs font-bold">وصف</span></div>
-        <p class="text-xs text-slate-500 font-bold">مقياس الجودة &gt; 92%</p>
-      </div>
-
-      <div class="sleek-card rounded-2xl p-5 space-y-2">
-        <div class="flex items-center justify-between">
-          <span class="text-xs font-bold text-slate-600">الباقة المجانية الرسمية</span>
-          <span class="material-symbols-outlined text-black text-xl">equalizer</span>
-        </div>
-        <div id="kpiUsage" class="text-xl font-black text-black">1,000 <span class="text-xs font-bold">رسالة/محادثة مجانية شهرياً</span></div>
-        <p id="kpiSubUsage" class="text-xs text-slate-500 font-bold">100% مجاناً معتمدة من Meta Cloud API 🎁</p>
-      </div>
+    <!-- Tabs -->
+    <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+      <button id="navTabStudio" onclick="switchTab('studio')" class="tab-on text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+        <span class="material-symbols-outlined text-base">edit_note</span><span>وصف المنتجات</span>
+      </button>
+      <button id="navTabAgent" onclick="switchTab('agent')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">support_agent</span><span>وكيل خدمة العملاء</span>
+      </button>
+      <button id="navTabStore" onclick="switchTab('store')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">storefront</span><span>متجري</span>
+      </button>
     </div>
 
-    <!-- ── Interactive Advanced Features Row ──────────────────────── -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- 1. Executive PDF Report Generator -->
-      <div class="sleek-card rounded-3xl p-6 space-y-4">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
-          <span class="material-symbols-outlined text-black">description</span>
-          <h3 class="font-black text-sm text-black">تقرير الأرباح والـ ROI الشهري الرسمي</h3>
+    <!-- ── 1. Product copy studio ─────────────────────────────── -->
+    <section id="sectionStudio" class="space-y-5">
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="space-y-1 border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-black text-black">وصف منتج مثالي — سيو السوق السعودي</h2>
+          <p class="text-xs text-slate-600 font-medium">عنوان، ميتا، نقاط بيع، أسئلة شائعة، وسوم، وسكيما — بلهجة سعودية بيضاء</p>
         </div>
-        <p class="text-xs text-slate-600 font-medium leading-relaxed">
-          إصدار واستخراج تقرير أداء مبيعات المتجر الرسمي بالريال بصيغة تنفيذية معتمدة.
-        </p>
-        <button onclick="generateMonthlyReport()" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-base">download</span>
-          <span>إصدار التقرير الشهري الآن</span>
-        </button>
-        <div id="reportOutput" class="hidden p-3 bg-slate-50 border border-slate-300 rounded-xl text-[11px] font-mono whitespace-pre-wrap text-black"></div>
-      </div>
 
-      <!-- 2. ZATCA Stage 2 Simplified E-Invoice QR -->
-      <div class="sleek-card rounded-3xl p-6 space-y-4">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
-          <span class="material-symbols-outlined text-black">qr_code_2</span>
-          <h3 class="font-black text-sm text-black">🇸🇦 الفاتورة الإلكترونية (ZATCA Stage 2)</h3>
-        </div>
-        <p class="text-xs text-slate-600 font-medium leading-relaxed">
-          توليد الفاتورة الضريبية المبسطة بـ QR Code لهيئة الزكاة والضريبة والجمارك وإرسالها بالواتساب.
-        </p>
-        <div class="space-y-2">
-          <input id="zatcaTotal" type="number" value="290" placeholder="مبلغ الطلب (ر.س)" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-2.5 text-black font-medium focus:outline-none"/>
-          <button onclick="generateZatcaInvoice()" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-            <span class="material-symbols-outlined text-base">receipt</span>
-            <span>توليد فاتورة هيئة الزكاة QR</span>
-          </button>
-        </div>
-        <div id="zatcaOutput" class="hidden p-3 bg-slate-50 border border-slate-300 rounded-xl text-[11px] font-mono whitespace-pre-wrap text-black"></div>
-      </div>
-
-      <!-- 3. Saudi Logistics Live Tracking (SMSA, SPL, Aramex) -->
-      <div class="sleek-card rounded-3xl p-6 space-y-4">
-        <div class="flex items-center gap-2 border-b border-slate-200 pb-3">
-          <span class="material-symbols-outlined text-black">local_shipping</span>
-          <h3 class="font-black text-sm text-black">🇸🇦 تتبع شركات الشحن (سبل SPL، سمسا)</h3>
-        </div>
-        <p class="text-xs text-slate-600 font-medium leading-relaxed">
-          إطلاق إشعار الواتساب التلقائي فور خروج الشحنة مع المندوب في الرياض وجدة.
-        </p>
-        <div class="space-y-2">
-          <select id="shippingCourier" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-xl p-2.5 text-black font-bold focus:outline-none">
-            <option value="SPL">سبل البريد السعودي (SPL)</option>
-            <option value="SMSA">سمسا إكسبريس (SMSA)</option>
-            <option value="Aramex">أرامكس (Aramex)</option>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input id="pName" type="text" placeholder="اسم المنتج (مثال: عطر عود ملكي 100مل)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <input id="pPrice" type="number" placeholder="السعر (ر.س)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <input id="pCategory" type="text" placeholder="الفئة (عطور، عبايات، تمور…)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <select id="pTone" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
+            <option value="white">لهجة بيضاء تسويقية ودودة</option>
+            <option value="formal">فصحى رسمية راقية</option>
+            <option value="luxury">فخامة وحصرية</option>
+            <option value="deals">حماس عروض</option>
+            <option value="funny">خفة دم سعودية</option>
           </select>
-          <button onclick="triggerShippingAlert()" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-            <span class="material-symbols-outlined text-base">send</span>
-            <span>إرسال إشعار الشحنة بالواتساب</span>
-          </button>
         </div>
-        <div id="shippingOutput" class="hidden p-3 bg-slate-50 border border-slate-300 rounded-xl text-[11px] font-mono whitespace-pre-wrap text-black"></div>
-      </div>
+        <textarea id="pFeatures" rows="2" placeholder="مزايا المنتج (اختياري) — افصل بينها بفاصلة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
 
-    </div>
-
-    <!-- ── Saudi Seasonal Playbooks & Tamara/Tabby Row ────────────── -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      
-      <!-- Tamara & Tabby Cart Recovery -->
-      <div class="sleek-card rounded-3xl p-6 space-y-3">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h3 class="font-black text-sm text-black flex items-center gap-2">
-            <span class="material-symbols-outlined text-black">credit_card</span>
-            <span>استرداد سلات تمارا وتابي (BNPL Cart Recovery)</span>
-          </h3>
-          <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 border border-slate-300 text-black">تقسيط 4 دفعات</span>
-        </div>
-        <p class="text-xs text-slate-600 font-medium">
-          قوالب رسائل تذكيرية متخصصة بالواتساب تحفز العميل على إكمال الدفع الآجل عبر تمارا أو تابي بدون فوائد.
-        </p>
-        <button onclick="alert('تم تفعيل قوالب استرداد تمارا وتابي التلقائية بالواتساب! 🎁')" class="w-full sleek-btn-white py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-          <span>تفعيل قوالب تمارا وتابي الآن</span>
-          <span class="material-symbols-outlined text-base">check_circle</span>
-        </button>
-      </div>
-
-      <!-- Saudi Seasonal Marketing Playbooks -->
-      <div class="sleek-card rounded-3xl p-6 space-y-3">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h3 class="font-black text-sm text-black flex items-center gap-2">
-            <span class="material-symbols-outlined text-black">event_available</span>
-            <span>دليل المواسم السعودية (Saudi Seasonal Playbooks)</span>
-          </h3>
-          <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-black text-white">يوم التأسيس & اليوم الوطني</span>
-        </div>
-        <p class="text-xs text-slate-600 font-medium">
-          حملات وقوالب موثقة جاهزة للتفعيل في يوم التأسيس (22 فبراير)، اليوم الوطني (23 سبتمبر)، وشهر رمضان.
-        </p>
-        <button onclick="alert('تم تجهيز وتفعيل دليل قوالب المواسم السعودية لمتجرك! 🇸🇦🎉')" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-          <span>تفعيل دليل قوالب المواسم السعودية</span>
-          <span class="material-symbols-outlined text-base">rocket_launch</span>
-        </button>
-      </div>
-
-    </div>
-
-    <!-- ── Flow Builder Container ──────────────────────────────── -->
-    <div class="space-y-3">
-      <div class="sleek-card rounded-3xl p-6 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h3 class="font-black text-base text-black">أتمتة سير العمل باني المسارات التلقائية (No-Code Builder)</h3>
-          <span class="text-xs font-bold px-3 py-1 rounded-full bg-black text-white">Visual Flow</span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-right text-xs">
-          <div class="p-4 bg-slate-50 border border-slate-300 rounded-2xl space-y-2">
-            <span class="font-bold text-black block">1. المحفز: سلة متروكة</span>
-            <p class="text-slate-600 text-[11px]">العميل أضاف منتجات ولم يكمل الدفع خلال 15 دقيقة.</p>
-          </div>
-          <div class="p-4 bg-slate-50 border border-slate-300 rounded-2xl space-y-2">
-            <span class="font-bold text-black block">2. بصمة صوتية بالواتساب</span>
-            <p class="text-slate-600 text-[11px]">إرسال بصمة صوتية سعودية طبيعية تذكيرية.</p>
-          </div>
-          <div class="p-4 bg-slate-50 border border-slate-300 rounded-2xl space-y-2">
-            <span class="font-bold text-black block">3. خصم 5% بعد 40 دقيقة</span>
-            <p class="text-slate-600 text-[11px]">إرسال رابط الدفع السريع مع كوبون الخصم.</p>
-          </div>
-          <div class="p-4 bg-slate-50 border border-slate-300 rounded-2xl space-y-2">
-            <span class="font-bold text-black block">4. تأكيد الشراء برقم التتبع</span>
-            <p class="text-slate-600 text-[11px]">تأكيد واسترداد السلة فوراً بالواتساب.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 4. Smart Emotional Cart Recovery & BNPL Monthly Calculator Simulator -->
-      <div class="sleek-card rounded-3xl p-6 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-black text-white flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-xl">favorite</span>
-            </div>
-            <div>
-              <h3 class="font-black text-sm text-black">مُحاكي السلات العاطفية وتكتيك تمارا/تابي</h3>
-              <p class="text-xs text-slate-500 font-bold">صياغة رسالة "ما يرضينا يظل بخاطرك" + قسط 30~50 ريال/شهر</p>
-            </div>
-          </div>
-          <span class="text-xs font-bold px-3 py-1 rounded-full bg-black text-white">Emotional Recovery</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input id="recCustomer" type="text" value="عبدالمجيد" placeholder="اسم العميل" class="bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium"/>
-          <input id="recProduct" type="text" value="عطر أورا الملكي 100ml" placeholder="اسم المنتج في السلة" class="bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium"/>
-          <input id="recPrice" type="number" value="200" placeholder="سعر المنتج الأصلي (ر.س)" class="bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium"/>
-        </div>
-
-        <button onclick="triggerEmotionalRecoveryTest()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-base">send</span>
-          <span>توليد رسالة الاسترداد العاطفية وحساب قسط تمارا/تابي الآن</span>
+        <button id="genBtn" onclick="generateCopy()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-base">auto_awesome</span>
+          <span id="genBtnText">اكتب الوصف الآن</span>
         </button>
 
-        <div id="recoveryOutput" class="hidden bg-slate-900 text-white p-4 rounded-xl font-mono text-xs whitespace-pre-wrap leading-relaxed border border-black shadow-inner"></div>
+        <div id="copyFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
       </div>
 
-      <!-- 5. AI Marketing Campaign & Coupon Studio -->
-      <div class="sleek-card rounded-3xl p-6 space-y-4 border-2 border-black">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-black text-white flex items-center justify-center font-bold">
-              <span class="material-symbols-outlined text-xl">auto_awesome</span>
-            </div>
-            <div>
-              <h3 class="font-black text-sm text-black">استوديو الحملات وأكواد الخصم بالذكاء الاصطناعي (AI Campaign Studio)</h3>
-              <p class="text-xs text-slate-500 font-bold">اكتب فكرة بسيطة.. وهالة تتكفل بصياغتها بشخصيتك وتسويق كود الخصم بالواتساب! 🪄</p>
-            </div>
+      <div id="copyResult" class="hidden space-y-4">
+        <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 class="text-sm font-black text-black">الوصف التسويقي</h3>
+            <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
           </div>
-          <span class="text-xs font-bold px-3 py-1 rounded-full bg-black text-white">AI Crafting Engine</span>
-        </div>
+          <div id="outDescription" class="text-xs leading-relaxed text-black whitespace-pre-wrap"></div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <!-- Discount Config Box -->
-          <div class="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-300">
-            <h4 class="font-bold text-xs text-black flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-sm">confirmation_number</span>
-              <span>تثبيت كود ونسبة الخصم للمتجر:</span>
-            </h4>
-            <div class="grid grid-cols-2 gap-2">
-              <input id="cmpDiscountCode" type="text" value="AURA20" placeholder="كود الخصم (مثال: AURA20)" class="bg-white border border-slate-300 text-xs rounded-xl p-3 font-mono font-bold text-black"/>
-              <input id="cmpDiscountPercent" type="number" value="20" placeholder="نسبة الخصم (%)" class="bg-white border border-slate-300 text-xs rounded-xl p-3 font-bold text-black"/>
-            </div>
-            <button onclick="saveStoreDiscountCode()" class="w-full bg-black text-white py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
-              <span class="material-symbols-outlined text-sm">save</span>
-              <span>تثبيت الكود في ذاكرة الأيجنت</span>
-            </button>
-          </div>
-
-          <!-- Simple Idea Generator Box -->
-          <div class="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-300">
-            <h4 class="font-bold text-xs text-black flex items-center gap-1.5">
-              <span class="material-symbols-outlined text-sm">lightbulb</span>
-              <span>فكرتك البسيطة للحملة (سطر واحد):</span>
-            </h4>
-            <input id="cmpIdeaInput" type="text" value="نزلنا عطر جديد بمناسبة الصيف ونبي نذكر العملاء بالخصم" placeholder="اكتب مجرد فكرة بسيطة..." class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium"/>
-            <button onclick="generateAiCampaignMessage()" class="w-full sleek-btn-black py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5">
-              <span class="material-symbols-outlined text-sm">auto_awesome</span>
-              <span>صياغة الرسالة بذكاء هالة بشخصيتي 🪄</span>
-            </button>
+          <div class="pt-3 border-t border-slate-200 space-y-2">
+            <span class="text-[11px] font-bold text-slate-600">نقاط البيع</span>
+            <ul id="outHighlights" class="text-xs text-black space-y-1 list-disc pr-5"></ul>
           </div>
         </div>
 
-        <!-- Generated Message Output & Broadcast Action -->
-        <div id="campaignOutputArea" class="hidden space-y-3 pt-2">
-          <div class="space-y-1 text-right">
-            <label class="text-xs font-bold text-black">💬 الرسالة المولدة بذكاء الاصطناعي وبنفس شخصيتك (جاهزة للإرسال):</label>
-            <textarea id="cmpGeneratedText" rows="4" class="w-full bg-slate-900 text-white border border-black text-xs rounded-xl p-4 font-mono leading-relaxed focus:outline-none"></textarea>
+        <div class="sleek-card rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black border-b border-slate-200 pb-3">حقول السيو (SEO)</h3>
+          <div class="grid grid-cols-1 gap-2.5 text-xs">
+            <div><span class="font-bold text-slate-600">العنوان:</span> <span id="outTitle" class="text-black"></span></div>
+            <div><span class="font-bold text-slate-600">عنوان البحث:</span> <span id="outSeoTitle" class="text-black"></span></div>
+            <div><span class="font-bold text-slate-600">الرابط:</span> <span id="outSlug" class="text-black font-mono"></span></div>
+            <div><span class="font-bold text-slate-600">وصف الميتا:</span> <span id="outMeta" class="text-black"></span></div>
+            <div><span class="font-bold text-slate-600">الكلمة المفتاحية:</span> <span id="outFocusKw" class="text-black"></span></div>
+            <div><span class="font-bold text-slate-600">الوسوم:</span> <span id="outTags" class="text-black"></span></div>
           </div>
+        </div>
 
-          <button onclick="broadcastAiCampaign()" class="w-full bg-black text-white py-3.5 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg">
-            <span class="material-symbols-outlined text-base">rocket_launch</span>
-            <span>إطلاق وإرسال الحملة بالواتساب لجميع عملاء المتجر الآن! 🚀</span>
-          </button>
+        <div class="sleek-card rounded-3xl p-6 space-y-3 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 class="text-sm font-black text-black">نسخة واتساب</h3>
+            <button onclick="copyToClipboard('outWhatsapp')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
+          </div>
+          <div id="outWhatsapp" class="text-xs leading-relaxed text-black whitespace-pre-wrap"></div>
+        </div>
+
+        <div id="publishBox" class="hidden sleek-card-darkborder rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black">نشر مباشر على سلة</h3>
+          <p class="text-xs text-slate-600 font-medium">اختر المنتج من متجرك لتحديث وصفه بالوصف أعلاه.</p>
+          <select id="publishProduct" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></select>
+          <button onclick="publishToSalla()" class="w-full sleek-btn-white py-3 rounded-xl text-xs transition">انشر على المنتج</button>
+          <div id="publishFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
         </div>
       </div>
-    </div>
+    </section>
+
+    <!-- ── 2. Store customer-service agent ────────────────────── -->
+    <section id="sectionAgent" class="hidden space-y-5">
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="space-y-1 border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-black text-black">وكيل خدمة عملاء متجرك</h2>
+          <p class="text-xs text-slate-600 font-medium">يرد على عملاء متجرك بلهجتك — اضبط اللهجة والتعليمات، وجرّبه مباشرة</p>
+        </div>
+
+        <div class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold text-black mb-1">لهجة الوكيل:</label>
+            <select id="agentDialect" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
+              <option value="saudi_najdi">سعودي أبيض — نجدية خفيفة</option>
+              <option value="saudi_hijazi">سعودي أبيض — حجازية لطيفة</option>
+              <option value="fusha_friendly">فصحى عصرية ودية</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-black mb-1">تعليمات خاصة بمتجرك:</label>
+            <textarea id="agentInstructions" rows="4" placeholder="مثال: التوصيل ٢-٤ أيام داخل الرياض. الاسترجاع خلال ١٤ يوم. لا نبيع بالجملة." class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+          </div>
+          <button onclick="saveAgentContext()" class="w-full sleek-btn-black py-3 rounded-xl text-xs transition">حفظ وتطبيق</button>
+          <div id="agentFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+        </div>
+      </div>
+
+      <div class="sleek-card rounded-3xl p-6 space-y-3 shadow-sm">
+        <h3 class="text-sm font-black text-black border-b border-slate-200 pb-3">جرّب وكيلك</h3>
+        <div id="chatLog" class="space-y-2 max-h-72 overflow-y-auto text-xs"></div>
+        <div class="flex gap-2">
+          <input id="chatInput" type="text" placeholder="اكتب سؤال عميل…" onkeydown="if(event.key==='Enter')sendChat()" class="flex-1 bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <button onclick="sendChat()" class="sleek-btn-black px-5 rounded-xl text-xs transition">إرسال</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. Store connection ────────────────────────────────── -->
+    <section id="sectionStore" class="hidden space-y-5">
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="space-y-1 border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-black text-black">ربط متجر سلة</h2>
+          <p class="text-xs text-slate-600 font-medium">اربط متجرك لسحب منتجاتك ونشر الأوصاف مباشرة</p>
+        </div>
+        <div id="storeConnected" class="hidden space-y-3">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <span class="text-[11px] font-bold text-slate-600 block">المتجر المرتبط</span>
+            <span id="connectedStoreName" class="text-sm font-black text-black"></span>
+          </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-600 block mb-2">منتجاتك</span>
+            <div id="productList" class="space-y-1.5 max-h-80 overflow-y-auto"></div>
+          </div>
+        </div>
+        <div id="storeDisconnected" class="hidden space-y-3">
+          <p class="text-xs text-slate-600 font-medium">متجرك غير مرتبط بعد.</p>
+          <a href="/api/auth/salla/install" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-base">storefront</span>
+            <span>اربط متجر سلة الآن</span>
+          </a>
+        </div>
+      </div>
+    </section>
 
   </main>
 
-  <!-- Web Chat Widget -->
-  <div id="widgetBox" class="fixed bottom-6 right-6 z-50">
-    <button onclick="alert('موظفة المتجر الرقمية جاهزة ومفعّلة على موقعك!')" class="w-14 h-14 rounded-full bg-black text-white shadow-2xl flex items-center justify-center font-bold text-xl border border-slate-700">
-      <span class="material-symbols-outlined text-2xl">chat</span>
-    </button>
-  </div>
-
   <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-600">
-    <p>حقوق الطبع والنشر © 2026 <strong>منصة هالة (Hala AI OS)</strong> — جميع الحقوق محفوظة.</p>
+    <p>حقوق الطبع والنشر © 2026 <strong>أورا للتسويق (Aura Marketing)</strong> — جميع الحقوق محفوظة.</p>
   </footer>
 
   <script>
-    async function initMerchantDashboard() {
-      try {
-        const res = await fetch('/api/auth/me', { method: 'POST' });
-        const data = await res.json();
-        if (data?.loggedIn) {
-          const storeName = data?.storeName || 'متجري الذكي';
-          const storeId = data?.storeId || 'm_demo';
-          const creditsUsed = data?.usage?.credits_used ?? 0;
+    let lastCopy = null;
+    // chat.js takes the full turn list and picks the last user message itself,
+    // so keeping history here is what gives the agent conversational context.
+    let chatHistory = [];
 
-          document.getElementById('navStoreTitle').innerText = `لوحة تحكم المتجر — ${storeName}`;
-          document.getElementById('merchantHeroHeader').innerHTML = `لوحة تحكم المتجر — <span class="underline decoration-2">${storeName}</span> 👋`;
-          document.getElementById('kpiUsage').innerHTML = `${creditsUsed} / 1,000 <span class="text-xs font-bold">محادثة مجانية شهرياً</span>`;
-          document.getElementById('kpiSubUsage').innerText = `100% مجاناً معتمدة من Meta Cloud API 🎁`;
-
-          if (data?.isAdmin) {
-            const adminBtn = document.getElementById('adminPortalBtn');
-            if (adminBtn) adminBtn.classList.remove('hidden');
-          }
-        }
-      } catch (err) {}
+    function switchTab(tab) {
+      const tabs = ['studio', 'agent', 'store'];
+      tabs.forEach(t => {
+        const btn = document.getElementById('navTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        const sec = document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) btn.className = (t === tab ? 'tab-on' : 'tab-off') + ' text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2' + (t === tab ? ' shadow-sm' : '');
+        if (sec) sec.classList.toggle('hidden', t !== tab);
+      });
+      if (tab === 'agent') loadAgentContext();
+      if (tab === 'store') loadStore();
     }
 
-    async function generateMonthlyReport() {
-      const out = document.getElementById('reportOutput');
-      out.classList.remove('hidden');
-      out.innerText = 'جاري إصدار واستخراج التقرير الشهري بالريال... ⏳';
-
-      try {
-        const res = await fetch('/api/store/report', { method: 'POST' });
-        const data = await res.json();
-        if (data?.ok && data?.report) {
-          out.innerText = JSON.stringify(data.report, null, 2);
-        }
-      } catch (err) {
-        out.innerText = 'تعذر إصدار التقرير حالياً.';
-      }
+    function showMsg(id, text) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('hidden');
+      el.innerText = text;
     }
 
-    async function saveStoreDiscountCode() {
-      const discountCode = document.getElementById('cmpDiscountCode')?.value?.trim() || 'AURA20';
-      const discountPercent = document.getElementById('cmpDiscountPercent')?.value || 20;
+    async function copyToClipboard(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      try { await navigator.clipboard.writeText(el.innerText); showMsg('copyFeedback', 'تم النسخ ✅'); } catch (e) {}
+    }
+
+    // ── Product copy ──────────────────────────────────────────
+    async function generateCopy() {
+      const name = document.getElementById('pName').value.trim();
+      if (!name) { showMsg('copyFeedback', 'اكتب اسم المنتج أولاً.'); return; }
+
+      const btn = document.getElementById('genBtn');
+      const btnText = document.getElementById('genBtnText');
+      btn.disabled = true;
+      btnText.innerText = 'جاري الكتابة… ⚡';
+      document.getElementById('copyFeedback').classList.add('hidden');
 
       try {
-        const res = await fetch('/api/store/campaign', {
+        const res = await fetch('/api/copy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'save_discount', discountCode, discountPercent })
+          body: JSON.stringify({
+            name,
+            price: document.getElementById('pPrice').value,
+            category: document.getElementById('pCategory').value.trim(),
+            tone: document.getElementById('pTone').value,
+            features: document.getElementById('pFeatures').value.trim()
+          })
         });
         const data = await res.json();
-        if (data?.ok) {
-          alert(data.message || 'تم تثبيت كود الخصم في ذاكرة الأيجنت بنجاح!');
+
+        if (data?.error) {
+          showMsg('copyFeedback', data.error);
+        } else {
+          lastCopy = data;
+          renderCopy(data);
+          document.getElementById('copyResult').classList.remove('hidden');
+          loadUsage();
         }
       } catch (err) {
-        alert('تعذر حفظ كود الخصم.');
+        showMsg('copyFeedback', 'تعذر الاتصال. حاول مرة ثانية.');
       }
+
+      btn.disabled = false;
+      btnText.innerText = 'اكتب الوصف الآن';
     }
 
-    async function generateAiCampaignMessage() {
-      const idea = document.getElementById('cmpIdeaInput')?.value?.trim() || 'عرض صيفي على المنتجات الجديدة';
-      const discountCode = document.getElementById('cmpDiscountCode')?.value?.trim() || 'AURA20';
-      const discountPercent = document.getElementById('cmpDiscountPercent')?.value || 20;
+    function renderCopy(d) {
+      const cw = d.copywriting || {};
+      const seo = d.seo || {};
+      document.getElementById('outDescription').innerText = cw.description || d.result || '';
+      document.getElementById('outWhatsapp').innerText = cw.whatsapp || d.whatsapp || '';
+      document.getElementById('outTitle').innerText = seo.title || '';
+      document.getElementById('outSeoTitle').innerText = seo.seoTitle || '';
+      document.getElementById('outSlug').innerText = seo.slug || '';
+      document.getElementById('outMeta').innerText = seo.metaDescription || '';
+      document.getElementById('outFocusKw').innerText = seo.focusKeyword || '';
+      document.getElementById('outTags').innerText = (d.tags || []).join('، ');
 
-      const outArea = document.getElementById('campaignOutputArea');
-      const textEl = document.getElementById('cmpGeneratedText');
-      if (outArea) outArea.classList.remove('hidden');
-      if (textEl) textEl.value = 'جاري صياغة الرسالة بذكاء هالة وبنفس شخصيتك... 🪄';
+      const ul = document.getElementById('outHighlights');
+      ul.innerHTML = '';
+      (cw.highlights || []).forEach(h => {
+        const li = document.createElement('li');
+        li.innerText = h;
+        ul.appendChild(li);
+      });
+    }
 
+    async function publishToSalla() {
+      const productId = document.getElementById('publishProduct').value;
+      if (!productId || !lastCopy) return;
       try {
-        const res = await fetch('/api/store/campaign', {
+        const res = await fetch('/api/store/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'generate', idea, discountCode, discountPercent })
+          body: JSON.stringify({ productId, description: lastCopy.copywriting?.description || lastCopy.result })
         });
         const data = await res.json();
-        if (data?.ok && data?.campaign?.generatedMessage) {
-          if (textEl) textEl.value = data.campaign.generatedMessage;
-        }
-      } catch (err) {
-        if (textEl) textEl.value = 'تعذر توليد الرسالة التسويقية.';
+        showMsg('publishFeedback', data?.ok ? 'تم النشر على المنتج ✅' : (data?.error || 'تعذر النشر.'));
+      } catch (e) {
+        showMsg('publishFeedback', 'تعذر الاتصال.');
       }
     }
 
-    async function broadcastAiCampaign() {
-      const msg = document.getElementById('cmpGeneratedText')?.value;
+    // ── Agent settings ────────────────────────────────────────
+    async function loadAgentContext() {
+      try {
+        const res = await fetch('/api/store/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        if (data?.dialect) document.getElementById('agentDialect').value = data.dialect;
+        if (data?.instructions) document.getElementById('agentInstructions').value = data.instructions;
+      } catch (e) {}
+    }
+
+    async function saveAgentContext() {
+      try {
+        const res = await fetch('/api/store/context', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            dialect: document.getElementById('agentDialect').value,
+            instructions: document.getElementById('agentInstructions').value
+          })
+        });
+        const data = await res.json();
+        showMsg('agentFeedback', data?.error ? data.error : 'تم الحفظ والتطبيق ✅');
+      } catch (e) {
+        showMsg('agentFeedback', 'تعذر الحفظ.');
+      }
+    }
+
+    function appendChat(role, text) {
+      const log = document.getElementById('chatLog');
+      const div = document.createElement('div');
+      div.className = role === 'user'
+        ? 'p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-black'
+        : 'p-2.5 rounded-xl bg-black text-white';
+      div.innerText = text;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const msg = input.value.trim();
       if (!msg) return;
+      appendChat('user', msg);
+      input.value = '';
+      chatHistory.push({ role: 'user', content: msg });
 
       try {
-        const res = await fetch('/api/store/campaign', {
+        const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'broadcast', message: msg })
+          body: JSON.stringify({ messages: chatHistory.slice(-8) })
         });
         const data = await res.json();
-        if (data?.ok && data?.broadcast) {
-          alert('🚀 ' + (data.broadcast.status || 'تم بث الحملة التسويقية بالواتساب بنجاح!'));
-        }
-      } catch (err) {
-        alert('تعذر بث الحملة.');
+        const reply = data?.reply || data?.result || data?.error || 'لا يوجد رد.';
+        appendChat('bot', reply);
+        if (data?.reply || data?.result) chatHistory.push({ role: 'assistant', content: reply });
+        loadUsage();
+      } catch (e) {
+        appendChat('bot', 'تعذر الاتصال.');
       }
     }
 
-    async function triggerEmotionalRecoveryTest() {
-      const customerName = document.getElementById('recCustomer').value || 'عبدالمجيد';
-      const productName = document.getElementById('recProduct').value || 'عطر أورا الملكي 100ml';
-      const originalPriceSar = document.getElementById('recPrice').value || 200;
-
-      const out = document.getElementById('recoveryOutput');
-      out.classList.remove('hidden');
-      out.innerText = 'جاري صياغة رسالة الاسترداد العاطفية وحساب الأقساط الشهرية... ⚡';
-
+    // ── Store ─────────────────────────────────────────────────
+    async function loadStore() {
       try {
-        const res = await fetch('/api/store/recovery', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ customerName, productName, originalPriceSar })
-        });
+        const res = await fetch('/api/store/overview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-        if (data?.ok && data?.recovery) {
-          out.innerText = `💬 النص المرسل بالواتساب للعميل:\n${data.recovery.whatsappMessage}\n\n📊 تفاصيل الحساب الذكية:\nالسعر الأصلي: ${data.recovery.pricing.originalPriceSar} ر.س | الخصم: ${data.recovery.pricing.discountPercent}%\nالقسط الشهري بـ تمارا/تابي: ${data.recovery.pricing.monthlyInstallmentSar} ر.س / شهرياً (على 4 دفعات)! 🎉`;
+
+        const linked = data?.linked && data?.platforms?.salla;
+        document.getElementById('storeConnected').classList.toggle('hidden', !linked);
+        document.getElementById('storeDisconnected').classList.toggle('hidden', !!linked);
+        document.getElementById('storeLinkState').innerText = linked ? 'مرتبط ✅' : 'غير مرتبط';
+
+        if (linked) {
+          document.getElementById('connectedStoreName').innerText = data.storeName || '—';
+          const list = document.getElementById('productList');
+          const sel = document.getElementById('publishProduct');
+          list.innerHTML = '';
+          sel.innerHTML = '';
+          (data.products || []).forEach(p => {
+            const row = document.createElement('div');
+            row.className = 'p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-black';
+            row.innerText = p.name;
+            list.appendChild(row);
+
+            const opt = document.createElement('option');
+            opt.value = p.id;
+            opt.innerText = p.name;
+            sel.appendChild(opt);
+          });
+          document.getElementById('publishBox').classList.toggle('hidden', !(data.products || []).length);
         }
-      } catch (err) {
-        out.innerText = 'تعذر توليد رسالة الاسترداد العاطفية.';
+      } catch (e) {
+        document.getElementById('storeLinkState').innerText = 'غير معروف';
       }
     }
 
-    async function triggerShippingAlert() {
-      const courier = document.getElementById('shippingCourier').value || 'SPL';
-      const out = document.getElementById('shippingOutput');
-      out.classList.remove('hidden');
-      out.innerText = 'جاري إرسال إشعار التتبع بالواتساب... 🚚';
-
+    async function loadUsage() {
       try {
-        const res = await fetch('/api/webhooks/shipping', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ provider: courier, status: 'out_for_delivery' })
-        });
+        const res = await fetch('/api/usage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-        if (data?.ok && data?.webhook) {
-          out.innerText = JSON.stringify(data.webhook, null, 2);
+        if (data?.remaining !== undefined) {
+          document.getElementById('kpiUsage').innerText = `${data.remaining}/${data.limit ?? ''}`;
         }
-      } catch (err) {
-        out.innerText = 'تعذر إرسال الإشعار.';
-      }
-    }
-
-    async function verifyBankSlip() {
-      const amount = document.getElementById('ocrAmount').value || 450;
-      const out = document.getElementById('ocrOutput');
-      out.classList.remove('hidden');
-      out.innerText = 'جاري فحص الإيصال بالذكاء الاصطناعي Vision AI... ⏳';
-
-      try {
-        const res = await fetch('/api/store/ocr', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount })
-        });
-        const data = await res.json();
-        if (data?.ok && data?.verification) {
-          out.innerText = JSON.stringify(data.verification, null, 2);
-        }
-      } catch (err) {
-        out.innerText = 'تعذر التحقق من الإيصال.';
-      }
-    }
-
-    async function generateVoiceNote() {
-      const text = document.getElementById('voiceText').value || 'أهلاً بك!';
-      const out = document.getElementById('voiceOutput');
-      out.classList.remove('hidden');
-      out.innerText = 'جاري توليد البصمة الصوتية بلهجة سعودية طبيعية... 🎙️';
-
-      try {
-        const res = await fetch('/api/store/voice', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text })
-        });
-        const data = await res.json();
-        if (data?.ok && data?.voiceNote) {
-          out.innerText = JSON.stringify(data.voiceNote, null, 2);
-        }
-      } catch (err) {
-        out.innerText = 'تعذر توليد البصمة الصوتية.';
-      }
-    }
-
-    function triggerIngest() {
-      alert('تم تحديث ومزامنة ذاكرة RAG بمنتجاتك وسياساتك فوراً! ⚡');
+      } catch (e) {}
     }
 
     async function handleMerchantLogout() {
-      try {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        window.location.href = '/login';
-      } catch (err) {
-        window.location.href = '/login';
-      }
+      try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {}
+      window.location.href = '/login';
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      initMerchantDashboard();
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/auth/me', { method: 'POST' });
+        const data = await res.json();
+        if (!data?.loggedIn) { window.location.href = '/login'; return; }
+        if (data?.storeName) {
+          document.getElementById('navStoreTitle').innerText = data.storeName;
+          document.getElementById('merchantHeroHeader').innerText = data.storeName;
+        }
+        if (data?.isAdmin) document.getElementById('adminPortalBtn').classList.remove('hidden');
+      } catch (e) {}
+      loadUsage();
+      loadStore();
     });
   </script>
+
 </body>
 </html>

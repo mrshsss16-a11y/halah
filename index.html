@@ -221,14 +221,10 @@
               </div>
 
               <!-- 1-Click Quick Auth Buttons -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <div class="grid grid-cols-1 gap-2.5">
                 <a href="/api/auth/salla/install" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-sm">
                   <span class="material-symbols-outlined text-base">storefront</span>
                   <span>الدخول بمتجر سلة (Salla)</span>
-                </a>
-                <a href="/api/auth/zid/install" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-900 border border-slate-300 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
-                  <span class="material-symbols-outlined text-base">shopping_bag</span>
-                  <span>الدخول بمتجر زد (Zid)</span>
                 </a>
               </div>
 
@@ -239,17 +235,10 @@
               </div>
 
               <div class="space-y-2">
-                <label class="block text-xs font-bold text-slate-800">
-                  رابط متجرك الإلكتروني:
-                </label>
-                
-                <div class="flex flex-col sm:flex-row items-center gap-2 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
-                  <input id="storeUrlInput" type="text" placeholder="salla.sa/mystore أو brand.com" class="w-full bg-transparent text-xs md:text-sm font-medium text-slate-900 focus:outline-none px-3 py-2.5"/>
-                  <button onclick="generateInstantAgentAndRedirect()" class="w-full sm:w-auto wire-btn px-6 py-3 rounded-xl text-xs font-bold shrink-0 flex items-center justify-center gap-1.5">
-                    <span class="material-symbols-outlined text-sm">bolt</span>
-                    <span>اصنع موظفتك الآن</span>
-                  </button>
-                </div>
+                <a href="/login" class="w-full wire-btn px-6 py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5">
+                  <span class="material-symbols-outlined text-sm">bolt</span>
+                  <span>ابدأ مجاناً — أنشئ حسابك</span>
+                </a>
               </div>
 
               <div class="flex items-center justify-center gap-4 pt-2 text-[11px] text-slate-500 font-medium border-t border-slate-100">
@@ -282,30 +271,6 @@
     <p>منصة هالة AI OS — نظام التشغيل الذكي للمتاجر الإلكترونية بالسعودية</p>
     <p>حقوق الطبع والنشر © 2026 <strong>منصة هالة (Hala AI OS)</strong> — جميع الحقوق محفوظة.</p>
   </footer>
-
-  <script>
-    async function generateInstantAgentAndRedirect() {
-      const storeUrl = document.getElementById('storeUrlInput').value.trim();
-      if (!storeUrl) {
-        alert('أدخل رابط متجرك الإلكتروني أولاً.');
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/store/instant_agent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ storeUrl })
-        });
-        const data = await res.json();
-        
-        const storeId = data.storeId || 'instant_store';
-        window.location.href = `dashboard.html?storeId=${storeId}&agentName=${encodeURIComponent(data.agentName || 'موظفة المتجر')}`;
-      } catch (err) {
-        window.location.href = 'dashboard.html';
-      }
-    }
-  </script>
 
   <!-- GSAP 3 & ScrollTrigger CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>

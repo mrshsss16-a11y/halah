@@ -89,45 +89,40 @@ async function runTests() {
   const turnstileDev = await verifyTurnstileToken({}, "dummy_token");
   assert(turnstileDev.success && turnstileDev.bypass, "verifyTurnstileToken passes gracefully when secret key is unset");
 
-  // 6. Test New Endpoints: Report, OCR Bank Verification, Voice Note Generator
-  const reportMod = await import("../functions/api/store/report.js");
-  assert(typeof reportMod.onRequestPost === "function", "report.js exports valid onRequestPost middleware");
+  // 6. Pillar 1 — product copy (SEO + Saudi market)
+  const copyMod = await import("../functions/api/copy.js");
+  assert(typeof copyMod.onRequestPost === "function", "copy.js exports valid onRequestPost middleware");
 
-  const ocrMod = await import("../functions/api/store/ocr.js");
-  assert(typeof ocrMod.onRequestPost === "function", "ocr.js exports valid onRequestPost middleware");
+  // 7. Pillar 2 — customer-service agents (store chat + WhatsApp)
+  const chatMod = await import("../functions/api/chat.js");
+  assert(typeof chatMod.onRequestPost === "function", "chat.js exports valid onRequestPost middleware");
 
-  const voiceMod = await import("../functions/api/store/voice.js");
-  assert(typeof voiceMod.onRequestPost === "function", "voice.js exports valid onRequestPost middleware");
+  const waWebhookMod = await import("../functions/api/whatsapp/webhook.js");
+  assert(typeof waWebhookMod.onRequestPost === "function", "whatsapp/webhook.js exports valid onRequestPost middleware");
+  assert(typeof waWebhookMod.onRequestGet === "function", "whatsapp/webhook.js exports the Meta verification handshake");
 
-  // 7. Test Saudi Market Endpoints: ZATCA Stage 2 E-Invoice & Saudi Shipping Webhook
-  const zatcaMod = await import("../functions/api/store/zatca.js");
-  assert(typeof zatcaMod.onRequestPost === "function", "zatca.js exports valid onRequestPost middleware");
-
-  const shippingMod = await import("../functions/api/webhooks/shipping.js");
-  assert(typeof shippingMod.onRequestPost === "function", "shipping.js exports valid onRequestPost middleware");
-
-  // 8. Test Merchant Custom Agent Persona Studio API & Recovery API
   const personaMod = await import("../functions/api/store/persona.js");
   assert(typeof personaMod.onRequestPost === "function", "persona.js exports valid onRequestPost middleware");
 
-  // 9. Test Trendyol Marketplace API & Webhook Compliance
-  const tyMod = await import("../functions/_lib/integrations/trendyol.js");
-  const tyHeadersRes = tyMod.tyHeaders({ api_key: "k123", api_secret: "s456", seller_id: "7890" });
-  assert(tyHeadersRes["User-Agent"] === "7890 - SelfIntegration", "Trendyol User-Agent header matches documentation");
+  const contextMod = await import("../functions/api/store/context.js");
+  assert(typeof contextMod.onRequestPost === "function", "store/context.js exports valid onRequestPost middleware");
 
-  const tyWebhookMod = await import("../functions/api/webhooks/trendyol.js");
-  assert(typeof tyWebhookMod.onRequestPost === "function", "webhooks/trendyol.js exports valid onRequestPost middleware");
+  // 8. Salla — the only storefront integration in scope
+  const publishMod = await import("../functions/api/store/publish.js");
+  assert(typeof publishMod.onRequestPost === "function", "store/publish.js exports valid onRequestPost middleware");
 
-  // 10. Test AI Campaign & Coupon Studio API
-  const campaignMod = await import("../functions/api/store/campaign.js");
-  assert(typeof campaignMod.onRequestPost === "function", "campaign.js exports valid onRequestPost middleware");
+  const sallaWebhookMod = await import("../functions/api/webhooks/salla.js");
+  assert(typeof sallaWebhookMod.onRequestPost === "function", "webhooks/salla.js exports valid onRequestPost middleware");
 
-  const generatedCmp = campaignMod.generateAiCampaignMessage({ idea: "عروض الصيف الفاخرة", discountCode: "SUMMER20", discountPercent: 20 });
-  assert(generatedCmp.includes("SUMMER20"), "AI campaign message generation includes discount code SUMMER20");
-
-  // 11. Test Password Reset & OTP Recovery API & Google OAuth (Agent G Requirements)
+  // 9. Pillar 3 — accounts portal
   const forgotMod = await import("../functions/api/auth/forgot_password.js");
   assert(typeof forgotMod.onRequestPost === "function", "forgot_password.js exports valid onRequestPost middleware");
+
+  const signupMod = await import("../functions/api/auth/signup.js");
+  assert(typeof signupMod.onRequestPost === "function", "signup.js exports valid onRequestPost middleware");
+
+  const loginMod = await import("../functions/api/auth/login.js");
+  assert(typeof loginMod.onRequestPost === "function", "login.js exports valid onRequestPost middleware");
 
   const resetMod = await import("../functions/api/auth/reset_password.js");
   assert(typeof resetMod.onRequestPost === "function", "reset_password.js exports valid onRequestPost middleware");

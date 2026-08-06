@@ -85,10 +85,6 @@
         <span class="material-symbols-outlined text-base">analytics</span>
         <span>المؤشرات العامة</span>
       </button>
-      <button id="navTabProject" onclick="switchAdminTab('project')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
-        <span class="material-symbols-outlined text-base">account_tree</span>
-        <span>إدارة المشروع والوكلاء</span>
-      </button>
       <button id="navTabAuraWa" onclick="switchAdminTab('auraWa')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
         <span class="material-symbols-outlined text-base">chat</span>
         <span>أيجنت واتساب أورا</span>
@@ -144,142 +140,6 @@
           </div>
           <div id="kpiBookings" class="text-3xl font-black text-black">--</div>
           <p class="text-[11px] text-slate-500 font-mono">طلبات الاستشارات المسجلة</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── 2. Project Architecture & Agents Management ──────────── -->
-    <section id="sectionProject" class="hidden space-y-8">
-      <div class="sleek-white-card-darkborder rounded-3xl p-7 bg-white text-black space-y-6 shadow-md">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
-          <div class="space-y-1">
-            <span class="text-xs font-mono font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-full">AGENTS.md PROTOCOL</span>
-            <h2 class="text-xl font-black text-black">معمارية منصة هالة أورا (Hala AI OS Architecture)</h2>
-          </div>
-          <span class="bg-black text-white text-xs font-bold px-3.5 py-1.5 rounded-full flex items-center gap-1.5 w-fit">
-            <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
-            <span>100% OPERATIONAL</span>
-          </span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div class="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block">إصدار البناء المعماري</span>
-            <span class="text-lg font-black text-black font-mono">v2.6.0-prod</span>
-          </div>
-          <div class="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block">الشركة المالكة للنظام</span>
-            <span class="text-lg font-black text-black">أورا للتسويق (Aura Marketing)</span>
-          </div>
-          <div class="bg-slate-50 p-4.5 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block">سويت الاختبارات الآلية</span>
-            <span class="text-lg font-black text-black font-mono">13/13 Passed (100%)</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Agents Roster (Sleek White & Black) -->
-      <div class="sleek-white-card rounded-3xl p-7 space-y-5 shadow-sm">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
-          <div>
-            <h3 class="text-lg font-black text-black">فريق الوكلاء المتخصصين (Specialized Agents Roster)</h3>
-            <p class="text-xs text-slate-600">حالة ونطاق كل وكيل متخصص في بروتوكول AGENTS.md</p>
-          </div>
-          <span class="text-xs font-bold text-black bg-slate-100 px-3 py-1 rounded-full border border-slate-300">6 Specialized Agents</span>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="font-black text-sm text-black">🔒 Agent A: المشفر</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
-            </div>
-            <p class="text-xs text-slate-700 leading-relaxed font-medium">تشفير التوكنات بـ AES-256-GCM، توقيع الكوكيز بـ HMAC-SHA256، وحماية التجار.</p>
-            <span class="text-[10px] font-mono text-slate-500 block">Tech: AES-256-GCM / PBKDF2</span>
-          </div>
-
-          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="font-black text-sm text-black">🧠 Agent B: المُوجّه</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
-            </div>
-            <p class="text-xs text-slate-700 leading-relaxed font-medium">إدارة محرك AI الرباعي ومحاكاة اللهجة السعودية البيضاء والتفكيك الخاطف.</p>
-            <span class="text-[10px] font-mono text-slate-500 block">Tech: Workers AI / DeepSeek</span>
-          </div>
-
-          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="font-black text-sm text-black">💳 Agent C: المحاسب</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
-            </div>
-            <p class="text-xs text-slate-700 leading-relaxed font-medium">التحكم في حصص الاستهلاك بـ KV Fast-Path (5ms) واسترداد السلات المتروكة.</p>
-            <span class="text-[10px] font-mono text-slate-500 block">Tech: KV Fast-Path (5ms)</span>
-          </div>
-
-          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="font-black text-sm text-black">⏳ Agent D: المنظم</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
-            </div>
-            <p class="text-xs text-slate-700 leading-relaxed font-medium">ربط APIs المنصات (سلة، زد، ترينديول، الواتساب الرسمي) وتذاكر AURA.</p>
-            <span class="text-[10px] font-mono text-slate-500 block">Tech: Salla / Zid / Meta WA</span>
-          </div>
-
-          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="font-black text-sm text-black">🎨 Agent E: المصمم</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
-            </div>
-            <p class="text-xs text-slate-700 leading-relaxed font-medium">تطوير واجهات Astro 6 وتصميم الهوية الفاتحة لأورا للتسويق الموديولارية.</p>
-            <span class="text-[10px] font-mono text-slate-500 block">Tech: Astro 6 / Cloudflare</span>
-          </div>
-
-          <div class="p-5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2">
-            <div class="flex items-center justify-between">
-              <span class="font-black text-sm text-black">✍️ Agent F: الكاتب</span>
-              <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-black text-white font-mono">100% ACTIVE</span>
-            </div>
-            <p class="text-xs text-slate-700 leading-relaxed font-medium">صياغة أوصاف المنتجات والعناوين بلهجة سعودية بيضاء محببة وسيو متصدر.</p>
-            <span class="text-[10px] font-mono text-slate-500 block">Tech: Saudi Dialect Copy</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Database Tables Status -->
-      <div class="sleek-white-card rounded-3xl p-7 space-y-4">
-        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-          <h3 class="text-lg font-black text-black">سجلات وجداول قاعدة البيانات D1 (SQLite Engine)</h3>
-          <button onclick="loadProjectArchitectureData()" class="sleek-btn-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1">
-            <span class="material-symbols-outlined text-sm">sync</span>
-            <span>تحديث الجداول</span>
-          </button>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 text-center font-mono">
-          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block font-sans">merchants</span>
-            <span id="tblMerchants" class="text-xl font-black text-black">--</span>
-          </div>
-          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block font-sans">accounts</span>
-            <span id="tblAccounts" class="text-xl font-black text-black">--</span>
-          </div>
-          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block font-sans">bookings</span>
-            <span id="tblBookings" class="text-xl font-black text-black">--</span>
-          </div>
-          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block font-sans">hala_faq</span>
-            <span id="tblFaq" class="text-xl font-black text-black">--</span>
-          </div>
-          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block font-sans">webhook_log</span>
-            <span id="tblWebhooks" class="text-xl font-black text-black">--</span>
-          </div>
-          <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-1">
-            <span class="text-[11px] text-slate-600 font-bold block font-sans">usage_meter</span>
-            <span id="tblUsage" class="text-xl font-black text-black">--</span>
-          </div>
         </div>
       </div>
     </section>
@@ -523,7 +383,7 @@
 
     function switchAdminTab(tab) {
       activeTab = tab;
-      const tabs = ['overview', 'project', 'auraWa', 'accounts', 'bookings', 'tester'];
+      const tabs = ['overview', 'auraWa', 'accounts', 'bookings', 'tester'];
       tabs.forEach(t => {
         const btn = document.getElementById('navTab' + t.charAt(0).toUpperCase() + t.slice(1));
         const sec = document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -536,7 +396,6 @@
         }
       });
 
-      if (tab === 'project') loadProjectArchitectureData();
       if (tab === 'accounts') loadAccountsList();
       if (tab === 'bookings') loadBookingsList();
       if (tab === 'auraWa') loadAuraWaConfig();
@@ -553,24 +412,6 @@
         }
       } catch (err) {
         console.error('Failed to load admin overview:', err);
-      }
-    }
-
-    async function loadProjectArchitectureData() {
-      try {
-        const res = await fetch('/api/admin/project', { method: 'POST' });
-        const data = await res.json();
-        if (data?.ok && data?.project) {
-          const tbl = data.project.tables || {};
-          if (document.getElementById('tblMerchants')) document.getElementById('tblMerchants').innerText = tbl.merchants ?? 0;
-          if (document.getElementById('tblAccounts')) document.getElementById('tblAccounts').innerText = tbl.accounts ?? 0;
-          if (document.getElementById('tblBookings')) document.getElementById('tblBookings').innerText = tbl.bookings ?? 0;
-          if (document.getElementById('tblFaq')) document.getElementById('tblFaq').innerText = tbl.faq ?? 0;
-          if (document.getElementById('tblWebhooks')) document.getElementById('tblWebhooks').innerText = tbl.webhooks ?? 0;
-          if (document.getElementById('tblUsage')) document.getElementById('tblUsage').innerText = tbl.usageMeter ?? 0;
-        }
-      } catch (err) {
-        console.error('Failed to load project architecture data:', err);
       }
     }
 
