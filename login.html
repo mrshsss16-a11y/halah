@@ -41,8 +41,20 @@
       
       <div class="space-y-1">
         <span class="text-[11px] font-bold px-3 py-1 rounded-full bg-slate-100 border border-slate-300 text-black inline-block mb-1">بوابة الدخول الرسمية</span>
-        <h1 class="text-xl font-black text-black">تسجيل الدخول / هالة AI OS</h1>
-        <p class="text-xs text-slate-600 font-medium">أدخل بيانات الحساب للدخول المباشر</p>
+        <h1 id="authTitle" class="text-xl font-black text-black">تسجيل الدخول / هالة AI OS</h1>
+        <p id="authSubtitle" class="text-xs text-slate-600 font-medium">أدخل بيانات الحساب للدخول المباشر</p>
+      </div>
+
+      <!-- Login / Signup tabs -->
+      <div class="flex gap-1 p-1 rounded-xl bg-slate-100 border border-slate-300" role="tablist">
+        <button id="tabLogin" type="button" role="tab" aria-selected="true" onclick="switchAuthMode('login')"
+          class="flex-1 py-2.5 rounded-lg text-xs font-bold transition bg-white text-black shadow-sm">
+          دخول
+        </button>
+        <button id="tabSignup" type="button" role="tab" aria-selected="false" onclick="switchAuthMode('signup')"
+          class="flex-1 py-2.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-black">
+          حساب جديد
+        </button>
       </div>
 
       <div class="space-y-2.5 text-right">
@@ -71,7 +83,7 @@
       <!-- Feedback Banner -->
       <div id="authFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold border flex items-center gap-2"></div>
 
-      <form onsubmit="handleLoginSubmit(event)" class="space-y-3.5 text-right">
+      <form id="loginForm" onsubmit="handleLoginSubmit(event)" class="space-y-3.5 text-right">
         <div>
           <label class="block text-xs font-bold text-black mb-1">البريد الإلكتروني:</label>
           <input id="loginEmail" type="email" required placeholder="merchant@domain.com" class="w-full bg-white border border-slate-300 text-xs rounded-xl px-3.5 py-3 text-black font-medium focus:outline-none focus:border-black"/>
@@ -87,6 +99,29 @@
 
         <button id="submitBtn" type="submit" class="w-full wire-btn py-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
           <span id="submitText">دخول لوحة التحكم</span>
+          <span class="material-symbols-outlined text-base">arrow_forward</span>
+        </button>
+      </form>
+
+      <form id="signupForm" onsubmit="handleSignupSubmit(event)" class="hidden space-y-3.5 text-right">
+        <div>
+          <label class="block text-xs font-bold text-black mb-1">اسم نشاطك التجاري:</label>
+          <input id="signupStoreName" type="text" maxlength="100" placeholder="متجر التمور الفاخرة" class="w-full bg-white border border-slate-300 text-xs rounded-xl px-3.5 py-3 text-black font-medium focus:outline-none focus:border-black"/>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-black mb-1">البريد الإلكتروني:</label>
+          <input id="signupEmail" type="email" required placeholder="merchant@domain.com" class="w-full bg-white border border-slate-300 text-xs rounded-xl px-3.5 py-3 text-black font-medium focus:outline-none focus:border-black"/>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-black mb-1">كلمة المرور:</label>
+          <input id="signupPassword" type="password" required minlength="8" placeholder="٨ أحرف على الأقل" class="w-full bg-white border border-slate-300 text-xs rounded-xl px-3.5 py-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <p class="text-[11px] text-slate-500 font-medium mt-1">٨ أحرف على الأقل</p>
+        </div>
+
+        <button id="signupBtn" type="submit" class="w-full wire-btn py-3.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2">
+          <span id="signupText">أنشئ حسابي</span>
           <span class="material-symbols-outlined text-base">arrow_forward</span>
         </button>
       </form>
@@ -135,6 +170,80 @@
   </footer>
 
   <script>
+    // Login / signup tab switcher. Both forms post to their own endpoint and
+    // land the merchant on the dashboard with a session cookie already set.
+    function switchAuthMode(mode) {
+      const isSignup = mode === 'signup';
+      document.getElementById('loginForm').classList.toggle('hidden', isSignup);
+      document.getElementById('signupForm').classList.toggle('hidden', !isSignup);
+
+      const active = 'flex-1 py-2.5 rounded-lg text-xs font-bold transition bg-white text-black shadow-sm';
+      const idle = 'flex-1 py-2.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-black';
+      const tabLogin = document.getElementById('tabLogin');
+      const tabSignup = document.getElementById('tabSignup');
+      tabLogin.className = isSignup ? idle : active;
+      tabSignup.className = isSignup ? active : idle;
+      tabLogin.setAttribute('aria-selected', String(!isSignup));
+      tabSignup.setAttribute('aria-selected', String(isSignup));
+
+      document.getElementById('authTitle').innerText = isSignup ? 'أنشئ حسابك / هالة AI OS' : 'تسجيل الدخول / هالة AI OS';
+      document.getElementById('authSubtitle').innerText = isSignup
+        ? 'ابدأ خلال دقيقة — بدون بطاقة ائتمان'
+        : 'أدخل بيانات الحساب للدخول المباشر';
+
+      const feedback = document.getElementById('authFeedback');
+      if (feedback) feedback.classList.add('hidden');
+    }
+
+    function setAuthFeedback(text) {
+      const feedback = document.getElementById('authFeedback');
+      if (!feedback) return;
+      feedback.classList.remove('hidden');
+      feedback.className = 'p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black flex items-center gap-2';
+      feedback.innerText = text;
+    }
+
+    async function handleSignupSubmit(e) {
+      e.preventDefault();
+      const storeName = document.getElementById('signupStoreName').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const btn = document.getElementById('signupBtn');
+      const btnText = document.getElementById('signupText');
+
+      if (!email || !password) return;
+      if (password.length < 8) {
+        setAuthFeedback('كلمة المرور لازم تكون ٨ أحرف على الأقل.');
+        return;
+      }
+
+      btn.disabled = true;
+      btnText.innerText = 'جاري إنشاء الحساب... ⚡';
+      document.getElementById('authFeedback')?.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, storeName })
+        });
+        const data = await res.json().catch(() => ({ ok: false }));
+
+        if (data?.ok) {
+          setAuthFeedback('تم إنشاء حسابك! 🎉 جاري النقل للوحة التحكم...');
+          setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+        } else {
+          setAuthFeedback(data?.error || 'تعذر إنشاء الحساب. حاول مرة ثانية.');
+          btn.disabled = false;
+          btnText.innerText = 'أنشئ حسابي';
+        }
+      } catch (err) {
+        setAuthFeedback('تعذر الاتصال بالخادم. تحقق من اتصالك.');
+        btn.disabled = false;
+        btnText.innerText = 'أنشئ حسابي';
+      }
+    }
+
     async function handleLoginSubmit(e) {
       e.preventDefault();
       const email = document.getElementById('loginEmail').value.trim();
