@@ -34,13 +34,6 @@ const HUMAN_SILENCE_WINDOW_MS = 2 * 3600 * 1000;
 
 const DISABLE_ESCALATION_GATES = false;
 
-// Human-readable ticket the customer can reference later — since we don't have
-// an admin UI for consultation_bookings yet, this is how they (or we) look a
-// booking back up: search the DB by this code, or just recall it from the chat.
-function bookingTicket(id) {
-  return `AURA-${String(id).padStart(5, "0")}`;
-}
-
 async function autoReply(env, merchantId, phone, incomingText, contactName) {
   if (!DISABLE_ESCALATION_GATES) {
     const lastHumanReplyAt = env.DB ? await getLastHumanReplyAt(env, merchantId, phone).catch(() => null) : null;
@@ -152,9 +145,9 @@ ${ESCALATION_INSTRUCTIONS}`;
   const bookMatch = reply.match(BOOK_SLOT_RE);
   if (bookMatch && merchantId === "hala") {
     const slotLabel = bookMatch[1].trim();
-    const bookingId = await saveConsultationBooking(env, { name: contactName || null, phone, slotLabel }).catch(() => null);
+    const booking = await saveConsultationBooking(env, { name: contactName || null, phone, slotLabel }).catch(() => null);
     reply = reply.replace(BOOK_SLOT_RE, "").trim();
-    if (bookingId) reply += `\n\nرقم تذكرتك: ${bookingTicket(bookingId)} — احتفظ فيه لو رجعت تسأل عن الاستشارة.`;
+    if (booking) reply += `\n\nرقم تذكرتك: ${booking.ticketCode} — احتفظ فيه لو رجعت تسأل عن الاستشارة.`;
   }
 
   return { text: reply, offerSlots, escalate: false };
@@ -211,8 +204,8 @@ export async function onRequestPost(context) {
                 body: `[ضغط: ${slotLabel}]`,
                 waMessageId: msg.id
               });
-              const bookingId = await saveConsultationBooking(env, { name: msg.name || null, phone: msg.from, slotLabel }).catch(() => null);
-              const ticketLine = bookingId ? `\nرقم تذكرتك: ${bookingTicket(bookingId)} — احتفظ فيه لو رجعت تسأل عن الاستشارة.` : "";
+              const booking = await saveConsultationBooking(env, { name: msg.name || null, phone: msg.from, slotLabel }).catch(() => null);
+              const ticketLine = booking ? `\nرقم تذكرتك: ${booking.ticketCode} — احتفظ فيه لو رجعت تسأل عن الاستشارة.` : "";
               const confirmText = `تم حجز استشارتك ${slotLabel} ✅ فريقنا بيتواصل معك بالوقت المحدد.${ticketLine}`;
               const outId = await sendWaText(env, { to: msg.from, body: confirmText });
               await recordWaOutbound(env, { merchantId, phone: msg.from, body: confirmText, waMessageId: outId, source: "bot" });

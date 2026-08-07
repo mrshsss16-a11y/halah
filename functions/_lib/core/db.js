@@ -450,13 +450,13 @@ export async function saveConsultationBooking(env, { name, phone, slotLabel }) {
   
   const id = res.meta.last_row_id;
   const ticketCode = `AURA-${String(id).padStart(5, "0")}`;
-  
+
   await env.DB.prepare("UPDATE consultation_bookings SET ticket_code = ? WHERE id = ?")
     .bind(ticketCode, id)
     .run()
     .catch(() => {});
-    
-  return id;
+
+  return { id, ticketCode };
 }
 
 export async function listConsultationBookings(env, limit = 100) {

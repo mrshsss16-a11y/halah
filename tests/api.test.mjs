@@ -59,8 +59,8 @@ async function runTests() {
       }
     }
   };
-  const bookingId = await saveConsultationBooking(mockEnvDb, { name: "Test", phone: "123", slotLabel: "Slot 1" });
-  assert(bookingId === 1234, "saveConsultationBooking returned correct ID");
+  const booking = await saveConsultationBooking(mockEnvDb, { name: "Test", phone: "123", slotLabel: "Slot 1" });
+  assert(booking.id === 1234, "saveConsultationBooking returned correct ID");
   assert(updatedTicketCode === "AURA-01234", `Ticket code formatted as AURA-XXXXX: ${updatedTicketCode}`);
 
   // 4. createSessionToken & verifySessionToken

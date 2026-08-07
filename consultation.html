@@ -61,7 +61,7 @@
   <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
     <div class="wire-box rounded-xl p-5 space-y-1">
       <h1 class="text-xl font-bold text-slate-900">حجز الجلسات الاستشارية وتتبع تذاكر هالة</h1>
-      <p class="text-xs text-slate-500">حجز الاستشارات المخصصة لمساعدتك في نمو المتاجر مع تذكير آلي بالواتساب قبل الموعد بـ 30 دقيقة</p>
+      <p class="text-xs text-slate-500">حجز الاستشارات المخصصة لمساعدتك في نمو المتاجر — فريقنا يتواصل معك على واتساب لتأكيد الموعد</p>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -94,27 +94,32 @@
       </div>
 
       <div class="lg:col-span-2 wire-box rounded-xl p-5 space-y-3">
-        <h3 class="font-bold text-sm text-slate-900">سجل تذاكر استشارات هالة المجدولة</h3>
-        
-        <div class="overflow-x-auto">
-          <table class="w-full text-right text-xs">
-            <thead>
-              <tr class="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold">
-                <th class="p-2.5">رقم التذكرة</th>
-                <th class="p-2.5">العميل / الجوال</th>
-                <th class="p-2.5">الفتحة المحددة</th>
-                <th class="p-2.5">الحالة والتذكير</th>
-              </tr>
-            </thead>
-            <tbody id="ticketsTbody" class="divide-y divide-slate-100">
-              <tr>
-                <td class="p-2.5 font-bold text-blue-600">HALA-00102</td>
-                <td class="p-2.5">أحمد الشمري (+966501234567)</td>
-                <td class="p-2.5">الأحد ١٠ص</td>
-                <td class="p-2.5"><span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[10px]">مُجدول (تذكير 30د مفعّل ✉️)</span></td>
-              </tr>
-            </tbody>
-          </table>
+        <h3 class="font-bold text-sm text-slate-900">تذكرة حجزك</h3>
+
+        <div id="bookingEmpty" class="text-xs text-slate-500 py-8 text-center">
+          عبّي النموذج وحجزك يطلع لك هنا فوراً.
+        </div>
+
+        <div id="bookingResult" class="hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-right text-xs">
+              <thead>
+                <tr class="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold">
+                  <th class="p-2.5">رقم التذكرة</th>
+                  <th class="p-2.5">العميل / الجوال</th>
+                  <th class="p-2.5">الفتحة المحددة</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="resTicket" class="p-2.5 font-bold text-blue-600"></td>
+                  <td id="resCustomer" class="p-2.5"></td>
+                  <td id="resSlot" class="p-2.5"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-2">احتفظ برقم التذكرة — فريقنا بيتواصل معك بالموعد المحدد.</p>
         </div>
       </div>
     </div>
@@ -125,22 +130,40 @@
   </footer>
 
   <script>
-    function bookConsultation() {
+    async function bookConsultation() {
+      const btn = document.querySelector('[onclick="bookConsultation()"]');
       const name = document.getElementById('bName').value.trim();
       const phone = document.getElementById('bPhone').value.trim();
       const slot = document.getElementById('bSlot').value;
-      if (!name || !phone) { alert('أدخل الاسم والجوال أولاً.'); return; }
-      const ticketNum = `HALA-00${Math.floor(103 + Math.random() * 800)}`;
-      const tbody = document.getElementById('ticketsTbody');
-      tbody.innerHTML = `
-        <tr>
-          <td class="p-2.5 font-bold text-blue-600">${ticketNum}</td>
-          <td class="p-2.5">${name} (${phone})</td>
-          <td class="p-2.5">${slot}</td>
-          <td class="p-2.5"><span class="bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded text-[10px]">مُجدول (تذكير 30د مفعّل ✉️)</span></td>
-        </tr>
-      ` + tbody.innerHTML;
-      alert(`تم حجز الاستشارة بنجاح مع هالة! 🎉\nتذكرتك: ${ticketNum}`);
+      if (!phone) { alert('أدخل رقم الجوال أولاً.'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'جاري الحجز...';
+
+      try {
+        const res = await fetch('/api/consultation/book', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, slotLabel: slot })
+        });
+        const data = await res.json();
+
+        if (!data.ok) {
+          alert(data.error || 'تعذر إتمام الحجز.');
+          return;
+        }
+
+        document.getElementById('resTicket').textContent = data.ticketCode;
+        document.getElementById('resCustomer').textContent = data.name ? `${data.name} (${data.phone})` : data.phone;
+        document.getElementById('resSlot').textContent = data.slotLabel;
+        document.getElementById('bookingEmpty').classList.add('hidden');
+        document.getElementById('bookingResult').classList.remove('hidden');
+      } catch (err) {
+        alert('تعذر الاتصال بالخادم، حاول مرة ثانية.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'تأكيد الحجز وتوليد التذكرة';
+      }
     }
   </script>
 </body>
