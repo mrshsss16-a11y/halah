@@ -28,9 +28,11 @@ const GROQ_MODEL     = "llama-3.3-70b-versatile";
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_MODEL   = "meta-llama/llama-3.3-70b-instruct:free";
 
-// DeepSeek API (High reasoning, ultra-low cost V3/R1)
+// DeepSeek API (ultra-low cost). "deepseek-chat" was retired 2026-07-24 — every
+// call through this tier was silently failing and falling through to "no AI
+// backend available" until this was caught (2026-08-07 capacity audit).
 const DEEPSEEK_API_URL = "https://api.deepseek.com/chat/completions";
-const DEEPSEEK_MODEL   = "deepseek-chat";
+const DEEPSEEK_MODEL   = "deepseek-v4-flash";
 
 // ── KV cache helpers ────────────────────────────────────────────────────────
 const CACHE_TTL_COPY    = 60 * 60 * 24;     // 24h — product descriptions rarely change
