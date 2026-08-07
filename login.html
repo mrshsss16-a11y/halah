@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
   
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     body { font-family: 'DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', sans-serif; background: #FFFFFF; color: #000000; }
     .wire-box { background: #FFFFFF; border: 1px solid #000000; }
@@ -63,7 +64,7 @@
           <span>الربط المباشر بمتجر سلة (Salla 1-Click)</span>
         </a>
 
-        <button onclick="handleGoogleSignIn()" type="button" class="w-full bg-slate-100 text-black border border-slate-300 hover:bg-slate-200 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+        <button onclick="triggerGoogleSignIn()" type="button" class="w-full bg-slate-100 text-black border border-slate-300 hover:bg-slate-200 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition">
           <span class="material-symbols-outlined text-base text-rose-600">account_circle</span>
           <span>الدخول التلقائي بحساب جوجل (Google 1-Click)</span>
         </button>
@@ -388,6 +389,39 @@
           fb.innerText = 'حدث خطأ في تعيين كلمة المرور.';
         }
       }
+    }
+
+    // Public per Google's own docs — the Client ID identifies the app, it is
+    // not a secret (unlike the Client Secret, which this ID-token flow never
+    // needs and the server never sees).
+    const GOOGLE_CLIENT_ID = "948393178120-cmao7f4rqsgmrdc6bso83hbj3pejldg9.apps.googleusercontent.com";
+
+    function initGoogleSignIn() {
+      if (!window.google?.accounts?.id) {
+        setTimeout(initGoogleSignIn, 300);
+        return;
+      }
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: (response) => {
+          window.__googleCredential = response.credential;
+          handleGoogleSignIn();
+        }
+      });
+    }
+    initGoogleSignIn();
+
+    function triggerGoogleSignIn() {
+      if (!window.google?.accounts?.id) {
+        const feedback = document.getElementById('authFeedback');
+        if (feedback) {
+          feedback.classList.remove('hidden');
+          feedback.className = 'p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300';
+          feedback.innerText = 'جاري تحميل خدمة جوجل، حاول بعد ثانية.';
+        }
+        return;
+      }
+      window.google.accounts.id.prompt();
     }
 
     async function handleGoogleSignIn() {
