@@ -272,6 +272,42 @@
     <p>حقوق الطبع والنشر © 2026 <strong>منصة هالة (Hala AI OS)</strong> — جميع الحقوق محفوظة.</p>
   </footer>
 
+  <!-- ── Support Chat Widget ─────────────────────────────────── -->
+  <button id="supportLauncher" type="button" aria-label="تحدث معنا"
+    class="fixed bottom-6 left-6 z-50 w-14 h-14 rounded-full bg-slate-900 text-white shadow-xl flex items-center justify-center hover:bg-slate-800 hover:scale-105 transition-all">
+    <span id="supportLauncherIconOpen" class="material-symbols-outlined text-2xl">chat_bubble</span>
+    <span id="supportLauncherIconClose" class="material-symbols-outlined text-2xl hidden">close</span>
+  </button>
+
+  <div id="supportPanel" class="fixed bottom-24 left-6 z-50 w-[92vw] max-w-sm h-[70vh] max-h-[520px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden opacity-0 scale-95 pointer-events-none transition-all duration-200 origin-bottom-left">
+    <div class="bg-slate-900 text-white px-4 py-3 flex items-center gap-2.5 shrink-0">
+      <div class="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center font-bold text-sm">هـ</div>
+      <div class="flex-1">
+        <p class="font-bold text-sm">مساعد هالة</p>
+        <p class="text-[11px] text-white/70">نرد عليك مباشرة</p>
+      </div>
+    </div>
+
+    <div id="supportMessages" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm bg-slate-50"></div>
+
+    <div id="supportWhatsappRow" class="hidden px-3 pb-2">
+      <a id="supportWhatsappLink" href="#" target="_blank" rel="noopener"
+        class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-xl transition-colors">
+        <span class="material-symbols-outlined text-base">chat</span>
+        <span>كمّل المحادثة على واتساب</span>
+      </a>
+    </div>
+
+    <form id="supportForm" class="shrink-0 border-t border-slate-200 p-2.5 flex items-center gap-2">
+      <input id="supportInput" type="text" placeholder="اكتب سؤالك..." autocomplete="off"
+        class="flex-1 bg-slate-100 border-none rounded-full px-4 py-2.5 text-sm focus:ring-2 focus:ring-slate-300 outline-none"/>
+      <button id="supportSend" type="submit" aria-label="إرسال"
+        class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center shrink-0 hover:bg-slate-800 disabled:opacity-50 transition-colors">
+        <span class="material-symbols-outlined text-lg">send</span>
+      </button>
+    </form>
+  </div>
+
   <!-- GSAP 3 & ScrollTrigger CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
@@ -328,6 +364,98 @@
                  .to("#beat3", { opacity: 0, scale: 0.95, pointerEvents: "none", duration: 1 }, "-=1")
                  .to("#beat4", { opacity: 1, scale: 1, pointerEvents: "auto", duration: 1 }, "-=0.5");
     });
+  </script>
+
+  <!-- Support chat widget logic -->
+  <script>
+    (function () {
+      const launcher = document.getElementById("supportLauncher");
+      const panel = document.getElementById("supportPanel");
+      const iconOpen = document.getElementById("supportLauncherIconOpen");
+      const iconClose = document.getElementById("supportLauncherIconClose");
+      const messagesEl = document.getElementById("supportMessages");
+      const form = document.getElementById("supportForm");
+      const input = document.getElementById("supportInput");
+      const sendBtn = document.getElementById("supportSend");
+      const waRow = document.getElementById("supportWhatsappRow");
+      const waLink = document.getElementById("supportWhatsappLink");
+
+      let history = [];
+      let opened = false;
+
+      function addBubble(role, text) {
+        const wrap = document.createElement("div");
+        wrap.className = role === "user" ? "flex justify-end" : "flex justify-start";
+        const bubble = document.createElement("div");
+        bubble.className = role === "user"
+          ? "bg-slate-900 text-white rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[85%] leading-relaxed"
+          : "bg-white border border-slate-200 text-slate-800 rounded-2xl rounded-tr-sm px-3.5 py-2 max-w-[85%] leading-relaxed shadow-sm";
+        bubble.textContent = text;
+        wrap.appendChild(bubble);
+        messagesEl.appendChild(wrap);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return bubble;
+      }
+
+      function toggle(forceOpen) {
+        opened = typeof forceOpen === "boolean" ? forceOpen : !opened;
+        if (opened) {
+          panel.classList.remove("opacity-0", "scale-95", "pointer-events-none");
+          panel.classList.add("opacity-100", "scale-100");
+          iconOpen.classList.add("hidden");
+          iconClose.classList.remove("hidden");
+          if (!history.length) {
+            addBubble("assistant", "هلا والله 👋 وش تبي تعرف عن هالة؟");
+          }
+          input.focus();
+        } else {
+          panel.classList.add("opacity-0", "scale-95", "pointer-events-none");
+          panel.classList.remove("opacity-100", "scale-100");
+          iconOpen.classList.remove("hidden");
+          iconClose.classList.add("hidden");
+        }
+      }
+
+      launcher.addEventListener("click", () => toggle());
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+
+        addBubble("user", text);
+        history.push({ role: "user", content: text });
+        input.value = "";
+        input.disabled = true;
+        sendBtn.disabled = true;
+
+        const typingBubble = addBubble("assistant", "...");
+
+        try {
+          const res = await fetch("/api/support", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ messages: history })
+          });
+          const data = await res.json();
+
+          const reply = data?.reply || data?.error || "تعذر الرد الآن، حاول مرة ثانية.";
+          typingBubble.textContent = reply;
+          if (data?.reply) history.push({ role: "assistant", content: data.reply });
+
+          if (data?.whatsappCta && data?.whatsappUrl) {
+            waLink.href = data.whatsappUrl;
+            waRow.classList.remove("hidden");
+          }
+        } catch (err) {
+          typingBubble.textContent = "تعذر الاتصال بالخادم، تأكد من اتصالك بالإنترنت.";
+        } finally {
+          input.disabled = false;
+          sendBtn.disabled = false;
+          input.focus();
+        }
+      });
+    })();
   </script>
 
 </body>

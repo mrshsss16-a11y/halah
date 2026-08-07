@@ -70,12 +70,14 @@ async function supportHandler(body, env, request) {
   // Pre-filled WhatsApp opener personalized to the conversation topic.
   const lastUser = turns[turns.length - 1].content.slice(0, 120);
   const waText = `مرحباً فريق هالة 👋 كنت أتصفح موقعكم وعندي استفسار: ${lastUser}`;
+  const waPhone = env.STORE_WA_PHONE || "966545149591";
 
   return {
     result: reply,
     reply,
     whatsappCta: wantsWhatsApp,
-    whatsappText: wantsWhatsApp ? waText : null
+    whatsappText: wantsWhatsApp ? waText : null,
+    whatsappUrl: wantsWhatsApp ? `https://wa.me/${waPhone}?text=${encodeURIComponent(waText)}` : null
   };
 }
 
