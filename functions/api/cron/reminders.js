@@ -51,7 +51,24 @@ function getTargetSlotLabel() {
 }
 
 export async function onRequestGet(context) {
-  const { env } = context;
+  const { env, request } = context;
+
+  // Public GET, no session — must fail closed on a shared secret or anyone
+  // on the internet could trigger arbitrary WhatsApp sends to booked customers.
+  if (!env.CRON_SECRET) {
+    return new Response(JSON.stringify({ ok: false, error: "CRON_SECRET not configured" }), {
+      status: 500,
+      headers: { "content-type": "application/json" }
+    });
+  }
+  const authHeader = request.headers.get("Authorization") || "";
+  const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  if (provided !== env.CRON_SECRET) {
+    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+      status: 401,
+      headers: { "content-type": "application/json" }
+    });
+  }
 
   if (!env.DB) {
     return new Response(JSON.stringify({ ok: false, error: "Database DB binding missing" }), {
@@ -69,12 +86,15 @@ export async function onRequestGet(context) {
       });
     }
 
-    // Find bookings for the target slot (30 mins from now)
+    // Find bookings for the target slot (30 mins from now). reminder_sent_at
+    // guards against re-sending — getTargetSlotLabel() is hour-granularity, so
+    // the same booking would otherwise match on every run for close to an hour.
     const query = `
-      SELECT id, name, phone, preferred_slot_label 
-      FROM consultation_bookings 
+      SELECT id, name, phone, preferred_slot_label
+      FROM consultation_bookings
       WHERE (status = 'pending' OR status IS NULL)
         AND preferred_slot_label = ?
+        AND reminder_sent_at IS NULL
       LIMIT 20
     `;
     const { results } = await env.DB.prepare(query).bind(targetSlot).all();
@@ -104,6 +124,11 @@ export async function onRequestGet(context) {
           to: employeePhone,
           body: employeeReminder
         }).catch(() => {});
+
+        await env.DB.prepare("UPDATE consultation_bookings SET reminder_sent_at = datetime('now') WHERE id = ?")
+          .bind(booking.id)
+          .run()
+          .catch(() => {});
 
         sent++;
       }

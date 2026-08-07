@@ -1,0 +1,10 @@
+# Standalone Worker, separate from the Pages project (hala-ai-os). Pages does
+# not support cron triggers — this is the minimal fix: a tiny scheduled Worker
+# that pings the real endpoint (functions/api/cron/reminders.js) over HTTPS
+# with a shared secret. No logic lives here on purpose.
+name = "hala-cron-reminders"
+main = "index.js"
+compatibility_date = "2026-07-01"
+
+[triggers]
+crons = ["*/10 * * * *"]
