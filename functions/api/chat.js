@@ -12,7 +12,7 @@ import { askWorkersAI } from "../_lib/ai/gateway.js";
 import { PERSONA_SYSTEM_PROMPT, dialectLabel } from "../_lib/ai/persona.js";
 import { recallSimilar, rememberReply } from "../_lib/ai/memory.js";
 import { getMarketingContext, saveOmnichannelSession } from "../_lib/core/db.js";
-import { checkAndConsume, COSTS } from "../_lib/core/meter.js";
+import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { resolveStoreId } from "../_lib/core/session.js";
 
 const SCORE_THRESHOLD = 7;
@@ -121,10 +121,10 @@ async function critique({ env, message, reply, dialect }) {
 async function chatHandler(body, env, request) {
   const storeId = await resolveStoreId(request, env, body.storeId);
 
-  const usage = await checkAndConsume(env, storeId, COSTS.chat);
+  const usage = await checkAndConsumeMonthly(env, storeId, "message");
   if (!usage.ok) {
     return {
-      error: `خلص رصيدك المجاني اليوم (${usage.limit} رصيداً) — يتجدد الساعة 12 منتصف الليل بتوقيت UTC.`,
+      error: `خلصت رسائل الذكاء الاصطناعي هالشهر المجانية (${usage.limit} رسالة) — تتجدد أول الشهر الجاي.`,
       code: "OUT_OF_CREDITS",
       remaining: 0
     };

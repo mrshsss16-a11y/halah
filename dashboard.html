@@ -54,8 +54,12 @@
       </div>
       <div class="flex items-center gap-3">
         <div class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
-          <span class="block text-[11px] text-slate-600 font-bold">رصيد اليوم</span>
-          <span id="kpiUsage" class="text-lg font-black text-black">--</span>
+          <span class="block text-[11px] text-slate-600 font-bold">أوصاف الشهر</span>
+          <span id="kpiUsageDesc" class="text-lg font-black text-black">--</span>
+        </div>
+        <div class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
+          <span class="block text-[11px] text-slate-600 font-bold">رسائل الشهر</span>
+          <span id="kpiUsageMsg" class="text-lg font-black text-black">--</span>
         </div>
         <div id="storeLinkBadge" class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
           <span class="block text-[11px] text-slate-600 font-bold">حالة المتجر</span>
@@ -430,8 +434,11 @@
       try {
         const res = await fetch('/api/usage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-        if (data?.remaining !== undefined) {
-          document.getElementById('kpiUsage').innerText = `${data.remaining}/${data.limit ?? ''}`;
+        if (data?.description) {
+          document.getElementById('kpiUsageDesc').innerText = `${data.description.remaining}/${data.description.limit}`;
+        }
+        if (data?.message) {
+          document.getElementById('kpiUsageMsg').innerText = `${data.message.remaining}/${data.message.limit}`;
         }
       } catch (e) {}
     }

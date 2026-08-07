@@ -34,6 +34,33 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك." }, 409);
   }
 
+  // Trial registration cap (docs/ROADMAP.md m2.2.5, 2026-08-07): the free-tier
+  // AI capacity behind every merchant is shared, not per-merchant — 15-20
+  // active stores is the real ceiling before the account-wide free quota
+  // (Cloudflare/Groq/OpenRouter combined) runs dry every day. Admin accounts
+  // don't count against it.
+  const TRIAL_MERCHANT_CAP = 20;
+  const adminEmails = (env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const placeholders = adminEmails.map(() => "?").join(",") || "''";
+  const { count } = (await env.DB.prepare(
+    `SELECT COUNT(*) AS count FROM accounts WHERE email NOT IN (${placeholders})`
+  )
+    .bind(...adminEmails)
+    .first()) || { count: 0 };
+  if (count >= TRIAL_MERCHANT_CAP) {
+    return json(
+      {
+        ok: false,
+        error: "خلصت مقاعد التجربة المجانية حالياً — تواصل معنا وبنسجلك بأول مقعد يفتح.",
+        code: "TRIAL_FULL"
+      },
+      403
+    );
+  }
+
   const merchantId = `m_${crypto.randomUUID().slice(0, 12)}`;
   const { hash, salt } = await hashPassword(password);
 

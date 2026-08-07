@@ -7,7 +7,7 @@ import { withApi } from "../_lib/core/respond.js";
 import { askWorkersAI, TEXT_MODEL } from "../_lib/ai/gateway.js";
 import { PERSONA_SYSTEM_PROMPT } from "../_lib/ai/persona.js";
 import { recentCopy, saveCopy } from "../_lib/core/db.js";
-import { checkAndConsume, COSTS } from "../_lib/core/meter.js";
+import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { resolveStoreId } from "../_lib/core/session.js";
 
 const TONE_LABELS = {
@@ -188,10 +188,10 @@ async function copyHandler(body, env, request) {
 
   if (!name) return { error: "أدخل اسم المنتج أولاً." };
 
-  const usage = await checkAndConsume(env, merchantId, COSTS.copy);
+  const usage = await checkAndConsumeMonthly(env, merchantId, "description");
   if (!usage.ok) {
     return {
-      error: `خلص رصيدك المجاني اليوم (${usage.limit} رصيداً) — يتجدد الساعة 12 منتصف الليل بتوقيت UTC.`,
+      error: `خلصت أوصاف هالشهر المجانية (${usage.limit} وصف) — تتجدد أول الشهر الجاي.`,
       code: "OUT_OF_CREDITS",
       remaining: 0
     };

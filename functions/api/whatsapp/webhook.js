@@ -9,6 +9,7 @@ import { askWorkersAI, TEXT_MODEL, askVisionAI } from "../../_lib/ai/gateway.js"
 import { PERSONA_SYSTEM_PROMPT, HALA_WHATSAPP_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, ESCALATION_INSTRUCTIONS, WEEKLY_SLOTS, dialectLabel } from "../../_lib/ai/persona.js";
 import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession } from "../../_lib/core/db.js";
 import { recallSimilar } from "../../_lib/ai/memory.js";
+import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
@@ -58,6 +59,17 @@ async function autoReply(env, merchantId, phone, incomingText, contactName) {
         return { text: ESCALATION_MESSAGE, offerSlots: false, escalate: true };
       }
     }
+  }
+
+  // Merchant monthly message quota (docs/ROADMAP.md m2.2.5) — this path had zero
+  // metering before, unlike chat.js/copy.js. "hala" is exempt inside the helper.
+  // Quota-exhausted degrades to the same handoff message as an escalation — the
+  // END CUSTOMER shouldn't see a "your quota ran out" error, that's the
+  // merchant's problem to know about (surfaced via the dashboard usage widget),
+  // not something to expose mid-conversation to their customer.
+  const quota = env.DB ? await checkAndConsumeMonthly(env, merchantId, "message").catch(() => ({ ok: true })) : { ok: true };
+  if (!quota.ok) {
+    return { text: ESCALATION_MESSAGE, offerSlots: false, escalate: true };
   }
 
   const history = env.DB ? await recentWaHistory(env, merchantId, phone).catch(() => []) : [];
