@@ -116,16 +116,22 @@ export async function onRequestPost(context) {
   context.waitUntil(
     (async () => {
       let merchantId = null;
+      let handlerError = null;
       try {
         merchantId = await handleEvent(env, event, payload);
       } catch (err) {
         console.error("[salla-webhook]", event, err);
+        // Temporary diagnostic (2026-08-08): app.store.authorize was silently
+        // failing to persist tokens with zero trace of why. Capture the error
+        // message (never the tokens themselves) so it's visible without a live
+        // tail session. Remove once the root cause is confirmed fixed.
+        handlerError = String((err && err.message) || err).slice(0, 300);
       }
       // Never persist tokens in the log — redact before writing.
       const safePayload =
         event === "app.store.authorize"
-          ? { event, merchant: payload.merchant, data: { scope: payload.data && payload.data.scope, redacted: true } }
-          : payload;
+          ? { event, merchant: payload.merchant, data: { scope: payload.data && payload.data.scope, redacted: true }, handlerError }
+          : { ...payload, handlerError };
       await logWebhook(env, { platform: "salla", event, merchantId, payload: safePayload, signatureOk: true }).catch(() => {});
     })()
   );
