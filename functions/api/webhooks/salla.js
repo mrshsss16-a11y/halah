@@ -87,6 +87,25 @@ async function handleEvent(env, event, payload) {
   }
 }
 
+// GET /api/webhooks/salla?code=...&scope=...&state=...
+//
+// Salla redirects the MERCHANT'S BROWSER here right after they approve app
+// scopes — separate from the real webhook delivery (POST, server-to-server,
+// which is what actually carries the access/refresh tokens in Easy Mode).
+// This is the same URL as the webhook receiver because the Callback URL and
+// Webhook URL fields happened to be set to the same value in the Partner
+// Portal; it works fine, this handler just answers the extra GET.
+//
+// We do NOT need `code` here — Easy Mode already exchanges it for tokens on
+// Salla's side and delivers them via the app.store.authorize webhook. Before
+// this handler existed, this GET 405'd (no onRequestGet was exported), which
+// left the merchant staring at Salla's generic "لم يتم الاتصال بالتطبيق"
+// right after consenting — this was the actual failure point, not the
+// embedded iframe.
+export async function onRequestGet(context) {
+  return Response.redirect("https://s.salla.sa/apps", 302);
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
   const rawBody = await request.text();
