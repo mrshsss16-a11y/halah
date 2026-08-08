@@ -1,14 +1,36 @@
 // WhatsApp Business Cloud API (Meta) client.
 // Send:  POST https://graph.facebook.com/v21.0/{phone_number_id}/messages
-// Auth:  Bearer WHATSAPP_TOKEN (permanent system-user token)
 // Inbound webhook signature: X-Hub-Signature-256 = "sha256=" + HMAC(app_secret, rawBody)
 //
-// All secrets are optional — waConfigured() lets callers degrade gracefully
-// when the integration isn't set up yet.
+// MULTI-TENANCY: every send takes an optional `conn` — a wa_connections row for
+// the merchant who owns that number (see migrations/0013_wa_connections.sql).
+// When `conn` is present we use THAT merchant's own phone_number_id + business
+// token, so their customers see the merchant's name, not Aura's.
+// When `conn` is absent we fall back to env.WHATSAPP_* — Aura's own line, used
+// for Aura's own outreach (support replies, consultation reminders).
+//
+// Sending every merchant's traffic through one shared number violates WhatsApp
+// policy (one number messaging many businesses' customers), tanks the quality
+// rating, and gets the number banned — taking every merchant down at once.
 const GRAPH = "https://graph.facebook.com/v21.0";
 
-export function waConfigured(env) {
-  return Boolean(env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_ID);
+/**
+ * Resolve which credentials to send with. A merchant connection always wins;
+ * env is the fallback for Aura's own line.
+ */
+function waCreds(env, conn) {
+  if (conn?.phone_number_id && conn?.business_token) {
+    return { phoneId: conn.phone_number_id, token: conn.business_token };
+  }
+  if (env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_ID) {
+    return { phoneId: env.WHATSAPP_PHONE_ID, token: env.WHATSAPP_TOKEN };
+  }
+  return null;
+}
+
+/** True when we can send at all — either as this merchant, or as Aura. */
+export function waConfigured(env, conn = null) {
+  return Boolean(waCreds(env, conn));
 }
 
 /** Verify the X-Hub-Signature-256 header against the raw request body. */
@@ -32,12 +54,13 @@ export async function verifyWaSignature(rawBody, signatureHeader, appSecret) {
 }
 
 /** Send a free-form text message (only valid inside the 24h service window). */
-export async function sendWaText(env, { to, body }) {
-  if (!waConfigured(env)) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
-  const res = await fetch(`${GRAPH}/${env.WHATSAPP_PHONE_ID}/messages`, {
+export async function sendWaText(env, { to, body, conn = null }) {
+  const creds = waCreds(env, conn);
+  if (!creds) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
+  const res = await fetch(`${GRAPH}/${creds.phoneId}/messages`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.WHATSAPP_TOKEN}`,
+      Authorization: `Bearer ${creds.token}`,
       "content-type": "application/json"
     },
     body: JSON.stringify({
@@ -56,12 +79,13 @@ export async function sendWaText(env, { to, body }) {
 }
 
 /** Send an approved template (for messages outside the 24h window). */
-export async function sendWaTemplate(env, { to, template, lang = "ar", components = [] }) {
-  if (!waConfigured(env)) throw new Error("WhatsApp غير مفعّل.");
-  const res = await fetch(`${GRAPH}/${env.WHATSAPP_PHONE_ID}/messages`, {
+export async function sendWaTemplate(env, { to, template, lang = "ar", components = [], conn = null }) {
+  const creds = waCreds(env, conn);
+  if (!creds) throw new Error("WhatsApp غير مفعّل.");
+  const res = await fetch(`${GRAPH}/${creds.phoneId}/messages`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.WHATSAPP_TOKEN}`,
+      Authorization: `Bearer ${creds.token}`,
       "content-type": "application/json"
     },
     body: JSON.stringify({
@@ -77,12 +101,13 @@ export async function sendWaTemplate(env, { to, template, lang = "ar", component
 }
 
 /** Sends an interactive list message — up to 10 tap-to-choose rows in one section. */
-export async function sendWaInteractiveList(env, { to, bodyText, buttonText, rows }) {
-  if (!waConfigured(env)) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
-  const res = await fetch(`${GRAPH}/${env.WHATSAPP_PHONE_ID}/messages`, {
+export async function sendWaInteractiveList(env, { to, bodyText, buttonText, rows, conn = null }) {
+  const creds = waCreds(env, conn);
+  if (!creds) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
+  const res = await fetch(`${GRAPH}/${creds.phoneId}/messages`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${env.WHATSAPP_TOKEN}`,
+      Authorization: `Bearer ${creds.token}`,
       "content-type": "application/json"
     },
     body: JSON.stringify({
@@ -118,10 +143,15 @@ export function parseInbound(payload) {
     for (const change of entry?.changes || []) {
       const value = change?.value || {};
       const contacts = value.contacts || [];
+      // Which of OUR numbers received this — the key that maps a message to the
+      // merchant who owns it. Was previously discarded, which is why every
+      // message got attributed to one hardcoded merchant.
+      const phoneNumberId = value?.metadata?.phone_number_id || null;
       for (const msg of value.messages || []) {
         const contact = contacts.find((c) => c.wa_id === msg.from);
         const listReply = msg?.interactive?.type === "list_reply" ? msg.interactive.list_reply : null;
         out.push({
+          phoneNumberId,
           from: msg.from,
           name: contact?.profile?.name,
           text: msg?.text?.body,
@@ -140,17 +170,18 @@ export function parseInbound(payload) {
 }
 
 /** Get media metadata and download its bytes. */
-export async function getWaMedia(env, mediaId) {
-  if (!waConfigured(env)) throw new Error("WhatsApp غير مفعّل.");
-  
+export async function getWaMedia(env, mediaId, conn = null) {
+  const creds = waCreds(env, conn);
+  if (!creds) throw new Error("WhatsApp غير مفعّل.");
+
   const res = await fetch(`${GRAPH}/${mediaId}`, {
-    headers: { Authorization: `Bearer ${env.WHATSAPP_TOKEN}` }
+    headers: { Authorization: `Bearer ${creds.token}` }
   });
   const data = await res.json();
   if (!res.ok || !data.url) throw new Error(`whatsapp media GET failed: ${res.status}`);
-  
+
   const dlRes = await fetch(data.url, {
-    headers: { Authorization: `Bearer ${env.WHATSAPP_TOKEN}` }
+    headers: { Authorization: `Bearer ${creds.token}` }
   });
   if (!dlRes.ok) throw new Error(`whatsapp media download failed: ${dlRes.status}`);
   
@@ -170,8 +201,10 @@ export function parseEchoes(payload) {
   for (const entry of payload?.entry || []) {
     for (const change of entry?.changes || []) {
       const value = change?.value || {};
+      const phoneNumberId = value?.metadata?.phone_number_id || null;
       for (const echo of value?.message_echoes || []) {
         out.push({
+          phoneNumberId,
           to: echo.to,
           text: echo.type === "text" ? echo?.text?.body : null,
           type: echo.type,

@@ -7,7 +7,7 @@
 import { verifyWaSignature, parseInbound, parseEchoes, sendWaText, sendWaInteractiveList, waConfigured, getWaMedia } from "../../_lib/integrations/whatsapp.js";
 import { askWorkersAI, TEXT_MODEL, askVisionAI } from "../../_lib/ai/gateway.js";
 import { PERSONA_SYSTEM_PROMPT, HALA_WHATSAPP_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, ESCALATION_INSTRUCTIONS, WEEKLY_SLOTS, dialectLabel } from "../../_lib/ai/persona.js";
-import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession } from "../../_lib/core/db.js";
+import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession, getWaConnectionByPhoneId } from "../../_lib/core/db.js";
 import { recallSimilar } from "../../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
 
@@ -34,14 +34,21 @@ const HUMAN_SILENCE_WINDOW_MS = 2 * 3600 * 1000;
 
 const DISABLE_ESCALATION_GATES = false;
 
-async function autoReply(env, merchantId, phone, incomingText, contactName) {
+/**
+ * `isAuraLine` = this message arrived on Aura's own support number, so the bot
+ * speaks as Hala-the-vendor (consultation booking, escalation to our team).
+ * Anything else is a merchant's own connected number, where the bot speaks as
+ * THAT store's assistant. Previously this was a literal `merchantId === "hala"`
+ * check in seven places, which silently made every merchant Aura.
+ */
+async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, contactName }) {
   if (!DISABLE_ESCALATION_GATES) {
     const lastHumanReplyAt = env.DB ? await getLastHumanReplyAt(env, merchantId, phone).catch(() => null) : null;
     if (lastHumanReplyAt && Date.now() - new Date(`${lastHumanReplyAt}Z`).getTime() < HUMAN_SILENCE_WINDOW_MS) {
       return null;
     }
 
-    if (env.DB && merchantId === "hala") {
+    if (env.DB && isAuraLine) {
       const unresolvedCount = await countRecentInboundWithoutResolution(
         env,
         merchantId,
@@ -71,7 +78,7 @@ async function autoReply(env, merchantId, phone, incomingText, contactName) {
   // pure latency with nothing to add, and this path is on a tight response-time
   // budget (WhatsApp, not a website widget where a couple extra seconds is fine).
   const memories =
-    merchantId === "hala" ? [] : await recallSimilar({ env, storeId: merchantId, question: incomingText }).catch(() => []);
+    isAuraLine ? [] : await recallSimilar({ env, storeId: merchantId, question: incomingText }).catch(() => []);
   const ragContext = memories.length
     ? `\n\n## معرفة ذات صلة (استخدميها لو تساعد بالإجابة، تجاهليها لو مو مرتبطة)\n${memories
         .map((m) => `- س: ${m.question}\n  ج: ${m.reply}`)
@@ -84,7 +91,7 @@ async function autoReply(env, merchantId, phone, incomingText, contactName) {
     : "";
 
   let system;
-  if (merchantId === "hala") {
+  if (isAuraLine) {
     system = `${HALA_WHATSAPP_SUPPORT_PROMPT}
 
 ---
@@ -128,22 +135,22 @@ ${ESCALATION_INSTRUCTIONS}`;
     env,
     system,
     messages: turns,
-    maxTokens: merchantId === "hala" ? 180 : 250,
+    maxTokens: isAuraLine ? 180 : 250,
     model: TEXT_MODEL
   });
 
-  if (merchantId === "hala" && ESCALATE_RE.test(reply)) {
+  if (isAuraLine && ESCALATE_RE.test(reply)) {
     return { text: ESCALATION_MESSAGE, offerSlots: false, escalate: true };
   }
 
   let offerSlots = false;
-  if (merchantId === "hala" && OFFER_SLOTS_RE.test(reply)) {
+  if (isAuraLine && OFFER_SLOTS_RE.test(reply)) {
     offerSlots = true;
     reply = reply.replace(OFFER_SLOTS_RE, "").trim();
   }
 
   const bookMatch = reply.match(BOOK_SLOT_RE);
-  if (bookMatch && merchantId === "hala") {
+  if (bookMatch && isAuraLine) {
     const slotLabel = bookMatch[1].trim();
     const booking = await saveConsultationBooking(env, { name: contactName || null, phone, slotLabel }).catch(() => null);
     reply = reply.replace(BOOK_SLOT_RE, "").trim();
@@ -171,7 +178,27 @@ export async function onRequestPost(context) {
     return new Response("ok", { status: 200 });
   }
 
-  const merchantId = env.WHATSAPP_MERCHANT_ID || "hala";
+  // Aura's own support line — the number in env. Everything else must belong to
+  // a merchant who connected their own number via Embedded Signup.
+  const auraPhoneId = env.WHATSAPP_PHONE_ID || null;
+  const auraMerchantId = env.WHATSAPP_MERCHANT_ID || "hala";
+
+  /**
+   * Resolve who a payload belongs to from the number that received it.
+   * Returns null for an unknown number so we drop it rather than misattribute
+   * a stranger's conversation to a merchant (which would leak it into their
+   * history and RAG memory).
+   */
+  async function routeTo(phoneNumberId) {
+    if (!phoneNumberId || (auraPhoneId && String(phoneNumberId) === String(auraPhoneId))) {
+      return { merchantId: auraMerchantId, isAuraLine: true, conn: null };
+    }
+    const conn = await getWaConnectionByPhoneId(env, phoneNumberId);
+    if (conn) return { merchantId: conn.merchant_id, isAuraLine: false, conn };
+    console.error("[wa-webhook] unknown phone_number_id, dropping:", phoneNumberId);
+    return null;
+  }
+
   const inbound = parseInbound(payload);
   // Coexistence numbers also fire smb_message_echoes for anything a human
   // sends from the WhatsApp Business phone app itself — record those too so
@@ -185,15 +212,21 @@ export async function onRequestPost(context) {
       for (const echo of echoes) {
         if (!echo.text) continue;
         try {
-          await recordWaOutbound(env, { merchantId, phone: echo.to, body: echo.text, waMessageId: echo.id, source: "human" });
+          const route = await routeTo(echo.phoneNumberId);
+          if (!route) continue;
+          await recordWaOutbound(env, { merchantId: route.merchantId, phone: echo.to, body: echo.text, waMessageId: echo.id, source: "human" });
         } catch (err) {
           console.error("[wa-webhook-echo]", err);
         }
       }
       for (const msg of inbound) {
         try {
+          const route = await routeTo(msg.phoneNumberId);
+          if (!route) continue;
+          const { merchantId, isAuraLine, conn } = route;
+
           // Customer tapped a list row — deterministic booking, no model round-trip.
-          if (msg.listReplyId != null && merchantId === "hala") {
+          if (msg.listReplyId != null && isAuraLine) {
             const idx = Number(msg.listReplyId);
             const slotLabel = Number.isInteger(idx) ? WEEKLY_SLOTS[idx] : null;
             if (slotLabel) {
@@ -207,7 +240,7 @@ export async function onRequestPost(context) {
               const booking = await saveConsultationBooking(env, { name: msg.name || null, phone: msg.from, slotLabel }).catch(() => null);
               const ticketLine = booking ? `\nرقم تذكرتك: ${booking.ticketCode} — احتفظ فيه لو رجعت تسأل عن الاستشارة.` : "";
               const confirmText = `تم حجز استشارتك ${slotLabel} ✅ فريقنا بيتواصل معك بالوقت المحدد.${ticketLine}`;
-              const outId = await sendWaText(env, { to: msg.from, body: confirmText });
+              const outId = await sendWaText(env, { to: msg.from, body: confirmText, conn });
               await recordWaOutbound(env, { merchantId, phone: msg.from, body: confirmText, waMessageId: outId, source: "bot" });
             } else {
               console.error("[wa-webhook] unmatched list_reply", msg.listReplyId);
@@ -217,7 +250,7 @@ export async function onRequestPost(context) {
 
           if (msg.type === "audio" && msg.audioId) {
             try {
-              const audioBuffer = await getWaMedia(env, msg.audioId);
+              const audioBuffer = await getWaMedia(env, msg.audioId, conn);
               // Wrap the ArrayBuffer in Uint8Array since Workers AI expects it
               const transcript = await env.AI.run('@cf/openai/whisper', { audio: [...new Uint8Array(audioBuffer)] });
               msg.text = transcript.text;
@@ -228,7 +261,7 @@ export async function onRequestPost(context) {
 
           if (msg.type === "image" && msg.imageId) {
             try {
-              const imageBuffer = await getWaMedia(env, msg.imageId);
+              const imageBuffer = await getWaMedia(env, msg.imageId, conn);
               const prompt = msg.imageCaption || "صف هذه الصورة بالتفصيل للمساعدة في الرد على استفسار العميل.";
               const visionText = await askVisionAI({ env, imageBuffer, prompt });
               // Treat the vision output as text context for the RAG autoReply.
@@ -248,12 +281,18 @@ export async function onRequestPost(context) {
             waMessageId: msg.id
           });
 
-          if (waConfigured(env)) {
-            const result = await autoReply(env, merchantId, msg.from, msg.text, msg.name);
+          if (waConfigured(env, conn)) {
+            const result = await autoReply(env, {
+              merchantId,
+              isAuraLine,
+              phone: msg.from,
+              incomingText: msg.text,
+              contactName: msg.name
+            });
             if (!result) continue;
 
             if (result.text) {
-              const outId = await sendWaText(env, { to: msg.from, body: result.text });
+              const outId = await sendWaText(env, { to: msg.from, body: result.text, conn });
               await recordWaOutbound(env, {
                 merchantId,
                 phone: msg.from,
@@ -269,7 +308,8 @@ export async function onRequestPost(context) {
                 to: msg.from,
                 bodyText: "اختر الوقت المناسب لك:",
                 buttonText: "اختيار وقت",
-                rows
+                rows,
+                conn
               });
               await recordWaOutbound(env, {
                 merchantId,

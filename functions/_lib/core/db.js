@@ -439,6 +439,66 @@ export async function recentWaConversations(env, merchantId, limit = 50) {
   }));
 }
 
+// ── Per-merchant WhatsApp connections (Embedded Signup) ──
+
+/**
+ * Routing lookup for inbound webhooks. Every WhatsApp payload carries the
+ * receiving number's phone_number_id — that is the only thing that tells us
+ * which merchant a customer just messaged, now that merchants connect their
+ * own numbers instead of everyone sharing Aura's line.
+ */
+export async function getWaConnectionByPhoneId(env, phoneNumberId) {
+  if (!env.DB || !phoneNumberId) return null;
+  return env.DB.prepare(
+    `SELECT merchant_id, waba_id, phone_number_id, business_token, display_phone, verified_name
+     FROM wa_connections WHERE phone_number_id = ? AND status = 'active'`
+  )
+    .bind(String(phoneNumberId))
+    .first()
+    .catch(() => null);
+}
+
+export async function getWaConnectionByMerchant(env, merchantId) {
+  if (!env.DB || !merchantId) return null;
+  return env.DB.prepare(
+    `SELECT merchant_id, waba_id, phone_number_id, business_token, display_phone, verified_name, status, connected_at
+     FROM wa_connections WHERE merchant_id = ?`
+  )
+    .bind(merchantId)
+    .first()
+    .catch(() => null);
+}
+
+export async function saveWaConnection(env, { merchantId, wabaId, phoneNumberId, businessToken, displayPhone, verifiedName }) {
+  await env.DB.prepare(
+    `INSERT INTO wa_connections
+       (merchant_id, waba_id, phone_number_id, business_token, display_phone, verified_name, status, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'active', datetime('now'))
+     ON CONFLICT(merchant_id) DO UPDATE SET
+       waba_id = excluded.waba_id,
+       phone_number_id = excluded.phone_number_id,
+       business_token = excluded.business_token,
+       display_phone = excluded.display_phone,
+       verified_name = excluded.verified_name,
+       status = 'active',
+       updated_at = datetime('now')`
+  )
+    .bind(merchantId, String(wabaId), String(phoneNumberId), businessToken, displayPhone || null, verifiedName || null)
+    .run();
+}
+
+/** Merchant disconnected from their side (account_update / PARTNER_REMOVED). */
+export async function revokeWaConnection(env, { merchantId = null, wabaId = null }) {
+  if (!env.DB || (!merchantId && !wabaId)) return;
+  const sql = merchantId
+    ? "UPDATE wa_connections SET status = 'revoked', updated_at = datetime('now') WHERE merchant_id = ?"
+    : "UPDATE wa_connections SET status = 'revoked', updated_at = datetime('now') WHERE waba_id = ?";
+  await env.DB.prepare(sql)
+    .bind(merchantId || String(wabaId))
+    .run()
+    .catch(() => {});
+}
+
 // ── Consultation bookings ──
 
 export async function saveConsultationBooking(env, { name, phone, slotLabel }) {

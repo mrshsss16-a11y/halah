@@ -157,6 +157,47 @@
 
     <!-- ── 2. Store customer-service agent ────────────────────── -->
     <section id="sectionAgent" class="hidden space-y-5">
+
+      <!-- WhatsApp connection (Embedded Signup) -->
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+          <div class="space-y-1">
+            <h2 class="text-lg font-black text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-xl text-emerald-600">chat</span>
+              <span>ربط واتساب متجرك</span>
+            </h2>
+            <p class="text-xs text-slate-600 font-medium">
+              اربط رقم واتساب متجرك بضغطة وحدة — يرد الوكيل على عملاءك باسم متجرك،
+              وتقدر ترد يدوياً من تطبيق واتساب بزنس بنفس الوقت بدون ما تفقد محادثاتك.
+            </p>
+          </div>
+          <span id="waConnBadge" class="shrink-0 text-[11px] font-black px-3 py-1.5 rounded-full bg-slate-100 text-slate-600">جاري الفحص…</span>
+        </div>
+
+        <!-- connected -->
+        <div id="waConnActive" class="hidden">
+          <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+            <span class="material-symbols-outlined text-emerald-600">verified</span>
+            <div class="text-xs">
+              <p class="font-black text-black" id="waConnName">—</p>
+              <p class="text-slate-600 font-medium" id="waConnPhone" dir="ltr">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- not connected -->
+        <div id="waConnIdle" class="hidden space-y-3">
+          <button id="waConnectBtn" onclick="launchWhatsAppSignup()" type="button"
+            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition disabled:opacity-50">
+            <span class="material-symbols-outlined text-base">link</span>
+            <span>ربط واتساب بضغطة واحدة</span>
+          </button>
+          <p id="waConnNote" class="text-[11px] text-slate-500 text-center font-medium"></p>
+        </div>
+
+        <div id="waConnError" class="hidden text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 rounded-2xl p-3"></div>
+      </div>
+
       <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
         <div class="space-y-1 border-b border-slate-200 pb-4">
           <h2 class="text-lg font-black text-black">وكيل خدمة عملاء متجرك</h2>
@@ -238,8 +279,146 @@
         if (btn) btn.className = (t === tab ? 'tab-on' : 'tab-off') + ' text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2' + (t === tab ? ' shadow-sm' : '');
         if (sec) sec.classList.toggle('hidden', t !== tab);
       });
-      if (tab === 'agent') loadAgentContext();
+      if (tab === 'agent') { loadAgentContext(); loadWaStatus(); }
       if (tab === 'store') loadStore();
+    }
+
+    // ── WhatsApp connection (Embedded Signup) ──────────────────────────
+    // The config ID comes from the server, not hardcoded here: it only exists
+    // once Meta approves Tech Provider access and a Facebook Login for Business
+    // configuration is created. Until then the button stays disabled with an
+    // honest note rather than failing on click.
+    let waSignupConfigId = null;
+    let waMetaAppId = null;
+
+    function waShowError(msg) {
+      const el = document.getElementById('waConnError');
+      el.classList.remove('hidden');
+      el.innerText = msg;
+    }
+
+    async function loadWaStatus() {
+      const badge = document.getElementById('waConnBadge');
+      const active = document.getElementById('waConnActive');
+      const idle = document.getElementById('waConnIdle');
+      try {
+        const res = await fetch('/api/whatsapp/status', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}'
+        });
+        const data = await res.json();
+
+        if (data?.connected) {
+          badge.className = 'shrink-0 text-[11px] font-black px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800';
+          badge.innerText = 'مربوط';
+          document.getElementById('waConnName').innerText = data.verifiedName || 'رقم متجرك';
+          document.getElementById('waConnPhone').innerText = data.displayPhone || '';
+          active.classList.remove('hidden');
+          idle.classList.add('hidden');
+          return;
+        }
+
+        badge.className = 'shrink-0 text-[11px] font-black px-3 py-1.5 rounded-full bg-slate-100 text-slate-700';
+        badge.innerText = 'غير مربوط';
+        active.classList.add('hidden');
+        idle.classList.remove('hidden');
+
+        waSignupConfigId = data?.configId || null;
+        waMetaAppId = data?.metaAppId || null;
+
+        const btn = document.getElementById('waConnectBtn');
+        const note = document.getElementById('waConnNote');
+        if (!data?.available) {
+          btn.disabled = true;
+          note.innerText = 'الربط الذاتي قيد التفعيل مع واتساب — تواصل معنا ونربط رقمك يدوياً الحين.';
+        } else {
+          btn.disabled = false;
+          note.innerText = 'تحتاج حساب فيسبوك مرتبط بنشاطك التجاري لإتمام الربط.';
+          loadFbSdk();
+        }
+      } catch (e) {
+        badge.innerText = 'تعذر الفحص';
+      }
+    }
+
+    function loadFbSdk() {
+      if (window.FB || document.getElementById('fbSdkScript')) return;
+      window.fbAsyncInit = function () {
+        FB.init({ appId: waMetaAppId, autoLogAppEvents: true, xfbml: true, version: 'v21.0' });
+      };
+      const s = document.createElement('script');
+      s.id = 'fbSdkScript';
+      s.src = 'https://connect.facebook.net/en_US/sdk.js';
+      s.async = true; s.defer = true; s.crossOrigin = 'anonymous';
+      document.body.appendChild(s);
+    }
+
+    // Embedded Signup returns the WABA + phone IDs through a postMessage event,
+    // separately from the auth code that comes back in the FB.login callback —
+    // both halves are needed, so stash this one until the callback fires.
+    let waSignupSession = null;
+    window.addEventListener('message', (event) => {
+      if (!String(event.origin).endsWith('facebook.com')) return;
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'WA_EMBEDDED_SIGNUP' && data.data) {
+          waSignupSession = { wabaId: data.data.waba_id, phoneNumberId: data.data.phone_number_id };
+        }
+      } catch (e) {}
+    });
+
+    function launchWhatsAppSignup() {
+      if (!window.FB || !waSignupConfigId) {
+        waShowError('خدمة الربط لسه تحمّل، حاول بعد ثانية.');
+        return;
+      }
+      FB.login((response) => {
+        const code = response?.authResponse?.code;
+        if (!code) {
+          waShowError('تم إلغاء الربط.');
+          return;
+        }
+        finishWhatsAppConnect(code);
+      }, {
+        config_id: waSignupConfigId,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          setup: {},
+          // Coexistence: keeps the merchant's existing WhatsApp Business app and
+          // chat history working alongside the API instead of replacing it.
+          featureType: 'whatsapp_business_app_onboarding',
+          sessionInfoVersion: '3'
+        }
+      });
+    }
+
+    async function finishWhatsAppConnect(code) {
+      const btn = document.getElementById('waConnectBtn');
+      btn.disabled = true;
+      btn.querySelector('span:last-child').innerText = 'جاري الربط...';
+      try {
+        const res = await fetch('/api/whatsapp/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            code,
+            wabaId: waSignupSession?.wabaId,
+            phoneNumberId: waSignupSession?.phoneNumberId
+          })
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          waShowError(data.error || 'تعذر إتمام الربط.');
+          return;
+        }
+        document.getElementById('waConnError').classList.add('hidden');
+        loadWaStatus();
+      } catch (e) {
+        waShowError('تعذر الاتصال بالخادم.');
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span:last-child').innerText = 'ربط واتساب بضغطة واحدة';
+      }
     }
 
     function showMsg(id, text) {
