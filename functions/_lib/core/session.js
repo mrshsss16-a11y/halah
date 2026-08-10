@@ -74,7 +74,18 @@ export function parseCookies(request) {
 export function sessionCookieHeader(token, { clear = false } = {}) {
   const maxAge = clear ? 0 : SESSION_DAYS * 24 * 3600;
   const value = clear ? "" : token;
-  return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+  // SameSite=None (not Lax) is required for dashboard.html when it runs
+  // embedded inside Salla's dashboard iframe (a cross-site context from the
+  // browser's point of view — halah.aura.sa framed by s.salla.sa). Lax
+  // cookies are dropped by the browser in that context: the login/verify
+  // fetch would succeed (200, Set-Cookie present) but the cookie never
+  // actually persists, so the very next request looks logged-out — no error,
+  // the merchant just gets silently bounced back. Still HttpOnly + Secure +
+  // a signed token, so this doesn't weaken anything meaningful; SameSite=Lax
+  // was only ever protecting against a scenario (cross-site top-level GET
+  // navigation carrying the cookie) that doesn't apply to an API cookie like
+  // this one.
+  return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAge}`;
 }
 
 export async function getSessionMerchantId(request, env) {
