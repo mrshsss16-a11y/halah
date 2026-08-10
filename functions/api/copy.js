@@ -4,7 +4,7 @@
 // Generates: Title, SEO Title, Slug, Excerpt, Meta Description, Benefit Description,
 // Specs Table, FAQs, Image ALT, Tags, and JSON-LD Product Schema Markup.
 import { withApi } from "../_lib/core/respond.js";
-import { askWorkersAI, TEXT_MODEL } from "../_lib/ai/gateway.js";
+import { askWorkersAI, askVisionAI, TEXT_MODEL } from "../_lib/ai/gateway.js";
 import { PERSONA_SYSTEM_PROMPT } from "../_lib/ai/persona.js";
 import { recentCopy, saveCopy } from "../_lib/core/db.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
@@ -26,12 +26,32 @@ function seedKeywords(name, category, extra) {
   return [...base].slice(0, 6);
 }
 
-function buildSeoSystem({ recent, keywords }) {
+function buildSeoSystem({ recent, keywords, existingDescription, visionNotes }) {
   const avoid = recent.length
     ? `\n\n## لا تكرري هذه الافتتاحيات السابقة لنفس المتجر:\n${recent.map((r, i) => `${i + 1}. "${r.opening}"`).join("\n")}`
     : "";
 
-  return `${PERSONA_SYSTEM_PROMPT}
+  // Grounding: when we have the merchant's real existing copy and/or a real
+  // look at the actual product photo, the job changes from "invent plausible
+  // marketing copy from a name" to "rewrite/improve what's actually true
+  // about this product" — the same honesty rule persona.js enforces
+  // elsewhere (no fabricated specs). Without this, two products with the
+  // same name+category get near-identical generic output regardless of what
+  // makes THIS one different.
+  const grounding = [];
+  if (existingDescription) {
+    grounding.push(
+      `## الوصف الحالي للمنتج (بيانات حقيقية — حسّني الصياغة والـSEO، لا تخترعي مواصفات غير مذكورة هنا أو بالمزايا المدخلة)\n"${existingDescription}"`
+    );
+  }
+  if (visionNotes) {
+    grounding.push(
+      `## ملاحظات من تحليل صورة المنتج الفعلية (استخدميها لدقة الوصف — لون، خامة، شكل حقيقي، لا تخترعي تفاصيل غير ظاهرة بالصورة)\n${visionNotes}`
+    );
+  }
+  const groundingBlock = grounding.length ? `\n\n${grounding.join("\n\n")}` : "";
+
+  return `${PERSONA_SYSTEM_PROMPT}${groundingBlock}
 
 ---
 
@@ -185,6 +205,8 @@ async function copyHandler(body, env, request) {
   const tone = TONE_LABELS[body.tone] ? body.tone : "white";
   const category = (body.category || "").toString().trim().slice(0, 60);
   const features = (body.features || "").toString().trim().slice(0, 500);
+  const existingDescription = (body.existingDescription || "").toString().trim().slice(0, 3000);
+  const imageUrl = (body.imageUrl || "").toString().trim().slice(0, 500);
 
   if (!name) return { error: "أدخل اسم المنتج أولاً." };
 
@@ -200,7 +222,17 @@ async function copyHandler(body, env, request) {
   const keywords = seedKeywords(name, category, body.keywords);
   const recent = await recentCopy(env, merchantId).catch(() => []);
 
-  const system = buildSeoSystem({ recent, keywords });
+  // Optional and best-effort — a slow/broken image host shouldn't block copy
+  // generation, it just falls back to text-only grounding.
+  const visionNotes = imageUrl
+    ? await askVisionAI({
+        env,
+        imageUrl,
+        prompt: "صف هذا المنتج بدقة: اللون، الخامة، الشكل العام، أي تفاصيل بصرية مهمة للتسويق. جملتين بالعربي."
+      }).catch(() => null)
+    : null;
+
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes });
   const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${TONE_LABELS[tone]} (${tone})`;
 
   const rawAiOutput = await askWorkersAI({

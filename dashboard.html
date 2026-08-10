@@ -118,6 +118,14 @@
         </div>
         <textarea id="pFeatures" rows="2" placeholder="مزايا المنتج (اختياري) — افصل بينها بفاصلة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
 
+        <details class="text-xs">
+          <summary class="cursor-pointer font-bold text-slate-600 select-none">تحسين وصف موجود بدل كتابة من الصفر (اختياري)</summary>
+          <div class="space-y-2.5 pt-2.5">
+            <textarea id="pExistingDescription" rows="3" placeholder="الصق وصف المنتج الحالي بمتجرك — الذكاء الاصطناعي يحسّن صياغته وSEO بدل ما يخترع وصفاً عاماً من الاسم بس" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+            <input id="pImageUrl" type="text" placeholder="رابط صورة المنتج (اختياري) — يحلّلها فعلياً (لون، خامة، شكل) قبل الكتابة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" dir="ltr"/>
+          </div>
+        </details>
+
         <button id="genBtn" onclick="generateCopy()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
           <span class="material-symbols-outlined text-base">auto_awesome</span>
           <span id="genBtnText">اكتب الوصف الآن</span>
@@ -469,7 +477,9 @@
             price: document.getElementById('pPrice').value,
             category: document.getElementById('pCategory').value.trim(),
             tone: document.getElementById('pTone').value,
-            features: document.getElementById('pFeatures').value.trim()
+            features: document.getElementById('pFeatures').value.trim(),
+            existingDescription: document.getElementById('pExistingDescription').value.trim(),
+            imageUrl: document.getElementById('pImageUrl').value.trim()
           })
         });
         const data = await res.json();
