@@ -137,10 +137,11 @@
       <div id="copyResult" class="hidden space-y-4">
         <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
           <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-            <h3 class="text-sm font-black text-black">الوصف التسويقي</h3>
+            <h3 class="text-sm font-black text-black">الوصف التسويقي — راجعه وعدّله قبل النشر</h3>
             <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
           </div>
-          <div id="outDescription" class="text-xs leading-relaxed text-black whitespace-pre-wrap"></div>
+          <textarea id="outDescription" rows="5" class="w-full text-xs leading-relaxed text-black whitespace-pre-wrap bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-black"></textarea>
+          <p class="text-[11px] text-slate-500">هذا مسودة — عدّل النص هنا لو تبي، اللي يُنشر بسلة هو النص المكتوب هنا وقت الضغط على "انشر".</p>
 
           <div class="pt-3 border-t border-slate-200 space-y-2">
             <span class="text-[11px] font-bold text-slate-600">نقاط البيع</span>
@@ -454,7 +455,8 @@
     async function copyToClipboard(id) {
       const el = document.getElementById(id);
       if (!el) return;
-      try { await navigator.clipboard.writeText(el.innerText); showMsg('copyFeedback', 'تم النسخ ✅'); } catch (e) {}
+      const text = 'value' in el ? el.value : el.innerText;
+      try { await navigator.clipboard.writeText(text); showMsg('copyFeedback', 'تم النسخ ✅'); } catch (e) {}
     }
 
     // ── Product copy ──────────────────────────────────────────
@@ -503,7 +505,7 @@
     function renderCopy(d) {
       const cw = d.copywriting || {};
       const seo = d.seo || {};
-      document.getElementById('outDescription').innerText = cw.description || d.result || '';
+      document.getElementById('outDescription').value = cw.description || d.result || '';
       document.getElementById('outWhatsapp').innerText = cw.whatsapp || d.whatsapp || '';
       document.getElementById('outTitle').innerText = seo.title || '';
       document.getElementById('outSeoTitle').innerText = seo.seoTitle || '';
@@ -524,11 +526,14 @@
     async function publishToSalla() {
       const productId = document.getElementById('publishProduct').value;
       if (!productId || !lastCopy) return;
+      // Publish whatever the merchant is looking at right now, including any
+      // edits they made in the review textarea — not the original AI draft.
+      const editedDescription = document.getElementById('outDescription').value.trim();
       try {
         const res = await fetch('/api/store/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId, description: lastCopy.copywriting?.description || lastCopy.result })
+          body: JSON.stringify({ productId, description: editedDescription || lastCopy.copywriting?.description || lastCopy.result })
         });
         const data = await res.json();
         showMsg('publishFeedback', data?.ok ? 'تم النشر على المنتج ✅' : (data?.error || 'تعذر النشر.'));
