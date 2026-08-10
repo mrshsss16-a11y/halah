@@ -13,6 +13,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
 
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // @salla.sa/embedded-sdk's UMD bundle (dist/umd/index.js) references the
+    // Node.js `process` global somewhere in its init path — confirmed live via
+    // browser console: "Uncaught ReferenceError: process is not defined"
+    // thrown from inside the SDK, which silently breaks its postMessage
+    // handshake before it ever reaches Salla's parent frame. Browsers have no
+    // `process`; this shim is the standard workaround for Node-targeted
+    // bundles loaded directly in a browser. Must run before the SDK script.
+    window.process = window.process || { env: {} };
+  </script>
   <!-- Salla Embedded App SDK — required when this page is opened inside a
        merchant's Salla dashboard iframe (docs.salla.dev/embedded-sdk). Loaded
        unconditionally; the bootstrap logic below only uses it when actually
