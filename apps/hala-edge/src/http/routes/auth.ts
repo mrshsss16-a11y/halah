@@ -17,10 +17,6 @@ async function readJsonBody(request: Request): Promise<unknown | null> {
   }
 }
 
-function isProductionEnvironment(environment: "development" | "staging" | "production"): boolean {
-  return environment === "production";
-}
-
 async function consumeAuthAttempt(
   context: Context<HalaEnv>,
   operation: "login" | "signup",
@@ -98,7 +94,7 @@ export function createAuthRoutes(): Hono<HalaEnv> {
       buildSessionCookie(
         outcome.session.rawToken,
         outcome.session.expiresAt,
-        isProductionEnvironment(context.get("config").environment)
+        context.get("config").environment
       )
     );
     return context.json({ nextPath: "/app" }, 201);
@@ -137,7 +133,7 @@ export function createAuthRoutes(): Hono<HalaEnv> {
       buildSessionCookie(
         outcome.session.rawToken,
         outcome.session.expiresAt,
-        isProductionEnvironment(context.get("config").environment)
+        context.get("config").environment
       )
     );
     return context.json({ nextPath: "/app" }, 200);
@@ -159,10 +155,7 @@ export function createAuthRoutes(): Hono<HalaEnv> {
       await repository.revokeSession(await hashSessionToken(rawToken), new Date().toISOString());
     }
 
-    context.header(
-      "set-cookie",
-      buildExpiredSessionCookie(isProductionEnvironment(context.get("config").environment))
-    );
+    context.header("set-cookie", buildExpiredSessionCookie(context.get("config").environment));
     return context.body(null, 204);
   });
 
