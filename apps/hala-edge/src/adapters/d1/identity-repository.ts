@@ -108,6 +108,14 @@ export class IdentityRepository implements IdentityRepositoryPort {
     return result === null ? null : toIdentityUser(result);
   }
 
+  public async findUserById(userId: string): Promise<IdentityUser | null> {
+    const result = await this.database
+      .prepare("SELECT id, email_normalized, status FROM users WHERE id = ?1")
+      .bind(userId)
+      .first<Record<string, unknown>>();
+    return result === null ? null : toIdentityUser(result);
+  }
+
   public async findCredentialByUserId(userId: string): Promise<StoredCredential | null> {
     const result = await this.database
       .prepare(
@@ -128,6 +136,16 @@ export class IdentityRepository implements IdentityRepositoryPort {
       .bind(userId)
       .first<Record<string, unknown>>();
     return result === null ? null : toActiveOrganizationMembership(result);
+  }
+
+  public async hasActiveMembership(userId: string, organizationId: string): Promise<boolean> {
+    const result = await this.database
+      .prepare(
+        "SELECT 1 FROM organization_members m JOIN organizations o ON o.id = m.organization_id WHERE m.user_id = ?1 AND m.organization_id = ?2 AND o.status = 'active' LIMIT 1"
+      )
+      .bind(userId, organizationId)
+      .first();
+    return result !== null;
   }
 
   public async createOwnerIdentity(record: CreateIdentityRecord): Promise<void> {

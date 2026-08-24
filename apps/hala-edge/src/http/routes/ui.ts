@@ -9,6 +9,7 @@ import {
   renderProductContentPage,
   renderRecoveryPage,
   renderSignUpPage,
+  renderTeamPage,
   renderSimpleAppPage
 } from "../../ui/pages";
 import { canStageProductContentExport } from "../commercial-authorization";
@@ -74,6 +75,12 @@ export function createUiRoutes(): Hono<HalaEnv> {
       nextStep: "أكمل onboarding ومراجعة policy قبل إرسال طلب التفعيل الداخلي."
     },
     {
+      path: "/app/team",
+      title: "فريق المتجر",
+      description: "أدر العضويات والأدوار والدعوات المحلية ضمن مساحة متجرك.",
+      nextStep: "استخدم الدعوات المحلية للاختبار فقط إلى أن يعتمد مزود البريد في staging."
+    },
+    {
       path: "/app/audit",
       title: "سجل التدقيق",
       description: "كل قرار مهم يجب أن يحمل سبباً ووقتاً وrequest ID داخل بيئة هالة.",
@@ -107,6 +114,15 @@ export function createUiRoutes(): Hono<HalaEnv> {
       }
       if (page.path === "/app/audit") {
         return context.html(renderAuditPage(identity.organizationName, context.get("cspNonce")));
+      }
+      if (page.path === "/app/team") {
+        return context.html(
+          renderTeamPage(
+            identity.organizationName,
+            identity.role === "owner",
+            context.get("cspNonce")
+          )
+        );
       }
 
       return context.html(

@@ -394,3 +394,65 @@ export const auditEventListResponseSchema = z
   })
   .strict();
 export type AuditEventListResponse = z.infer<typeof auditEventListResponseSchema>;
+
+export const teamAssignableRoleSchema = z.enum(["operator", "reviewer", "viewer"]);
+export type TeamAssignableRole = z.infer<typeof teamAssignableRoleSchema>;
+
+export const teamMemberRoleUpdateSchema = z
+  .object({
+    role: organizationRoleSchema
+  })
+  .strict();
+export type TeamMemberRoleUpdate = z.infer<typeof teamMemberRoleUpdateSchema>;
+
+export const teamInvitationCreateSchema = z
+  .object({
+    email: emailSchema,
+    role: teamAssignableRoleSchema
+  })
+  .strict();
+export type TeamInvitationCreate = z.infer<typeof teamInvitationCreateSchema>;
+
+export const teamInvitationAcceptSchema = z
+  .object({
+    token: z.string().trim().min(40).max(256)
+  })
+  .strict();
+export type TeamInvitationAccept = z.infer<typeof teamInvitationAcceptSchema>;
+
+export const teamMemberSchema = z
+  .object({
+    userId: userIdSchema,
+    email: emailSchema,
+    role: organizationRoleSchema,
+    createdAt: isoTimestampSchema
+  })
+  .strict();
+export type TeamMember = z.infer<typeof teamMemberSchema>;
+
+export const teamInvitationSchema = z
+  .object({
+    id: z.string().uuid(),
+    email: emailSchema,
+    role: teamAssignableRoleSchema,
+    status: z.enum(["pending", "accepted", "revoked", "expired"]),
+    expiresAt: isoTimestampSchema,
+    createdAt: isoTimestampSchema
+  })
+  .strict();
+export type TeamInvitation = z.infer<typeof teamInvitationSchema>;
+
+export const organizationTeamSchema = z
+  .object({
+    members: z.array(teamMemberSchema),
+    invitations: z.array(teamInvitationSchema)
+  })
+  .strict();
+export type OrganizationTeam = z.infer<typeof organizationTeamSchema>;
+
+export const organizationSwitchSchema = z
+  .object({
+    organizationId: organizationIdSchema
+  })
+  .strict();
+export type OrganizationSwitch = z.infer<typeof organizationSwitchSchema>;

@@ -103,6 +103,15 @@ describe("reviewer HTTP authorization", () => {
       { method: "POST", headers: jsonRequestHeaders, body: JSON.stringify({}) },
       bindings
     );
+    const teamInvitationResponse = await app.request(
+      "https://hala.test/api/team/invitations",
+      {
+        method: "POST",
+        headers: jsonRequestHeaders,
+        body: JSON.stringify({ email: "member@example.test", role: "viewer" })
+      },
+      bindings
+    );
     const connectionResponse = await app.request(
       "https://hala.test/api/connections/salla/mock/start",
       { method: "POST", headers: jsonRequestHeaders },
@@ -131,6 +140,10 @@ describe("reviewer HTTP authorization", () => {
     await expect(importResponse.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
     expect(exportResponse.status).toBe(403);
     await expect(exportResponse.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
+    expect(teamInvitationResponse.status).toBe(403);
+    await expect(teamInvitationResponse.json()).resolves.toMatchObject({
+      error: { code: "insufficient_role" }
+    });
     expect(connectionResponse.status).toBe(403);
     await expect(connectionResponse.json()).resolves.toMatchObject({
       error: { code: "insufficient_role" }

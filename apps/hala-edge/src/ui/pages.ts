@@ -29,7 +29,7 @@ function appTopbar(organizationName: string): string {
 }
 
 function appNavigation(): string {
-  return `<aside class="card sidebar"><strong>المساحة</strong><a href="/app">نظرة عامة</a><a href="/app/onboarding">البدء</a><a href="/app/products">محتوى المنتجات</a><a href="/app/recovery">استرداد السلات</a><a href="/app/connections">الربط</a><a href="/app/activation">تفعيل الخدمة</a><a href="/app/audit">سجل التدقيق</a><form id="logout-form"><button class="button secondary" type="submit">تسجيل خروج</button></form></aside>
+  return `<aside class="card sidebar"><strong>المساحة</strong><a href="/app">نظرة عامة</a><a href="/app/onboarding">البدء</a><a href="/app/products">محتوى المنتجات</a><a href="/app/recovery">استرداد السلات</a><a href="/app/connections">الربط</a><a href="/app/activation">تفعيل الخدمة</a><a href="/app/audit">سجل التدقيق</a><a href="/app/team">فريق المتجر</a><form id="logout-form"><button class="button secondary" type="submit">تسجيل خروج</button></form></aside>
 <script>
   document.getElementById('logout-form').addEventListener('submit', async function (event) {
     event.preventDefault();
@@ -514,6 +514,81 @@ export function renderAuditPage(organizationName: string, cspNonce: string): str
       document.getElementById('audit-previous').addEventListener('click', function () { void loadAuditEvents(auditPage - 1); });
       document.getElementById('audit-next').addEventListener('click', function () { void loadAuditEvents(auditPage + 1); });
       void loadAuditEvents(1);
+    </script>`,
+    cspNonce
+  );
+}
+
+export function renderTeamPage(
+  organizationName: string,
+  canManageTeam: boolean,
+  cspNonce: string
+): string {
+  const ownerControls = canManageTeam
+    ? `<article class="card" style="max-inline-size: 780px"><h2>دعوة عضو</h2><p class="muted">هذه دعوة محلية لا ترسل بريداً. يظهر رمزها مرة واحدة لأغراض الاختبار المحلي فقط، ولا يكتب في سجل التدقيق أو قاعدة البيانات بصيغته الخام.</p><form id="team-invite-form"><label>بريد العضو<input type="email" name="email" required maxlength="254" /></label><label>الدور<select name="role"><option value="operator">مشغّل</option><option value="reviewer">مراجع</option><option value="viewer">مشاهد</option></select></label><p id="team-invite-message" class="error" role="alert"></p><pre id="team-invite-token" class="notice" hidden></pre><button class="button" type="submit">إنشاء دعوة محلية</button></form></article>`
+    : `<p class="notice">يمكنك الاطلاع على أعضاء المساحة فقط. إدارة الدعوات والأدوار متاحة لمالك المساحة.</p>`;
+  return appLayout(
+    organizationName,
+    "فريق المتجر",
+    `<section><span class="status">فريق محكوم</span><h1>أعضاء مساحة المتجر</h1><p class="muted">تُفصل العضويات بحسب مساحة المتجر. إزالة عضو تبطل جلساته ضمن هذه المساحة، ولا يمكن إزالة آخر مالك أو تغيير دوره.</p>${ownerControls}<article class="card" style="max-inline-size: 900px"><h2>الأعضاء</h2><div id="team-members" aria-live="polite"><p class="muted">يجري تحميل الأعضاء.</p></div></article><article class="card" style="max-inline-size: 900px"><h2>الدعوات</h2><div id="team-invitations" aria-live="polite"><p class="muted">يجري تحميل الدعوات.</p></div></article></section><script>
+      var canManageTeam = ${canManageTeam ? "true" : "false"};
+      function teamText(parent, tag, text) { var item = document.createElement(tag); item.textContent = text; parent.append(item); }
+      function roleLabel(role) { return ({ owner: 'مالك', operator: 'مشغّل', reviewer: 'مراجع', viewer: 'مشاهد' })[role] || 'غير معروف'; }
+      async function loadTeam() {
+        var response = await fetch('/api/team', { credentials: 'same-origin' });
+        var body = await response.json().catch(function () { return null; });
+        var members = document.getElementById('team-members');
+        var invitations = document.getElementById('team-invitations');
+        members.textContent = '';
+        invitations.textContent = '';
+        if (!response.ok || !body || !Array.isArray(body.members) || !Array.isArray(body.invitations)) {
+          members.textContent = 'تعذر تحميل أعضاء المساحة بشكل آمن.';
+          invitations.textContent = 'تعذر تحميل الدعوات بشكل آمن.';
+          return;
+        }
+        if (body.members.length === 0) { members.textContent = 'لا توجد عضويات متاحة.'; }
+        body.members.forEach(function (member) {
+          var card = document.createElement('section'); card.className = 'notice';
+          teamText(card, 'strong', member.email);
+          teamText(card, 'p', 'الدور: ' + roleLabel(member.role));
+          if (canManageTeam && member.role !== 'owner') {
+            var controls = document.createElement('div'); controls.className = 'actions';
+            ['operator', 'reviewer', 'viewer'].forEach(function (role) {
+              var button = document.createElement('button'); button.type = 'button'; button.className = 'button secondary'; button.textContent = 'تعيين ' + roleLabel(role);
+              button.addEventListener('click', async function () {
+                var update = await fetch('/api/team/members/' + encodeURIComponent(member.userId), { method: 'PATCH', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ role: role }) });
+                if (update.ok) { await loadTeam(); }
+              }); controls.append(button);
+            });
+            var remove = document.createElement('button'); remove.type = 'button'; remove.className = 'button secondary'; remove.textContent = 'إزالة من المساحة';
+            remove.addEventListener('click', async function () { var deletion = await fetch('/api/team/members/' + encodeURIComponent(member.userId), { method: 'DELETE', credentials: 'same-origin' }); if (deletion.ok) { await loadTeam(); } });
+            controls.append(remove); card.append(controls);
+          }
+          members.append(card);
+        });
+        if (body.invitations.length === 0) { invitations.textContent = 'لا توجد دعوات محفوظة.'; }
+        body.invitations.forEach(function (invitation) {
+          var card = document.createElement('section'); card.className = 'notice';
+          teamText(card, 'strong', invitation.email);
+          teamText(card, 'p', 'الدور المقترح: ' + roleLabel(invitation.role));
+          teamText(card, 'p', 'الحالة: ' + invitation.status + ' · تنتهي: ' + invitation.expiresAt);
+          invitations.append(card);
+        });
+      }
+      var inviteForm = document.getElementById('team-invite-form');
+      if (inviteForm) {
+        inviteForm.addEventListener('submit', async function (event) {
+          event.preventDefault(); var message = document.getElementById('team-invite-message'); var token = document.getElementById('team-invite-token');
+          message.textContent = ''; token.hidden = true; token.textContent = '';
+          var form = new FormData(inviteForm); var response = await fetch('/api/team/invitations', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: String(form.get('email') || ''), role: String(form.get('role') || '') }) });
+          var body = await response.json().catch(function () { return null; });
+          if (!response.ok) { message.textContent = body && body.error ? body.error.message : 'تعذر إنشاء الدعوة بشكل آمن.'; return; }
+          message.textContent = 'أنشئت الدعوة المحلية وتنتهي في ' + body.expiresAt + '.';
+          token.textContent = 'رمز اختبار محلي (لا تشاركه خارج بيئة development): ' + body.invitationToken; token.hidden = false;
+          inviteForm.reset(); await loadTeam();
+        });
+      }
+      void loadTeam();
     </script>`,
     cspNonce
   );
