@@ -8,6 +8,7 @@ import { createActivationRoutes } from "./routes/activation";
 import { createAuthRoutes } from "./routes/auth";
 import { createProductContentRoutes } from "./routes/product-content";
 import { createRecoveryRoutes } from "./routes/recovery";
+import { createSallaWebhookRoutes } from "./routes/salla-webhook";
 import { createUiRoutes } from "./routes/ui";
 
 export function createApp(): Hono<HalaEnv> {
@@ -39,6 +40,7 @@ export function createApp(): Hono<HalaEnv> {
   app.route("/api/activation", createActivationRoutes());
   app.route("/api/product-content", createProductContentRoutes());
   app.route("/api/recovery", createRecoveryRoutes());
+  app.route("/webhooks/salla", createSallaWebhookRoutes());
   app.route("/", createUiRoutes());
 
   app.get("/health", (context) => {
