@@ -19,10 +19,10 @@
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "0.8.71",
-    "@cloudflare/workers-types": "4.20250906.0",
+    "@cloudflare/workers-types": "5.20260823.1",
     "@hala/test-kit": "workspace:*",
     "msw": "^2.10.0",
     "vitest": "^3.2.4",
-    "wrangler": "4.35.0"
+    "wrangler": "4.125.0"
   }
 }
