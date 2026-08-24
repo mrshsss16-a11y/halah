@@ -1,0 +1,5 @@
+# Development-only placeholders. Do not copy production values here.
+ENVIRONMENT=development
+APP_VERSION=0.1.0-dev
+SESSION_SECRET=replace-with-a-local-random-value-only
+ENCRYPTION_KEY=replace-with-a-local-random-value-only

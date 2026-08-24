@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers", "vitest/globals"],
+    "rootDir": "../..",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@hala/contracts": ["../../packages/contracts/src/index.ts"],
+      "@hala/test-kit": ["../../packages/test-kit/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts", "vitest.integration.config.ts"]
+}

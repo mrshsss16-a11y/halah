@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "hala-edge-development",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-23",
+  "workers_dev": true,
+  "vars": {
+    "ENVIRONMENT": "development",
+    "APP_VERSION": "0.1.0-dev"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_RATE_LIMIT",
+      "id": "00000000-0000-0000-0000-000000000001"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "hala-development-local",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

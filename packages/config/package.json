@@ -1,0 +1,16 @@
+{
+  "name": "@hala/config",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hala/contracts": "workspace:*",
+    "zod": "^3.24.4"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "dist",
+    "baseUrl": ".",
+    "paths": {
+      "@hala/contracts": ["../contracts/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

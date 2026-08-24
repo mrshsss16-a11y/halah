@@ -1,0 +1,34 @@
+{
+  "name": "hala-ai-os",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Hala AI OS modular source workspace",
+  "packageManager": "pnpm@10.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @hala/hala-edge build",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:integration",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "pnpm --filter @hala/hala-edge typecheck && pnpm --filter @hala/contracts typecheck && pnpm --filter @hala/test-kit typecheck && pnpm --filter @hala/config typecheck",
+    "test": "pnpm --filter @hala/hala-edge test",
+    "test:integration": "pnpm --filter @hala/hala-edge test:integration",
+    "test:watch": "pnpm --filter @hala/hala-edge test:watch",
+    "dev": "pnpm --filter @hala/hala-edge dev"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.33.0",
+    "@types/node": "^22.15.0",
+    "eslint": "^9.33.0",
+    "eslint-plugin-import-x": "^4.16.1",
+    "eslint-plugin-n": "^17.21.0",
+    "eslint-plugin-promise": "^7.2.1",
+    "globals": "^16.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.39.0"
+  }
+}
