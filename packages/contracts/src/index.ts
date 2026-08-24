@@ -348,3 +348,11 @@ export const sallaOAuthMockCompletionInputSchema = z
   })
   .strict();
 export type SallaOAuthMockCompletionInput = z.infer<typeof sallaOAuthMockCompletionInputSchema>;
+
+export const recoveryLocalIntakeInputSchema = z
+  .object({
+    externalCartId: z.string().trim().min(1).max(200),
+    contactHash: z.string().trim().min(16).max(128)
+  })
+  .strict();
+export type RecoveryLocalIntakeInput = z.infer<typeof recoveryLocalIntakeInputSchema>;
