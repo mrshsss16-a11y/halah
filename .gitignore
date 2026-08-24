@@ -17,3 +17,6 @@ rag/output/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+
+apps/hala-edge/test-results/
+apps/hala-edge/playwright-report/
