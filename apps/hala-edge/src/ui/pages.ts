@@ -418,15 +418,19 @@ export function renderProductContentPage(
 export function renderRecoveryPage(
   organizationName: string,
   canManageRecoveryPolicy: boolean,
+  canManageRecoveryControls: boolean,
   cspNonce: string
 ): string {
   const policyControls = canManageRecoveryPolicy
     ? `<article class="card" style="max-inline-size: 780px"><h2>إصدار سياسة للمراجعة</h2><p class="muted">إنشاء السياسة أو اعتمادها لا يشغّل جدولة ولا يرسل رسالة. الاعتماد يستبدل السياسة الفعالة فقط داخل D1.</p><form id="recovery-policy-form"><label><input type="checkbox" name="allowsRecovery" /> تسمح السياسة بالاسترداد</label><label>الحد الأعلى للمحاولات<input name="maxAttemptsPerCase" type="number" min="1" max="3" value="1" required /></label><label>الحد الأعلى للرسائل ضمن نافذة التواصل<input name="maxMessagesPerContactWindow" type="number" min="1" max="5" value="1" required /></label><label>ميزانية الردود لكل حالة<input name="replyBudgetPerCase" type="number" min="0" max="3" value="0" required /></label><p id="recovery-policy-message" class="error" role="alert"></p><button class="button secondary" type="submit">حفظ سياسة غير فعالة للمراجعة</button></form></article>`
     : `<p class="notice">سياسات الاسترداد معروضة للقراءة. إنشاء أو اعتماد سياسة متاح لمالك المساحة فقط.</p>`;
+  const contactControls = canManageRecoveryControls
+    ? `<article class="card" style="max-inline-size: 780px"><h2>موافقة وإيقاف محكومان</h2><p class="muted">أدخل hash مرجعاً فقط. لا تضع رقم هاتف أو بريد أو نص محادثة هنا. هذه الضوابط لا تنشئ رسالة أو إرسالاً.</p><form id="recovery-consent-form"><label>hash جهة الاتصال<input name="contactHash" minlength="16" maxlength="128" required /></label><label>حالة الموافقة<select name="status"><option value="granted">ممنوحة</option><option value="withdrawn">مسحوبة</option></select></label><label>مرجع المصدر<input name="sourceReference" maxlength="120" required /></label><button class="button secondary" type="submit">حفظ الموافقة</button></form><form id="recovery-suppression-form"><label>hash جهة الاتصال<input name="contactHash" minlength="16" maxlength="128" required /></label><label>سبب الإيقاف<input name="reasonCode" pattern="[a-z0-9_]{3,80}" placeholder="customer_opt_out" required /></label><button class="button secondary" type="submit">إيقاف الاسترداد لهذه الجهة</button></form><form id="recovery-unsuppression-form"><label>hash جهة الاتصال لإزالة الإيقاف<input name="contactHash" minlength="16" maxlength="128" required /></label><button class="button secondary" type="submit">إزالة الإيقاف المحلي</button></form><p id="recovery-controls-message" class="error" role="alert"></p></article>`
+    : `<p class="notice">تعديل موافقات أو إيقافات الاسترداد متاح للمشغّل أو مالك المساحة فقط.</p>`;
   return appLayout(
     organizationName,
     "استرداد السلات",
-    `<section><span class="status warning">محاكاة محكومة</span><h1>اختبر قرار الاسترداد قبل أي قناة</h1><p class="muted">هذه محاكاة ببيانات تركيبية فقط. لا تستقبل webhook ولا تحفظ سلة ولا تنشئ رسالة أو إرسالاً إلى واتساب.</p><article class="card" style="max-inline-size: 780px"><form id="recovery-simulation-form"><label><input type="checkbox" name="allowsRecovery" checked /> السياسة الفعالة تسمح بالاسترداد</label><label><input type="checkbox" name="hasConsent" /> توجد موافقة قناة صالحة</label><label><input type="checkbox" name="isSuppressed" /> جهة الاتصال في قائمة الإيقاف</label><label><input type="checkbox" name="isCartCompleted" /> اكتمل الشراء</label><label><input type="checkbox" name="isWithinOrganizationBudget" checked /> الميزانية التشغيلية متاحة</label><label><input type="checkbox" name="isTemplateApproved" /> قالب الرسالة معتمد</label><label>عدد المحاولات السابقة<input name="attemptCount" type="number" min="0" max="3" value="0" required /></label><label>الحد الأعلى للمحاولات<input name="maxAttemptsPerCase" type="number" min="1" max="3" value="1" required /></label><p class="notice">النتيجة «مؤهل» تعني أن محرك القواعد اجتاز هذه البيانات التركيبية فقط. لا تعني أن هالة أرسلت أو ستُرسل رسالة.</p><p id="recovery-simulation-message" class="error" role="alert"></p><button class="button" type="submit">تشغيل محاكاة القرار</button></form></article>${policyControls}<article class="card" style="max-inline-size: 780px"><h2>إصدارات السياسة</h2><div id="recovery-policy-list" aria-live="polite"><p class="muted">يجري تحميل الإصدارات.</p></div></article></section><script>
+    `<section><span class="status warning">محاكاة محكومة</span><h1>اختبر قرار الاسترداد قبل أي قناة</h1><p class="muted">هذه محاكاة ببيانات تركيبية فقط. لا تستقبل webhook ولا تحفظ سلة ولا تنشئ رسالة أو إرسالاً إلى واتساب.</p><article class="card" style="max-inline-size: 780px"><form id="recovery-simulation-form"><label><input type="checkbox" name="allowsRecovery" checked /> السياسة الفعالة تسمح بالاسترداد</label><label><input type="checkbox" name="hasConsent" /> توجد موافقة قناة صالحة</label><label><input type="checkbox" name="isSuppressed" /> جهة الاتصال في قائمة الإيقاف</label><label><input type="checkbox" name="isCartCompleted" /> اكتمل الشراء</label><label><input type="checkbox" name="isWithinOrganizationBudget" checked /> الميزانية التشغيلية متاحة</label><label><input type="checkbox" name="isTemplateApproved" /> قالب الرسالة معتمد</label><label>عدد المحاولات السابقة<input name="attemptCount" type="number" min="0" max="3" value="0" required /></label><label>الحد الأعلى للمحاولات<input name="maxAttemptsPerCase" type="number" min="1" max="3" value="1" required /></label><p class="notice">النتيجة «مؤهل» تعني أن محرك القواعد اجتاز هذه البيانات التركيبية فقط. لا تعني أن هالة أرسلت أو ستُرسل رسالة.</p><p id="recovery-simulation-message" class="error" role="alert"></p><button class="button" type="submit">تشغيل محاكاة القرار</button></form></article>${policyControls}${contactControls}<article class="card" style="max-inline-size: 780px"><h2>إصدارات السياسة</h2><div id="recovery-policy-list" aria-live="polite"><p class="muted">يجري تحميل الإصدارات.</p></div></article></section><script>
       const canManageRecoveryPolicy = ${canManageRecoveryPolicy ? "true" : "false"};
       const recoveryReasons = {
         eligible: 'مؤهل في المحاكاة: اجتازت البيانات التركيبية كل البوابات، من دون إنشاء رسالة.',
@@ -494,6 +498,20 @@ export function renderRecoveryPage(
           message.textContent = 'حُفظ الإصدار ' + body.policy.version + ' بانتظار قرار اعتماد صريح.'; await loadRecoveryPolicies();
         });
       }
+      async function submitRecoveryControl(form, endpoint, method) {
+        const message = document.getElementById('recovery-controls-message'); message.textContent = '';
+        const values = Object.fromEntries(new FormData(form).entries());
+        const response = await fetch(endpoint, { method: method, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: method === 'DELETE' ? undefined : JSON.stringify(values) });
+        const body = await response.json().catch(function () { return null; });
+        message.textContent = response.ok ? 'تم تسجيل الضابط محلياً. لا ينتج عن ذلك أي إرسال.' : (body && body.error ? body.error.message : 'تعذر حفظ الضابط بشكل آمن.');
+        if (response.ok) { form.reset(); }
+      }
+      const consentForm = document.getElementById('recovery-consent-form');
+      if (consentForm) { consentForm.addEventListener('submit', function (event) { event.preventDefault(); void submitRecoveryControl(event.currentTarget, '/api/recovery/controls/consents', 'POST'); }); }
+      const suppressionForm = document.getElementById('recovery-suppression-form');
+      if (suppressionForm) { suppressionForm.addEventListener('submit', function (event) { event.preventDefault(); void submitRecoveryControl(event.currentTarget, '/api/recovery/controls/suppressions', 'POST'); }); }
+      const unsuppressionForm = document.getElementById('recovery-unsuppression-form');
+      if (unsuppressionForm) { unsuppressionForm.addEventListener('submit', function (event) { event.preventDefault(); const hash = String(new FormData(event.currentTarget).get('contactHash') || ''); void submitRecoveryControl(event.currentTarget, '/api/recovery/controls/suppressions/' + encodeURIComponent(hash), 'DELETE'); }); }
       void loadRecoveryPolicies();
     </script>`,
     cspNonce

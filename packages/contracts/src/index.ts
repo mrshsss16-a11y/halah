@@ -480,3 +480,27 @@ export const recoveryPolicyRecordSchema = z
   })
   .strict();
 export type RecoveryPolicyRecord = z.infer<typeof recoveryPolicyRecordSchema>;
+
+export const recoveryContactHashSchema = z.string().trim().min(16).max(128);
+const recoverySuppressionReasonCodeSchema = z
+  .string()
+  .trim()
+  .regex(/^[a-z0-9_]{3,80}$/u);
+
+export const recoveryConsentUpdateSchema = z
+  .object({
+    contactHash: recoveryContactHashSchema,
+    status: z.enum(["granted", "withdrawn"]),
+    sourceReference: z.string().trim().min(3).max(120)
+  })
+  .strict();
+export type RecoveryConsentUpdate = z.infer<typeof recoveryConsentUpdateSchema>;
+
+export const recoverySuppressionUpdateSchema = z
+  .object({
+    contactHash: recoveryContactHashSchema,
+    reasonCode: recoverySuppressionReasonCodeSchema,
+    expiresAt: isoTimestampSchema.nullable()
+  })
+  .strict();
+export type RecoverySuppressionUpdate = z.infer<typeof recoverySuppressionUpdateSchema>;

@@ -114,6 +114,7 @@ export function createUiRoutes(): Hono<HalaEnv> {
           renderRecoveryPage(
             identity.organizationName,
             identity.role === "owner",
+            identity.role === "owner" || identity.role === "operator",
             context.get("cspNonce")
           )
         );
