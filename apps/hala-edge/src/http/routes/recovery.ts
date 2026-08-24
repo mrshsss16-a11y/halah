@@ -5,7 +5,7 @@ import { RecoveryIntakeService } from "../../modules/recovery/recovery-intake-se
 import { simulateRecoveryEligibility } from "../../modules/recovery/simulate-eligibility";
 import { resolveCurrentSession } from "../current-session";
 import { errorResponse } from "../errors";
-import { hasTrustedSameOrigin } from "../request-origin";
+import { hasTrustedBrowserMutation } from "../request-origin";
 import type { HalaEnv } from "../types";
 
 async function readJsonBody(request: Request): Promise<unknown | null> {
@@ -20,7 +20,7 @@ export function createRecoveryRoutes(): Hono<HalaEnv> {
   const recovery = new Hono<HalaEnv>();
 
   recovery.post("/simulate", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,
@@ -57,7 +57,7 @@ export function createRecoveryRoutes(): Hono<HalaEnv> {
         "استقبال الاسترداد المحلي غير مفعّل في هذه البيئة."
       );
     }
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,

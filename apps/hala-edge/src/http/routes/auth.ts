@@ -5,7 +5,7 @@ import { KvAuthAttemptGuard } from "../../adapters/kv/auth-attempt-guard";
 import { IdentityService } from "../../modules/identity/identity-service";
 import { hashSessionToken } from "../../security/session-token";
 import { errorResponse } from "../errors";
-import { hasTrustedSameOrigin } from "../request-origin";
+import { hasTrustedBrowserMutation } from "../request-origin";
 import { buildExpiredSessionCookie, buildSessionCookie, readSessionToken } from "../session-cookie";
 import type { HalaEnv } from "../types";
 
@@ -52,7 +52,7 @@ export function createAuthRoutes(): Hono<HalaEnv> {
   const auth = new Hono<HalaEnv>();
 
   auth.post("/signup", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,
@@ -101,7 +101,7 @@ export function createAuthRoutes(): Hono<HalaEnv> {
   });
 
   auth.post("/login", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,
@@ -140,7 +140,7 @@ export function createAuthRoutes(): Hono<HalaEnv> {
   });
 
   auth.post("/logout", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,

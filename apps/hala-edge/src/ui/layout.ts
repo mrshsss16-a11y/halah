@@ -14,6 +14,30 @@ export function pageLayout(
     "<script",
     `<script nonce="${escapeHtml(input.cspNonce)}"`
   );
+  const csrfClientScript = `<script nonce="${escapeHtml(input.cspNonce)}">
+    (function () {
+      function readCsrfToken() {
+        const prefix = 'hala_csrf=';
+        const cookie = document.cookie.split(';').map(function (item) { return item.trim(); }).find(function (item) { return item.indexOf(prefix) === 0; });
+        return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+      }
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = function (input, init) {
+        const method = (init && init.method ? init.method : (input instanceof Request ? input.method : 'GET')).toUpperCase();
+        const requestUrl = new URL(input instanceof Request ? input.url : input, window.location.href);
+        if (requestUrl.origin !== window.location.origin || ['GET', 'HEAD', 'OPTIONS'].indexOf(method) !== -1) {
+          return nativeFetch(input, init);
+        }
+        const csrfToken = readCsrfToken();
+        if (!csrfToken) {
+          return nativeFetch(input, init);
+        }
+        const headers = new Headers(init && init.headers ? init.headers : (input instanceof Request ? input.headers : undefined));
+        headers.set('x-hala-csrf', csrfToken);
+        return nativeFetch(input, Object.assign({}, init || {}, { headers: headers }));
+      };
+    }());
+  </script>`;
 
   return `<!doctype html>
 <html lang="ar" dir="rtl">
@@ -72,7 +96,7 @@ export function pageLayout(
     </style>
   </head>
   <body>
-    <main class="shell">${bodyWithScriptNonces}</main>
+    <main class="shell">${csrfClientScript}${bodyWithScriptNonces}</main>
   </body>
 </html>`;
 }

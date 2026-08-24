@@ -3,7 +3,7 @@ import { Hono } from "hono";
 import { CommercialRepository } from "../../adapters/d1/commercial-repository";
 import { resolveCurrentSession } from "../current-session";
 import { errorResponse } from "../errors";
-import { hasTrustedSameOrigin } from "../request-origin";
+import { hasTrustedBrowserMutation } from "../request-origin";
 import type { HalaEnv } from "../types";
 
 async function readJsonBody(request: Request): Promise<unknown | null> {
@@ -18,7 +18,7 @@ export function createActivationRoutes(): Hono<HalaEnv> {
   const activation = new Hono<HalaEnv>();
 
   activation.post("/request", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,

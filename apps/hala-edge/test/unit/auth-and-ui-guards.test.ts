@@ -16,7 +16,9 @@ const testEnv = {
 
 const sameOriginJsonHeaders = {
   "content-type": "application/json",
-  origin: "https://hala.test"
+  origin: "https://hala.test",
+  cookie: "hala_csrf=synthetic-csrf-token",
+  "x-hala-csrf": "synthetic-csrf-token"
 };
 
 describe("commercial HTTP guards", () => {
@@ -38,6 +40,50 @@ describe("commercial HTTP guards", () => {
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toMatchObject({
+      error: { code: "invalid_request_origin" }
+    });
+  });
+
+  it("rejects a same-origin auth mutation without a matching CSRF double-submit", async () => {
+    const app = createApp();
+    const missingTokenResponse = await app.request(
+      "https://hala.test/api/auth/signup",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", origin: "https://hala.test" },
+        body: JSON.stringify({
+          organizationName: "متجر اختبار",
+          email: "owner@example.test",
+          password: "TestOnlyPassword-2026"
+        })
+      },
+      testEnv
+    );
+    const mismatchedTokenResponse = await app.request(
+      "https://hala.test/api/auth/signup",
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "https://hala.test",
+          cookie: "hala_csrf=first-token",
+          "x-hala-csrf": "second-token"
+        },
+        body: JSON.stringify({
+          organizationName: "متجر اختبار",
+          email: "owner@example.test",
+          password: "TestOnlyPassword-2026"
+        })
+      },
+      testEnv
+    );
+
+    expect(missingTokenResponse.status).toBe(403);
+    await expect(missingTokenResponse.json()).resolves.toMatchObject({
+      error: { code: "invalid_request_origin" }
+    });
+    expect(mismatchedTokenResponse.status).toBe(403);
+    await expect(mismatchedTokenResponse.json()).resolves.toMatchObject({
       error: { code: "invalid_request_origin" }
     });
   });
@@ -122,6 +168,9 @@ describe("commercial HTTP guards", () => {
 
     expect(signupResponse.status).toBe(200);
     expect(loginResponse.status).toBe(200);
+    expect(signupResponse.headers.get("set-cookie")).toContain("hala_csrf=");
+    expect(signupResponse.headers.get("set-cookie")).toContain("SameSite=Strict");
+    expect(signupResponse.headers.get("set-cookie")).not.toContain("HttpOnly");
     expect(signupCsp).toContain("script-src 'self' 'nonce-");
     expect(loginCsp).toContain("script-src 'self' 'nonce-");
     expect(signupNonce).toBeTruthy();
@@ -131,6 +180,8 @@ describe("commercial HTTP guards", () => {
     expect(loginHtml).toContain('<form id="login-form" method="post" action="/api/auth/login">');
     expect(signupHtml).toContain(`nonce="${signupNonce}"`);
     expect(loginHtml).toContain(`nonce="${loginNonce}"`);
+    expect(signupHtml).toContain("x-hala-csrf");
+    expect(loginHtml).toContain("x-hala-csrf");
     expect(signupHtml).not.toContain('action="/signup"');
     expect(loginHtml).not.toContain('action="/login"');
   });

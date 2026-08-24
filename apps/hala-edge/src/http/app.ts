@@ -3,6 +3,7 @@ import { healthResponseSchema } from "@hala/contracts";
 import { Hono } from "hono";
 import { errorResponse } from "./errors";
 import type { HalaEnv } from "./types";
+import { createCsrfToken, buildCsrfCookie } from "../security/csrf";
 import { resolveRequestId } from "../security/request-id";
 import { createActivationRoutes } from "./routes/activation";
 import { createAuthRoutes } from "./routes/auth";
@@ -33,6 +34,9 @@ export function createApp(): Hono<HalaEnv> {
     context.set("cspNonce", cspNonce);
     context.set("config", config);
     context.header("x-request-id", requestId);
+    if (context.req.method === "GET") {
+      context.header("set-cookie", buildCsrfCookie(createCsrfToken(), config.environment));
+    }
     context.header("x-content-type-options", "nosniff");
     context.header("referrer-policy", "strict-origin-when-cross-origin");
     context.header("x-frame-options", "DENY");

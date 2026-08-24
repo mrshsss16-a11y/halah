@@ -20,7 +20,7 @@ import {
 } from "../commercial-authorization";
 import { resolveCurrentSession } from "../current-session";
 import { errorResponse } from "../errors";
-import { hasTrustedSameOrigin } from "../request-origin";
+import { hasTrustedBrowserMutation } from "../request-origin";
 import type { HalaEnv } from "../types";
 
 async function readJsonBody(request: Request): Promise<unknown | null> {
@@ -35,7 +35,7 @@ export function createProductContentRoutes(): Hono<HalaEnv> {
   const productContent = new Hono<HalaEnv>();
 
   productContent.post("/imports", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,
@@ -132,7 +132,7 @@ export function createProductContentRoutes(): Hono<HalaEnv> {
   });
 
   productContent.post("/export-stages", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,
@@ -225,7 +225,7 @@ export function createProductContentRoutes(): Hono<HalaEnv> {
   });
 
   productContent.post("/drafts/:draftId/review", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,
@@ -275,7 +275,7 @@ export function createProductContentRoutes(): Hono<HalaEnv> {
   });
 
   productContent.post("/drafts/manual", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,
@@ -324,7 +324,7 @@ export function createProductContentRoutes(): Hono<HalaEnv> {
   });
 
   productContent.post("/facts/:factId/approve-evidence", async (context) => {
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,

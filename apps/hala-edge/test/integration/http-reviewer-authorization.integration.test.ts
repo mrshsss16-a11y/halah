@@ -16,7 +16,8 @@ const expiry = "2026-09-24T00:00:00.000Z";
 const jsonRequestHeaders = {
   "content-type": "application/json",
   origin: "https://hala.test",
-  cookie: `hala_session=${localSessionToken}`
+  cookie: `hala_session=${localSessionToken}; hala_csrf=reviewer-csrf-token`,
+  "x-hala-csrf": "reviewer-csrf-token"
 };
 
 declare module "cloudflare:test" {

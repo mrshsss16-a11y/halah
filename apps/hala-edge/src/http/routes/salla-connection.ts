@@ -7,7 +7,7 @@ import { SallaOAuthStateService } from "../../modules/salla/salla-oauth-state-se
 import { canManageStoreConnection } from "../commercial-authorization";
 import { resolveCurrentSession } from "../current-session";
 import { errorResponse } from "../errors";
-import { hasTrustedSameOrigin } from "../request-origin";
+import { hasTrustedBrowserMutation } from "../request-origin";
 import type { HalaEnv } from "../types";
 
 async function readJsonBody(request: Request): Promise<unknown | null> {
@@ -37,7 +37,7 @@ export function createSallaConnectionRoutes(): Hono<HalaEnv> {
         "ربط سلة المحلي غير مفعّل في هذه البيئة."
       );
     }
-    if (!hasTrustedSameOrigin(context.req.raw)) {
+    if (!hasTrustedBrowserMutation(context.req.raw)) {
       return errorResponse(
         context,
         403,
