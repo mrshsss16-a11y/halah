@@ -39,31 +39,40 @@ function appNavigation(): string {
 </script>`;
 }
 
-function appLayout(organizationName: string, pageTitle: string, content: string): string {
+function appLayout(
+  organizationName: string,
+  pageTitle: string,
+  content: string,
+  cspNonce: string
+): string {
   return pageLayout({
     title: pageTitle,
-    body: `${appTopbar(organizationName)}<section class="sidebar-layout"><section>${content}</section>${appNavigation()}</section>`
+    body: `${appTopbar(organizationName)}<section class="sidebar-layout"><section>${content}</section>${appNavigation()}</section>`,
+    cspNonce
   });
 }
 
-export function renderLandingPage(): string {
+export function renderLandingPage(cspNonce: string): string {
   return pageLayout({
     title: "منصة قرار استرداد ومحتوى للمتاجر",
-    body: `${publicTopbar()}<section class="hero"><span class="status">نسخة تجريبية محكومة</span><h1>هالة تساعد متجرك يقرر قبل ما يرسل أو ينشر.</h1><p class="muted">رتّب محتوى منتجاتك، راجع جودة صورها، وخطط لاسترداد السلات بسياسة واضحة وسجل قابل للتفسير.</p><div class="actions"><a class="button" href="/signup">أنشئ مساحة متجرك</a><a class="button secondary" href="/login">عندي حساب</a></div></section><section class="grid"><article class="card"><h2>محتوى منتجات من facts</h2><p>Drafts قابلة للمراجعة بدل وصف مبني على تخمين أو كلمات مكررة.</p></article><article class="card"><h2>صور مفهومة بحذر</h2><p>نلتقط ما يظهر ونطلب الحقيقة الناقصة، بدون اختراع خامة أو أبعاد أو ضمان.</p></article><article class="card"><h2>استرداد محكوم</h2><p>سياسة وموافقة وميزانية قبل أي رسالة، مع إيقاف واضح عند تغير الحالة.</p></article></section>`
+    body: `${publicTopbar()}<section class="hero"><span class="status">نسخة تجريبية محكومة</span><h1>هالة تساعد متجرك يقرر قبل ما يرسل أو ينشر.</h1><p class="muted">رتّب محتوى منتجاتك، راجع جودة صورها، وخطط لاسترداد السلات بسياسة واضحة وسجل قابل للتفسير.</p><div class="actions"><a class="button" href="/signup">أنشئ مساحة متجرك</a><a class="button secondary" href="/login">عندي حساب</a></div></section><section class="grid"><article class="card"><h2>محتوى منتجات من facts</h2><p>Drafts قابلة للمراجعة بدل وصف مبني على تخمين أو كلمات مكررة.</p></article><article class="card"><h2>صور مفهومة بحذر</h2><p>نلتقط ما يظهر ونطلب الحقيقة الناقصة، بدون اختراع خامة أو أبعاد أو ضمان.</p></article><article class="card"><h2>استرداد محكوم</h2><p>سياسة وموافقة وميزانية قبل أي رسالة، مع إيقاف واضح عند تغير الحالة.</p></article></section>`,
+    cspNonce
   });
 }
 
-export function renderSignUpPage(): string {
+export function renderSignUpPage(cspNonce: string): string {
   return pageLayout({
     title: "إنشاء مساحة متجر",
-    body: `${publicTopbar()}<section class="hero"><h1>ابدأ مساحة متجرك</h1><p class="muted">أنشئ حساباً للتجربة المحلية. لا تربط متجراً أو قناة رسائل في هذه المرحلة.</p></section><section class="card" style="max-inline-size: 560px"><form id="signup-form"><label>اسم مساحة المتجر<input required name="organizationName" autocomplete="organization" minlength="2" maxlength="120" /></label><label>البريد الإلكتروني<input required type="email" name="email" autocomplete="email" maxlength="254" /></label><label>كلمة المرور<input required type="password" name="password" autocomplete="new-password" minlength="12" maxlength="128" /></label><p class="notice">استخدم كلمة مرور طويلة وفريدة. مزود البريد وتسجيل Google لا يزالان مؤجلين إلى staging.</p><p id="form-message" class="error" role="alert"></p><button class="button" type="submit">إنشاء المساحة</button></form></section><script>document.getElementById('signup-form').addEventListener('submit', function (event) { event.preventDefault(); submitAuth(event.currentTarget, '/api/auth/signup'); });</script>${authScript}`
+    body: `${publicTopbar()}<section class="hero"><h1>ابدأ مساحة متجرك</h1><p class="muted">أنشئ حساباً للتجربة المحلية. لا تربط متجراً أو قناة رسائل في هذه المرحلة.</p></section><section class="card" style="max-inline-size: 560px"><form id="signup-form" method="post" action="/api/auth/signup"><label>اسم مساحة المتجر<input required name="organizationName" autocomplete="organization" minlength="2" maxlength="120" /></label><label>البريد الإلكتروني<input required type="email" name="email" autocomplete="email" maxlength="254" /></label><label>كلمة المرور<input required type="password" name="password" autocomplete="new-password" minlength="12" maxlength="128" /></label><p class="notice">استخدم كلمة مرور طويلة وفريدة. مزود البريد وتسجيل Google لا يزالان مؤجلين إلى staging.</p><p id="form-message" class="error" role="alert"></p><button class="button" type="submit">إنشاء المساحة</button></form></section><script>document.getElementById('signup-form').addEventListener('submit', function (event) { event.preventDefault(); submitAuth(event.currentTarget, '/api/auth/signup'); });</script>${authScript}`,
+    cspNonce
   });
 }
 
-export function renderLoginPage(): string {
+export function renderLoginPage(cspNonce: string): string {
   return pageLayout({
     title: "تسجيل الدخول",
-    body: `${publicTopbar()}<section class="hero"><h1>حياك في هالة</h1><p class="muted">سجل دخولك إلى مساحة متجرك.</p></section><section class="card" style="max-inline-size: 560px"><form id="login-form"><label>البريد الإلكتروني<input required type="email" name="email" autocomplete="email" maxlength="254" /></label><label>كلمة المرور<input required type="password" name="password" autocomplete="current-password" maxlength="128" /></label><p id="form-message" class="error" role="alert"></p><button class="button" type="submit">دخول</button></form><p class="muted">ما عندك مساحة؟ <a href="/signup">أنشئ حساباً</a></p></section><script>document.getElementById('login-form').addEventListener('submit', function (event) { event.preventDefault(); submitAuth(event.currentTarget, '/api/auth/login'); });</script>${authScript}`
+    body: `${publicTopbar()}<section class="hero"><h1>حياك في هالة</h1><p class="muted">سجل دخولك إلى مساحة متجرك.</p></section><section class="card" style="max-inline-size: 560px"><form id="login-form" method="post" action="/api/auth/login"><label>البريد الإلكتروني<input required type="email" name="email" autocomplete="email" maxlength="254" /></label><label>كلمة المرور<input required type="password" name="password" autocomplete="current-password" maxlength="128" /></label><p id="form-message" class="error" role="alert"></p><button class="button" type="submit">دخول</button></form><p class="muted">ما عندك مساحة؟ <a href="/signup">أنشئ حساباً</a></p></section><script>document.getElementById('login-form').addEventListener('submit', function (event) { event.preventDefault(); submitAuth(event.currentTarget, '/api/auth/login'); });</script>${authScript}`,
+    cspNonce
   });
 }
 
@@ -87,19 +96,21 @@ function readableStatus(value: string): string {
   return statuses[value] ?? "غير معروف";
 }
 
-export function renderDashboardPage(dashboard: CommercialDashboard): string {
+export function renderDashboardPage(dashboard: CommercialDashboard, cspNonce: string): string {
   const activationText =
     dashboard.activationStatus === null ? "لم يُطلب" : readableStatus(dashboard.activationStatus);
   return appLayout(
     dashboard.organizationName,
     "لوحة المتجر",
-    `<section><span class="status">لوحة التاجر</span><h1>هلا ${escapedText(dashboard.organizationName)}</h1><p class="muted">هذه لوحة development آمنة. ما فيه اتصال متجر أو إرسال أو نشر حي من هنا.</p><section class="grid"><article class="card"><h2>ربط المتجر</h2><p><span class="status pending">${readableStatus(dashboard.connectionStatus)}</span></p><p>ابدأ بربط سلة في بيئة تجريبية بعد تجهيز OAuth والـwebhook.</p><a class="button secondary" href="/app/connections">عرض الربط</a></article><article class="card"><h2>محتوى المنتجات</h2><p><span class="status">${readableStatus(dashboard.productContentStatus)}</span></p><p>ارفع facts وصور المنتجات، ثم راجع draft قبل أي export.</p><a class="button secondary" href="/app/products">فتح المحتوى</a></article><article class="card"><h2>استرداد السلات</h2><p><span class="status warning">${readableStatus(dashboard.recoveryStatus)}</span></p><p>سياسات وموافقة وميزانية قبل تفعيل الرسائل.</p><a class="button secondary" href="/app/recovery">فتح الاسترداد</a></article><article class="card"><h2>تفعيل الخدمة</h2><p><span class="status pending">${activationText}</span></p><p>اطلب الاستشارة والتفعيل بعد إكمال الجاهزية.</p><a class="button secondary" href="/app/activation">طلب تفعيل</a></article></section></section>`
+    `<section><span class="status">لوحة التاجر</span><h1>هلا ${escapedText(dashboard.organizationName)}</h1><p class="muted">هذه لوحة development آمنة. ما فيه اتصال متجر أو إرسال أو نشر حي من هنا.</p><section class="grid"><article class="card"><h2>ربط المتجر</h2><p><span class="status pending">${readableStatus(dashboard.connectionStatus)}</span></p><p>ابدأ بربط سلة في بيئة تجريبية بعد تجهيز OAuth والـwebhook.</p><a class="button secondary" href="/app/connections">عرض الربط</a></article><article class="card"><h2>محتوى المنتجات</h2><p><span class="status">${readableStatus(dashboard.productContentStatus)}</span></p><p>ارفع facts وصور المنتجات، ثم راجع draft قبل أي export.</p><a class="button secondary" href="/app/products">فتح المحتوى</a></article><article class="card"><h2>استرداد السلات</h2><p><span class="status warning">${readableStatus(dashboard.recoveryStatus)}</span></p><p>سياسات وموافقة وميزانية قبل تفعيل الرسائل.</p><a class="button secondary" href="/app/recovery">فتح الاسترداد</a></article><article class="card"><h2>تفعيل الخدمة</h2><p><span class="status pending">${activationText}</span></p><p>اطلب الاستشارة والتفعيل بعد إكمال الجاهزية.</p><a class="button secondary" href="/app/activation">طلب تفعيل</a></article></section></section>`,
+    cspNonce
   );
 }
 
 export function renderProductContentPage(
   organizationName: string,
-  canStageExport: boolean
+  canStageExport: boolean,
+  cspNonce: string
 ): string {
   const exportStageControl = canStageExport
     ? `<form id="product-export-stage-form"><p class="notice">هذه الخطوة تحفظ لقطة تدقيق داخل هالة للمسودات المحددة. لا تنشئ ملفاً جديداً ولا ترسل إلى سلة أو أي متجر.</p><p id="product-export-stage-message" class="error" role="alert"></p><button class="button secondary" type="submit">سجل تجهيز CSV للمراجعة</button></form>`
@@ -399,11 +410,12 @@ export function renderProductContentPage(
       void loadApprovedFacts();
       void loadDraftReviewItems();
       void loadPreviewItems();
-    </script>`
+    </script>`,
+    cspNonce
   );
 }
 
-export function renderRecoveryPage(organizationName: string): string {
+export function renderRecoveryPage(organizationName: string, cspNonce: string): string {
   return appLayout(
     organizationName,
     "استرداد السلات",
@@ -445,7 +457,8 @@ export function renderRecoveryPage(organizationName: string): string {
         }
         message.textContent = recoveryReasons[body.result.reasonCode] || 'تعذر تفسير قرار المحاكاة.';
       });
-    </script>`
+    </script>`,
+    cspNonce
   );
 }
 
@@ -455,16 +468,18 @@ export function renderSimpleAppPage(
     title: string;
     description: string;
     nextStep: string;
+    cspNonce: string;
   }>
 ): string {
   return appLayout(
     input.organizationName,
     input.title,
-    `<section><h1>${escapedText(input.title)}</h1><p class="muted">${escapedText(input.description)}</p><article class="card"><h2>الخطوة التالية</h2><p>${escapedText(input.nextStep)}</p><p class="notice">هذه الواجهة تعرض المسار التجاري في development. أي اتصال أو نموذج أو نشر يبقى محاكياً إلى أن يمر staging وموافقة صريحة.</p></article></section>`
+    `<section><h1>${escapedText(input.title)}</h1><p class="muted">${escapedText(input.description)}</p><article class="card"><h2>الخطوة التالية</h2><p>${escapedText(input.nextStep)}</p><p class="notice">هذه الواجهة تعرض المسار التجاري في development. أي اتصال أو نموذج أو نشر يبقى محاكياً إلى أن يمر staging وموافقة صريحة.</p></article></section>`,
+    input.cspNonce
   );
 }
 
-export function renderActivationPage(organizationName: string): string {
+export function renderActivationPage(organizationName: string, cspNonce: string): string {
   return appLayout(
     organizationName,
     "طلب التفعيل",
@@ -479,6 +494,7 @@ export function renderActivationPage(organizationName: string): string {
     if (!response.ok) { message.textContent = body && body.error ? body.error.message : 'تعذر إرسال الطلب بشكل آمن.'; return; }
     message.textContent = 'تم استلام طلبك. ستظهر حالته في لوحة هالة بعد المراجعة.';
   });
-</script>`
+	</script>`,
+    cspNonce
   );
 }

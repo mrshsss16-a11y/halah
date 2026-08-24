@@ -11,6 +11,7 @@ export type HalaBindings = {
 
 export type HalaVariables = {
   requestId: string;
+  cspNonce: string;
   config: RuntimeConfig;
   sallaConnectionIdentity: ActiveSessionIdentity;
 };

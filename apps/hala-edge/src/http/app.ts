@@ -12,17 +12,25 @@ import { createSallaConnectionRoutes } from "./routes/salla-connection";
 import { createSallaWebhookRoutes } from "./routes/salla-webhook";
 import { createUiRoutes } from "./routes/ui";
 
+function createCspNonce(): string {
+  const bytes = new Uint8Array(18);
+  crypto.getRandomValues(bytes);
+  return btoa(String.fromCharCode(...bytes));
+}
+
 export function createApp(): Hono<HalaEnv> {
   const app = new Hono<HalaEnv>();
 
   app.use("*", async (context, next) => {
     const requestId = resolveRequestId(context.req.header("x-request-id"));
+    const cspNonce = createCspNonce();
     const config = parseRuntimeConfig({
       ENVIRONMENT: context.env.ENVIRONMENT,
       APP_VERSION: context.env.APP_VERSION
     });
 
     context.set("requestId", requestId);
+    context.set("cspNonce", cspNonce);
     context.set("config", config);
     context.header("x-request-id", requestId);
     context.header("x-content-type-options", "nosniff");
@@ -31,7 +39,7 @@ export function createApp(): Hono<HalaEnv> {
     context.header("permissions-policy", "geolocation=(), camera=(), microphone=()");
     context.header(
       "content-security-policy",
-      "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'"
+      `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'nonce-${cspNonce}'; connect-src 'self'; img-src 'self' data:; font-src 'self'`
     );
 
     await next();

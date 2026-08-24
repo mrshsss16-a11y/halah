@@ -107,6 +107,34 @@ describe("commercial HTTP guards", () => {
     });
   });
 
+  it("renders auth forms as POST-only and authorizes only their request nonce", async () => {
+    const app = createApp();
+    const [signupResponse, loginResponse] = await Promise.all([
+      app.request("https://hala.test/signup", undefined, testEnv),
+      app.request("https://hala.test/login", undefined, testEnv)
+    ]);
+    const signupCsp = signupResponse.headers.get("content-security-policy");
+    const loginCsp = loginResponse.headers.get("content-security-policy");
+    const signupHtml = await signupResponse.text();
+    const loginHtml = await loginResponse.text();
+    const signupNonce = signupCsp?.match(/'nonce-([^']+)'/)?.[1];
+    const loginNonce = loginCsp?.match(/'nonce-([^']+)'/)?.[1];
+
+    expect(signupResponse.status).toBe(200);
+    expect(loginResponse.status).toBe(200);
+    expect(signupCsp).toContain("script-src 'self' 'nonce-");
+    expect(loginCsp).toContain("script-src 'self' 'nonce-");
+    expect(signupNonce).toBeTruthy();
+    expect(loginNonce).toBeTruthy();
+    expect(signupNonce).not.toBe(loginNonce);
+    expect(signupHtml).toContain('<form id="signup-form" method="post" action="/api/auth/signup">');
+    expect(loginHtml).toContain('<form id="login-form" method="post" action="/api/auth/login">');
+    expect(signupHtml).toContain(`nonce="${signupNonce}"`);
+    expect(loginHtml).toContain(`nonce="${loginNonce}"`);
+    expect(signupHtml).not.toContain('action="/signup"');
+    expect(loginHtml).not.toContain('action="/login"');
+  });
+
   it("redirects an unauthenticated merchant page request to login", async () => {
     const app = createApp();
     const dashboardResponse = await app.request("https://hala.test/app", undefined, testEnv);

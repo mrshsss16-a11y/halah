@@ -7,7 +7,14 @@ function escapeHtml(value: string): string {
     .replaceAll("'", "&#39;");
 }
 
-export function pageLayout(input: Readonly<{ title: string; body: string }>): string {
+export function pageLayout(
+  input: Readonly<{ title: string; body: string; cspNonce: string }>
+): string {
+  const bodyWithScriptNonces = input.body.replaceAll(
+    "<script",
+    `<script nonce="${escapeHtml(input.cspNonce)}"`
+  );
+
   return `<!doctype html>
 <html lang="ar" dir="rtl">
   <head>
@@ -65,7 +72,7 @@ export function pageLayout(input: Readonly<{ title: string; body: string }>): st
     </style>
   </head>
   <body>
-    <main class="shell">${input.body}</main>
+    <main class="shell">${bodyWithScriptNonces}</main>
   </body>
 </html>`;
 }

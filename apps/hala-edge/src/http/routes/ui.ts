@@ -22,9 +22,9 @@ function redirectToLogin(requestUrl: string): Response {
 export function createUiRoutes(): Hono<HalaEnv> {
   const ui = new Hono<HalaEnv>();
 
-  ui.get("/", (context) => context.html(renderLandingPage()));
-  ui.get("/signup", (context) => context.html(renderSignUpPage()));
-  ui.get("/login", (context) => context.html(renderLoginPage()));
+  ui.get("/", (context) => context.html(renderLandingPage(context.get("cspNonce"))));
+  ui.get("/signup", (context) => context.html(renderSignUpPage(context.get("cspNonce"))));
+  ui.get("/login", (context) => context.html(renderLoginPage(context.get("cspNonce"))));
 
   ui.get("/app", async (context) => {
     const identity = await resolveCurrentSession(context);
@@ -36,7 +36,7 @@ export function createUiRoutes(): Hono<HalaEnv> {
       organizationId: identity.organizationId,
       organizationName: identity.organizationName
     });
-    return context.html(renderDashboardPage(dashboard));
+    return context.html(renderDashboardPage(dashboard, context.get("cspNonce")));
   });
 
   const protectedPages: ReadonlyArray<
@@ -88,18 +88,21 @@ export function createUiRoutes(): Hono<HalaEnv> {
       }
 
       if (page.path === "/app/activation") {
-        return context.html(renderActivationPage(identity.organizationName));
+        return context.html(
+          renderActivationPage(identity.organizationName, context.get("cspNonce"))
+        );
       }
       if (page.path === "/app/products") {
         return context.html(
           renderProductContentPage(
             identity.organizationName,
-            canStageProductContentExport(identity.role)
+            canStageProductContentExport(identity.role),
+            context.get("cspNonce")
           )
         );
       }
       if (page.path === "/app/recovery") {
-        return context.html(renderRecoveryPage(identity.organizationName));
+        return context.html(renderRecoveryPage(identity.organizationName, context.get("cspNonce")));
       }
 
       return context.html(
@@ -107,7 +110,8 @@ export function createUiRoutes(): Hono<HalaEnv> {
           organizationName: identity.organizationName,
           title: page.title,
           description: page.description,
-          nextStep: page.nextStep
+          nextStep: page.nextStep,
+          cspNonce: context.get("cspNonce")
         })
       );
     });
