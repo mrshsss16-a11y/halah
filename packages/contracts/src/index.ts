@@ -456,3 +456,27 @@ export const organizationSwitchSchema = z
   })
   .strict();
 export type OrganizationSwitch = z.infer<typeof organizationSwitchSchema>;
+
+export const recoveryPolicyDraftInputSchema = z
+  .object({
+    allowsRecovery: z.boolean(),
+    maxAttemptsPerCase: z.number().int().min(1).max(3),
+    maxMessagesPerContactWindow: z.number().int().min(1).max(5),
+    replyBudgetPerCase: z.number().int().min(0).max(3)
+  })
+  .strict();
+export type RecoveryPolicyDraftInput = z.infer<typeof recoveryPolicyDraftInputSchema>;
+
+export const recoveryPolicyRecordSchema = z
+  .object({
+    id: z.string().uuid(),
+    version: z.number().int().positive(),
+    status: z.enum(["active", "inactive", "retired"]),
+    effectiveFrom: isoTimestampSchema,
+    effectiveUntil: isoTimestampSchema.nullable(),
+    policy: recoveryPolicyDraftInputSchema,
+    createdAt: isoTimestampSchema,
+    approvedAt: isoTimestampSchema.nullable()
+  })
+  .strict();
+export type RecoveryPolicyRecord = z.infer<typeof recoveryPolicyRecordSchema>;

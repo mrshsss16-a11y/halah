@@ -110,7 +110,13 @@ export function createUiRoutes(): Hono<HalaEnv> {
         );
       }
       if (page.path === "/app/recovery") {
-        return context.html(renderRecoveryPage(identity.organizationName, context.get("cspNonce")));
+        return context.html(
+          renderRecoveryPage(
+            identity.organizationName,
+            identity.role === "owner",
+            context.get("cspNonce")
+          )
+        );
       }
       if (page.path === "/app/audit") {
         return context.html(renderAuditPage(identity.organizationName, context.get("cspNonce")));

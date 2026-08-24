@@ -415,11 +415,19 @@ export function renderProductContentPage(
   );
 }
 
-export function renderRecoveryPage(organizationName: string, cspNonce: string): string {
+export function renderRecoveryPage(
+  organizationName: string,
+  canManageRecoveryPolicy: boolean,
+  cspNonce: string
+): string {
+  const policyControls = canManageRecoveryPolicy
+    ? `<article class="card" style="max-inline-size: 780px"><h2>إصدار سياسة للمراجعة</h2><p class="muted">إنشاء السياسة أو اعتمادها لا يشغّل جدولة ولا يرسل رسالة. الاعتماد يستبدل السياسة الفعالة فقط داخل D1.</p><form id="recovery-policy-form"><label><input type="checkbox" name="allowsRecovery" /> تسمح السياسة بالاسترداد</label><label>الحد الأعلى للمحاولات<input name="maxAttemptsPerCase" type="number" min="1" max="3" value="1" required /></label><label>الحد الأعلى للرسائل ضمن نافذة التواصل<input name="maxMessagesPerContactWindow" type="number" min="1" max="5" value="1" required /></label><label>ميزانية الردود لكل حالة<input name="replyBudgetPerCase" type="number" min="0" max="3" value="0" required /></label><p id="recovery-policy-message" class="error" role="alert"></p><button class="button secondary" type="submit">حفظ سياسة غير فعالة للمراجعة</button></form></article>`
+    : `<p class="notice">سياسات الاسترداد معروضة للقراءة. إنشاء أو اعتماد سياسة متاح لمالك المساحة فقط.</p>`;
   return appLayout(
     organizationName,
     "استرداد السلات",
-    `<section><span class="status warning">محاكاة محكومة</span><h1>اختبر قرار الاسترداد قبل أي قناة</h1><p class="muted">هذه محاكاة ببيانات تركيبية فقط. لا تستقبل webhook ولا تحفظ سلة ولا تنشئ رسالة أو إرسالاً إلى واتساب.</p><article class="card" style="max-inline-size: 780px"><form id="recovery-simulation-form"><label><input type="checkbox" name="allowsRecovery" checked /> السياسة الفعالة تسمح بالاسترداد</label><label><input type="checkbox" name="hasConsent" /> توجد موافقة قناة صالحة</label><label><input type="checkbox" name="isSuppressed" /> جهة الاتصال في قائمة الإيقاف</label><label><input type="checkbox" name="isCartCompleted" /> اكتمل الشراء</label><label><input type="checkbox" name="isWithinOrganizationBudget" checked /> الميزانية التشغيلية متاحة</label><label><input type="checkbox" name="isTemplateApproved" /> قالب الرسالة معتمد</label><label>عدد المحاولات السابقة<input name="attemptCount" type="number" min="0" max="3" value="0" required /></label><label>الحد الأعلى للمحاولات<input name="maxAttemptsPerCase" type="number" min="1" max="3" value="1" required /></label><p class="notice">النتيجة «مؤهل» تعني أن محرك القواعد اجتاز هذه البيانات التركيبية فقط. لا تعني أن هالة أرسلت أو ستُرسل رسالة.</p><p id="recovery-simulation-message" class="error" role="alert"></p><button class="button" type="submit">تشغيل محاكاة القرار</button></form></article></section><script>
+    `<section><span class="status warning">محاكاة محكومة</span><h1>اختبر قرار الاسترداد قبل أي قناة</h1><p class="muted">هذه محاكاة ببيانات تركيبية فقط. لا تستقبل webhook ولا تحفظ سلة ولا تنشئ رسالة أو إرسالاً إلى واتساب.</p><article class="card" style="max-inline-size: 780px"><form id="recovery-simulation-form"><label><input type="checkbox" name="allowsRecovery" checked /> السياسة الفعالة تسمح بالاسترداد</label><label><input type="checkbox" name="hasConsent" /> توجد موافقة قناة صالحة</label><label><input type="checkbox" name="isSuppressed" /> جهة الاتصال في قائمة الإيقاف</label><label><input type="checkbox" name="isCartCompleted" /> اكتمل الشراء</label><label><input type="checkbox" name="isWithinOrganizationBudget" checked /> الميزانية التشغيلية متاحة</label><label><input type="checkbox" name="isTemplateApproved" /> قالب الرسالة معتمد</label><label>عدد المحاولات السابقة<input name="attemptCount" type="number" min="0" max="3" value="0" required /></label><label>الحد الأعلى للمحاولات<input name="maxAttemptsPerCase" type="number" min="1" max="3" value="1" required /></label><p class="notice">النتيجة «مؤهل» تعني أن محرك القواعد اجتاز هذه البيانات التركيبية فقط. لا تعني أن هالة أرسلت أو ستُرسل رسالة.</p><p id="recovery-simulation-message" class="error" role="alert"></p><button class="button" type="submit">تشغيل محاكاة القرار</button></form></article>${policyControls}<article class="card" style="max-inline-size: 780px"><h2>إصدارات السياسة</h2><div id="recovery-policy-list" aria-live="polite"><p class="muted">يجري تحميل الإصدارات.</p></div></article></section><script>
+      const canManageRecoveryPolicy = ${canManageRecoveryPolicy ? "true" : "false"};
       const recoveryReasons = {
         eligible: 'مؤهل في المحاكاة: اجتازت البيانات التركيبية كل البوابات، من دون إنشاء رسالة.',
         cart_completed: 'ممنوع: السلة مكتملة ولا يجوز الاسترداد.',
@@ -457,6 +465,36 @@ export function renderRecoveryPage(organizationName: string, cspNonce: string): 
         }
         message.textContent = recoveryReasons[body.result.reasonCode] || 'تعذر تفسير قرار المحاكاة.';
       });
+      function policyStatus(status) { return ({ active: 'فعالة', inactive: 'بانتظار الاعتماد', retired: 'مؤرشفة' })[status] || 'غير معروف'; }
+      async function loadRecoveryPolicies() {
+        const container = document.getElementById('recovery-policy-list');
+        const response = await fetch('/api/recovery/policies', { credentials: 'same-origin' });
+        const body = await response.json().catch(function () { return null; });
+        container.textContent = '';
+        if (!response.ok || !body || !Array.isArray(body.items)) { container.textContent = 'تعذر تحميل سياسات الاسترداد بشكل آمن.'; return; }
+        if (body.items.length === 0) { container.textContent = 'لا توجد سياسة محفوظة بعد. المحاكاة لا تنشئ سياسة.'; return; }
+        body.items.forEach(function (policy) {
+          const card = document.createElement('section'); card.className = 'notice';
+          const heading = document.createElement('strong'); heading.textContent = 'الإصدار ' + policy.version + ' · ' + policyStatus(policy.status); card.append(heading);
+          const details = document.createElement('p'); details.textContent = 'يسمح بالاسترداد: ' + (policy.policy.allowsRecovery ? 'نعم' : 'لا') + ' · حد المحاولات: ' + policy.policy.maxAttemptsPerCase; card.append(details);
+          if (canManageRecoveryPolicy && policy.status === 'inactive') {
+            const activate = document.createElement('button'); activate.type = 'button'; activate.className = 'button secondary'; activate.textContent = 'اعتماد هذه السياسة';
+            activate.addEventListener('click', async function () { const activation = await fetch('/api/recovery/policies/' + encodeURIComponent(policy.id) + '/activate', { method: 'POST', credentials: 'same-origin' }); if (activation.ok) { await loadRecoveryPolicies(); } }); card.append(activate);
+          }
+          container.append(card);
+        });
+      }
+      const policyForm = document.getElementById('recovery-policy-form');
+      if (policyForm) {
+        policyForm.addEventListener('submit', async function (event) {
+          event.preventDefault(); const message = document.getElementById('recovery-policy-message'); const form = event.currentTarget; message.textContent = '';
+          const response = await fetch('/api/recovery/policies', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ allowsRecovery: form.elements.allowsRecovery.checked, maxAttemptsPerCase: Number(form.elements.maxAttemptsPerCase.value), maxMessagesPerContactWindow: Number(form.elements.maxMessagesPerContactWindow.value), replyBudgetPerCase: Number(form.elements.replyBudgetPerCase.value) }) });
+          const body = await response.json().catch(function () { return null; });
+          if (!response.ok) { message.textContent = body && body.error ? body.error.message : 'تعذر حفظ السياسة بشكل آمن.'; return; }
+          message.textContent = 'حُفظ الإصدار ' + body.policy.version + ' بانتظار قرار اعتماد صريح.'; await loadRecoveryPolicies();
+        });
+      }
+      void loadRecoveryPolicies();
     </script>`,
     cspNonce
   );
