@@ -1,4 +1,5 @@
 import type { RuntimeConfig } from "@hala/config";
+import type { ActiveSessionIdentity } from "../modules/identity/identity-port";
 
 export type HalaBindings = {
   DB: D1Database;
@@ -11,6 +12,7 @@ export type HalaBindings = {
 export type HalaVariables = {
   requestId: string;
   config: RuntimeConfig;
+  sallaConnectionIdentity: ActiveSessionIdentity;
 };
 
 export type HalaEnv = {

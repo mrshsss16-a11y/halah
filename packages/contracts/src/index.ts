@@ -341,3 +341,10 @@ export const commercialDashboardSchema = z
   })
   .strict();
 export type CommercialDashboard = z.infer<typeof commercialDashboardSchema>;
+
+export const sallaOAuthMockCompletionInputSchema = z
+  .object({
+    state: z.string().trim().min(40).max(256)
+  })
+  .strict();
+export type SallaOAuthMockCompletionInput = z.infer<typeof sallaOAuthMockCompletionInputSchema>;
