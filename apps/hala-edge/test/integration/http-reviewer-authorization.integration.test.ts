@@ -88,6 +88,11 @@ describe("reviewer HTTP authorization", () => {
       },
       bindings
     );
+    const auditResponse = await app.request(
+      "https://hala.test/api/audit-events?page=1&pageSize=25",
+      { method: "GET", headers: { cookie: jsonRequestHeaders.cookie } },
+      bindings
+    );
     const importResponse = await app.request(
       "https://hala.test/api/product-content/imports",
       { method: "POST", headers: jsonRequestHeaders, body: JSON.stringify({}) },
@@ -108,6 +113,20 @@ describe("reviewer HTTP authorization", () => {
     await expect(evidenceResponse.json()).resolves.toEqual({ status: "approved" });
     expect(draftReviewResponse.status).toBe(200);
     await expect(draftReviewResponse.json()).resolves.toEqual({ status: "reviewed" });
+    expect(auditResponse.status).toBe(200);
+    await expect(auditResponse.json()).resolves.toMatchObject({
+      page: 1,
+      pageSize: 25,
+      total: 2,
+      action: null,
+      items: expect.arrayContaining([
+        expect.objectContaining({ action: "product_fact_evidence_approved", entityId: factId }),
+        expect.objectContaining({
+          action: "product_content_draft_approved_for_preview",
+          entityId: draftId
+        })
+      ])
+    });
     expect(importResponse.status).toBe(403);
     await expect(importResponse.json()).resolves.toMatchObject({ error: { code: "forbidden" } });
     expect(exportResponse.status).toBe(403);

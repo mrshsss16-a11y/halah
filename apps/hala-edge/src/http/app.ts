@@ -6,6 +6,7 @@ import type { HalaEnv } from "./types";
 import { createCsrfToken, buildCsrfCookie } from "../security/csrf";
 import { resolveRequestId } from "../security/request-id";
 import { createActivationRoutes } from "./routes/activation";
+import { createAuditRoutes } from "./routes/audit";
 import { createAuthRoutes } from "./routes/auth";
 import { createProductContentRoutes } from "./routes/product-content";
 import { createRecoveryRoutes } from "./routes/recovery";
@@ -50,6 +51,7 @@ export function createApp(): Hono<HalaEnv> {
   });
 
   app.route("/api/auth", createAuthRoutes());
+  app.route("/api/audit-events", createAuditRoutes());
   app.route("/api/activation", createActivationRoutes());
   app.route("/api/product-content", createProductContentRoutes());
   app.route("/api/recovery", createRecoveryRoutes());

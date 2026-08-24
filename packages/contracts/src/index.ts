@@ -356,3 +356,41 @@ export const recoveryLocalIntakeInputSchema = z
   })
   .strict();
 export type RecoveryLocalIntakeInput = z.infer<typeof recoveryLocalIntakeInputSchema>;
+
+export const auditEventQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).max(10_000).default(1),
+    pageSize: z.coerce.number().int().min(5).max(50).default(25),
+    action: z
+      .string()
+      .trim()
+      .regex(/^[a-z0-9_]+$/u)
+      .max(100)
+      .optional()
+  })
+  .strict();
+export type AuditEventQuery = z.infer<typeof auditEventQuerySchema>;
+
+export const auditEventListItemSchema = z
+  .object({
+    id: z.string().uuid(),
+    action: z.string().min(1).max(100),
+    entityType: z.string().min(1).max(100),
+    entityId: z.string().min(1).max(200),
+    requestId: z.string().uuid(),
+    reasonCode: z.string().min(1).max(250).nullable(),
+    createdAt: isoTimestampSchema
+  })
+  .strict();
+export type AuditEventListItem = z.infer<typeof auditEventListItemSchema>;
+
+export const auditEventListResponseSchema = z
+  .object({
+    items: z.array(auditEventListItemSchema),
+    page: z.number().int().positive(),
+    pageSize: z.number().int().positive(),
+    total: z.number().int().nonnegative(),
+    action: z.string().nullable()
+  })
+  .strict();
+export type AuditEventListResponse = z.infer<typeof auditEventListResponseSchema>;

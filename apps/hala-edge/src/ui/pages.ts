@@ -462,6 +462,63 @@ export function renderRecoveryPage(organizationName: string, cspNonce: string): 
   );
 }
 
+export function renderAuditPage(organizationName: string, cspNonce: string): string {
+  return appLayout(
+    organizationName,
+    "سجل التدقيق",
+    `<section><span class="status">قراءة فقط</span><h1>سجل التدقيق</h1><p class="muted">يعرض هذا السجل أحداث المساحة الحالية فقط. لا يعرض كلمات مرور أو رموزاً أو أجسام webhooks أو بيانات عميل.</p><article class="card" style="max-inline-size: 780px"><form id="audit-filter-form"><label>فلتر action اختياري<input id="audit-action" name="action" maxlength="100" pattern="[a-z0-9_]+" placeholder="مثال: product_fact_evidence_approved" /></label><p class="notice">استخدم اسم الحدث التقني كما يظهر في نتائج السجل. اتركه فارغاً لعرض كل الأحداث.</p><button class="button secondary" type="submit">تطبيق الفلتر</button></form></article><section id="audit-events" class="grid" aria-live="polite"><p class="muted">يجري تحميل أحداث التدقيق.</p></section><div class="actions"><button id="audit-previous" class="button secondary" type="button" disabled>الصفحة السابقة</button><button id="audit-next" class="button secondary" type="button" disabled>الصفحة التالية</button></div><p id="audit-pagination" class="muted" aria-live="polite"></p></section><script>
+      var auditPage = 1;
+      var auditTotal = 0;
+      var auditPageSize = 25;
+      function appendAuditText(parent, tag, text) {
+        var element = document.createElement(tag);
+        element.textContent = text;
+        parent.append(element);
+      }
+      async function loadAuditEvents(page) {
+        var container = document.getElementById('audit-events');
+        var action = document.getElementById('audit-action').value.trim();
+        var query = new URLSearchParams({ page: String(page), pageSize: String(auditPageSize) });
+        if (action) { query.set('action', action); }
+        var response = await fetch('/api/audit-events?' + query.toString(), { credentials: 'same-origin' });
+        var body = await response.json().catch(function () { return null; });
+        container.textContent = '';
+        if (!response.ok || !body || !Array.isArray(body.items)) {
+          container.textContent = body && body.error ? body.error.message : 'تعذر تحميل سجل التدقيق بشكل آمن.';
+          return;
+        }
+        auditPage = body.page;
+        auditTotal = body.total;
+        if (body.items.length === 0) {
+          container.textContent = 'لا توجد أحداث تطابق هذا الفلتر ضمن هذه المساحة.';
+        } else {
+          body.items.forEach(function (item) {
+            var card = document.createElement('article');
+            card.className = 'card';
+            appendAuditText(card, 'h2', item.action);
+            appendAuditText(card, 'p', 'الكيان: ' + item.entityType + ' · ' + item.entityId);
+            appendAuditText(card, 'p', 'الوقت: ' + item.createdAt);
+            appendAuditText(card, 'p', 'السبب: ' + (item.reasonCode || 'غير مسجل'));
+            appendAuditText(card, 'p', 'معرّف الطلب: ' + item.requestId);
+            container.append(card);
+          });
+        }
+        document.getElementById('audit-pagination').textContent = 'صفحة ' + body.page + ' من أصل ' + Math.max(1, Math.ceil(body.total / body.pageSize)) + ' · ' + body.total + ' حدث.';
+        document.getElementById('audit-previous').disabled = body.page <= 1;
+        document.getElementById('audit-next').disabled = body.page * body.pageSize >= body.total;
+      }
+      document.getElementById('audit-filter-form').addEventListener('submit', function (event) {
+        event.preventDefault();
+        void loadAuditEvents(1);
+      });
+      document.getElementById('audit-previous').addEventListener('click', function () { void loadAuditEvents(auditPage - 1); });
+      document.getElementById('audit-next').addEventListener('click', function () { void loadAuditEvents(auditPage + 1); });
+      void loadAuditEvents(1);
+    </script>`,
+    cspNonce
+  );
+}
+
 export function renderSimpleAppPage(
   input: Readonly<{
     organizationName: string;
