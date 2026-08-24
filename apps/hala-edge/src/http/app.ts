@@ -23,6 +23,14 @@ export function createApp(): Hono<HalaEnv> {
     context.set("requestId", requestId);
     context.set("config", config);
     context.header("x-request-id", requestId);
+    context.header("x-content-type-options", "nosniff");
+    context.header("referrer-policy", "strict-origin-when-cross-origin");
+    context.header("x-frame-options", "DENY");
+    context.header("permissions-policy", "geolocation=(), camera=(), microphone=()");
+    context.header(
+      "content-security-policy",
+      "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; img-src 'self' data:; font-src 'self'"
+    );
 
     await next();
   });

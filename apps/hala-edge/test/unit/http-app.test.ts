@@ -25,6 +25,20 @@ describe("Hala HTTP application", () => {
     });
   });
 
+  it("sets baseline browser security headers on every response", async () => {
+    const app = createApp();
+    const response = await app.request("https://hala.test/health", undefined, testEnv);
+
+    expect(response.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(response.headers.get("referrer-policy")).toBe("strict-origin-when-cross-origin");
+    expect(response.headers.get("x-frame-options")).toBe("DENY");
+    expect(response.headers.get("permissions-policy")).toBe(
+      "geolocation=(), camera=(), microphone=()"
+    );
+    expect(response.headers.get("content-security-policy")).toContain("default-src 'self'");
+    expect(response.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+  });
+
   it("rejects an unauthenticated preview CSV download before it accesses product data", async () => {
     const app = createApp();
     const response = await app.request(
