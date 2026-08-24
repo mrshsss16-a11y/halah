@@ -19,7 +19,12 @@ export type {
   StoredCredential
 } from "../../modules/identity/identity-port";
 
-const validOrganizationRoles = new Set<OrganizationRole>(["owner", "operator", "viewer"]);
+const validOrganizationRoles = new Set<OrganizationRole>([
+  "owner",
+  "operator",
+  "reviewer",
+  "viewer"
+]);
 
 function toIdentityUser(row: Record<string, unknown>): IdentityUser | null {
   const id = row["id"];

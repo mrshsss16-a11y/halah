@@ -13,7 +13,11 @@ import { renderApprovedProductDraftPreviewCsv } from "../../modules/product-cont
 import { ProductContentDraftService } from "../../modules/product-content/product-content-draft-service";
 import { ProductContentImportService } from "../../modules/product-content/product-content-import-service";
 import { ProductContentReviewService } from "../../modules/product-content/product-content-review-service";
-import { canMutateProductContent, canStageProductContentExport } from "../commercial-authorization";
+import {
+  canMutateProductContent,
+  canReviewProductContent,
+  canStageProductContentExport
+} from "../commercial-authorization";
 import { resolveCurrentSession } from "../current-session";
 import { errorResponse } from "../errors";
 import { hasTrustedSameOrigin } from "../request-origin";
@@ -234,7 +238,7 @@ export function createProductContentRoutes(): Hono<HalaEnv> {
     if (identity === null) {
       return errorResponse(context, 401, "not_authenticated", "سجل دخولك للمتابعة.");
     }
-    if (!canMutateProductContent(identity.role)) {
+    if (!canReviewProductContent(identity.role)) {
       return errorResponse(context, 403, "forbidden", "صلاحيتك لا تسمح بمراجعة المسودة.");
     }
 
@@ -334,7 +338,7 @@ export function createProductContentRoutes(): Hono<HalaEnv> {
       return errorResponse(context, 401, "not_authenticated", "سجل دخولك للمتابعة.");
     }
 
-    if (!canMutateProductContent(identity.role)) {
+    if (!canReviewProductContent(identity.role)) {
       return errorResponse(context, 403, "forbidden", "صلاحيتك لا تسمح باعتماد الأدلة.");
     }
 

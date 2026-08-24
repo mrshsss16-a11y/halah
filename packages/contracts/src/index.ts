@@ -189,7 +189,7 @@ export const emailSchema = z
   .email()
   .max(254)
   .transform((value) => value.toLowerCase());
-export const organizationRoleSchema = z.enum(["owner", "operator", "viewer"]);
+export const organizationRoleSchema = z.enum(["owner", "operator", "reviewer", "viewer"]);
 export type OrganizationRole = z.infer<typeof organizationRoleSchema>;
 
 export const passwordSchema = z
