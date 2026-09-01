@@ -650,6 +650,43 @@ export function renderTeamPage(
   );
 }
 
+export function renderConnectionsPage(
+  organizationName: string,
+  environment: string,
+  cspNonce: string
+): string {
+  const localSallaControl =
+    environment === "development"
+      ? `<article class="card" style="max-inline-size: 780px"><h2>ربط Salla 1-Click — اختبار محلي</h2><p class="muted">هذا يحاكي رحلة التفويض فقط: state لمرة واحدة ثم تفعيل اتصال اصطناعي. لا يفتح حسابات Salla ولا يخزن رمز متجر حقيقياً.</p><p id="salla-connection-message" class="error" role="alert"></p><div class="actions"><button id="salla-start" class="button" type="button">ابدأ ربط Salla محلياً</button><button id="salla-complete" class="button secondary" type="button" disabled>أكمل المحاكاة</button></div></article><script>
+      var sallaState = '';
+      var sallaStart = document.getElementById('salla-start');
+      var sallaComplete = document.getElementById('salla-complete');
+      var sallaMessage = document.getElementById('salla-connection-message');
+      sallaStart.addEventListener('click', async function () {
+        sallaMessage.textContent = '';
+        var response = await fetch('/api/salla/mock/start', { method: 'POST', credentials: 'same-origin' });
+        var body = await response.json().catch(function () { return null; });
+        if (!response.ok || !body || typeof body.state !== 'string') { sallaMessage.textContent = 'تعذر بدء محاكاة ربط Salla.'; return; }
+        sallaState = body.state; sallaComplete.disabled = false; sallaMessage.textContent = 'تم إنشاء state مؤقت. أكمل المحاكاة لاختبار الاستهلاك لمرة واحدة.';
+      });
+      sallaComplete.addEventListener('click', async function () {
+        if (!sallaState) return;
+        var response = await fetch('/api/salla/mock/complete', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ state: sallaState }) });
+        var body = await response.json().catch(function () { return null; });
+        sallaMessage.textContent = response.ok ? 'اكتملت محاكاة الاتصال. لم يُستخدم متجر أو رمز حقيقي.' : (body && body.error ? body.error.message : 'تعذر إكمال المحاكاة.');
+        sallaState = ''; sallaComplete.disabled = true;
+      });
+    </script>`
+      : `<article class="card" style="max-inline-size: 780px"><h2>ربط Salla</h2><p class="notice">الربط الحي غير مفعّل في هذه البيئة. لا تُستخدم بيانات متجر حقيقية قبل اكتمال OAuth واختبار متجر demo وخطة الموافقة.</p></article>`;
+
+  return appLayout(
+    organizationName,
+    "الربط",
+    `<section><span class="status">بوابة الاتصالات</span><h1>اربط متجرك من دون كشف الرموز</h1><p class="muted">تظهر حالة الاتصال فقط داخل مساحة متجرك. الرموز لا تصل إلى المتصفح ولا تظهر في الواجهة أو سجل التدقيق.</p>${localSallaControl}<article class="card" style="max-inline-size: 780px"><h2>Zid وWhatsApp</h2><p class="muted">موجودان ضمن خارطة الطريق، لكن لا يوجد اتصال حي أو إرسال فعلي من هذه البيئة.</p></article></section>`,
+    cspNonce
+  );
+}
+
 export function renderOnboardingPage(organizationName: string, cspNonce: string): string {
   return appLayout(
     organizationName,

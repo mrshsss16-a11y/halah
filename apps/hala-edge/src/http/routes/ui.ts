@@ -4,6 +4,7 @@ import {
   renderActivationPage,
   renderAuditPage,
   renderDashboardPage,
+  renderConnectionsPage,
   renderLandingPage,
   renderLoginPage,
   renderOnboardingPage,
@@ -96,6 +97,15 @@ export function createUiRoutes(): Hono<HalaEnv> {
         return redirectToLogin(context.req.url);
       }
 
+      if (page.path === "/app/connections") {
+        return context.html(
+          renderConnectionsPage(
+            identity.organizationName,
+            context.get("config").environment,
+            context.get("cspNonce")
+          )
+        );
+      }
       if (page.path === "/app/onboarding") {
         return context.html(
           renderOnboardingPage(identity.organizationName, context.get("cspNonce"))
