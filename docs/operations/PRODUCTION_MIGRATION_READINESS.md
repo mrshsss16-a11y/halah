@@ -12,15 +12,15 @@
 
 ## الموارد المؤكدة
 
-| المورد | الحالة الحالية | القرار |
-|---|---|---|
-| `halah.aura.sa` | CNAME إلى `hala-ai-os.pages.dev`، وPages alias للمشروع القديم | لا يُعدل قبل اكتمال Worker والنشر المؤكد |
-| Pages `hala-ai-os` | إنتاج قائم، يستخدم `halah-tr-db` و`HALA_CACHE` وAI وVectorize | يبقى intact كـrollback؛ لا يُستبدل عبر push |
-| D1 `halah-tr-db` | قاعدة legacy فيها 35 جدولاً وview واحداً، وليست schema المصدر الجديد | ممنوع الربط بها |
-| D1 `halah-saas-staging` | موجودة وبها جدول migrations فقط تقريباً، ولم تُستخدم للتشغيل الحي | لا تُحوّل إلى production بالاسم فقط |
-| KV `HALA_SAAS_STAGING_AUTH_RATE_LIMIT` | موجودة لبيئة staging | لا تُستخدم للإنتاج |
-| KV `HALA_CACHE` | مرتبط بالمشروع القديم | لا يُعاد استخدامه لـWorker الجديد |
-| migrations المصدر الجديد | 15 migration من `0001_core.sql` إلى `0015_recovery_policy_versioning.sql` | تُطبق على D1 إنتاج جديد فقط |
+| المورد                                 | الحالة الحالية                                                            | القرار                                      |
+| -------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------- |
+| `halah.aura.sa`                        | CNAME إلى `hala-ai-os.pages.dev`، وPages alias للمشروع القديم             | لا يُعدل قبل اكتمال Worker والنشر المؤكد    |
+| Pages `hala-ai-os`                     | إنتاج قائم، يستخدم `halah-tr-db` و`HALA_CACHE` وAI وVectorize             | يبقى intact كـrollback؛ لا يُستبدل عبر push |
+| D1 `halah-tr-db`                       | قاعدة legacy فيها 35 جدولاً وview واحداً، وليست schema المصدر الجديد      | ممنوع الربط بها                             |
+| D1 `halah-saas-staging`                | موجودة وبها جدول migrations فقط تقريباً، ولم تُستخدم للتشغيل الحي         | لا تُحوّل إلى production بالاسم فقط         |
+| KV `HALA_SAAS_STAGING_AUTH_RATE_LIMIT` | موجودة لبيئة staging                                                      | لا تُستخدم للإنتاج                          |
+| KV `HALA_CACHE`                        | مرتبط بالمشروع القديم                                                     | لا يُعاد استخدامه لـWorker الجديد           |
+| migrations المصدر الجديد               | 15 migration من `0001_core.sql` إلى `0015_recovery_policy_versioning.sql` | تُطبق على D1 إنتاج جديد فقط                 |
 
 ## الأسرار
 
