@@ -650,6 +650,15 @@ export function renderTeamPage(
   );
 }
 
+export function renderOnboardingPage(organizationName: string, cspNonce: string): string {
+  return appLayout(
+    organizationName,
+    "البدء في هالة",
+    `<section><span class="status">مسار البداية</span><h1>خلّ هالة تعرف متجرك قبل ما تتخذ قرار</h1><p class="muted">هذه الرحلة تجمع الفكرة الأساسية في هالة: تبدأ بمساحة منظمة، ثم تثبت معلومات المتجر، وبعدها تختار الخدمة التي تريد تجهيزها. لا يتم إرسال رسالة أو تحديث متجر من هذه الصفحة.</p><section class="grid"><article class="card"><span class="status pending">١</span><h2>اربط متجرك</h2><p>ابدأ من صفحة الربط لمراجعة حالة Salla وZid وWhatsApp. في النسخة الحالية الربط التجريبي منفصل عن حسابات الإنتاج.</p><a class="button secondary" href="/app/connections">راجع الربط</a></article><article class="card"><span class="status pending">٢</span><h2>جهز حقائق المنتجات</h2><p>ارفع CSV أو راجع معلومات المنتجات والصور. لا يتحول أي تخمين إلى وصف منشور؛ كل claim يحتاج دليلاً قابلاً للمراجعة.</p><a class="button secondary" href="/app/products">افتح المحتوى</a></article><article class="card"><span class="status pending">٣</span><h2>حدد سياسة الاسترداد</h2><p>اختر قواعد الأهلية والموافقة والإيقاف قبل التفكير في أي تواصل مع العميل. القناة الحية غير مفعلة هنا.</p><a class="button secondary" href="/app/recovery">راجع السياسة</a></article><article class="card"><span class="status pending">٤</span><h2>اطلب التفعيل</h2><p>بعد ترتيب المساحة، ارسل طلباً داخلياً للاستشارة المجانية ومراجعة الجاهزية. لا يوجد تفعيل آلي ولا سعر رقمي في هذه الخطوة.</p><a class="button secondary" href="/app/activation">اطلب التفعيل</a></article></section><article class="card" style="max-inline-size: 820px"><h2>ما الذي يحدث بعد ذلك؟</h2><p>تُراجع هالة إعداداتك، ثم تُحدد معك الخطوة المناسبة. ستبقى بيانات متجرك معزولة داخل مساحته، وتبقى قرارات النشر والإرسال خلف مراجعة وصلاحية واضحة.</p><p class="notice">حالة Salla 1-Click وتسجيل Google الظاهرة في الموقع القديم ليست مفعلة تلقائياً في هذا المسار؛ ستضاف عبر OAuth موثق واختبارات staging قبل الإنتاج.</p></article></section>`,
+    cspNonce
+  );
+}
+
 export function renderSimpleAppPage(
   input: Readonly<{
     organizationName: string;

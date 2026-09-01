@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "halah-saas-staging",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-23",
+  "workers_dev": true,
+  "vars": {
+    "ENVIRONMENT": "staging",
+    "APP_VERSION": "staging-2026-09-01"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "AUTH_RATE_LIMIT",
+      "id": "4a178db889954b20857c82153fcb150b"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "halah-saas-staging",
+      "database_id": "084fc9c9-e577-41d5-8cde-4e85fb62052b",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
