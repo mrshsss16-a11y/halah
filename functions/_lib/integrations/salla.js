@@ -76,11 +76,24 @@ export async function sallaFetch(env, merchantId, path, opts = {}) {
 }
 
 export async function listProducts(env, merchantId, page = 1) {
-  return sallaFetch(env, merchantId, `/products?page=${page}&per_page=20`);
+  // 60 is Salla's documented max per_page — cuts full-catalog sync requests
+  // to a third versus the old default of 20 (docs/ROADMAP.md B3 design notes).
+  return sallaFetch(env, merchantId, `/products?page=${page}&per_page=60`);
 }
 
 export async function updateProduct(env, merchantId, productId, fields) {
   return sallaFetch(env, merchantId, `/products/${productId}`, {
+    method: "PUT",
+    body: JSON.stringify(fields)
+  });
+}
+
+// PUT /products/sku/{sku} — updates by SKU directly, halving request count
+// versus list-then-update-by-id for bulk jobs (B3). Salla's real limit is a
+// 1 req/sec leak bucket across all plan tiers, not the advertised per-minute
+// numbers — callers MUST space these out themselves (see cron/bulk_process.js).
+export async function updateProductBySku(env, merchantId, sku, fields) {
+  return sallaFetch(env, merchantId, `/products/sku/${encodeURIComponent(sku)}`, {
     method: "PUT",
     body: JSON.stringify(fields)
   });

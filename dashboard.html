@@ -177,6 +177,38 @@
           <div id="publishFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
         </div>
       </div>
+
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="space-y-1 border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-black text-black">وصف منتجاتك بالجملة</h2>
+          <p class="text-xs text-slate-600 font-medium">
+            الصق قائمة منتجات (سطر لكل منتج): <span dir="ltr" class="font-mono">اسم,سعر,فئة,SKU</span> —
+            يكتب الوصف لكل واحد ثم ينشره على سلة تلقائياً. بحكم حدود سلة، المعالجة تمشي تدريجياً
+            بالخلفية (~٦٠ منتج/دقيقة)، مو فورية.
+          </p>
+        </div>
+        <textarea id="bulkRows" rows="5" placeholder="عباية سوداء مطرزة,350,عبايات,SKU-001&#10;عطر عود ملكي 100مل,220,عطور,SKU-002" dir="ltr" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono focus:outline-none focus:border-black"></textarea>
+        <select id="bulkTone" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
+          <option value="white">لهجة بيضاء تسويقية ودودة</option>
+          <option value="formal">فصحى رسمية راقية</option>
+          <option value="luxury">فخامة وحصرية</option>
+          <option value="deals">حماس عروض</option>
+          <option value="funny">خفة دم سعودية</option>
+        </select>
+        <button id="bulkBtn" onclick="startBulkJob()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition">ابدأ المعالجة بالجملة</button>
+        <div id="bulkFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+
+        <div id="bulkProgress" class="hidden space-y-2 pt-2">
+          <div class="flex justify-between text-[11px] font-bold text-slate-600">
+            <span id="bulkProgressLabel">جاري المعالجة…</span>
+            <span id="bulkProgressCount">0 / 0</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div id="bulkProgressBar" class="bg-black h-2 rounded-full transition-all" style="width:0%"></div>
+          </div>
+          <div id="bulkFailedList" class="text-[11px] text-rose-700 space-y-0.5"></div>
+        </div>
+      </div>
     </section>
 
     <!-- ── 2. Store customer-service agent ────────────────────── -->
@@ -540,6 +572,75 @@
       } catch (e) {
         showMsg('publishFeedback', 'تعذر الاتصال.');
       }
+    }
+
+    // ── Bulk product copy (B3) ────────────────────────────────
+    let bulkPollTimer = null;
+
+    function parseBulkRows(raw) {
+      return raw.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+        const [name, price, category, sku] = line.split(',').map(s => (s || '').trim());
+        return { name, price, category, sku };
+      }).filter(r => r.name && r.sku);
+    }
+
+    async function startBulkJob() {
+      const rows = parseBulkRows(document.getElementById('bulkRows').value);
+      if (!rows.length) { showMsg('bulkFeedback', 'أدخل صف واحد على الأقل بصيغة اسم,سعر,فئة,SKU.'); return; }
+
+      const btn = document.getElementById('bulkBtn');
+      btn.disabled = true;
+      document.getElementById('bulkFeedback').classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/store/bulk/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rows, tone: document.getElementById('bulkTone').value })
+        });
+        const data = await res.json();
+        if (!data?.ok) {
+          showMsg('bulkFeedback', data?.error || 'تعذر بدء المعالجة.');
+          btn.disabled = false;
+          return;
+        }
+        showMsg('bulkFeedback', `تم استلام ${data.queued} منتج — تقدير الوقت ${data.etaMinutes} دقيقة.`);
+        document.getElementById('bulkProgress').classList.remove('hidden');
+        pollBulkJob(data.jobId);
+      } catch (e) {
+        showMsg('bulkFeedback', 'تعذر الاتصال.');
+        btn.disabled = false;
+      }
+    }
+
+    async function pollBulkJob(jobId) {
+      if (bulkPollTimer) clearInterval(bulkPollTimer);
+      const tick = async () => {
+        try {
+          const res = await fetch('/api/store/bulk/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jobId })
+          });
+          const data = await res.json();
+          if (!data?.ok) return;
+
+          const pct = data.total ? Math.round((data.processed / data.total) * 100) : 0;
+          document.getElementById('bulkProgressBar').style.width = pct + '%';
+          document.getElementById('bulkProgressCount').innerText = `${data.processed} / ${data.total}`;
+
+          const failedEl = document.getElementById('bulkFailedList');
+          failedEl.innerHTML = (data.failedItems || []).map(i => `${i.sku} — ${i.error || 'فشل'}`).join('<br>');
+
+          if (data.status === 'done') {
+            document.getElementById('bulkProgressLabel').innerText = `اكتمل: ${data.succeeded} نجح، ${data.failed} فشل`;
+            clearInterval(bulkPollTimer);
+            document.getElementById('bulkBtn').disabled = false;
+          }
+        } catch (e) { /* keep polling */ }
+      };
+      tick();
+      bulkPollTimer = setInterval(tick, 15000);
     }
 
     // ── Agent settings ────────────────────────────────────────

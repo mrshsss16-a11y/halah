@@ -720,6 +720,73 @@ export async function getPendingRetargetingList(env, merchantId) {
   return results || [];
 }
 
+// ── B3: bulk description jobs ───────────────────────────────────────────────
+export async function createBulkJob(env, { id, merchantId, tone, rows }) {
+  await env.DB.prepare(
+    "INSERT INTO bulk_jobs (id, merchant_id, tone, total) VALUES (?, ?, ?, ?)"
+  )
+    .bind(id, merchantId, tone, rows.length)
+    .run();
+
+  // D1 batch() is one round-trip instead of N — matters at up to 1000 rows.
+  const stmt = env.DB.prepare(
+    "INSERT INTO bulk_job_items (job_id, row_index, sku, name, price, category) VALUES (?, ?, ?, ?, ?, ?)"
+  );
+  const batch = rows.map((r, i) => stmt.bind(id, i, r.sku, r.name, r.price || null, r.category || null));
+  for (let i = 0; i < batch.length; i += 100) {
+    await env.DB.batch(batch.slice(i, i + 100));
+  }
+  return id;
+}
+
+export async function getBulkJob(env, jobId, merchantId) {
+  return env.DB.prepare("SELECT * FROM bulk_jobs WHERE id = ? AND merchant_id = ?")
+    .bind(jobId, merchantId)
+    .first();
+}
+
+export async function listActiveBulkJobItems(env, limit) {
+  // Oldest running job first so one big job doesn't starve one queued behind it.
+  const { results } = await env.DB.prepare(
+    `SELECT i.*, j.merchant_id AS merchant_id, j.tone AS tone FROM bulk_job_items i
+     JOIN bulk_jobs j ON j.id = i.job_id
+     WHERE j.status = 'running' AND i.status = 'pending'
+     ORDER BY j.created_at ASC, i.row_index ASC
+     LIMIT ?`
+  )
+    .bind(limit)
+    .all();
+  return results || [];
+}
+
+export async function completeBulkJobItem(env, { itemId, jobId, status, description, error }) {
+  await env.DB.prepare(
+    "UPDATE bulk_job_items SET status = ?, description = ?, error = ?, updated_at = datetime('now') WHERE id = ?"
+  )
+    .bind(status, description || null, error || null, itemId)
+    .run();
+
+  const succeededDelta = status === "done" ? 1 : 0;
+  const failedDelta = status === "failed" || status === "skipped" ? 1 : 0;
+  await env.DB.prepare(
+    `UPDATE bulk_jobs SET
+       processed = processed + 1,
+       succeeded = succeeded + ?,
+       failed = failed + ?,
+       updated_at = datetime('now')
+     WHERE id = ?`
+  )
+    .bind(succeededDelta, failedDelta, jobId)
+    .run();
+
+  const job = await env.DB.prepare("SELECT total, processed FROM bulk_jobs WHERE id = ?").bind(jobId).first();
+  if (job && job.processed >= job.total) {
+    await env.DB.prepare("UPDATE bulk_jobs SET status = 'done', updated_at = datetime('now') WHERE id = ?")
+      .bind(jobId)
+      .run();
+  }
+}
+
 export async function saveStoreFaqs(env, storeId, faqs) {
   if (!env?.DB || !Array.isArray(faqs)) return false;
   for (const item of faqs) {

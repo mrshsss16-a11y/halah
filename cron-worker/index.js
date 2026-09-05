@@ -14,5 +14,6 @@ export default {
   async scheduled(event, env, ctx) {
     ctx.waitUntil(ping("/api/cron/reminders", env));
     ctx.waitUntil(ping("/api/cron/healthcheck", env));
+    ctx.waitUntil(ping("/api/cron/bulk_process", env));
   }
 };

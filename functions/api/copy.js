@@ -7,6 +7,7 @@ import { withApi } from "../_lib/core/respond.js";
 import { askWorkersAI, askVisionAI, TEXT_MODEL } from "../_lib/ai/gateway.js";
 import { PERSONA_SYSTEM_PROMPT } from "../_lib/ai/persona.js";
 import { recentCopy, saveCopy } from "../_lib/core/db.js";
+import { recallStyleExamples } from "../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { resolveStoreId } from "../_lib/core/session.js";
 
@@ -26,7 +27,7 @@ function seedKeywords(name, category, extra) {
   return [...base].slice(0, 6);
 }
 
-function buildSeoSystem({ recent, keywords, existingDescription, visionNotes }) {
+function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples }) {
   const avoid = recent.length
     ? `\n\n## لا تكرري هذه الافتتاحيات السابقة لنفس المتجر:\n${recent.map((r, i) => `${i + 1}. "${r.opening}"`).join("\n")}`
     : "";
@@ -49,6 +50,21 @@ function buildSeoSystem({ recent, keywords, existingDescription, visionNotes }) 
       `## ملاحظات من تحليل صورة المنتج الفعلية (استخدميها لدقة الوصف — لون، خامة، شكل حقيقي، لا تخترعي تفاصيل غير ظاهرة بالصورة)\n${visionNotes}`
     );
   }
+  // Style examples are the OPPOSITE of grounding: real writing from a
+  // different product entirely, used only to calibrate tone/structure/length
+  // for this category (e.g. عبايات descriptions tend to open with the fabric,
+  // قهوة مختصة ones list origin+processing+notes). Explicitly forbidden from
+  // being treated as facts about the current product — cross-contaminating a
+  // different product's specs into this one would violate the same honesty
+  // rule grounding exists to protect.
+  if (styleExamples?.length) {
+    grounding.push(
+      `## أمثلة أسلوب حقيقية ناجحة من نفس فئة المنتج (استلهمي البنية والنبرة والطول فقط — لا تنقلي أي حقيقة أو رقم أو تفصيل منها لمنتجنا، هذي منتجات مختلفة تماماً)\n${styleExamples
+        .map((s, i) => `${i + 1}. "${s.text}"`)
+        .join("\n\n")}`
+    );
+  }
+
   const groundingBlock = grounding.length ? `\n\n${grounding.join("\n\n")}` : "";
 
   return `${PERSONA_SYSTEM_PROMPT}${groundingBlock}
@@ -205,6 +221,44 @@ function parseSeoResponse(raw, name, price) {
   };
 }
 
+// Core generation, no HTTP/quota concerns — used by the interactive endpoint
+// below AND by cron/bulk_process.js (B3), which calls this directly instead
+// of self-fetching over HTTP to avoid an extra round-trip per product in a
+// job that's already rate-limited to ~1/sec by Salla.
+export async function generateProductCopy({ env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, keywordsExtra }) {
+  const keywords = seedKeywords(name, category, keywordsExtra);
+  const recent = await recentCopy(env, merchantId).catch(() => []);
+
+  const visionNotes = imageUrl
+    ? await askVisionAI({
+        env,
+        imageUrl,
+        prompt: "صف هذا المنتج بدقة: اللون، الخامة، الشكل العام، أي تفاصيل بصرية مهمة للتسويق. جملتين بالعربي."
+      }).catch(() => null)
+    : null;
+
+  const styleExamples = category
+    ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
+    : [];
+
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples });
+  const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
+  const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
+
+  const rawAiOutput = await askWorkersAI({
+    env,
+    system,
+    messages: [{ role: "user", content: userMsg }],
+    maxTokens: 1200,
+    model: TEXT_MODEL,
+    storeId: merchantId // scopes the KV cache — two merchants selling the same product name must not share copy
+  });
+
+  const parsed = parseSeoResponse(rawAiOutput, name, price);
+  await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
+  return parsed;
+}
+
 async function copyHandler(body, env, request) {
   const merchantId = await resolveStoreId(request, env, body.storeId);
   const name = (body.name || "").toString().trim().slice(0, 200);
@@ -226,33 +280,9 @@ async function copyHandler(body, env, request) {
     };
   }
 
-  const keywords = seedKeywords(name, category, body.keywords);
-  const recent = await recentCopy(env, merchantId).catch(() => []);
-
-  // Optional and best-effort — a slow/broken image host shouldn't block copy
-  // generation, it just falls back to text-only grounding.
-  const visionNotes = imageUrl
-    ? await askVisionAI({
-        env,
-        imageUrl,
-        prompt: "صف هذا المنتج بدقة: اللون، الخامة، الشكل العام، أي تفاصيل بصرية مهمة للتسويق. جملتين بالعربي."
-      }).catch(() => null)
-    : null;
-
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes });
-  const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${TONE_LABELS[tone]} (${tone})`;
-
-  const rawAiOutput = await askWorkersAI({
-    env,
-    system,
-    messages: [{ role: "user", content: userMsg }],
-    maxTokens: 1200,
-    model: TEXT_MODEL
+  const parsed = await generateProductCopy({
+    env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, keywordsExtra: body.keywords
   });
-
-  const parsed = parseSeoResponse(rawAiOutput, name, price);
-
-  await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
 
   return {
     ok: true,
