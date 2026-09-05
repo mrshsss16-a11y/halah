@@ -225,6 +225,59 @@ async function runTests() {
   assert(otherSession === null, "tenant isolation: merchant B cannot load merchant A's customer session");
   assert(unscopedSession === null, "phone lookup without merchantId fails closed");
 
+  // 11. Batch-1 security fixes (SECURITY_AUDIT 2026-09-05)
+  const { resolveStoreId } = await import("../functions/_lib/core/session.js");
+
+  // A merchants DB where only "m_real" exists (an account-less Salla install).
+  const storeEnv = {
+    SESSION_SECRET: "test-secret-12345",
+    DB: {
+      prepare(sql) {
+        return {
+          bind(...args) {
+            return {
+              first: async () => {
+                // getMerchant: SELECT * FROM merchants WHERE id = ?
+                if (/FROM merchants WHERE id/.test(sql)) {
+                  return args[0] === "m_real" ? { id: "m_real", store_name: "متجر" } : null;
+                }
+                // getAccountEmail / accounts lookups → no account for these
+                return null;
+              }
+            };
+          }
+        };
+      }
+    }
+  };
+  const noCookieReq = { headers: { get: () => null } };
+
+  // C2: an invented storeId with no merchant row must NOT become its own tenant
+  const invented = await resolveStoreId(noCookieReq, storeEnv, "x_invented_9999");
+  assert(invented === "default-store", "C2: unknown claimed storeId falls back to default-store (no free quota farming)");
+
+  // C2: a real account-less Salla merchant is still addressable by id
+  const real = await resolveStoreId(noCookieReq, storeEnv, "m_real");
+  assert(real === "m_real", "account-less Salla merchant still reachable by id");
+
+  // C2/H7: the reserved unmetered "hala" id can never be claimed anonymously
+  let halaBlocked = false;
+  try {
+    await resolveStoreId(noCookieReq, storeEnv, "hala");
+  } catch (e) {
+    halaBlocked = e?.code === "LOGIN_REQUIRED";
+  }
+  assert(halaBlocked, "C2/H7: anonymous caller cannot claim the unmetered 'hala' tenant");
+
+  // C3: the admin escape helper neutralizes an XSS payload
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const escaped = esc('<img src=x onerror=alert(1)>');
+  assert(!escaped.includes("<img") && escaped.includes("&lt;img"), "C3: escapeHtml neutralizes an XSS payload");
+
+  // C3 defence-in-depth: sanitizeInput strips tags from a store name
+  const { sanitizeInput: sanitize } = await import("../functions/_lib/core/security.js");
+  assert(!sanitize('<script>x</script>متجر', 100).includes("<"), "C3: sanitizeInput strips tags from storeName");
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

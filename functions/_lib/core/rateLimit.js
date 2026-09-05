@@ -1,3 +1,12 @@
+// Cloudflare sets cf-connecting-ip on every real request and it cannot be
+// spoofed by the client. Do NOT fall back to x-forwarded-for — that IS client
+// controlled, so an attacker would just rotate it to get a fresh limiter bucket
+// per request (SECURITY_AUDIT L2). A missing header (only in local/test) falls
+// back to a single shared key, which fails safe (over-throttles) not open.
+export function clientIp(request) {
+  return request.headers.get("cf-connecting-ip") || "unknown";
+}
+
 export async function checkRateLimit(env, clientIp, actionKey = "global", limit = 30, windowSeconds = 60) {
   if (!env.HALA_CACHE) {
     return { allowed: true, remaining: limit, resetInSeconds: 0 };

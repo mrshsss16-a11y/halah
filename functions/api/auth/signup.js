@@ -4,11 +4,21 @@
 import { json } from "../../_lib/core/respond.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
+import { sanitizeInput } from "../../_lib/core/security.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+
+  // Cap signups per IP — the 20-seat trial cap otherwise doubles as a lockout
+  // DoS (20 scripted POSTs fill every seat) (SECURITY_AUDIT C2/H10).
+  const rl = await checkRateLimit(env, clientIp(request), "signup", 3, 3600);
+  if (!rl.allowed) {
+    return json({ ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" }, 429);
+  }
+
   let body;
   try {
     body = await request.json();
@@ -18,7 +28,10 @@ export async function onRequestPost(context) {
 
   const email = (body.email || "").toString().trim().toLowerCase().slice(0, 200);
   const password = (body.password || "").toString();
-  const storeName = (body.storeName || "").toString().trim().slice(0, 100) || null;
+  // Sanitize store name at the source: it renders in the admin accounts table
+  // (SECURITY_AUDIT C3 stored XSS). Escaping at the sink is the primary fix;
+  // this is defence in depth.
+  const storeName = sanitizeInput((body.storeName || "").toString().trim(), 100) || null;
 
   if (!EMAIL_RE.test(email)) {
     return json({ ok: false, error: "أدخل بريد إلكتروني صحيح." }, 400);

@@ -7,10 +7,18 @@ import { withApi } from "../../../_lib/core/respond.js";
 import { resolveStoreId } from "../../../_lib/core/session.js";
 import { createBulkJob } from "../../../_lib/core/db.js";
 import { getMonthlyUsage } from "../../../_lib/core/meter.js";
+import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
 
 const MAX_ROWS_PER_UPLOAD = 500;
 
 async function bulkUploadHandler(body, env, request) {
+  // A bulk job queues up to 500 AI generations + Salla writes — cap how fast
+  // jobs can be created per IP (SECURITY_AUDIT C2).
+  const rl = await checkRateLimit(env, clientIp(request), "bulk_upload", 5, 300);
+  if (!rl.allowed) {
+    return { ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
+  }
+
   const merchantId = await resolveStoreId(request, env, body.storeId);
   const tone = ["white", "formal", "luxury", "deals", "funny"].includes(body.tone) ? body.tone : "white";
   const rawRows = Array.isArray(body.rows) ? body.rows : [];

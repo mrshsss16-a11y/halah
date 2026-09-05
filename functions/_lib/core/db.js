@@ -1,6 +1,7 @@
 // Unified D1 access layer (binding: DB → halah-tr-db). All queries live here —
 // endpoints never write raw SQL. merchants.id is the canonical storeId.
 import { encryptSecret, decryptSecret } from "./crypto.js";
+import { sanitizeInput } from "./security.js";
 
 export async function getMerchant(env, merchantId) {
   return env.DB.prepare("SELECT * FROM merchants WHERE id = ?").bind(merchantId).first();
@@ -13,6 +14,10 @@ export async function getMerchantBySalla(env, sallaMerchantId) {
 }
 
 export async function upsertMerchantFromSalla(env, { sallaMerchantId, storeName }) {
+  // A merchant controls their own Salla store name; it renders in the admin
+  // accounts table (SECURITY_AUDIT C3). Escaping at the sink is the primary
+  // fix — this strips tags at the source as defence in depth.
+  storeName = storeName ? sanitizeInput(String(storeName), 100) : storeName;
   const existing = await getMerchantBySalla(env, sallaMerchantId);
   if (existing) {
     if (storeName && storeName !== existing.store_name) {
@@ -502,10 +507,17 @@ export async function revokeWaConnection(env, { merchantId = null, wabaId = null
 // ── Consultation bookings ──
 
 export async function saveConsultationBooking(env, { name, phone, slotLabel }) {
+  // Chokepoint sanitize: the WhatsApp path (whatsapp/webhook.js) passes the
+  // sender's raw WhatsApp profile name and a model-emitted slot label straight
+  // in, and both render in the admin bookings table (SECURITY_AUDIT C3/H3).
+  // book.js already sanitizes, so this is idempotent there and closes the gap
+  // for every other caller in one place.
+  const cleanName = name ? sanitizeInput(String(name), 100) : null;
+  const cleanSlot = slotLabel ? sanitizeInput(String(slotLabel), 50) : slotLabel;
   const res = await env.DB.prepare(
     "INSERT INTO consultation_bookings (name, phone, preferred_slot_label) VALUES (?, ?, ?)"
   )
-    .bind(name || null, phone, slotLabel)
+    .bind(cleanName, phone, cleanSlot)
     .run();
   
   const id = res.meta.last_row_id;

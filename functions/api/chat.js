@@ -14,6 +14,7 @@ import { recallSimilar, rememberReply } from "../_lib/ai/memory.js";
 import { getMarketingContext, saveOmnichannelSession } from "../_lib/core/db.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { resolveStoreId } from "../_lib/core/session.js";
+import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 
 const SCORE_THRESHOLD = 7;
 const HARD_FLOOR = 4;
@@ -119,6 +120,13 @@ async function critique({ env, message, reply, dialect }) {
 }
 
 async function chatHandler(body, env, request) {
+  // Rate limit before any store resolution or model call — chat runs up to
+  // two model passes (generate + critique) per request (SECURITY_AUDIT C2).
+  const rl = await checkRateLimit(env, clientIp(request), "chat", 20, 60);
+  if (!rl.allowed) {
+    return { error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
+  }
+
   const storeId = await resolveStoreId(request, env, body.storeId);
 
   const usage = await checkAndConsumeMonthly(env, storeId, "message");

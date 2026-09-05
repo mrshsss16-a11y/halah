@@ -10,6 +10,7 @@ import { recentCopy, saveCopy } from "../_lib/core/db.js";
 import { recallStyleExamples } from "../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { resolveStoreId } from "../_lib/core/session.js";
+import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 
 const TONE_LABELS = {
   white: "لهجة بيضاء تسويقية ودودة",
@@ -260,6 +261,14 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
 }
 
 async function copyHandler(body, env, request) {
+  // Rate limit BEFORE resolveStoreId — one /api/copy request can trigger a
+  // vision fetch + a text-model call, so this is the expensive path an
+  // anonymous caller would abuse (SECURITY_AUDIT C2).
+  const rl = await checkRateLimit(env, clientIp(request), "copy", 20, 60);
+  if (!rl.allowed) {
+    return { error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
+  }
+
   const merchantId = await resolveStoreId(request, env, body.storeId);
   const name = (body.name || "").toString().trim().slice(0, 200);
   const price = (body.price || "").toString().trim().slice(0, 40);

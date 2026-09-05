@@ -629,8 +629,13 @@
           document.getElementById('bulkProgressBar').style.width = pct + '%';
           document.getElementById('bulkProgressCount').innerText = `${data.processed} / ${data.total}`;
 
+          // sku comes from the merchant's uploaded CSV and error from caught
+          // Salla API responses — escape both before innerHTML (SECURITY_AUDIT L5).
+          const escHtml = v => String(v ?? '').replace(/[&<>"']/g, c => (
+            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+          ));
           const failedEl = document.getElementById('bulkFailedList');
-          failedEl.innerHTML = (data.failedItems || []).map(i => `${i.sku} — ${i.error || 'فشل'}`).join('<br>');
+          failedEl.innerHTML = (data.failedItems || []).map(i => `${escHtml(i.sku)} — ${escHtml(i.error || 'فشل')}`).join('<br>');
 
           if (data.status === 'done') {
             document.getElementById('bulkProgressLabel').innerText = `اكتمل: ${data.succeeded} نجح، ${data.failed} فشل`;

@@ -435,6 +435,18 @@
   <script>
     let activeTab = 'overview';
 
+    // Escape every value that comes from the API before it goes into innerHTML.
+    // storeName/email (accounts) and name/ticket/slot (bookings) are ultimately
+    // attacker-controllable (signup storeName, WhatsApp profile name), so an
+    // un-escaped `${...}` here is stored XSS running in the admin's own session
+    // (SECURITY_AUDIT C3/H3). Use for text AND for values placed inside quoted
+    // HTML attributes (it escapes both quote styles).
+    function esc(v) {
+      return String(v ?? '').replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+      ));
+    }
+
     function switchAdminTab(tab) {
       activeTab = tab;
       const tabs = ['overview', 'auraWa', 'accounts', 'bookings', 'tester', 'images'];
@@ -655,9 +667,9 @@
 
             return `
               <tr class="hover:bg-slate-50 transition border-b border-slate-200">
-                <td class="p-3.5 font-bold text-black">${row?.email ?? 'بدون بريد'}</td>
-                <td class="p-3.5 font-mono text-[11px] text-slate-600">${row?.merchantId ?? row?.merchant_id ?? '-'}</td>
-                <td class="p-3.5 font-bold text-black">${row?.storeName ?? 'متجر غير معنون'}</td>
+                <td class="p-3.5 font-bold text-black">${esc(row?.email ?? 'بدون بريد')}</td>
+                <td class="p-3.5 font-mono text-[11px] text-slate-600">${esc(row?.merchantId ?? row?.merchant_id ?? '-')}</td>
+                <td class="p-3.5 font-bold text-black">${esc(row?.storeName ?? 'متجر غير معنون')}</td>
                 <td class="p-3.5">
                   <div class="space-y-1">
                     <div class="flex items-center justify-between text-[11px] font-bold font-mono">
@@ -669,17 +681,17 @@
                     </div>
                   </div>
                 </td>
-                <td class="p-3.5 text-slate-600 font-mono">${row?.createdAt ?? '-'}</td>
+                <td class="p-3.5 text-slate-600 font-mono">${esc(row?.createdAt ?? '-')}</td>
                 <td class="p-3.5">
                   <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${row?.disabled ? 'bg-slate-200 text-slate-700 border border-slate-300' : 'bg-black text-white'}">
                     ${row?.disabled ? 'معطّل' : 'نشط'}
                   </span>
                 </td>
                 <td class="p-3.5 text-center space-x-1 space-x-reverse">
-                  <button onclick="toggleAccountDisabled('${row?.merchantId}', ${!row?.disabled})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${row?.disabled ? 'bg-black text-white' : 'sleek-btn-white'}">
+                  <button onclick="toggleAccountDisabled('${esc(row?.merchantId)}', ${!row?.disabled})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${row?.disabled ? 'bg-black text-white' : 'sleek-btn-white'}">
                     ${row?.disabled ? 'تفعيل' : 'تجميد'}
                   </button>
-                  <button onclick="resetAccountQuota('${row?.merchantId}')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold sleek-btn-white">
+                  <button onclick="resetAccountQuota('${esc(row?.merchantId)}')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold sleek-btn-white">
                     تصفير الرصيد
                   </button>
                 </td>
@@ -743,18 +755,18 @@
           }
           tbody.innerHTML = data.rows.map(row => `
             <tr class="hover:bg-slate-50 transition border-b border-slate-200">
-              <td class="p-3.5 font-bold font-mono text-black">${row?.ticket_code ?? 'AURA-00000'}</td>
-              <td class="p-3.5 font-bold text-black">${row?.name ?? 'زائر'}</td>
-              <td class="p-3.5 font-mono text-slate-600">${row?.phone ?? '-'}</td>
-              <td class="p-3.5 text-slate-700 font-medium">${row?.slot_label ?? '-'}</td>
+              <td class="p-3.5 font-bold font-mono text-black">${esc(row?.ticket_code ?? 'AURA-00000')}</td>
+              <td class="p-3.5 font-bold text-black">${esc(row?.name ?? 'زائر')}</td>
+              <td class="p-3.5 font-mono text-slate-600">${esc(row?.phone ?? '-')}</td>
+              <td class="p-3.5 text-slate-700 font-medium">${esc(row?.slot_label ?? '-')}</td>
               <td class="p-3.5">
                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${row?.status === 'confirmed' ? 'bg-black text-white' : 'bg-slate-100 text-black border border-slate-300'}">
                   ${row?.status === 'confirmed' ? 'مؤكدة' : (row?.status === 'cancelled' ? 'ملغاة' : 'قيد الانتظار')}
                 </span>
               </td>
               <td class="p-3.5 text-center flex items-center justify-center gap-1.5">
-                <button onclick="updateBookingStatus('${row?.id}', 'confirmed')" class="bg-black text-white hover:bg-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">تأكيد</button>
-                <button onclick="updateBookingStatus('${row?.id}', 'cancelled')" class="sleek-btn-white px-2.5 py-1 rounded-lg text-[10px] font-bold">إلغاء</button>
+                <button onclick="updateBookingStatus('${esc(row?.id)}', 'confirmed')" class="bg-black text-white hover:bg-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">تأكيد</button>
+                <button onclick="updateBookingStatus('${esc(row?.id)}', 'cancelled')" class="sleek-btn-white px-2.5 py-1 rounded-lg text-[10px] font-bold">إلغاء</button>
               </td>
             </tr>
           `).join('');

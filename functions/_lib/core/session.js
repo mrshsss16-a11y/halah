@@ -1,5 +1,11 @@
-import { getAccountEmail } from "./db.js";
+import { getAccountEmail, getMerchant } from "./db.js";
 import { ApiError } from "./respond.js";
+
+// Ids an anonymous caller must never be able to claim through a request body.
+// "hala" is Aura's own line and is UNMETERED in meter.js — letting a stranger
+// name it (or any reserved id) would run AI with no quota at that tenant's
+// expense (SECURITY_AUDIT C2/H7).
+const RESERVED_STORE_IDS = new Set(["hala"]);
 
 // Signed session cookie — no DB round trip to verify. Token shape:
 // `${merchantId}.${expiryUnix}.${hmacHex}`, HMAC-SHA256(SESSION_SECRET, `${merchantId}.${expiryUnix}`).
@@ -99,12 +105,18 @@ export async function getSessionMerchantId(request, env) {
  * 1. A valid session cookie always wins over whatever storeId the client
  *    claims in the request body — a logged-in attacker can never operate on
  *    someone else's store by swapping ids.
- * 2. With no session, a claimed storeId is only honored when that store has
- *    NO account attached. Stores created via the Salla Easy-Mode install have
- *    no login — their unguessable id (m_ + 96 random bits truncated) is their
- *    only credential, so it must keep working. But the moment a merchant
- *    signs up, their data is reachable exclusively through a session: a
- *    leaked/guessed id alone gets 401 LOGIN_REQUIRED.
+ * 2. With no session, a claimed storeId is only honored when it names a REAL
+ *    Salla-install merchant that has NO account attached. Those stores have no
+ *    login — their unguessable id (m_ + truncated random) is their only
+ *    credential, so it must keep working. But:
+ *      - the moment a merchant signs up, their data is reachable exclusively
+ *        through a session (a leaked/guessed id alone gets 401 LOGIN_REQUIRED);
+ *      - a claimed id that matches NO merchant row is rejected back to the
+ *        shared "default-store" bucket instead of being trusted verbatim. The
+ *        old code returned any unknown string as its own tenant, so an
+ *        anonymous caller could mint unlimited fresh quota buckets by inventing
+ *        ids (SECURITY_AUDIT C2 — denial of wallet);
+ *      - reserved ids (see RESERVED_STORE_IDS) are never claimable anonymously.
  *
  * The anonymous demo flow ("default-store") is untouched.
  */
@@ -120,9 +132,24 @@ export async function resolveStoreId(request, env, claimedStoreId) {
     return sessionMerchantId;
   }
 
-  if (claimed !== "default-store" && (await getAccountEmail(env, claimed))) {
+  // ── Anonymous from here down ──────────────────────────────────────────────
+  if (claimed === "default-store") return claimed;
+
+  // A stranger can never name a reserved tenant (e.g. the unmetered "hala").
+  if (RESERVED_STORE_IDS.has(claimed)) {
+    throw new ApiError(401, "غير مصرح.", "LOGIN_REQUIRED");
+  }
+
+  // Registered store → session required.
+  if (await getAccountEmail(env, claimed)) {
     throw new ApiError(401, "هذا المتجر مرتبط بحساب — سجّل دخولك للوصول له.", "LOGIN_REQUIRED");
   }
+
+  // Only a real, account-less Salla-install merchant may be addressed by id
+  // alone. An id matching no merchant row is NOT trusted as its own tenant —
+  // it falls back to the shared demo bucket so it can't farm free quota.
+  const merchant = env?.DB ? await getMerchant(env, claimed).catch(() => null) : null;
+  if (!merchant) return "default-store";
   return claimed;
 }
 
