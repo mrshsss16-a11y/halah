@@ -85,11 +85,6 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
         .join("\n")}`
     : "";
 
-  const omnichannelSession = env.DB ? await getOmnichannelSession(env, { phone }).catch(() => null) : null;
-  const omniContext = omnichannelSession && omnichannelSession.summary
-    ? `\n\n## سياق من المتجر\nالعميل كان يتصفح المتجر وله محادثة سابقة.\nالمنتج: ${omnichannelSession.product_name || 'غير محدد'}\nالملخص: ${omnichannelSession.summary}\n\nتذكر هالشيء ورحب فيه بلهجة سعودية دافئة وتحدث معه عن المنتج والملخص بشكل طبيعي.`
-    : "";
-
   let system;
   if (isAuraLine) {
     system = `${HALA_WHATSAPP_SUPPORT_PROMPT}
@@ -103,7 +98,9 @@ ${BOOKING_INSTRUCTIONS}
 ${ESCALATION_INSTRUCTIONS}`;
   } else {
     const ctx = env.DB ? await getMarketingContext(env, merchantId).catch(() => null) : null;
-    const omniSession = env.DB ? await getOmnichannelSession(env, { phone }).catch(() => null) : null;
+    // merchantId is mandatory here — the same shopper's number may have a
+    // session with several merchants (see getOmnichannelSession).
+    const omniSession = env.DB ? await getOmnichannelSession(env, { phone, merchantId }).catch(() => null) : null;
     const dialect = (ctx && ctx.dialect) || "saudi_najdi";
     const instructions = (ctx && ctx.instructions) || "لا توجد تعليمات إضافية.";
     
@@ -136,7 +133,8 @@ ${ESCALATION_INSTRUCTIONS}`;
     system,
     messages: turns,
     maxTokens: isAuraLine ? 180 : 250,
-    model: TEXT_MODEL
+    model: TEXT_MODEL,
+    storeId: merchantId // without this the reply lands in a cache bucket shared by every merchant
   });
 
   if (isAuraLine && ESCALATE_RE.test(reply)) {

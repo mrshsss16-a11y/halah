@@ -79,7 +79,8 @@ async function auraWhatsappHandler(body, env, request) {
         system: systemPrompt,
         messages: [{ role: "user", content: userMsg }],
         maxTokens: 250,
-        model: TEXT_MODEL
+        model: TEXT_MODEL,
+        storeId: "hala" // Aura's own line, not a merchant tenant
       });
     } catch (e) {
       replyText = "أهلاً بك في أورا للتسويق! 👋 نقدم خدمات التسويق الذكي واسترداد السلات المتروكة عبر الواتساب. نتشرف بحجز استشارة مخصصة لمتجرك في أي وقت!";

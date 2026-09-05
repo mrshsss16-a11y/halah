@@ -59,7 +59,8 @@ async function supportHandler(body, env, request) {
     env,
     system: `${HALA_SUPPORT_PROMPT}${ragContext}`,
     messages: turns,
-    maxTokens: 400
+    maxTokens: 400,
+    storeId: "hala" // Aura's own website widget — single tenant, safe to share
   });
 
   reply = stripFabricatedPricing(reply);

@@ -686,14 +686,31 @@ export async function saveOmnichannelSession(env, { sessionToken, merchantId, ph
     .run();
 }
 
-export async function getOmnichannelSession(env, { sessionToken, phone }) {
+/**
+ * Phone lookups MUST pass merchantId. A phone number is not tenant-scoped — the
+ * same Saudi shopper routinely buys from several Salla stores, and every one of
+ * them may be on Hala. Without the merchant filter this returned whichever store
+ * that number spoke to most recently, so merchant B's bot loaded merchant A's
+ * last_product / chat_summary and built its reply on them (2026-09-05 audit).
+ * The write path (saveOmnichannelSession) already carried a merchant guard on
+ * its UPDATE; only this read was missing one.
+ *
+ * The sessionToken path is scoped by the token itself (unguessable, one merchant),
+ * but still verifies merchantId when the caller knows it — defence in depth.
+ */
+export async function getOmnichannelSession(env, { sessionToken, phone, merchantId }) {
   if (sessionToken) {
-    return env.DB.prepare("SELECT * FROM omnichannel_sessions WHERE session_token = ?")
+    const row = await env.DB.prepare("SELECT * FROM omnichannel_sessions WHERE session_token = ?")
       .bind(sessionToken)
       .first();
+    if (row && merchantId && row.merchant_id !== merchantId) return null;
+    return row;
   } else if (phone) {
-    return env.DB.prepare("SELECT * FROM omnichannel_sessions WHERE phone = ? ORDER BY created_at DESC LIMIT 1")
-      .bind(phone)
+    if (!merchantId) return null; // fail closed rather than crossing tenants
+    return env.DB.prepare(
+      "SELECT * FROM omnichannel_sessions WHERE phone = ? AND merchant_id = ? ORDER BY created_at DESC LIMIT 1"
+    )
+      .bind(phone, merchantId)
       .first();
   }
   return null;
