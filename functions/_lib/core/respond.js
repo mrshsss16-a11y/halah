@@ -69,7 +69,7 @@ export function withApi(handler) {
     const path = new URL(request.url).pathname;
 
     try {
-      const result = await handler(body, env, request, requestId);
+      const result = await handler(body, env, request, requestId, context);
       if (result instanceof Response) {
         result.headers.set("X-Request-Id", requestId);
         return result;

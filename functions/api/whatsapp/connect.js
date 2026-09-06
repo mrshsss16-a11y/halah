@@ -11,10 +11,24 @@
 //
 // Docs: developers.facebook.com/documentation/business-messaging/whatsapp/
 //       embedded-signup/onboarding-customers-as-a-tech-provider
+//
+// STATUS: code-complete and wired end-to-end (dashboard button -> this
+// endpoint -> D1 -> webhook.js routing), but INTENTIONALLY inert in
+// production right now — not forgotten. Meta only shows the "WhatsApp
+// Embedded Signup" login variation (and thus a usable WA_SIGNUP_CONFIG_ID)
+// after this app is approved as a Tech Provider (App Review submitted,
+// pending as of this writing). Until then env.WA_SIGNUP_CONFIG_ID stays
+// unset, status.js reports `available: false`, and the dashboard button
+// stays disabled with an explanatory note instead of calling FB.login().
+// The moment Tech Provider approval lands and an operator sets
+// WA_SIGNUP_CONFIG_ID (+ the already-present META_APP_ID/WHATSAPP_APP_SECRET),
+// this activates with no code changes.
 import { withApi, json, ApiError } from "../../_lib/core/respond.js";
 import { getSessionMerchantId } from "../../_lib/core/session.js";
 import { saveWaConnection, getWaConnectionByPhoneId } from "../../_lib/core/db.js";
 import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { syncCoexistenceHistory } from "../../_lib/integrations/whatsapp.js";
+import { logError } from "../../_lib/core/errorLog.js";
 
 const GRAPH = "https://graph.facebook.com/v21.0";
 
@@ -62,7 +76,7 @@ async function fetchPhoneDetails(phoneNumberId, businessToken) {
   return (await res.json().catch(() => ({}))) || {};
 }
 
-async function connectHandler(body, env, request) {
+async function connectHandler(body, env, request, requestId, context) {
   // A real logged-in merchant only. resolveStoreId() would fall back to the
   // shared "default-store" pseudo-tenant for anonymous callers, which here
   // would let a stranger bind a WhatsApp number to it.
@@ -111,6 +125,23 @@ async function connectHandler(body, env, request) {
     displayPhone: details.display_phone_number || null,
     verifiedName: details.verified_name || null
   });
+
+  // Coexistence: pull the merchant's existing contacts + chat history within
+  // Meta's ~24h window. Best-effort and must never block/slow the response —
+  // the merchant is waiting on this request to see "متصل".
+  if (context?.waitUntil) {
+    context.waitUntil(
+      syncCoexistenceHistory(wabaId, businessToken).catch((err) =>
+        logError(context, {
+          requestId,
+          path: "/api/whatsapp/connect#coexistence-sync",
+          code: "WA_COEXISTENCE_SYNC_FAILED",
+          internal: err?.message,
+          storeId: merchantId
+        })
+      )
+    );
+  }
 
   // Never return the token to the browser.
   return json({

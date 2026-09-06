@@ -417,6 +417,36 @@ async function runTests() {
   }
   assert(unknownBucketThrew, "checkAndConsumeMonthly throws on an unknown bucket instead of allowing the call");
 
+  // WhatsApp Embedded Signup — Coexistence history sync (SMB App Data API).
+  // Not live yet (waiting on Meta Tech Provider approval), but the logic is
+  // built now — cover it so a future refactor can't silently break it.
+  const { requestCoexistenceSync, syncCoexistenceHistory } = await import("../functions/_lib/integrations/whatsapp.js");
+  const realFetch = global.fetch;
+  try {
+    const calls = [];
+    global.fetch = async (url, opts) => {
+      calls.push({ url: String(url), opts });
+      return { ok: true, json: async () => ({ success: true }) };
+    };
+    await syncCoexistenceHistory("waba_123", "tok_abc");
+    assert(calls.length === 2, "syncCoexistenceHistory makes exactly two SMB App Data calls (contacts, then history)");
+    assert(calls[0].url.includes("waba_123/smb_app_data"), "coexistence sync calls smb_app_data on the merchant's own WABA");
+    assert(JSON.parse(calls[0].opts.body).sync_type === "smb_app_state_sync", "first call syncs contacts (smb_app_state_sync) before history");
+    assert(JSON.parse(calls[1].opts.body).sync_type === "history", "second call syncs message history");
+    assert(calls[0].opts.headers.Authorization === "Bearer tok_abc", "coexistence sync authenticates with the merchant's own business token, not a shared one");
+
+    global.fetch = async () => ({ ok: false, status: 400, text: async () => "bad request" });
+    let threw = false;
+    try {
+      await requestCoexistenceSync("waba_123", "tok_abc", "history");
+    } catch {
+      threw = true;
+    }
+    assert(threw, "requestCoexistenceSync throws on a failed Graph API call instead of silently succeeding");
+  } finally {
+    global.fetch = realFetch;
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

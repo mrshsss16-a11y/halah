@@ -196,6 +196,44 @@ export async function getWaMedia(env, mediaId, conn = null) {
  * Without this, anything a human types from the phone app vanishes from our
  * conversation history/RAG context — the AI would "forget" half the thread.
  */
+/**
+ * Coexistence-specific: SMB App Data API. After a merchant connects an
+ * existing WhatsApp Business App number via Embedded Signup, Meta gives us a
+ * ~24h window to pull their existing contacts + message history before they'd
+ * have to redo onboarding. Without this call the merchant's number connects
+ * fine but shows up empty in our dashboard — no past customers, no history —
+ * even though their phone still has everything.
+ *
+ * Docs: developers.facebook.com/documentation/business-messaging/whatsapp/
+ *       embedded-signup/onboarding-business-app-users
+ *
+ * Fire-and-forget from the caller's `context.waitUntil` — this can take a
+ * while and must never hold up the connect response the browser is waiting on.
+ * Best-effort: failures here don't undo the connection, they just mean the
+ * merchant starts with an empty history (same as if they'd connected a new
+ * number) and new messages still flow in normally from that point on.
+ */
+export async function requestCoexistenceSync(wabaId, businessToken, syncType) {
+  const res = await fetch(`${GRAPH}/${wabaId}/smb_app_data`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${businessToken}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ messaging_product: "whatsapp", sync_type: syncType })
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`smb_app_data ${syncType} failed: ${res.status} ${detail.slice(0, 300)}`);
+  }
+}
+
+/** Runs both required syncs (contacts first, then history) for a freshly connected WABA. */
+export async function syncCoexistenceHistory(wabaId, businessToken) {
+  await requestCoexistenceSync(wabaId, businessToken, "smb_app_state_sync");
+  await requestCoexistenceSync(wabaId, businessToken, "history");
+}
+
 export function parseEchoes(payload) {
   const out = [];
   for (const entry of payload?.entry || []) {
