@@ -61,20 +61,53 @@
 
 **معيار الإنجاز:** الحالة "Verified" بلوحة الأمان.
 
-### ٤. ربط إنستغرام بصفحة فيسبوك (يوم ٢)
-شرط تقني قبل طلب أي صلاحية إنستغرام:
-- صفحة فيسبوك أورا → Settings → **Linked Accounts** → Instagram → اربط حساب إنستغرام أورا
+### ~~٤. ربط إنستغرام بصفحة فيسبوك~~ — ❌ أُلغي، كان خطأً
+**لا يلزم إطلاقاً.** قرارنا هو **Instagram Login** (لا Facebook Login)، وهذا المسار لا يتطلب صفحة
+فيسبوك ولا ربطاً بها. الأسماء اللي كانت هنا (`instagram_manage_comments` / `instagram_manage_messages`)
+أسماء مسار فيسبوك، وتناقض قرارنا.
 
-**معيار الإنجاز:** الحساب يظهر "Connected" بإعدادات الصفحة.
+**البيانات الحية تؤكد صحة القرار:** `pages_show_list` · `pages_read_engagement` · `instagram_basic`
+كلها `REJECTED` على تطبيقنا — مسار فيسبوك مغلق عملياً.
 
-### ٥. تقديم صلاحيات إنستغرام (يوم ٣)
-داخل [App Dashboard](https://developers.facebook.com/apps/812182698552804) → **App Review → Permissions and Features**:
-- اطلب `instagram_manage_comments`
-- اطلب `instagram_manage_messages`
-- لكل صلاحية: **سجّل فيديو قصير (٣٠-٦٠ ثانية)** يوضح كيف يُستخدم — Meta ترفض بلا فيديو واضح
-- اكتب وصف استخدام: "الرد الآلي على تعليقات ورسائل عملاء متجر أورا بلهجة سعودية"
+**الأسماء الصحيحة لمسارنا:** `instagram_business_basic` · `instagram_business_manage_comments` ·
+`instagram_business_manage_messages`
 
-**معيار الإنجاز:** حالة الطلب "In Review" — والمراجعة قد تأخذ أسابيع، هذا طبيعي.
+📖 المرجع الكامل الآن بالمشروع: `.claude/skills/instagram-platform/SKILL.md` (٦٣١ سطراً، كل ادعاء بمصدره).
+
+### ٤. إصلاح إعدادات التطبيق (دقائق — تلزم لأي مراجعة مستقبلية)
+[App Dashboard](https://developers.facebook.com/apps/812182698552804) → Settings → Basic:
+- [ ] **`Terms of Service URL`** — قيمته الآن `https://www.facebook.com/` (قيمة مؤقتة تُرفض بالمراجعة)
+- [ ] **`Data Deletion URL`** — نفس المشكلة
+- [ ] **توثيق إيميل التواصل** — `contact_email_verified: false` منذ 2026-08-07. ميتا ترسل عليه
+      نتائج المراجعة والتنبيهات الحرجة — بدونه تفوتك إشعارات مهمة
+
+### ٥. حسم إنستغرام تجريبياً (بدل الجدل التوثيقي)
+
+**٣ حواجب مستقلة، تُحسم بالترتيب:**
+
+**① التطبيق `dev_mode` — صفر ويبهوك**
+> "Your app must be published, regardless of app review status, to receive webhooks."
+
+نشره خطوة إعدادات **بلا مراجعة**. ⚠️ **افحص أثره على مسار واتساب القائم قبل التبديل.**
+
+**② تناقض توثيقي — يُحسم بالتجربة لا بالقراءة**
+صفحتان حيّتان من ميتا تتناقضان: صفحة App Review تقول "نشاط تملكه ← Standard ← لا مراجعة"،
+وصفحة Webhooks تقول "التعليقات تحتاج App Review (Advanced)". **الاختبار يحسمها بساعة:**
+1. انشر التطبيق (Live)
+2. أضف منتج Instagram → **API setup with Instagram login**
+3. أضف حساب إنستغرام أورا (لازم **احترافي** Business/Creator، و**عام** لا خاص)
+4. اشترك: `POST https://graph.instagram.com/v25.0/{ig-id}/subscribed_apps?subscribed_fields=comments`
+5. علّق تعليقاً حقيقياً على منشور أورا
+6. **وصل الويبهوك؟** → Standard كافٍ، نبني فوراً · **ما وصل؟** → نقدّم المراجعة
+
+**③ الرسائل المباشرة — حاجب قائم بذاته**
+> "Apps with Standard Access can only send messages to people that have a role on the app."
+
+يعني: **رد التعليقات ممكن، والرسائل لعملاء حقيقيين تحتاج Advanced Access + App Review.**
+وأخطر: وسم `HUMAN_AGENT` (الوحيد المتاح لإنستغرام) **يمنع الرسائل الآلية صراحةً** —
+"Disallowed Usages: Automated messages". رد بوت تحته = مخالفة تعرّض الحساب للإيقاف.
+
+**معيار الإنجاز:** جواب قاطع على "هل تصل ويبهوك التعليقات؟" — وعندها أبني المحوّل بثقة.
 
 ### ٦. استكمال ملف سلة (يوم ٥)
 افتح [Salla Partners Portal](https://salla.partners):

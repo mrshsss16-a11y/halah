@@ -84,6 +84,27 @@
 
 ---
 
+## 🟠 حواجب إنستغرام — مكتشفة 2026-09-06 ببحث توثيقي حي
+
+المرجع الكامل: `.claude/skills/instagram-platform/SKILL.md`
+
+| # | الحاجب | الدليل | الأثر | الحالة |
+|---|---|---|---|---|
+| P29 | **التطبيق `dev_mode` = صفر ويبهوك إنستغرام** | توثيق ميتا: "Your app must be published, regardless of app review status, to receive webhooks" · متحقَّق حياً: `app_status: dev_mode`, `is_live: false` | لا حدث إنستغرام يصل مهما كانت الصلاحيات — **حاجب مستقل عن App Review** | ⬜ نشر التطبيق خطوة إعدادات · ⚠️ يُفحص أثره على واتساب أولاً |
+| P30 | **تناقض توثيقي: هل `comments` تحتاج Advanced Access؟** | صفحة App Review: "نشاط تملكه ← Standard ← مراجعة غير مطلوبة" · صفحة Webhooks: "must have successfully completed App Review (advanced access) to receive webhooks for `comments`" — **صفحتان حيّتان تتناقضان** | يحدد إن كان رد التعليقات ينطلق هذا الأسبوع أو بعد أسابيع مراجعة | ⬜ **يُحسم تجريبياً لا جدلاً** (خطوات بـ`YOUR_TASKS.md` بند ٥) |
+| P31 | **الرسائل المباشرة بـStandard تصل فقط لمن له دور على التطبيق** | "Apps with Standard Access can only send messages to people that have a role on the app" | رد التعليقات ممكن · **الرسائل لعملاء حقيقيين تحتاج Advanced + App Review** | ⬜ مؤجَّل بمحفّز |
+| P32 | **وسم `HUMAN_AGENT` يمنع الرسائل الآلية صراحةً** | "Required for Instagram Messaging API" + "Disallowed Usages: **Automated messages**" · وهو الوسم الوحيد المتاح لإنستغرام | **خارج نافذة ٢٤ ساعة لا رد آلي مشروع إطلاقاً** — البشري فقط. رد بوت تحته = مخالفة تعرّض حساب أورا للإيقاف | ⬜ قيد تصميم دائم، لا يُحل |
+| P33 | **حد المعدل متغير: `4800 × Impressions` / ٢٤ ساعة** | صفحة Graph API Rate Limiting — قسم Instagram BUC | حساب خامل ← Impressions ≈ 0 ← **سقف ≈ صفر**. أخطر من حد سلة لأنه غير مرئي ويتغير يومياً | ⬜ يفرض الاعتماد على الويبهوك لا الاستطلاع |
+| P34 | **توقيع إنستغرام يختلف عن واتساب** — يُحسب على **unicode-escaped** لا على البايتات المفكوكة | "we generate the signature using an escaped unicode version of the payload... `äöå` → `äöå`" | نسخ `verifyWaSignature` حرفياً **يفشل على أي نص عربي** — وكل محتوانا عربي | ⬜ قيد تنفيذ للمحوّل |
+| P35 | ٣ حقول إعدادات ترفضها المراجعة | `terms_of_service_url` و`data_deletion_url` = `https://www.facebook.com/` · `contact_email_verified: false` منذ 2026-08-07 | أي مراجعة مستقبلية تُرفض شكلياً · وتفوتك تنبيهات ميتا الحرجة | ⬜ دقائق — `YOUR_TASKS.md` بند ٤ |
+
+**خطأ بوثيقتنا صُحِّح:** `PARALLEL_TRACKS.md` و`YOUR_TASKS.md` كانا يطلبان ربط إنستغرام بصفحة
+فيسبوك وصلاحيات `instagram_manage_*` — أسماء **مسار Facebook Login**، تناقض قرارنا المتخذ
+(Instagram Login). البيانات الحية تؤكد القرار: `pages_show_list`/`pages_read_engagement`/
+`instagram_basic` كلها `REJECTED` على تطبيقنا.
+
+---
+
 ## قاعدة الاستخدام
 
 - **عند اكتشاف مشكلة جديدة:** تُضاف هنا فوراً بدرجة خطورة صريحة، قبل أي نقاش حل.
