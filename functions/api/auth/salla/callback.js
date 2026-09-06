@@ -1,12 +1,15 @@
 import { verifyOAuthState, oauthStateCookieHeader } from "../../../_lib/core/oauthState.js";
+import { generateRequestId } from "../../../_lib/core/respond.js";
+import { logError } from "../../../_lib/core/errorLog.js";
 
 export async function onRequestGet(context) {
     const { request, env } = context;
+    const requestId = generateRequestId();
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
 
     if (!code) {
-        return new Response(JSON.stringify({ ok: false, error: "Missing authorization code" }), {
+        return new Response(JSON.stringify({ ok: false, error: "لم يصلنا رمز التفويض من سلة. أعد بدء الربط من جديد.", code: "SALLA_CODE_MISSING", requestId }), {
             status: 400,
             headers: { 'content-type': 'application/json' }
         });
@@ -27,7 +30,8 @@ export async function onRequestGet(context) {
     const clientSecret = env.SALLA_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-        return new Response(JSON.stringify({ ok: false, error: "Missing Salla credentials in environment" }), {
+        logError(context, { requestId, path: "auth/salla/callback", code: "SALLA_CREDENTIALS_MISSING", internal: "SALLA_CLIENT_ID/SECRET not configured" });
+        return new Response(JSON.stringify({ ok: false, error: "الربط مع سلة غير مفعّل حالياً على الخادم. تواصل مع الدعم.", code: "SALLA_NOT_CONFIGURED", requestId }), {
             status: 500,
             headers: { 'content-type': 'application/json' }
         });
@@ -47,9 +51,13 @@ export async function onRequestGet(context) {
             })
         });
 
+        // Never forward `errText` in the response — it's Salla's raw API body,
+        // which can (and has, in provider error responses generally) embed
+        // request echoes, internal identifiers, or other data no merchant's
+        // browser should render. Logged server-side only.
         if (!tokenResponse.ok) {
             const errText = await tokenResponse.text();
-            throw new Error(`Token exchange failed: ${errText}`);
+            throw new Error(`token_exchange_failed:${tokenResponse.status}:${errText.slice(0, 500)}`);
         }
 
         const tokenData = await tokenResponse.json();
@@ -63,7 +71,7 @@ export async function onRequestGet(context) {
 
         if (!userResponse.ok) {
             const errText = await userResponse.text();
-            throw new Error(`Failed to fetch user info: ${errText}`);
+            throw new Error(`user_info_failed:${userResponse.status}:${errText.slice(0, 500)}`);
         }
 
         const userData = await userResponse.json();
@@ -90,8 +98,12 @@ export async function onRequestGet(context) {
         });
 
     } catch (error) {
-        return new Response(JSON.stringify({ ok: false, error: error.message }), {
-            status: 500,
+        // error.message here is our own classified string ("token_exchange_failed:…")
+        // built above — never the merchant's-eyes-view text. That view stays fixed
+        // and Arabic; the detail goes to the log only.
+        logError(context, { requestId, path: "auth/salla/callback", code: "SALLA_OAUTH_FAILED", internal: error.message });
+        return new Response(JSON.stringify({ ok: false, error: "تعذر إكمال الربط مع سلة. حاول مرة ثانية، ولو تكرر تواصل معنا.", code: "SALLA_OAUTH_FAILED", requestId }), {
+            status: 502,
             headers: { 'content-type': 'application/json' }
         });
     }

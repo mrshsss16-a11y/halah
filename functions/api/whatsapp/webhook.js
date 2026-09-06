@@ -10,6 +10,26 @@ import { PERSONA_SYSTEM_PROMPT, HALA_WHATSAPP_SUPPORT_PROMPT, BOOKING_INSTRUCTIO
 import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession, getWaConnectionByPhoneId } from "../../_lib/core/db.js";
 import { recallSimilar } from "../../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
+import { matchAuraGreeting, matchFastIntent } from "../../_lib/ai/intents.js";
+import { logError } from "../../_lib/core/errorLog.js";
+import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+
+// Manager decision 2026-09-06: quota-check errors (D1/KV outage) stay
+// fail-OPEN — a transient infra blip must not stop the bot replying to every
+// merchant at once. The tradeoff (a few unmetered messages during a rare
+// outage) is deliberate. What was missing before: visibility. Every failure
+// is now logged, and if it repeats ≥5 times in 10 minutes (a real outage, not
+// a blip) a KV flag is set for healthcheck.js to pick up and alert on — see
+// docs/AGENT.md §13 and docs/TRACK_B_HALA_EXECUTION.md.
+const QUOTA_FAIL_ALERT_KEY = "wa_quota_check_degraded";
+const QUOTA_FAIL_ALERT_TTL_SECONDS = 600; // matches the 10-minute window below
+
+async function flagQuotaCheckDegraded(env) {
+  if (!env.HALA_CACHE) return;
+  await env.HALA_CACHE.put(QUOTA_FAIL_ALERT_KEY, new Date().toISOString(), {
+    expirationTtl: QUOTA_FAIL_ALERT_TTL_SECONDS
+  }).catch(() => {});
+}
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
@@ -41,7 +61,7 @@ const DISABLE_ESCALATION_GATES = false;
  * THAT store's assistant. Previously this was a literal `merchantId === "hala"`
  * check in seven places, which silently made every merchant Aura.
  */
-async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, contactName }) {
+async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, contactName, context, requestId }) {
   if (!DISABLE_ESCALATION_GATES) {
     const lastHumanReplyAt = env.DB ? await getLastHumanReplyAt(env, merchantId, phone).catch(() => null) : null;
     if (lastHumanReplyAt && Date.now() - new Date(`${lastHumanReplyAt}Z`).getTime() < HUMAN_SILENCE_WINDOW_MS) {
@@ -61,18 +81,49 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
     }
   }
 
+  const history = env.DB ? await recentWaHistory(env, merchantId, phone).catch(() => []) : [];
+
+  // Canned-reply fast path: a plain greeting on the FIRST turn of a
+  // conversation costs nothing and answers faster than a model round-trip.
+  // Scoped to history.length === 0 so it never talks over an ongoing
+  // conversation where "هلا" appears mid-message. Skips quota consumption
+  // entirely — no AI call was made, so nothing should be metered.
+  if (history.length === 0) {
+    const canned = isAuraLine
+      ? matchAuraGreeting(incomingText)
+      : matchFastIntent(incomingText, "saudi_najdi", { greetingOnly: true });
+    if (canned) {
+      return { text: canned, offerSlots: false, escalate: false };
+    }
+  }
+
   // Merchant monthly message quota (docs/ROADMAP.md m2.2.5) — this path had zero
   // metering before, unlike chat.js/copy.js. "hala" is exempt inside the helper.
   // Quota-exhausted degrades to the same handoff message as an escalation — the
   // END CUSTOMER shouldn't see a "your quota ran out" error, that's the
   // merchant's problem to know about (surfaced via the dashboard usage widget),
   // not something to expose mid-conversation to their customer.
-  const quota = env.DB ? await checkAndConsumeMonthly(env, merchantId, "message").catch(() => ({ ok: true })) : { ok: true };
+  //
+  // Manager decision 2026-09-06: a failed quota CHECK (D1/KV outage, not an
+  // exhausted quota) fails OPEN on purpose — see file-header note. Every such
+  // failure is logged and counted; ≥5 in 10 minutes flags healthcheck.js.
+  const quota = env.DB
+    ? await checkAndConsumeMonthly(env, merchantId, "message").catch(async (err) => {
+        logError(context, {
+          requestId,
+          path: "whatsapp/webhook:quota_check",
+          code: "QUOTA_CHECK_FAILED",
+          internal: err && err.message,
+          storeId: merchantId
+        });
+        const window = await checkRateLimit(env, "system", "wa_quota_check_failure", 5, 600);
+        if (!window.allowed) await flagQuotaCheckDegraded(env);
+        return { ok: true };
+      })
+    : { ok: true };
   if (!quota.ok) {
     return { text: ESCALATION_MESSAGE, offerSlots: false, escalate: true };
   }
-
-  const history = env.DB ? await recentWaHistory(env, merchantId, phone).catch(() => []) : [];
   // Aura's own knowledge is baked into HALA_WHATSAPP_SUPPORT_PROMPT directly, so
   // skip the RAG round-trip (embedding + Vectorize query) for that branch — it's
   // pure latency with nothing to add, and this path is on a tight response-time
@@ -285,7 +336,9 @@ export async function onRequestPost(context) {
               isAuraLine,
               phone: msg.from,
               incomingText: msg.text,
-              contactName: msg.name
+              contactName: msg.name,
+              context,
+              requestId: `wa:${msg.id}`
             });
             if (!result) continue;
 

@@ -8,8 +8,9 @@
     "stage": "node scripts/stage.mjs",
     "build": "node scripts/stage.mjs",
     "dev": "node scripts/stage.mjs && wrangler pages dev dist",
-    "test": "node tests/api.test.mjs",
+    "test": "node tests/api.test.mjs && node scripts/audit-isolation.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
+    "backup": "node scripts/backup-db.mjs",
     "deploy": "npm run build && npm run verify:dist && wrangler pages deploy dist --project-name hala-ai-os --branch=main"
   },
   "devDependencies": {

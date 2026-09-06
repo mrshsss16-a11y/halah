@@ -25,7 +25,7 @@ export async function onRequestGet(context) {
     });
   }
 
-  const checks = { db: "unknown", ai_primary: "unknown" };
+  const checks = { db: "unknown", ai_primary: "unknown", wa_quota_check: "unknown" };
 
   try {
     if (env.DB) {
@@ -39,6 +39,16 @@ export async function onRequestGet(context) {
   }
 
   checks.ai_primary = env.AI ? "ok" : "missing";
+
+  // Set by functions/api/whatsapp/webhook.js when the monthly quota check
+  // fails ≥5 times in 10 minutes (D1/KV outage) — see docs/AGENT.md §13.
+  // The webhook deliberately fails OPEN on this (keeps replying to every
+  // merchant during a transient blip); this is the visibility half of that
+  // decision, not a fix to the fail-open behavior itself.
+  if (env.HALA_CACHE) {
+    const degraded = await env.HALA_CACHE.get("wa_quota_check_degraded").catch(() => null);
+    checks.wa_quota_check = degraded ? "degraded" : "ok";
+  }
 
   const critical = Object.entries(checks).filter(([, v]) => v !== "ok");
   const healthy = critical.length === 0;

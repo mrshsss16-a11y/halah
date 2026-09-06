@@ -40,6 +40,8 @@ export async function onRequestPost(context) {
 
   let account = null;
   if (env?.DB) {
+    // tenant-audit-ok: identity resolution pre-auth — email IS the lookup key,
+    // there is no merchant_id to scope by until this query resolves one.
     account = await env.DB.prepare("SELECT * FROM accounts WHERE email = ?").bind(email).first().catch(() => null);
   }
 

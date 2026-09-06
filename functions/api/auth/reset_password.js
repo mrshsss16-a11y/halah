@@ -60,6 +60,9 @@ async function resetPasswordHandler(body, env, request) {
   if (!timingSafeEqual(providedHash, row.otp_code)) return json(invalid, 400);
 
   const { hash, salt } = await hashPassword(newPassword);
+  // tenant-audit-ok: password reset is keyed by the OTP-verified email — the
+  // OTP check above (timingSafeEqual against row.otp_code) is what proves
+  // ownership, not a merchant_id condition on this UPDATE.
   const update = await env.DB.prepare(
     "UPDATE accounts SET password_hash = ?, password_salt = ? WHERE email = ?"
   )

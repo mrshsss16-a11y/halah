@@ -11,6 +11,9 @@ node_modules
 .env*.local
 .dev.vars
 
+# نسخ قاعدة البيانات — تحتوي بيانات عملاء حقيقية (جوالات، إيميلات، محادثات)
+backups
+
 # Editor/agent tooling — not part of the app
 .agents
 skills-lock.json

@@ -58,6 +58,8 @@ export async function onRequestPost(context) {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);
   const placeholders = adminEmails.map(() => "?").join(",") || "''";
+  // tenant-audit-ok: deliberate cross-tenant COUNT — the trial cap
+  // (TRIAL_MERCHANT_CAP) is a global limit on total signups, not per-merchant.
   const { count } = (await env.DB.prepare(
     `SELECT COUNT(*) AS count FROM accounts WHERE email NOT IN (${placeholders})`
   )

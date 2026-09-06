@@ -1,11 +1,35 @@
 import { cleanInputMessage } from "./typoCorrector.js";
 
-export function matchFastIntent(text, dialect = "saudi_najdi") {
+// Aura's own first-touch greeting — distinct from the generic `greeting`
+// intent below because it names Hala and Aura explicitly. Only meant to be
+// used on Aura's own support line (isAuraLine), never for a merchant's
+// connected number (a merchant's customer should hear the MERCHANT's name,
+// not "Aura").
+export function matchAuraGreeting(text) {
+  if (!text) return null;
+  const cleanedText = cleanInputMessage(text);
+  const t = cleanedText.trim().toLowerCase();
+  const keywords = ["السلام عليكم", "هلا", "مرحبا", "صباح الخير", "مساء الخير", "السلام", "هاي", "هلو"];
+  if (!keywords.some((kw) => t.includes(kw))) return null;
+  return "هلا هلا! أنا هالة، مساعدة عملاء أورا للتسويق. كيف أقدر أخدمك اليوم؟";
+}
+
+/**
+ * @param {string} text
+ * @param {string} dialect
+ * @param {{ greetingOnly?: boolean }} [opts] - `greetingOnly` restricts matching
+ *   to the `greeting` intent only. The other intents here (delivery times,
+ *   Tamara/Tabby, seasonal offers) hardcode claims that don't hold for every
+ *   merchant's store — auto-answering them for an arbitrary connected merchant
+ *   number would risk fabricating details (honesty rule, AGENT.md §11). Only
+ *   greeting is safe to auto-answer for any merchant without per-store setup.
+ */
+export function matchFastIntent(text, dialect = "saudi_najdi", opts = {}) {
   if (!text) return null;
   const cleanedText = cleanInputMessage(text);
   const t = cleanedText.trim().toLowerCase();
 
-  const intents = {
+  const allIntents = {
     greeting: {
       keywords: ["السلام عليكم", "هلا", "مرحبا", "صباح الخير", "مساء الخير", "السلام"],
       responses: {
@@ -63,6 +87,8 @@ export function matchFastIntent(text, dialect = "saudi_najdi") {
       }
     }
   };
+
+  const intents = opts.greetingOnly ? { greeting: allIntents.greeting } : allIntents;
 
   const getResponse = (responses, d) => responses?.[d] ?? responses?.saudi_najdi ?? responses?.general;
 

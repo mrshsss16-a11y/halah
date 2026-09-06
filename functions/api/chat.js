@@ -166,9 +166,12 @@ async function chatHandler(body, env, request) {
   ]);
 
   const dialect = (saved && saved.dialect) || body.botDialect || body.dialect || "saudi_najdi";
-  const storeInstructions = ((saved && saved.instructions) || body.botInstructions || body.storeInstructions || "")
-    .toString()
-    .slice(0, 2000);
+  // Only DB-saved instructions are trusted as system-prompt content. Never fall
+  // back to client-supplied body fields here — that let any caller inject
+  // arbitrary "system instructions" into the persona prompt (SECURITY_AUDIT
+  // 2026-09-06, P24). No frontend ever sent botInstructions/storeInstructions;
+  // dropping it is a pure fix, not a feature loss.
+  const storeInstructions = ((saved && saved.instructions) || "").toString().slice(0, 2000);
   const debug = env.HALA_DEBUG_AI === "1" || body.debug === true;
 
   const system = buildChatSystem({ dialect, storeInstructions, examples, products });

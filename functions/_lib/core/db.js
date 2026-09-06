@@ -557,11 +557,16 @@ export async function setBookingStatus(env, id, status) {
 
 export async function adminStats(env) {
   const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date());
+  // tenant-audit-ok: admin-only aggregate counters across ALL merchants —
+  // only caller is api/admin/overview.js, gated by requireAdmin. This is the
+  // one function in this shared file that's intentionally cross-tenant.
   const [merchants, accounts, bookings, faqEntries, todayUsage] = await Promise.all([
     env.DB.prepare("SELECT COUNT(*) AS n FROM merchants").first(),
+    // tenant-audit-ok: admin-only global counter, see file-level note above.
     env.DB.prepare("SELECT COUNT(*) AS n FROM accounts").first(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM consultation_bookings").first(),
     env.DB.prepare("SELECT COUNT(*) AS n FROM hala_faq").first(),
+    // tenant-audit-ok: admin-only global counter, see file-level note above.
     env.DB.prepare("SELECT SUM(credits_used) AS total FROM usage_meter WHERE day = ?").bind(todayStr).first().catch(() => ({ total: 0 }))
   ]);
   return {
@@ -712,6 +717,8 @@ export async function saveOmnichannelSession(env, { sessionToken, merchantId, ph
  */
 export async function getOmnichannelSession(env, { sessionToken, phone, merchantId }) {
   if (sessionToken) {
+    // tenant-audit-ok: token-scoped (see docstring above) + merchantId
+    // cross-check two lines below when the caller supplies one.
     const row = await env.DB.prepare("SELECT * FROM omnichannel_sessions WHERE session_token = ?")
       .bind(sessionToken)
       .first();
@@ -788,6 +795,11 @@ export async function listActiveBulkJobItems(env, limit) {
   return results || [];
 }
 
+// tenant-audit-ok (whole function): itemId/jobId here are never attacker input —
+// the sole caller (functions/api/cron/bulk_process.js, allowlisted) reads them
+// off `item` rows already produced by listActiveBulkJobItems() below, which
+// joins bulk_jobs internally. No merchant-facing endpoint calls this directly;
+// if one ever does, it must pass through getBulkJob(jobId, merchantId) first.
 export async function completeBulkJobItem(env, { itemId, jobId, status, description, error }) {
   await env.DB.prepare(
     "UPDATE bulk_job_items SET status = ?, description = ?, error = ?, updated_at = datetime('now') WHERE id = ?"
@@ -797,6 +809,8 @@ export async function completeBulkJobItem(env, { itemId, jobId, status, descript
 
   const succeededDelta = status === "done" ? 1 : 0;
   const failedDelta = status === "failed" || status === "skipped" ? 1 : 0;
+  // tenant-audit-ok: jobId is trusted (see function-header note above) — this
+  // internal progress counter is not merchant-facing.
   await env.DB.prepare(
     `UPDATE bulk_jobs SET
        processed = processed + 1,
@@ -808,8 +822,10 @@ export async function completeBulkJobItem(env, { itemId, jobId, status, descript
     .bind(succeededDelta, failedDelta, jobId)
     .run();
 
+  // tenant-audit-ok: same trusted jobId, internal completion check.
   const job = await env.DB.prepare("SELECT total, processed FROM bulk_jobs WHERE id = ?").bind(jobId).first();
   if (job && job.processed >= job.total) {
+    // tenant-audit-ok: same trusted jobId, internal status flip.
     await env.DB.prepare("UPDATE bulk_jobs SET status = 'done', updated_at = datetime('now') WHERE id = ?")
       .bind(jobId)
       .run();

@@ -29,3 +29,12 @@ database_id = "4d8955ff-f2db-4447-8817-fe1149cce582"
 binding = "HALA_CACHE"
 id = "be9f9242e8c14cf5be6f50e75ef43bf7"
 
+# NOTE (2026-09-06): [observability] was tried here for centralized logs/traces,
+# but Cloudflare Pages config validation rejects it outright — "Configuration
+# file for Pages projects does not support 'observability'" — it's a Workers-only
+# key, and this project is Pages (see AGENT.md §4: no _worker.js, no Advanced
+# Mode). Live-tested: `npm run deploy` failed immediately with this block present.
+# D2/D3 (docs/PARALLEL_TRACKS.md §أ.٤) cover the same need without it — structured
+# error logging to D1 (`error_log` table) queryable via /api/admin/errors.
+# Do not re-add this key unless Cloudflare ships Pages support for it.
+

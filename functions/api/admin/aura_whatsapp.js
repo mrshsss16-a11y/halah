@@ -49,7 +49,10 @@ async function auraWhatsappHandler(body, env, request) {
         platform: "whatsapp",
         sellerId: phoneId,
         apiKey: token,
-        apiSecret: env.WHATSAPP_VERIFY_TOKEN || "hala-verify-secret",
+        // No hardcoded fallback secret (SECURITY_AUDIT 2026-09-06, P25) — a
+        // missing verify token is stored as null, never a fake placeholder
+        // that could be mistaken for a real secret.
+        apiSecret: env.WHATSAPP_VERIFY_TOKEN || null,
         environment: "prod",
         storeName: "أورا للتسويق - واتساب الرسمي"
       }).catch(() => {});

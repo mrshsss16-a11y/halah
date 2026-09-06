@@ -21,7 +21,7 @@ export const COSTS = { copy: 1, chat: 1, image: 3, ocr: 1, voice: 2, campaign: 1
 // AI capacity in one day (see migrations/0011_monthly_quota.sql for the math).
 // "hala" is Aura's own operational line, not a trial merchant — exempt from
 // both buckets, same as the image-generation admin beta is exempt by gate.
-export const MONTHLY_BUCKET_LIMITS = { description: 60, message: 300 };
+export const MONTHLY_BUCKET_LIMITS = { description: 60, message: 300, image: 20 };
 const UNMETERED_MERCHANT_IDS = new Set(["hala"]);
 
 const METER_TTL_SECONDS = 25 * 60 * 60; // 25h — expires after UTC day rolls over

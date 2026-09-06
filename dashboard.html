@@ -39,6 +39,15 @@
     .tab-on { background:#000; color:#fff; }
     .tab-off { color:#334155; }
     .tab-off:hover { background:#F1F5F9; color:#000; }
+    /* D3 (docs/PARALLEL_TRACKS.md §أ.٤): بدل فراغ "--" أثناء انتظار /api/usage
+       و/api/store/overview — يقلّل شعور البطء وقت جلب بيانات سلة (ROADMAP D2). */
+    .skel { position: relative; overflow: hidden; background: #E2E8F0; border-radius: 6px; color: transparent !important; }
+    .skel::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+      animation: skel-pulse 1.3s ease-in-out infinite;
+    }
+    @keyframes skel-pulse { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between relative bg-white text-black selection:bg-black selection:text-white">
@@ -70,15 +79,15 @@
       <div class="flex items-center gap-3">
         <div class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
           <span class="block text-[11px] text-slate-600 font-bold">أوصاف الشهر</span>
-          <span id="kpiUsageDesc" class="text-lg font-black text-black">--</span>
+          <span id="kpiUsageDesc" class="skel text-lg font-black text-black">٠٠/٠٠</span>
         </div>
         <div class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
           <span class="block text-[11px] text-slate-600 font-bold">رسائل الشهر</span>
-          <span id="kpiUsageMsg" class="text-lg font-black text-black">--</span>
+          <span id="kpiUsageMsg" class="skel text-lg font-black text-black">٠٠٠/٠٠٠</span>
         </div>
         <div id="storeLinkBadge" class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
           <span class="block text-[11px] text-slate-600 font-bold">حالة المتجر</span>
-          <span id="storeLinkState" class="text-xs font-black text-black">جاري الفحص…</span>
+          <span id="storeLinkState" class="skel text-xs font-black text-black">جاري الفحص…</span>
         </div>
       </div>
     </div>
@@ -304,7 +313,12 @@
             <span class="text-[11px] font-bold text-slate-600 block mb-2">منتجاتك</span>
             <div id="productList" class="space-y-1.5 max-h-80 overflow-y-auto"></div>
           </div>
+          <div>
+            <span class="text-[11px] font-bold text-slate-600 block mb-2">آخر الطلبات</span>
+            <div id="orderList" class="space-y-1.5 max-h-80 overflow-y-auto"></div>
+          </div>
         </div>
+        <div id="storeErrors" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-medium"></div>
         <div id="storeDisconnected" class="hidden space-y-3">
           <p class="text-xs text-slate-600 font-medium">متجرك غير مرتبط بعد.</p>
           <a href="/api/auth/salla/install" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
@@ -739,23 +753,57 @@
             sel.appendChild(opt);
           });
           document.getElementById('publishBox').classList.toggle('hidden', !(data.products || []).length);
+
+          const orderList = document.getElementById('orderList');
+          orderList.innerHTML = '';
+          const orders = data.orders || [];
+          if (!orders.length) {
+            const empty = document.createElement('div');
+            empty.className = 'p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500';
+            empty.innerText = 'لا توجد طلبات بعد';
+            orderList.appendChild(empty);
+          } else {
+            orders.forEach(o => {
+              const row = document.createElement('div');
+              row.className = 'p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-black flex justify-between gap-2';
+              row.innerHTML = `<span>${o.reference || o.id}</span><span class="text-slate-500">${o.status || ''}</span>`;
+              orderList.appendChild(row);
+            });
+          }
+        }
+
+        const errBox = document.getElementById('storeErrors');
+        const errKeys = Object.keys(data.errors || {});
+        if (linked && errKeys.length) {
+          const labels = { sallaProducts: 'المنتجات', sallaOrders: 'الطلبات', trendyol: 'ترندايول', carts: 'السلات المتروكة' };
+          errBox.innerText = 'تعذر تحديث: ' + errKeys.map(k => labels[k] || k).join('، ') + ' — سنعيد المحاولة تلقائياً.';
+          errBox.classList.remove('hidden');
+        } else {
+          errBox.classList.add('hidden');
         }
       } catch (e) {
-        document.getElementById('storeLinkState').innerText = 'غير معروف';
+        document.getElementById('storeLinkState').innerText = 'تعذر الاتصال بالمتجر — تحقق من اتصالك وحاول مرة أخرى.';
+      } finally {
+        document.getElementById('storeLinkState').classList.remove('skel');
       }
     }
 
     async function loadUsage() {
+      const descEl = document.getElementById('kpiUsageDesc');
+      const msgEl = document.getElementById('kpiUsageMsg');
       try {
         const res = await fetch('/api/usage', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-        if (data?.description) {
-          document.getElementById('kpiUsageDesc').innerText = `${data.description.remaining}/${data.description.limit}`;
-        }
-        if (data?.message) {
-          document.getElementById('kpiUsageMsg').innerText = `${data.message.remaining}/${data.message.limit}`;
-        }
-      } catch (e) {}
+        descEl.innerText = data?.description ? `${data.description.remaining}/${data.description.limit}` : '—';
+        msgEl.innerText = data?.message ? `${data.message.remaining}/${data.message.limit}` : '—';
+      } catch (e) {
+        // فشل صامت غير مقبول (M5) — تعذر الجلب يظهر كخط، لا يبقى الهيكل يدور للأبد.
+        descEl.innerText = '—';
+        msgEl.innerText = '—';
+      } finally {
+        descEl.classList.remove('skel');
+        msgEl.classList.remove('skel');
+      }
     }
 
     async function handleMerchantLogout() {
