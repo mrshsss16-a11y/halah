@@ -7,6 +7,8 @@ import { generateProductCopy } from "../copy.js";
 import { updateProductBySku } from "../../_lib/integrations/salla.js";
 import { listActiveBulkJobItems, completeBulkJobItem } from "../../_lib/core/db.js";
 import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
+import { generateRequestId } from "../../_lib/core/respond.js";
+import { logError } from "../../_lib/core/errorLog.js";
 
 const BATCH_SIZE = 20; // ~22s wall time at 1.1s/item — safely inside one Worker invocation
 const DELAY_MS = 1100; // > Salla's 1 req/sec leak limit
@@ -17,9 +19,11 @@ function sleep(ms) {
 
 export async function onRequestGet(context) {
   const { env, request } = context;
+  const requestId = generateRequestId();
 
   if (!env.CRON_SECRET) {
-    return new Response(JSON.stringify({ ok: false, error: "CRON_SECRET not configured" }), {
+    logError(context, { requestId, path: "cron/bulk_process", code: "CRON_SECRET_MISSING", internal: "CRON_SECRET not configured" });
+    return new Response(JSON.stringify({ ok: false, error: "معالجة الدفعات غير مفعّلة حالياً على الخادم.", code: "CRON_NOT_CONFIGURED", requestId }), {
       status: 500,
       headers: { "content-type": "application/json" }
     });
@@ -27,13 +31,14 @@ export async function onRequestGet(context) {
   const authHeader = request.headers.get("Authorization") || "";
   const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
   if (provided !== env.CRON_SECRET) {
-    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+    return new Response(JSON.stringify({ ok: false, error: "غير مصرّح بهذا الطلب.", code: "UNAUTHORIZED", requestId }), {
       status: 401,
       headers: { "content-type": "application/json" }
     });
   }
   if (!env.DB) {
-    return new Response(JSON.stringify({ ok: false, error: "Database DB binding missing" }), {
+    logError(context, { requestId, path: "cron/bulk_process", code: "DB_BINDING_MISSING", internal: "env.DB binding absent" });
+    return new Response(JSON.stringify({ ok: false, error: "معالجة الدفعات غير مفعّلة حالياً على الخادم.", code: "CRON_NOT_CONFIGURED", requestId }), {
       status: 500,
       headers: { "content-type": "application/json" }
     });
@@ -74,7 +79,18 @@ export async function onRequestGet(context) {
       });
       done++;
     } catch (err) {
-      await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "failed", error: String(err.message || err).slice(0, 300) });
+      // This column is merchant-facing — /api/store/bulk/status returns it
+      // verbatim in the failed-rows list. Raw err.message here is a Salla API
+      // body or an AI gateway error (English, provider ids); it goes to the
+      // error log instead, and the merchant sees Arabic.
+      logError(context, {
+        requestId,
+        path: "cron/bulk_process",
+        code: "BULK_ITEM_FAILED",
+        storeId: item.merchant_id,
+        internal: `item=${item.id} ${String((err && err.message) || err).slice(0, 250)}`
+      });
+      await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "failed", error: "تعذّرت معالجة هذا الصف. جرّبه مرة ثانية." });
       failed++;
     }
     await sleep(DELAY_MS);

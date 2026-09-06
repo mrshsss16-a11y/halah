@@ -8,8 +8,10 @@
 // no way to enforce that at the call site, so it's the one rule every future
 // handler touching this module must follow (see docs/PARALLEL_TRACKS.md §أ.٤).
 //
-// Dual sink: console (always — visible via `wrangler tail` / the Observability
-// tab now that wrangler.toml enables it) + D1 (queryable by /api/admin/errors).
+// Dual sink: console (always — visible via `wrangler tail` only; there is NO
+// Observability tab for this project: Cloudflare Pages rejects the
+// [observability] key outright, so wrangler.toml does NOT enable it — see the
+// note at wrangler.toml:32) + D1 (queryable by /api/admin/errors).
 // The D1 write is fire-and-forget: a logging failure must never break the
 // response the caller is already returning to the merchant.
 export function logError(context, { requestId, path, code, internal, storeId = null }) {

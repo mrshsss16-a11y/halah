@@ -1,4 +1,8 @@
+import { generateRequestId } from "../_lib/core/respond.js";
+import { logError } from "../_lib/core/errorLog.js";
+
 export async function onRequest(context) {
+  const requestId = generateRequestId();
   try {
     const { env } = context || {};
     const start = Date.now();
@@ -78,10 +82,21 @@ export async function onRequest(context) {
       }
     });
   } catch (err) {
+    // Public unauthenticated path: the raw error message can name bindings,
+    // secrets or internal hosts. Merchant-facing text stays fixed and Arabic;
+    // the detail goes to the error log, keyed by requestId.
+    logError(context, {
+      requestId,
+      path: "health",
+      code: "HEALTH_CHECK_FAILED",
+      internal: String((err && err.stack) || err)
+    });
     return new Response(JSON.stringify({
       status: "ok",
       timestamp: new Date().toISOString(),
-      error: err && err.message ? err.message : 'Unknown error'
+      error: "تعذّر إكمال فحص الحالة. حاول مرة ثانية بعد شوي.",
+      code: "HEALTH_CHECK_FAILED",
+      requestId
     }, null, 2), {
       status: 200,
       headers: {

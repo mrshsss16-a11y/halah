@@ -7,8 +7,24 @@ import { withApi } from "../../_lib/core/respond.js";
 import { getMerchant, getTokens, getPlatformConnection, listAbandonedCarts } from "../../_lib/core/db.js";
 import { listProducts, listOrders } from "../../_lib/integrations/salla.js";
 import { resolveStoreId } from "../../_lib/core/session.js";
+import { logError } from "../../_lib/core/errorLog.js";
 
-async function overviewHandler(body, env, request) {
+// A degraded section must tell the merchant, in Arabic, which part failed —
+// never the raw provider/D1 error text (English, and able to embed Salla's
+// internal ids or echoed request fields). Detail goes to the error log,
+// keyed by the same requestId the response already carries.
+function sectionFailure(env, { requestId, storeId, code, err }) {
+  logError({ env }, {
+    requestId,
+    path: "store/overview",
+    code,
+    storeId,
+    internal: String((err && err.message) || err).slice(0, 300)
+  });
+  return { code, requestId };
+}
+
+async function overviewHandler(body, env, request, requestId) {
   const merchantId = await resolveStoreId(request, env, body.storeId);
   const merchant = merchantId ? await getMerchant(env, merchantId) : null;
   if (!merchant) {
@@ -44,7 +60,10 @@ async function overviewHandler(body, env, request) {
         image: (p.images && p.images[0] && p.images[0].url) || null
       }));
     } catch (err) {
-      result.errors.sallaProducts = String(err.message || err).slice(0, 200);
+      result.errors.sallaProducts = {
+        message: "تعذّر جلب المنتجات من سلة الحين. حدّث الصفحة بعد شوي.",
+        ...sectionFailure(env, { requestId, storeId: merchant.id, code: "OVERVIEW_SALLA_PRODUCTS_FAILED", err })
+      };
     }
     try {
       const ordersRes = await listOrders(env, merchant.id);
@@ -57,7 +76,10 @@ async function overviewHandler(body, env, request) {
         date: o.date && (o.date.date || o.date)
       }));
     } catch (err) {
-      result.errors.sallaOrders = String(err.message || err).slice(0, 200);
+      result.errors.sallaOrders = {
+        message: "تعذّر جلب الطلبات من سلة الحين. حدّث الصفحة بعد شوي.",
+        ...sectionFailure(env, { requestId, storeId: merchant.id, code: "OVERVIEW_SALLA_ORDERS_FAILED", err })
+      };
     }
   }
 
@@ -71,7 +93,10 @@ async function overviewHandler(body, env, request) {
       .all();
     result.trendyolProducts = results || [];
   } catch (err) {
-    result.errors.trendyol = String(err.message || err).slice(0, 200);
+    result.errors.trendyol = {
+      message: "تعذّر جلب منتجات Trendyol الحين. حدّث الصفحة بعد شوي.",
+      ...sectionFailure(env, { requestId, storeId: merchant.id, code: "OVERVIEW_TRENDYOL_FAILED", err })
+    };
   }
 
   try {
@@ -84,7 +109,10 @@ async function overviewHandler(body, env, request) {
       createdAt: c.created_at
     }));
   } catch (err) {
-    result.errors.carts = String(err.message || err).slice(0, 200);
+    result.errors.carts = {
+      message: "تعذّر جلب السلات المتروكة الحين. حدّث الصفحة بعد شوي.",
+      ...sectionFailure(env, { requestId, storeId: merchant.id, code: "OVERVIEW_CARTS_FAILED", err })
+    };
   }
 
   return result;

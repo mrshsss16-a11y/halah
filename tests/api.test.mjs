@@ -278,6 +278,145 @@ async function runTests() {
   const { sanitizeInput: sanitize } = await import("../functions/_lib/core/security.js");
   assert(!sanitize('<script>x</script>متجر', 100).includes("<"), "C3: sanitizeInput strips tags from storeName");
 
+  // 12. WhatsApp webhook signature (behavioural — not an export check)
+  const { verifyWaSignature } = await import("../functions/_lib/integrations/whatsapp.js");
+  const waSecret = "app-secret-abc";
+  const waBody = JSON.stringify({ object: "whatsapp_business_account", entry: [{ id: "1" }] });
+
+  async function sign(body, secret) {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+    return [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  const goodSig = await sign(waBody, waSecret);
+  assert(
+    await verifyWaSignature(waBody, `sha256=${goodSig}`, waSecret),
+    "verifyWaSignature accepts a correctly signed payload"
+  );
+  assert(
+    await verifyWaSignature(waBody, goodSig, waSecret),
+    "verifyWaSignature accepts the digest without the sha256= prefix"
+  );
+  // Same signature, tampered body → must reject
+  assert(
+    !(await verifyWaSignature(waBody + " ", `sha256=${goodSig}`, waSecret)),
+    "verifyWaSignature rejects a tampered body under a valid old signature"
+  );
+  // Right shape, wrong secret → must reject
+  const wrongSecretSig = await sign(waBody, "attacker-secret");
+  assert(
+    !(await verifyWaSignature(waBody, `sha256=${wrongSecretSig}`, waSecret)),
+    "verifyWaSignature rejects a signature made with the wrong app secret"
+  );
+  // One flipped hex char → must reject (guards the constant-time compare)
+  const flipped = (goodSig[0] === "a" ? "b" : "a") + goodSig.slice(1);
+  assert(
+    !(await verifyWaSignature(waBody, `sha256=${flipped}`, waSecret)),
+    "verifyWaSignature rejects a one-character-off signature"
+  );
+  // Fail closed: missing secret must never authenticate anything
+  assert(
+    !(await verifyWaSignature(waBody, `sha256=${goodSig}`, undefined)) &&
+      !(await verifyWaSignature(waBody, `sha256=${goodSig}`, "")) &&
+      !(await verifyWaSignature(waBody, "sha256=", "")),
+    "verifyWaSignature fails closed when the app secret is missing"
+  );
+  assert(
+    !(await verifyWaSignature(waBody, null, waSecret)) &&
+      !(await verifyWaSignature(waBody, "", waSecret)),
+    "verifyWaSignature rejects a request with no signature header"
+  );
+
+  // 13. Monthly quota — exhaustion + per-merchant isolation
+  const { checkAndConsumeMonthly, MONTHLY_BUCKET_LIMITS } = await import("../functions/_lib/core/meter.js");
+
+  // D1 stand-in that honours the conditional upsert's WHERE used + cost <= limit,
+  // so the cold path is tested against real bookkeeping, not a stub that says yes.
+  function fakeQuotaDb() {
+    const rows = new Map(); // "merchant|period|bucket" → used
+    return {
+      rows,
+      prepare(sql) {
+        return {
+          bind(...args) {
+            return {
+              run: async () => {
+                const [merchantId, period, bucket, cost, , , limit] = args;
+                const k = `${merchantId}|${period}|${bucket}`;
+                const used = rows.get(k) || 0;
+                if (used + cost > limit) return { meta: { changes: 0 } };
+                rows.set(k, used + cost);
+                return { meta: { changes: 1 } };
+              },
+              first: async () => {
+                const [merchantId, period, bucket] = args;
+                if (!/merchant_id/.test(sql)) throw new Error("quota query is not merchant-scoped");
+                const k = `${merchantId}|${period}|${bucket}`;
+                return rows.has(k) ? { used: rows.get(k) } : null;
+              }
+            };
+          }
+        };
+      }
+    };
+  }
+
+  const imgLimit = MONTHLY_BUCKET_LIMITS.image;
+
+  // ── Cold path (D1 only, no KV) ─────────────────────────────────────────
+  const coldEnv = { DB: fakeQuotaDb() };
+  let lastCold = null;
+  for (let i = 0; i < imgLimit; i++) {
+    lastCold = await checkAndConsumeMonthly(coldEnv, "m_aaa", "image");
+    if (!lastCold.ok) break;
+  }
+  assert(lastCold.ok && lastCold.used === imgLimit, `D1 path: merchant A consumed its whole ${imgLimit}-image quota`);
+  const coldOver = await checkAndConsumeMonthly(coldEnv, "m_aaa", "image");
+  assert(!coldOver.ok, "D1 path: the request past the monthly limit is refused");
+  assert(coldOver.remaining === 0, "D1 path: an exhausted quota reports 0 remaining");
+
+  // Merchant B is untouched by merchant A having burned its entire quota
+  const coldB = await checkAndConsumeMonthly(coldEnv, "m_bbb", "image");
+  assert(
+    coldB.ok && coldB.used === 1 && coldB.remaining === imgLimit - 1,
+    "tenant isolation: merchant A exhausting its quota does not consume merchant B's"
+  );
+  // …and buckets don't bleed into each other for the same merchant
+  const coldOtherBucket = await checkAndConsumeMonthly(coldEnv, "m_aaa", "message");
+  assert(coldOtherBucket.ok && coldOtherBucket.used === 1, "an exhausted image bucket does not exhaust the message bucket");
+
+  // ── Fast path (KV cache in front of D1) ────────────────────────────────
+  const quotaKv = fakeKv();
+  const hotEnv = { DB: fakeQuotaDb(), HALA_CACHE: quotaKv };
+  let lastHot = null;
+  for (let i = 0; i < imgLimit; i++) {
+    lastHot = await checkAndConsumeMonthly(hotEnv, "m_aaa", "image");
+    if (!lastHot.ok) break;
+  }
+  assert(lastHot.ok && lastHot.used === imgLimit, "KV path: merchant A consumed its whole image quota");
+  assert(!(await checkAndConsumeMonthly(hotEnv, "m_aaa", "image")).ok, "KV path: the request past the monthly limit is refused");
+  const hotB = await checkAndConsumeMonthly(hotEnv, "m_bbb", "image");
+  assert(hotB.ok && hotB.used === 1, "KV path tenant isolation: merchant B's quota is keyed separately");
+  // A cost larger than what is left must be refused whole, not partially charged
+  const hotC = await checkAndConsumeMonthly(hotEnv, "m_ccc", "image", imgLimit + 1);
+  assert(!hotC.ok && hotC.used === 0, "an over-budget single call is refused without consuming anything");
+
+  // Unknown bucket must throw rather than silently granting an unmetered call
+  let unknownBucketThrew = false;
+  try {
+    await checkAndConsumeMonthly(hotEnv, "m_aaa", "not_a_bucket");
+  } catch {
+    unknownBucketThrew = true;
+  }
+  assert(unknownBucketThrew, "checkAndConsumeMonthly throws on an unknown bucket instead of allowing the call");
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

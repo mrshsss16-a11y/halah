@@ -1,6 +1,8 @@
 // GET /api/cron/reminders
 // Automated 30-Minute WhatsApp Appointment Reminders Cron Trigger
 import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
+import { generateRequestId } from "../../_lib/core/respond.js";
+import { logError } from "../../_lib/core/errorLog.js";
 
 function getTargetSlotLabel() {
   // Saudi Arabia is UTC+3
@@ -52,11 +54,13 @@ function getTargetSlotLabel() {
 
 export async function onRequestGet(context) {
   const { env, request } = context;
+  const requestId = generateRequestId();
 
   // Public GET, no session — must fail closed on a shared secret or anyone
   // on the internet could trigger arbitrary WhatsApp sends to booked customers.
   if (!env.CRON_SECRET) {
-    return new Response(JSON.stringify({ ok: false, error: "CRON_SECRET not configured" }), {
+    logError(context, { requestId, path: "cron/reminders", code: "CRON_SECRET_MISSING", internal: "CRON_SECRET not configured" });
+    return new Response(JSON.stringify({ ok: false, error: "خدمة التذكيرات غير مفعّلة حالياً على الخادم.", code: "CRON_NOT_CONFIGURED", requestId }), {
       status: 500,
       headers: { "content-type": "application/json" }
     });
@@ -64,14 +68,15 @@ export async function onRequestGet(context) {
   const authHeader = request.headers.get("Authorization") || "";
   const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
   if (provided !== env.CRON_SECRET) {
-    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+    return new Response(JSON.stringify({ ok: false, error: "غير مصرّح بهذا الطلب.", code: "UNAUTHORIZED", requestId }), {
       status: 401,
       headers: { "content-type": "application/json" }
     });
   }
 
   if (!env.DB) {
-    return new Response(JSON.stringify({ ok: false, error: "Database DB binding missing" }), {
+    logError(context, { requestId, path: "cron/reminders", code: "DB_BINDING_MISSING", internal: "env.DB binding absent" });
+    return new Response(JSON.stringify({ ok: false, error: "خدمة التذكيرات غير مفعّلة حالياً على الخادم.", code: "CRON_NOT_CONFIGURED", requestId }), {
       status: 500,
       headers: { "content-type": "application/json" }
     });
@@ -140,7 +145,10 @@ export async function onRequestGet(context) {
     });
 
   } catch (err) {
-    return new Response(JSON.stringify({ ok: false, error: err.message }), {
+    // Raw err.message can carry D1 SQL text or WhatsApp API bodies (customer
+    // phone numbers). Detail to the log only; the response stays generic.
+    logError(context, { requestId, path: "cron/reminders", code: "CRON_REMINDERS_FAILED", internal: String((err && err.stack) || err) });
+    return new Response(JSON.stringify({ ok: false, error: "تعذّر تنفيذ التذكيرات. حاول مرة ثانية بعد شوي.", code: "CRON_REMINDERS_FAILED", requestId }), {
       status: 500,
       headers: { "content-type": "application/json" }
     });

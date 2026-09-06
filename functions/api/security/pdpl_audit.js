@@ -2,7 +2,7 @@ export async function onRequest(context) {
   const { request, env } = context;
 
   if (request.method !== 'GET' && request.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+    return new Response(JSON.stringify({ ok: false, error: 'طريقة الطلب غير مدعومة.', code: 'METHOD_NOT_ALLOWED' }), {
       status: 405,
       headers: { 'Content-Type': 'application/json' }
     });
