@@ -11,6 +11,15 @@ import { sanitizeInput } from "../../_lib/core/security.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { checkRateLimit } from "../../_lib/core/rateLimit.js";
 import { isAdminEmail } from "../../_lib/core/adminEmails.js";
+import { lookupAccountForGoogle } from "../../_lib/core/db.js";
+import { logError } from "../../_lib/core/errorLog.js";
+
+// Same text for every "we won't create/link an account for this address" case
+// (P38 admin-provision refusal + P41 password-account refusal) so the endpoint
+// stays a non-oracle: it never tells a prober which of the two applies, or
+// whether the address is admin.
+const EXISTING_ACCOUNT_MSG =
+  "هذا البريد مسجّل مسبقاً بحساب كلمة مرور — سجّل الدخول بكلمة المرور، وإذا نسيتها استخدم «نسيت كلمة المرور».";
 
 const TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token=";
 
@@ -33,7 +42,7 @@ async function verifyGoogleIdToken(env, credential) {
   return { email: String(info.email).toLowerCase(), name: info.name || "", sub: String(info.sub || "") };
 }
 
-async function googleAuthHandler(body, env, request) {
+async function googleAuthHandler(body, env, request, requestId, context) {
   const clientIp =
     request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
   const rateCheck = await checkRateLimit(env, clientIp, "google_auth", 10, 60);
@@ -60,13 +69,43 @@ async function googleAuthHandler(body, env, request) {
   let merchantId = `m_g_${identity.sub.slice(0, 16)}`;
 
   if (env?.DB) {
-    const account = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?")
-      .bind(email)
-      .first()
-      .catch(() => null);
+    // P41 — PRE-HIJACK. Signup never verifies that the address belongs to the
+    // person signing up (no email_verified anywhere in this project), so an
+    // existing PASSWORD account is an unproven claim on this address: an
+    // attacker who signed up with the victim's email would be handed a shared
+    // account the moment the real owner used Google. We only sign into an
+    // account that Google itself created (merchant_id `m_g_…`); a password
+    // account is never auto-linked. Failing to READ the row is ambiguity, and
+    // ambiguity refuses — never a silent merge, never a fresh parallel account.
+    let account;
+    try {
+      account = await lookupAccountForGoogle(env, email);
+    } catch (err) {
+      logError(context, {
+        requestId,
+        path: "/api/auth/google",
+        code: "GOOGLE_ACCOUNT_LOOKUP_FAILED",
+        internal: String(err?.message || err)
+      });
+      return json(
+        { ok: false, error: "تعذر التحقق من الحساب حالياً. حاول بعد قليل.", code: "ACCOUNT_LOOKUP_FAILED" },
+        503
+      );
+    }
 
-    if (account?.merchant_id) {
-      merchantId = account.merchant_id;
+    if (account.exists && !account.isGoogleAccount) {
+      logError(context, {
+        requestId,
+        path: "/api/auth/google",
+        code: "GOOGLE_LINK_REFUSED_PASSWORD_ACCOUNT",
+        internal: "google sign-in refused: an unverified password account already holds this address (P41)",
+        storeId: account.merchantId
+      });
+      return json({ ok: false, error: EXISTING_ACCOUNT_MSG, code: "PASSWORD_ACCOUNT_EXISTS" }, 409);
+    }
+
+    if (account.exists) {
+      merchantId = account.merchantId;
     } else if (isAdminEmail(env, email)) {
       // P38 — this branch AUTO-PROVISIONS an `accounts` row, and an admin
       // address in that table is full admin (requireAdmin matches the email
@@ -76,7 +115,7 @@ async function googleAuthHandler(body, env, request) {
       // by someone else. An admin whose account already exists still signs in
       // above; only the create-on-first-sign-in path is refused. Same generic
       // message as elsewhere — no enumeration.
-      return json({ ok: false, error: "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك." }, 409);
+      return json({ ok: false, error: EXISTING_ACCOUNT_MSG, code: "PASSWORD_ACCOUNT_EXISTS" }, 409);
     } else {
       // First Google sign-in for this address: provision merchant + account.
       // The password is random and unusable — this account signs in via Google.

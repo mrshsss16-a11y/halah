@@ -921,3 +921,39 @@ export async function recordResetOtpFailure(env, email) {
 export async function clearResetOtpAttempts(env, email) {
   await env.DB.prepare("DELETE FROM login_attempts WHERE email = ?").bind(resetAttemptKey(email)).run();
 }
+
+// ── P41: which auth method created this account? ──
+//
+// Nothing in this project verifies that a signup address belongs to the person
+// signing up (there is no `email_verified` column). So a password account is an
+// UNPROVEN claim on an address: anyone can POST /api/auth/signup with a
+// stranger's email. Auto-linking a later Google sign-in to that row would hand
+// the attacker a shared account with the real owner (pre-hijack).
+//
+// The account's own merchant_id records how it was created, and always has:
+//   • google.js  → `m_g_<google sub>`            (GOOGLE_MERCHANT_PREFIX)
+//   • signup.js / db.js → `m_<uuid slice>`
+// The `m_` ids are `m_` + the first 12 chars of crypto.randomUUID(), i.e. hex
+// digits and `-` only — `g` is not a hex digit, so an `m_` id can never
+// accidentally look like an `m_g_` id. That makes the prefix an exact, already
+// -populated provider marker: no migration, no backfill, no column that the
+// running code would have to read before it exists.
+//
+// THROWS on a DB error on purpose — the caller must fail closed (refuse the
+// link) rather than treat an unreadable accounts table as "no account here".
+export const GOOGLE_MERCHANT_PREFIX = "m_g_";
+
+/**
+ * @returns {Promise<{exists: boolean, merchantId: string|null, isGoogleAccount: boolean}>}
+ */
+export async function lookupAccountForGoogle(env, email) {
+  const row = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?")
+    .bind(email)
+    .first();
+  const merchantId = row?.merchant_id ? String(row.merchant_id) : null;
+  return {
+    exists: Boolean(merchantId),
+    merchantId,
+    isGoogleAccount: Boolean(merchantId && merchantId.startsWith(GOOGLE_MERCHANT_PREFIX))
+  };
+}
