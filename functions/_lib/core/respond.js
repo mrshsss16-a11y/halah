@@ -3,6 +3,8 @@
 // equivalent of the old Vercel withApi() wrapper.
 import { getSecurityHeaders } from "./security.js";
 import { logError } from "./errorLog.js";
+import { classifyError, messageFor, statusFor } from "./errors.js";
+import { resolveAllowedOrigin, corsHeaders } from "./cors.js";
 
 // Short, URL-safe, no external dep — collision odds irrelevant here (it's a
 // correlation id for logs/support, not a security token).
@@ -44,11 +46,20 @@ export class ApiError extends Error {
  * Every response carries X-Request-Id. On error it's echoed in the JSON body
  * too, so a merchant reporting "صار خطأ" can hand over one short id instead
  * of a screenshot — and /api/admin/errors can look it up directly.
+ *
+ * `{ cors: true }` adds Access-Control-Allow-Origin (from cors.js's
+ * allowlist) to EVERY response path — success, ApiError, and unhandled —
+ * so a cross-origin caller can read the response body at all, not just the
+ * happy path. Only opt in for endpoints meant to be called from another
+ * origin (currently just /api/support, the embeddable widget backend); the
+ * file exporting `onRequestPost` must also export `onRequestOptions` from
+ * cors.js's `corsPreflight` for the browser's preflight request.
  */
-export function withApi(handler) {
+export function withApi(handler, { cors = false } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
     const requestId = generateRequestId();
+    const extraHeaders = cors ? corsHeaders(resolveAllowedOrigin(request, env)) : {};
     let body = {};
 
     if (request.method === "POST" || request.method === "PUT" || request.method === "PATCH") {
@@ -72,9 +83,10 @@ export function withApi(handler) {
       const result = await handler(body, env, request, requestId, context);
       if (result instanceof Response) {
         result.headers.set("X-Request-Id", requestId);
+        for (const [k, v] of Object.entries(extraHeaders)) result.headers.set(k, v);
         return result;
       }
-      return json(result, 200, { "X-Request-Id": requestId });
+      return json(result, 200, { "X-Request-Id": requestId, ...extraHeaders });
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status >= 500) {
@@ -83,19 +95,24 @@ export function withApi(handler) {
         return json(
           { ok: false, error: err.message, code: err.code, requestId },
           err.status,
-          { "X-Request-Id": requestId }
+          { "X-Request-Id": requestId, ...extraHeaders }
         );
       }
-      logError(context, { requestId, path, code: "UNHANDLED", internal: String((err && err.stack) || err) });
+      // D4: خطأ غير مُصنَّف يُترجَم لأقرب كود معروف بدل رسالة عامة واحدة
+      // للجميع. الفرق عملي: "الخدمة مزحومة، جرّب بعد دقيقة" تُنهي الموقف،
+      // بينما "صار خلل مؤقت" تُنتج اتصالاً بالدعم. الكود الأصلي كامل يبقى
+      // بالسجل تحت requestId — التاجر يعطينا الرقم ونشوف التفصيل.
+      const code = classifyError(err);
+      logError(context, {
+        requestId,
+        path,
+        code: `UNHANDLED:${code}`,
+        internal: String((err && err.stack) || err)
+      });
       return json(
-        {
-          ok: false,
-          error: "صار خلل مؤقت أثناء المعالجة. حاول مرة ثانية بعد شوي.",
-          code: "PROVIDER_ERROR",
-          requestId
-        },
-        502,
-        { "X-Request-Id": requestId }
+        { ok: false, error: messageFor(code), code, requestId },
+        statusFor(code),
+        { "X-Request-Id": requestId, ...extraHeaders }
       );
     }
   };

@@ -21,6 +21,9 @@ export async function onRequestPost(context) {
   // NOTE: abandoned_carts stores the cart value in `total` (see
   // migrations/0002_copy_and_whatsapp.sql) — not `amount`.
   const [recoveredSalesSAR, consultationTickets, cacheSavingRate] = await Promise.all([
+    // tenant-audit-ok: عدّاد عام لكل المنصة على صفحة الهبوط — التجميع عبر كل
+    // المتاجر هو المقصود بالتصميم، والمخرج رقم مُجمَّع واحد لا صفوف متجر بعينه.
+    // لا سياق متجر في هذا المسار أصلاً (نقطة عامة بلا جلسة).
     scalar(env, "SELECT SUM(total) AS v FROM abandoned_carts WHERE status = 'recovered'", "v"),
     scalar(env, "SELECT COUNT(*) AS v FROM consultation_bookings", "v"),
     scalar(

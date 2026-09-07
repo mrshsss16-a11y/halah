@@ -1,14 +1,40 @@
-// POST /api/support
-// body: { messages: [{role, content}] }
-// Hala's own site support/sales chat. Answers visitor questions about Hala and
-// funnels to WhatsApp. Detects the [WHATSAPP_CTA] marker the persona emits and
-// returns a structured flag so the widget can render a WhatsApp button.
+// POST /api/support — the ONE public, cross-origin-embeddable chat endpoint.
+// body: { messages: [{role, content}], storeId? }
+//
+// Originally Aura's own site widget only (storeId hardcoded "hala"). Now the
+// backend for the embeddable widget (public/widget.js): any site can embed
+// it with a `data-store-id`, same as an analytics tracking id — storeId here
+// is a public identifier, not a secret. Abuse control is CORS origin
+// allowlist (cors.js) + per-IP rate limit (below) + per-store monthly quota,
+// not secrecy of the id.
+//
+// "hala" keeps Aura's own sales/support persona (HALA_SUPPORT_PROMPT) — any
+// other storeId gets the general merchant persona (PERSONA_SYSTEM_PROMPT),
+// same one chat.js uses, so a future merchant's widget speaks as THEIR
+// assistant, not as Hala trying to sell Aura's own services to their visitor.
+//
+// Detects the [WHATSAPP_CTA] marker the persona emits and returns a
+// structured flag so the widget can render a WhatsApp button — and embeds a
+// short omnichannel session code in that handoff link so webhook.js can pick
+// the conversation back up with full context once the visitor messages
+// WhatsApp (see docs/AGENT.md §"الذاكرة عبر القنوات").
 import { withApi, ApiError } from "../_lib/core/respond.js";
 import { askWorkersAI } from "../_lib/ai/gateway.js";
-import { HALA_SUPPORT_PROMPT } from "../_lib/ai/persona.js";
+import { HALA_SUPPORT_PROMPT, PERSONA_SYSTEM_PROMPT } from "../_lib/ai/persona.js";
 import { recallSimilar } from "../_lib/ai/memory.js";
 import { sanitizeInput, verifyTurnstileToken } from "../_lib/core/security.js";
 import { checkRateLimit } from "../_lib/core/rateLimit.js";
+import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
+import { saveOmnichannelSession, getWaConnectionByMerchant } from "../_lib/core/db.js";
+import { corsPreflight } from "../_lib/core/cors.js";
+
+export function onRequestOptions({ request, env }) {
+  return corsPreflight(env, request);
+}
+
+function randomSessionCode() {
+  return crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
+}
 
 const CTA_MARKER = "[WHATSAPP_CTA]";
 

@@ -20,14 +20,21 @@
  * تشغيل: node scripts/audit-isolation.mjs  (أو ضمن npm test)
  * خروج غير صفري = وُجد استعلام غير معزول → يفشل الاختبار.
  *
- * ⚠️ حدّ معروف (تحقُّق يدوي 2026-09-06، لا يُصلَح آلياً الآن): الأداة تقرأ فقط
- * نص حرفي (backtick/"/') مُمرَّر مباشرة لـ.prepare(...). استعلام مبني بمتغيّر
- * (`const sql = ...; env.DB.prepare(sql)`) غير مرئي لها إطلاقاً — لا يُبلَّغ
- * كمخالفة ولا يُحتسَب "مفحوصاً"، فيمرّ الفحص بصمت. راجعت كل حالة موجودة اليوم
- * يدوياً (`db.js:501` — فرعان، كلاهما بشرط هوية واحد صحيح · `stats.js:9` —
- * تجميع عابر للمتاجر متعمَّد لعدّادات عامة، لا تسريب) ولا واحدة مخالفة فعلياً،
- * لكن هذا يعني: **"صفر مخالفة" لا يساوي "كل استعلام مفحوص"**. أي إضافة مستقبلية
- * لاستعلام بمتغيّر تحتاج مراجعة يدوية — الأداة لن تكتشفها.
+ * ── تغطية المرورين (أُضيف 2026-09-06، المرحلة ١) ────────────────────────────
+ * المرور ١ (الأصلي): نص حرفي مُمرَّر مباشرة لـ.prepare(...).
+ * المرور ٢ (جديد): **أي** نص حرفي في الملف يبدو استعلام SQL على جدول مستأجر،
+ *   مهما كانت طريقة وصوله لـ.prepare(). هذا يغطي الحالة التي كانت عمياء تماماً:
+ *   `const sql = "..."; env.DB.prepare(sql)` — كانت تمرّ بصمت، لا تُبلَّغ ولا
+ *   تُحتسَب مفحوصة، فتُنتج ثقة زائفة أخطر من غياب الأداة (قاعدة م٥،
+ *   docs/AGENT_ORCHESTRATION.md).
+ *
+ * المرور ٢ متعمَّد الحساسية: يفضّل إنذاراً كاذباً يُغلَق بتعليق مبرَّر، على
+ * تسريب صامت. إغلاق أي حالة = تعليق `// tenant-audit-ok: <سبب>` فوق النص نفسه.
+ *
+ * ما يبقى خارج التغطية (صريح، لا تُدّعى تغطيته): استعلام يُبنى بتركيب سلاسل
+ * متفرّقة (`"SELECT * FROM " + table`) لا يظهر كنص SQL كامل في أي حرفية واحدة.
+ * لا توجد حالة كهذه اليوم؛ لو أُضيفت مستقبلاً فهي خارج قدرة الفحص النصي وتحتاج
+ * مراجعة بشرية.
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -127,6 +134,63 @@ function tableTouchedBy(query) {
 }
 
 /**
+ * المرور ٢: كل نص حرفي في الملف يبدو استعلاماً، بغضّ النظر عن طريقة وصوله
+ * لـ.prepare(). يلتقط `const sql = "..."` والشرطي (ternary) بفرعيه — وهما
+ * الشكلان الموجودان فعلياً بالمشروع (db.js، stats.js، dlq.js، reminders.js).
+ *
+ * فحص الإعفاء هنا يختلف عن المرور ١: التعليق قد يكون فوق تعريف المتغيّر لا
+ * فوق .prepare()، فنبحث في الكتلة التعليقية فوق سطر النص نفسه.
+ */
+// يجب أن *يبدأ* النص بفعل SQL، لا أن يحتويه في مكان ما.
+// السبب (باغ حقيقي وقع 2026-09-06 أثناء بناء المرور ٢): مطابقة الـbacktick
+// بالتناوب تُزاوج علامة إغلاق مع علامة فتح تالية، فتلتقط **الكود الواقع بين
+// نصّين** وكأنه نص واحد. اشتراط البداية يلغي هذه الفئة كلياً، ويضيّق الإنذارات
+// الكاذبة، لأن كل استعلام حقيقي يبدأ بفعله.
+const SQL_SHAPE = /^\s*(?:SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|WITH)\b/i;
+
+function extractSqlLiterals(source) {
+  const lines = source.split("\n");
+  const out = [];
+  const re = /(`[^`]*`|"[^"]*"|'[^']*')/g;
+  let m;
+  while ((m = re.exec(source))) {
+    const text = m[1].slice(1, -1);
+    if (!SQL_SHAPE.test(text)) continue;
+
+    const lineNo = source.slice(0, m.index).split("\n").length - 1;
+    const commentBlock = [];
+    // الصعود لأعلى بحثاً عن كتلة التعليق. لا نتوقف عند أول سطر غير تعليقي:
+    // الشكل الشائع بالمشروع يضع النص في سطر مستقل تحت `.prepare(`، فالتعليق
+    // المبرِّر يقع فوق `.prepare(` لا فوق النص مباشرة. تجاهُل ذلك جعل الفحص
+    // يبلّغ عن استعلامات معفاة فعلاً (باغ حقيقي، 2026-09-06). لذا نتخطى أسطر
+    // استمرار الجملة (فارغة أو منتهية بقوس فتح) ونواصل الصعود.
+    for (let i = lineNo - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (line.startsWith("//") || line.startsWith("*")) {
+        commentBlock.push(line);
+        continue;
+      }
+      // أسطر استمرار الجملة نفسها فقط: قوس فتح، أو فرعا الشرطي (؟ / :).
+      // الشرطي متعدد الأسطر جملة واحدة، فالتعليق فوقه يغطي فرعيه معاً
+      // (revokeWaConnection بـdb.js). ما عدا ذلك يقطع الصعود عمداً حتى لا
+      // يصير تعليق قديم إعفاءً عرضياً لاستعلام لا صلة له به.
+      // رأس الشرطي: `const sql = merchantId` ثم فرعاه بسطرين تاليين. بلا هذا
+      // الاستثناء يقف الصعود عند الرأس فلا يُرى التعليق فوقه (db.js
+      // revokeWaConnection). مضبوط ضيقاً: إسناد ينتهي بمعرّف بلا فاصلة منقوطة،
+      // أي جملة غير مكتملة يقيناً.
+      if (line === "" || /[({]$/.test(line) || /^[?:]/.test(line) || /=\s*[\w.]+$/.test(line)) continue;
+      break;
+    }
+    out.push({
+      query: text,
+      suppressed: SUPPRESS_MARKER.test(commentBlock.join("\n")),
+      line: lineNo + 1
+    });
+  }
+  return out;
+}
+
+/**
  * حارس صحّة الأداة نفسها — يمنع الفحص من "الفشل بصمت" (regex ينكسر فيرجّع
  * صفر مخالفة دايماً، فيبدو كل شي سليم بينما الفحص فعلياً معطّل). يُشغَّل قبل
  * كل تدقيق حقيقي، ويفشل الفحص كله لو تصرّف كاشف الاستثناء أو استخراج
@@ -148,6 +212,53 @@ function selfTest() {
   if (!/\bmerchant_id\b/.test(extractPrepareCalls(goodInline)[0].query)) {
     throw new Error("self-test failed: merchant_id not detected on a safe query");
   }
+
+  // ── المرور ٢: الحالة التي كانت عمياء تماماً قبل 2026-09-06 ──
+  const viaVariable = `const sql = "SELECT * FROM accounts WHERE id = ?";\n  await env.DB.prepare(sql).bind(id).first()`;
+  const seenByPass1 = extractPrepareCalls(viaVariable);
+  if (seenByPass1.length !== 0) {
+    throw new Error("self-test failed: pass 1 unexpectedly matched a variable-passed query");
+  }
+  const seenByPass2 = extractSqlLiterals(viaVariable);
+  if (seenByPass2.length !== 1 || tableTouchedBy(seenByPass2[0].query) !== "accounts") {
+    throw new Error("self-test failed: pass 2 missed a variable-assigned SQL literal");
+  }
+  if (seenByPass2[0].suppressed) {
+    throw new Error("self-test failed: pass 2 reported an unmarked query as suppressed");
+  }
+
+  // إعفاء المرور ٢ يُقرأ من التعليق فوق تعريف المتغيّر، لا فوق .prepare()
+  const markedVariable = `// tenant-audit-ok: test fixture\n  const sql = "SELECT * FROM accounts WHERE id = ?";`;
+  if (!extractSqlLiterals(markedVariable)[0].suppressed) {
+    throw new Error("self-test failed: pass 2 ignored the tenant-audit-ok marker above a variable");
+  }
+
+  // نص عادي ليس SQL يجب ألا يدخل المرور ٢ إطلاقاً (ضبط الحساسية)
+  if (extractSqlLiterals(`const msg = "حدث خطأ، حاول مرة ثانية";`).length !== 0) {
+    throw new Error("self-test failed: pass 2 false-positive on a non-SQL string");
+  }
+
+  // الشكل الحقيقي السائد بالمشروع: التعليق فوق `.prepare(`، والنص بالسطر التالي.
+  // كان يُبلَّغ خطأً كمخالفة رغم وجود الإعفاء (باغ 2026-09-06).
+  const markerAbovePrepare = `  // tenant-audit-ok: verified by OTP\n  const update = await env.DB.prepare(\n    "UPDATE accounts SET x = ? WHERE email = ?"\n  )`;
+  if (!extractSqlLiterals(markerAbovePrepare)[0].suppressed) {
+    throw new Error("self-test failed: pass 2 missed a marker sitting above .prepare(");
+  }
+
+  // ومع ذلك: سطر كود حقيقي بين التعليق والنص يجب أن يقطع الصعود، وإلا صار
+  // أي تعليق قديم في الملف إعفاءً عرضياً لاستعلام لا علاقة له به.
+  const unrelatedMarker = `  // tenant-audit-ok: unrelated older note\n  const other = compute();\n  const sql = "SELECT * FROM accounts WHERE id = ?";`;
+  if (extractSqlLiterals(unrelatedMarker)[0].suppressed) {
+    throw new Error("self-test failed: pass 2 leaked a marker across an unrelated statement");
+  }
+
+  // الشرطي متعدد الأسطر (شكل revokeWaConnection بـdb.js): التعليق فوق الرأس
+  // يغطي الفرعين. الفرع الثاني كان يُبلَّغ خطأً لأن الصعود يقف عند الرأس.
+  const ternary = `  // tenant-audit-ok: alternate unique key\n  const sql = merchantId\n    ? "UPDATE wa SET s = 1 WHERE merchant_id = ?"\n    : "UPDATE wa SET s = 1 WHERE waba_id = ?";`;
+  const branches = extractSqlLiterals(ternary);
+  if (branches.length !== 2 || !branches[1].suppressed) {
+    throw new Error("self-test failed: pass 2 missed a marker above a multi-line ternary head");
+  }
 }
 
 function main() {
@@ -159,9 +270,17 @@ function main() {
   for (const file of jsFiles) {
     const relPath = file.slice(ROOT.length + 1).replace(/\\/g, "/");
     const source = readFileSync(file, "utf8");
-    const calls = extractPrepareCalls(source);
 
-    for (const { query, suppressed } of calls) {
+    // المروران معاً. المرور ٢ أوسع ويبتلع نتائج ١ غالباً، لكن ١ يبقى لأنه
+    // يفحص التعليق فوق .prepare() تحديداً (موضع مختلف عن تعريف المتغيّر).
+    const candidates = [
+      ...extractPrepareCalls(source).map((c) => ({ ...c, line: null })),
+      ...extractSqlLiterals(source)
+    ];
+
+    const seen = new Set();
+
+    for (const { query, suppressed, line } of candidates) {
       const table = tableTouchedBy(query);
       if (!table || !tenantTables.has(table)) continue;
       if (JOIN_ISOLATED_TABLES.has(table)) continue;
@@ -169,7 +288,12 @@ function main() {
       if (/\bmerchant_id\b/.test(query)) continue;
       if (suppressed) continue;
 
-      violations.push({ file: relPath, table, query: query.trim().slice(0, 160) });
+      // نفس الاستعلام قد يُلتقط بالمرورين — بلاغ واحد يكفي.
+      const key = `${relPath}::${query.trim()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      violations.push({ file: relPath, table, line, query: query.trim().slice(0, 160) });
     }
   }
 

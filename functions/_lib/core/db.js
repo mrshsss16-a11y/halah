@@ -495,6 +495,11 @@ export async function saveWaConnection(env, { merchantId, wabaId, phoneNumberId,
 /** Merchant disconnected from their side (account_update / PARTNER_REMOVED). */
 export async function revokeWaConnection(env, { merchantId = null, wabaId = null }) {
   if (!env.DB || (!merchantId && !wabaId)) return;
+  // tenant-audit-ok: فرع الـwaba_id مفتاح بديل فريد عالمياً (حساب واتساب أعمال
+  // واحد لا يخدم متجرين)، ويطابق صفاً واحداً. ضروري لأن ويبهوك ميتا
+  // (account_update / PARTNER_REMOVED) يصل بمعرّف WABA فقط بلا merchant_id —
+  // اشتراط merchant_id هنا يعني تجاهل إشعار إلغاء ربط حقيقي، وهو أسوأ أمنياً
+  // من تنفيذه: يترك اتصالاً مُلغى من طرف التاجر مفعّلاً عندنا.
   const sql = merchantId
     ? "UPDATE wa_connections SET status = 'revoked', updated_at = datetime('now') WHERE merchant_id = ?"
     : "UPDATE wa_connections SET status = 'revoked', updated_at = datetime('now') WHERE waba_id = ?";
@@ -1026,4 +1031,76 @@ export async function trialSeatUsage(env, email, adminEmails = []) {
   }
 
   return { count, duplicate };
+}
+
+/* ── Instagram (docs/INSTAGRAM_PLAN.md) ─────────────────────────────────── */
+
+/**
+ * توجيه الويبهوك الوارد: entry[].id (IG_ID) → التاجر المالك.
+ * نظير getWaConnectionByPhoneId تماماً — وهو **المفتاح الوحيد** المسموح باستخدامه
+ * لاختيار التاجر. لا from.id ولا username (كلاهما هوية المرسل، لا المستقبِل).
+ */
+export async function getIgConnectionByUserId(env, igUserId) {
+  if (!env.DB || !igUserId) return null;
+  // tenant-audit-ok: البحث بمفتاح التوجيه نفسه — هذا الاستعلام هو ما **يحدد**
+  // merchant_id، فلا يمكن أن يشترط عليه. مطابق لنمط getWaConnectionByPhoneId.
+  return env.DB.prepare(
+    `SELECT merchant_id, ig_user_id, username, access_token, token_expires_at
+     FROM ig_connections WHERE ig_user_id = ?`
+  )
+    .bind(String(igUserId))
+    .first()
+    .catch(() => null);
+}
+
+export async function getIgConnectionByMerchant(env, merchantId) {
+  if (!env.DB || !merchantId) return null;
+  return env.DB.prepare(
+    `SELECT merchant_id, ig_user_id, username, access_token, token_expires_at, created_at
+     FROM ig_connections WHERE merchant_id = ?`
+  )
+    .bind(merchantId)
+    .first()
+    .catch(() => null);
+}
+
+export async function saveIgConnection(env, { merchantId, igUserId, username, accessToken, tokenExpiresAt, scopes = null }) {
+  if (!merchantId || !igUserId || !accessToken) {
+    throw new Error("saveIgConnection: merchantId, igUserId and accessToken are required");
+  }
+  await env.DB.prepare(
+    `INSERT INTO ig_connections
+       (merchant_id, ig_user_id, username, access_token, token_expires_at, scopes, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+     ON CONFLICT(ig_user_id) DO UPDATE SET
+       merchant_id = excluded.merchant_id,
+       username = excluded.username,
+       access_token = excluded.access_token,
+       token_expires_at = excluded.token_expires_at,
+       scopes = excluded.scopes,
+       updated_at = datetime('now')`
+  )
+    .bind(merchantId, String(igUserId), username || null, accessToken, Number(tokenExpiresAt), scopes)
+    .run();
+}
+
+/**
+ * إزالة تكرار أحداث إنستغرام.
+ *
+ * Meta تعيد المحاولة على مدى ٣٦ ساعة وتجمّع حتى ١٠٠٠ تحديث ⇒ التكرار **مضمون**.
+ * INSERT ... ON CONFLICT DO NOTHING ذرّي: الصف الأول يكتب، والمكرر يُرفض بلا خطأ.
+ * @returns {Promise<boolean>} true لو الحدث جديد (يُعالَج)، false لو مكرر (يُتجاهل).
+ */
+export async function claimIgEvent(env, { eventId, merchantId, kind }) {
+  if (!env.DB || !eventId || !merchantId) return false;
+  const row = await env.DB.prepare(
+    `INSERT INTO ig_processed_events (event_id, merchant_id, kind)
+     VALUES (?, ?, ?)
+     ON CONFLICT(event_id) DO NOTHING
+     RETURNING event_id`
+  )
+    .bind(String(eventId), merchantId, kind)
+    .first()
+    .catch(() => null);
+  return Boolean(row);
 }

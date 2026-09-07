@@ -1117,6 +1117,172 @@ async function runTests() {
     }
   }
 
+  // ── إنستغرام (docs/INSTAGRAM_PLAN.md المرحلة ٥) ────────────────────────
+  {
+    const ig = await import("../functions/_lib/integrations/instagram.js");
+
+    // T2 — التوقيع: fail closed بلا سر، ورفض التوقيع الخاطئ، وقبول الصحيح.
+    const body = JSON.stringify({ object: "instagram", entry: [] });
+    const secret = "ig-app-secret-test";
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));
+    const validSig =
+      "sha256=" + [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
+
+    assert(
+      (await ig.verifyIgSignature(body, validSig, secret)) === true,
+      "IG-T2: توقيع صحيح يُقبل"
+    );
+    assert(
+      (await ig.verifyIgSignature(body, validSig, "")) === false,
+      "IG-T2: fail closed — بلا App Secret يُرفض كل شيء (S1)"
+    );
+    assert(
+      (await ig.verifyIgSignature(body, "sha256=deadbeef", secret)) === false,
+      "IG-T2: توقيع خاطئ يُرفض"
+    );
+    assert(
+      (await ig.verifyIgSignature(body, null, secret)) === false,
+      "IG-T2: غياب ترويسة التوقيع يُرفض"
+    );
+
+    // T5 — الشكلان: Instagram Login (value مباشرة) وFacebook Login (changes[]).
+    const direct = ig.parseIgComments({
+      entry: [
+        {
+          id: "IG_ACCOUNT_1",
+          field: "comments",
+          value: { id: "C1", text: "كم السعر؟", from: { id: "U1", username: "ahmed" } }
+        }
+      ]
+    });
+    assert(
+      direct.length === 1 && direct[0].commentId === "C1" && direct[0].igId === "IG_ACCOUNT_1",
+      "IG-T5: شكل Instagram Login (entry.value) يُحلَّل — value.id لا comment_id"
+    );
+
+    const viaChanges = ig.parseIgComments({
+      entry: [
+        {
+          id: "IG_ACCOUNT_2",
+          changes: [{ field: "comments", value: { comment_id: "C2", text: "شكراً" } }]
+        }
+      ]
+    });
+    assert(
+      viaChanges.length === 1 && viaChanges[0].commentId === "C2",
+      "IG-T5: شكل Facebook Login (changes[]) يُحلَّل دفاعياً كذلك"
+    );
+
+    // T1 — العزل: igId يُحمل مع كل حدث؛ بدونه لا يمكن نسبة الحدث لتاجره.
+    assert(
+      direct[0].igId === "IG_ACCOUNT_1" && viaChanges[0].igId === "IG_ACCOUNT_2",
+      "IG-T1: entry[].id (مفتاح ربط التاجر) محفوظ بكل حدث — درس phone_number_id"
+    );
+
+    // T3 — is_echo: رسالتنا نحن لا تُعالَج إطلاقاً (حلقة رد ذاتي).
+    const msgs = ig.parseIgMessages({
+      entry: [
+        {
+          id: "IG_ACCOUNT_1",
+          messaging: [
+            { sender: { id: "U1" }, message: { mid: "M1", text: "هلا" } },
+            { sender: { id: "IG_ACCOUNT_1" }, message: { mid: "M2", text: "رد البوت", is_echo: true } }
+          ]
+        }
+      ]
+    });
+    assert(
+      msgs.length === 1 && msgs[0].mid === "M1",
+      "IG-T3: is_echo يُتجاهل — لا حلقة رد ذاتية تحرق الحصة"
+    );
+
+    // SSRF — نفس قفل whatsapp.js: مضيف خارج القائمة يُرفض قبل لصق التوكن.
+    let ssrfBlocked = false;
+    try {
+      ig.assertIgUrlAllowed("https://evilinstagram.com/steal");
+    } catch {
+      ssrfBlocked = true;
+    }
+    assert(ssrfBlocked, "IG-SSRF: مضيف مشابه (evilinstagram.com) يُرفض — لا مطابقة بالنهاية");
+
+    let httpBlocked = false;
+    try {
+      ig.assertIgUrlAllowed("http://graph.instagram.com/x");
+    } catch {
+      httpBlocked = true;
+    }
+    assert(httpBlocked, "IG-SSRF: مخطط http يُرفض قبل إرسال أي بيانات اعتماد");
+
+    assert(
+      ig.assertIgUrlAllowed("https://graph.instagram.com/v25.0/me").startsWith("https://graph.instagram.com/"),
+      "IG-SSRF: المضيف الرسمي يُقبل"
+    );
+
+    // T7 — البوابة: المحوّل لا يصدّر أي مسار نشر مباشر يتجاوز review_queue.
+    const wh = await import("../functions/api/instagram/webhook.js");
+    assert(
+      typeof wh.onRequestGet === "function" && typeof wh.onRequestPost === "function",
+      "IG: webhook.js يصدّر المصافحة والاستقبال"
+    );
+    const whSource = await (await import("node:fs/promises")).readFile(
+      new URL("../functions/api/instagram/webhook.js", import.meta.url),
+      "utf8"
+    );
+    assert(
+      whSource.includes("enqueue(") && !/\bsend\s*\(\s*env/.test(whSource),
+      "IG-T7: صفر نشر مباشر من الويبهوك — كل رد يمرّ بـreview_queue (الأخطر لو كُسر)"
+    );
+  }
+
+  // ── D4: كتالوج الأخطاء العربية (docs/PARALLEL_TRACKS.md §أ.٤) ──
+  {
+    const { classifyError, messageFor, statusFor, ERROR_CATALOG } = await import(
+      "../functions/_lib/core/errors.js"
+    );
+
+    // كل رسالة تصل التاجر عربية — لا إنجليزية ولا كود خام. هذا جوهر D4:
+    // مدخل واحد إنجليزي يكفي ليرى تاجر رسالة لا يفهمها.
+    const nonArabic = Object.entries(ERROR_CATALOG).filter(
+      ([, v]) => !/[؀-ۿ]/.test(v.message)
+    );
+    assert(nonArabic.length === 0, `D4: كل رسائل الكتالوج عربية (المخالف: ${nonArabic.map(([k]) => k).join(", ")})`);
+
+    // التمييز الذي يهم عملياً: "مزحوم" (أعد المحاولة) ≠ "معطّل" (لا تعيد).
+    assert(
+      classifyError(new Error("Groq 429: rate limit exceeded")) === "AI_BUSY",
+      "D4: خطأ 429 من مزود يُصنَّف AI_BUSY (أعد المحاولة)"
+    );
+    assert(
+      classifyError(new Error("No AI backend available. Configure at least one")) === "AI_UNAVAILABLE",
+      "D4: غياب كل المزودين يُصنَّف AI_UNAVAILABLE (لا فائدة من الإعادة)"
+    );
+    assert(
+      classifyError(new Error("D1_ERROR: no such table: merchants")) === "DB_UNAVAILABLE",
+      "D4: عطل قاعدة البيانات يُصنَّف DB_UNAVAILABLE"
+    );
+    assert(
+      classifyError(new Error("fetch failed")) === "SYNC_FAILED",
+      "D4: عطل الشبكة يُصنَّف SYNC_FAILED"
+    );
+
+    // الارتداد الآمن: خطأ مجهول يعطي رسالة صحيحة أعمّ، لا رسالة خاطئة واثقة.
+    assert(
+      classifyError(new Error("something nobody predicted")) === "INTERNAL",
+      "D4: الخطأ المجهول يرتد لـINTERNAL بدل تصنيف مخترع"
+    );
+    assert(
+      /[؀-ۿ]/.test(messageFor("CODE_DOES_NOT_EXIST")) && statusFor("CODE_DOES_NOT_EXIST") === 500,
+      "D4: كود غير معروف يرتد لرسالة عربية وحالة 500، لا undefined"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);
