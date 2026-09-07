@@ -131,6 +131,66 @@ export async function getMarketingContext(env, merchantId) {
     .first();
 }
 
+// ── شخصية الوكيل لكل تاجر (agent_profiles، هجرة 0021) ────────────────────────
+//
+// الحقول المسموح للتاجر بكتابتها — قائمة بيضاء صريحة. أي حقل يرسله العميل
+// وليس هنا يُتجاهل بصمت: بدونها يقدر أي تاجر يكتب `merchant_id` أو `status`
+// لصف غيره عبر تمرير مفاتيح إضافية بالطلب.
+const AGENT_PROFILE_FIELDS = [
+  "agent_name",
+  "business_name",
+  "business_type",
+  "city",
+  "about",
+  "dialect",
+  "tone",
+  "reply_length",
+  "emoji_level",
+  "custom_instructions",
+  "allow_prices",
+  "forbidden_topics",
+  "unknown_answer_policy",
+  "escalation_number",
+  "working_hours",
+  "after_hours_reply",
+  "knowledge_links",
+  "appearance"
+];
+
+export async function getAgentProfile(env, merchantId) {
+  if (!env.DB || !merchantId) return null;
+  return env.DB.prepare("SELECT * FROM agent_profiles WHERE merchant_id = ?")
+    .bind(merchantId)
+    .first()
+    .catch(() => null);
+}
+
+/**
+ * حفظ جزئي (partial upsert): يحدّث الحقول المرسلة فقط ويترك الباقي كما هو،
+ * عشان حفظ قسم واحد من صفحة الإعدادات لا يمسح الأقسام الثانية.
+ */
+export async function saveAgentProfile(env, merchantId, patch = {}) {
+  if (!env.DB || !merchantId) return;
+
+  const fields = AGENT_PROFILE_FIELDS.filter((f) => patch[f] !== undefined);
+  if (!fields.length) return;
+
+  const insertCols = ["merchant_id", ...fields];
+  const placeholders = insertCols.map(() => "?").join(", ");
+  const updates = fields.map((f) => `${f} = excluded.${f}`).join(",\n       ");
+  const values = [merchantId, ...fields.map((f) => patch[f])];
+
+  await env.DB.prepare(
+    `INSERT INTO agent_profiles (${insertCols.join(", ")})
+     VALUES (${placeholders})
+     ON CONFLICT (merchant_id) DO UPDATE SET
+       ${updates},
+       updated_at = datetime('now')`
+  )
+    .bind(...values)
+    .run();
+}
+
 export async function saveMarketingContext(env, merchantId, { dialect, instructions }) {
   await env.DB.prepare(
     `INSERT INTO marketing_contexts (merchant_id, dialect, instructions, updated_at)

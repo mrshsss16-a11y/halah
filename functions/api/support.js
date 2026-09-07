@@ -20,12 +20,12 @@
 // WhatsApp (see docs/AGENT.md §"الذاكرة عبر القنوات").
 import { withApi, ApiError } from "../_lib/core/respond.js";
 import { askWorkersAI } from "../_lib/ai/gateway.js";
-import { HALA_SUPPORT_PROMPT, PERSONA_SYSTEM_PROMPT } from "../_lib/ai/persona.js";
+import { HALA_SUPPORT_PROMPT, PERSONA_SYSTEM_PROMPT, buildAgentPrompt } from "../_lib/ai/persona.js";
 import { recallSimilar } from "../_lib/ai/memory.js";
 import { sanitizeInput, verifyTurnstileToken } from "../_lib/core/security.js";
 import { checkRateLimit } from "../_lib/core/rateLimit.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
-import { saveOmnichannelSession, getWaConnectionByMerchant } from "../_lib/core/db.js";
+import { saveOmnichannelSession, getWaConnectionByMerchant, getAgentProfile } from "../_lib/core/db.js";
 import { corsPreflight } from "../_lib/core/cors.js";
 
 export function onRequestOptions({ request, env }) {
@@ -96,10 +96,17 @@ async function supportHandler(body, env, request) {
         .join("\n")}`
     : "";
 
-  // Aura's own sales persona vs. the general merchant persona (same one
-  // chat.js uses) — a future merchant's widget must speak as THEIR
-  // assistant, never as Hala pitching Aura's own services to their visitor.
-  const systemPrompt = isAuraLine ? HALA_SUPPORT_PROMPT : PERSONA_SYSTEM_PROMPT;
+  // ترتيب اختيار الشخصية:
+  //   1. صف `agent_profiles` للتاجر — البيانات تتغلب على أي شرط بالكود. هذا
+  //      المسار هو الوحيد الذي يتوسع لـ١٠٠ عميل بلا تعديل كود (هجرة 0021).
+  //   2. وإلا: الثابت القديم — أورا تبيع هالة بموقعها، وتاجر بلا إعدادات بعد
+  //      يأخذ الشخصية العامة. يبقى كشبكة أمان حتى يُملأ الجدول لكل حساب.
+  const agentProfile = await getAgentProfile(env, merchantId);
+  const systemPrompt = agentProfile
+    ? buildAgentPrompt(agentProfile)
+    : isAuraLine
+      ? HALA_SUPPORT_PROMPT
+      : PERSONA_SYSTEM_PROMPT;
 
   let reply = await askWorkersAI({
     env,
@@ -109,10 +116,11 @@ async function supportHandler(body, env, request) {
     storeId: merchantId
   });
 
-  // Hala has no published post-trial price (persona rule) — a merchant's own
-  // store legitimately quotes its own product prices, so this guard is
-  // Aura-line only. Applying it generally would strip a merchant's real prices.
-  if (isAuraLine) reply = stripFabricatedPricing(reply);
+  // حارس الأسعار: يتبع إعداد التاجر (`allow_prices`) حين يوجد صف إعدادات،
+  // وإلا يرتد للسلوك القديم (أورا فقط). تاجر يعرض أسعاره الحقيقية ما يصح
+  // نمسح رده، وأورا ما يصح تذكر رقماً غير منشور — نفس الكود، قراران مختلفان.
+  const blockPrices = agentProfile ? Number(agentProfile.allow_prices) === 0 : isAuraLine;
+  if (blockPrices) reply = stripFabricatedPricing(reply);
 
   const wantsWhatsApp = reply.includes(CTA_MARKER);
   reply = reply.replace(CTA_MARKER, "").trim();

@@ -1527,6 +1527,226 @@ async function runTests() {
     );
   }
 
+  // ── شخصية الوكيل من البيانات (migrations/0021_agent_profiles.sql) ──────────
+  // الأهم هنا: سياسة الأسعار. أورا ممنوعة من ذكر رقم، والتاجر مسموح له —
+  // نفس الكود بقرارين. لو انقلب هذا الشرط، أورا تخترع أسعاراً للعملاء.
+  {
+    const { buildAgentPrompt } = await import("../functions/_lib/ai/persona.js");
+
+    const auraPrompt = buildAgentPrompt({
+      agent_name: "هالة",
+      business_name: "أورا للتسويق",
+      allow_prices: 0,
+      emoji_level: 0
+    });
+    assert(
+      /ممنوع منعاً باتاً ذكر أي رقم سعر/.test(auraPrompt),
+      "AGENT-1: allow_prices=0 يفرض منع ذكر الأسعار بالبرومبت"
+    );
+    assert(
+      /ممنوع استخدام أي إيموجي/.test(auraPrompt),
+      "AGENT-2: emoji_level=0 يفرض منع الإيموجي"
+    );
+
+    const merchantPrompt = buildAgentPrompt({
+      agent_name: "نورة",
+      business_name: "متجر عطور",
+      allow_prices: 1
+    });
+    assert(
+      !/ممنوع منعاً باتاً ذكر أي رقم سعر/.test(merchantPrompt) && /نورة/.test(merchantPrompt),
+      "AGENT-3: تاجر بـallow_prices=1 يذكر أسعاره، وباسم وكيله هو"
+    );
+    assert(
+      !/أورا للتسويق/.test(merchantPrompt),
+      "AGENT-4: عزل الشخصية — برومبت التاجر لا يحمل أي أثر لهوية تاجر آخر"
+    );
+
+    // JSON تالف بالحقول القابلة للتوسّع ما يصح يسقط بناء البرومبت كاملاً
+    const brokenJson = buildAgentPrompt({ agent_name: "س", knowledge_links: "{not json" });
+    assert(
+      typeof brokenJson === "string" && brokenJson.length > 0,
+      "AGENT-5: JSON تالف بـknowledge_links يُتجاهل بدل ما يكسر الرد"
+    );
+
+    const { saveAgentProfile } = await import("../functions/_lib/core/db.js");
+    const agentLog = [];
+    const agentDb = {
+      DB: {
+        prepare(sql) {
+          return {
+            bind(...args) {
+              agentLog.push({ sql, args });
+              return { run: async () => ({}) };
+            }
+          };
+        }
+      }
+    };
+    await saveAgentProfile(agentDb, "m_x", { agent_name: "ن", status: "paused", merchant_id: "m_other" });
+    assert(
+      agentLog.length === 1 &&
+        !/status/.test(agentLog[0].sql) &&
+        agentLog[0].args[0] === "m_x" &&
+        !agentLog[0].args.includes("m_other"),
+      "AGENT-6: القائمة البيضاء ترفض status و merchant_id المرسلين من العميل"
+    );
+  }
+
+  // ── بصمة المتجر (المرحلة ٣ من docs/PLAN_BULK_SEO.md) ───────────────────────
+  // ثلاثة أشياء تُختبَر لأن كسرها صامت ومكلف:
+  //  ١. **استدعاء AI واحد لا ٤٠** — الخطأ هنا يحرق حصة التاجر كاملة بضغطة زر.
+  //  ٢. **بصمة غير معتمَدة لا تُحقن** — الحقن قبل الاعتماد يطبّق قرار نموذج على
+  //     ٢٠٠ منتج بلا موافقة إنسان.
+  //  ٣. **بلا بصمة السلوك كما كان** — الجدول (0019) غير مطبَّق بعد، فأي اعتماد
+  //     على وجوده يُسقط توليد المحتوى للجميع.
+  {
+    const {
+      buildProfile,
+      getProfile,
+      approveProfile,
+      profileToPromptBlock,
+      normalizeProfile
+    } = await import("../functions/_lib/services/storeProfile.js");
+    const { approvedProfileBlock, buildSeoSystem } = await import("../functions/api/copy.js");
+
+    const SAMPLE = [
+      { name: "عباية كلوش كريب", category: "عبايات", current_description: "عباية كريب ياباني بقصة كلوش." },
+      { name: "قهوة إثيوبية", category: "قهوة", current_description: "حبوب مغسولة بنكهة فاكهية." }
+    ];
+    const MODEL_JSON = JSON.stringify({
+      categories: ["عبايات", "قهوة مختصة"],
+      audience: "نساء سعوديات يهتمن بالخامة",
+      toneNotes: ["جمل قصيرة", "تبدأ بالخامة"],
+      vocabulary: ["كريب ياباني", "مغسولة"],
+      forbidden: ["مبالغة إعلانية"],
+      anchorKeywords: ["أصلي", "فاخر"]
+    });
+
+    /** DB وهمي يسجّل كل استعلام — نتحقق من العزل بالنص لا بالنية. */
+    function profileDb(log, { sample = SAMPLE, row = null } = {}) {
+      return {
+        prepare(sql) {
+          return {
+            bind(...args) {
+              log.push({ sql, args });
+              return {
+                all: async () => ({ results: sample }),
+                first: async () => row,
+                run: async () => ({ meta: { changes: 1 } })
+              };
+            }
+          };
+        }
+      };
+    }
+
+    // ① استدعاء AI واحد على العيّنة كلها — لا واحد لكل منتج.
+    const buildLog = [];
+    let aiCalls = 0;
+    const built = await buildProfile(
+      { DB: profileDb(buildLog) },
+      {
+        merchantId: "m_1",
+        ask: async () => {
+          aiCalls++;
+          return MODEL_JSON;
+        }
+      }
+    );
+    assert(aiCalls === 1, `SP-1: buildProfile يستدعي النموذج مرة واحدة فقط (${aiCalls})`);
+    assert(built.status === "draft", "SP-2: البصمة المبنية تُخزَّن مسودة لا معتمَدة");
+    assert(
+      buildLog.every((q) => /merchant_id/.test(q.sql)) && buildLog.every((q) => q.args[0] === "m_1"),
+      "SP-3: كل استعلام بـbuildProfile معزول بـmerchant_id"
+    );
+    assert(
+      buildLog.some((q) => /FROM store_products/.test(q.sql) && q.args[1] === 40),
+      "SP-4: العيّنة مقيّدة بـ٤٠ منتج كحد أقصى"
+    );
+
+    // العزل fail-closed: بلا merchantId ترمي، لا تقرأ منتجات الجميع.
+    let threwProfile = false;
+    try {
+      await buildProfile({ DB: profileDb([]) }, { merchantId: "", ask: async () => MODEL_JSON });
+    } catch {
+      threwProfile = true;
+    }
+    assert(threwProfile, "SP-5: buildProfile بلا merchantId ترمي (fail closed)");
+
+    // ② بوابة الاعتماد — الفرق بين draft وapproved.
+    const draftRow = { profile: MODEL_JSON, status: "draft", source_sample: 2, updated_at: "x" };
+    const approvedRow = { ...draftRow, status: "approved" };
+
+    const draft = await getProfile({ DB: profileDb([], { row: draftRow }) }, { merchantId: "m_1" });
+    const approved = await getProfile({ DB: profileDb([], { row: approvedRow }) }, { merchantId: "m_1" });
+    assert(approvedProfileBlock(draft) === "", "SP-6: بصمة draft لا تُحقن إطلاقاً");
+    assert(
+      approvedProfileBlock(approved).includes("عبايات"),
+      "SP-7: بصمة approved تُحقن بمحتواها"
+    );
+    assert(approvedProfileBlock(null) === "", "SP-8: بلا بصمة = بلا حقن");
+
+    // العزل بالقراءة.
+    const readLog = [];
+    await getProfile({ DB: profileDb(readLog, { row: approvedRow }) }, { merchantId: "m_2" });
+    assert(
+      readLog.length === 1 && /merchant_id = \?/.test(readLog[0].sql) && readLog[0].args[0] === "m_2",
+      "SP-9: قراءة البصمة مشروطة بـmerchant_id"
+    );
+
+    // الاعتماد يكتب على صف التاجر نفسه فقط، ونسخة التاجر المعدّلة تمرّ بالتطبيع.
+    const approveLog = [];
+    const approvedOut = await approveProfile(
+      { DB: profileDb(approveLog, { row: draftRow }) },
+      { merchantId: "m_3", profile: { categories: ["عطور"], audience: "ي", forbidden: [] } }
+    );
+    assert(
+      approvedOut.status === "approved" &&
+        approveLog.some((q) => /UPDATE store_profiles/.test(q.sql) && /merchant_id = \?/.test(q.sql)),
+      "SP-10: approveProfile يحدّث صف التاجر وحده بحالة approved"
+    );
+    assert(
+      Array.isArray(approvedOut.profile.toneNotes) && approvedOut.profile.vocabulary.length === 0,
+      "SP-11: بصمة العميل تمرّ بالتطبيع — لا نثق بشكل ما يرسله"
+    );
+
+    // ③ السلوك القديم محفوظ حرفياً بلا بصمة: نفس البرومبت بالضبط.
+    const baseArgs = { recent: [], keywords: ["عباية"], existingDescription: "", visionNotes: null, styleExamples: [] };
+    const without = buildSeoSystem({ ...baseArgs });
+    const withEmpty = buildSeoSystem({ ...baseArgs, profileBlock: "" });
+    const withBlock = buildSeoSystem({ ...baseArgs, profileBlock: approvedProfileBlock(approved) });
+    assert(without === withEmpty, "SP-12: بلا بصمة، البرومبت مطابق حرفياً للسلوك السابق");
+    assert(
+      withBlock.length > without.length && withBlock.includes("بصمة هذا المتجر"),
+      "SP-13: مع بصمة معتمَدة، الكتلة تُحقن بالـsystem prompt"
+    );
+
+    // المرساة: نفس النص حرفياً لكل منتج — لو تغيّر بين استدعاءين انهار الغرض.
+    assert(
+      profileToPromptBlock(approved.profile) === profileToPromptBlock(approved.profile),
+      "SP-14: كتلة البصمة ثابتة (مرساة) لا تتغيّر بين الاستدعاءات"
+    );
+    assert(
+      profileToPromptBlock(normalizeProfile({})) === "",
+      "SP-15: بصمة فارغة ترجّع كتلة فارغة لا كتلة هيكلية بلا محتوى"
+    );
+
+    // نافذة recentCopy مثبّتة على ٥ (الخطة §٥) — تُقرأ من نص copy.js نفسه.
+    const { readFileSync } = await import("node:fs");
+    const copySrc = readFileSync(new URL("../functions/api/copy.js", import.meta.url), "utf8");
+    assert(
+      /RECENT_OPENINGS_WINDOW\s*=\s*5/.test(copySrc) &&
+        /recentCopy\(env,\s*merchantId,\s*RECENT_OPENINGS_WINDOW\)/.test(copySrc),
+      "SP-16: نافذة recentCopy مثبّتة على ٥ فلا تنجرف عبر دفعة كبيرة"
+    );
+    // المصادقة التي أُضيفت لإغلاق ثغرات سابقة لم تُنقض بحقن البصمة.
+    assert(
+      /requireCompletedAccount\(request, env, body\.storeId\)/.test(copySrc),
+      "SP-17: copy.js لا يزال يفرض requireCompletedAccount — الحقن ما نقض المصادقة"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

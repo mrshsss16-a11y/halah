@@ -6,8 +6,8 @@
 // Replies only within the 24h service window (free-form allowed there).
 import { verifyWaSignature, parseInbound, parseEchoes, sendWaText, sendWaInteractiveList, waConfigured, getWaMedia } from "../../_lib/integrations/whatsapp.js";
 import { askWorkersAI, TEXT_MODEL, askVisionAI } from "../../_lib/ai/gateway.js";
-import { PERSONA_SYSTEM_PROMPT, HALA_WHATSAPP_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, ESCALATION_INSTRUCTIONS, WEEKLY_SLOTS, dialectLabel } from "../../_lib/ai/persona.js";
-import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession, saveOmnichannelSession, getWaConnectionByPhoneId } from "../../_lib/core/db.js";
+import { PERSONA_SYSTEM_PROMPT, HALA_WHATSAPP_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, ESCALATION_INSTRUCTIONS, WEEKLY_SLOTS, dialectLabel, buildAgentPrompt } from "../../_lib/ai/persona.js";
+import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession, saveOmnichannelSession, getWaConnectionByPhoneId, getAgentProfile } from "../../_lib/core/db.js";
 import { recallSimilar } from "../../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
 import { matchAuraGreeting, matchFastIntent } from "../../_lib/ai/intents.js";
@@ -181,8 +181,17 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
 تذكري العميل برحابة صدر، رحبي به واذكري أنك تذكرين استفساره بالموقع بلهجة سعودية دافئة!`;
   }
 
+  // شخصية الوكيل من بيانات التاجر (agent_profiles) — نفس الصف الذي يخدم ودجت
+  // الموقع، فتبقى الشخصية واحدة عبر القناتين بدل نسختين تتباعدان (قاعدة M2).
+  const agentProfile = env.DB ? await getAgentProfile(env, merchantId).catch(() => null) : null;
+
   let system;
-  if (isAuraLine) {
+  if (agentProfile) {
+    system = buildAgentPrompt(agentProfile, {
+      knowledgeContext: `${ragContext}${omniContext}`,
+      channelRules: `\n## قناة واتساب\nهذي محادثة واتساب حقيقية — ردي بإيجاز.\n\n${ESCALATION_INSTRUCTIONS}${isAuraLine ? `\n\n${BOOKING_INSTRUCTIONS}` : ""}`
+    });
+  } else if (isAuraLine) {
     system = `${HALA_WHATSAPP_SUPPORT_PROMPT}
 
 ---

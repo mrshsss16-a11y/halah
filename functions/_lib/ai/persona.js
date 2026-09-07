@@ -265,3 +265,113 @@ export const DIALECT_LABELS = {
 export function dialectLabel(dialect) {
   return DIALECT_LABELS?.[dialect] ?? DIALECT_LABELS?.saudi_najdi;
 }
+
+// ── محرّك تركيب شخصية الوكيل من بيانات التاجر ──────────────────────────────
+//
+// المشكلة: الشخصية كانت تُختار بشرط مكتوب بالكود (`if (isAuraLine) ... else ...`).
+// مع ١٠٠ عميل يصير ١٠٠ شرط، وكل تعديل شخصية يحتاج نشراً. هنا الشخصية **بيانات**:
+// صف بـ`agent_profiles` (هجرة 0021) يركّبه هذا المحرّك، وتستدعيه القنوات الثلاث
+// (ودجت الموقع · واتساب · إنستغرام) — مصدر واحد، لا ثلاث نسخ تتباعد (قاعدة M2).
+//
+// ملاحظة: هذه دالة **نقيّة** (تأخذ الصف، ترجّع نصاً) — لا تلمس قاعدة البيانات،
+// عشان تبقى قابلة للاختبار بلا بيئة Cloudflare.
+
+const TONE_RULES = {
+  friendly: "ودودة ودافئة، قريبة من العميل بلا تكلف.",
+  formal: "مهنية ومحترمة، بلا مبالغة بالود ولا عامية زائدة.",
+  concise: "مباشرة ومختصرة جداً — المعلومة أولاً، بلا مقدمات."
+};
+
+const LENGTH_RULES = {
+  short: "سطر أو سطرين كحد أقصى.",
+  medium: "٣-٤ أسطر كحد أقصى.",
+  detailed: "فقرة قصيرة عند الحاجة، مع تقسيم بنقاط لو تعددت المعلومات."
+};
+
+function emojiRule(level) {
+  if (level === 0) return "ممنوع استخدام أي إيموجي إطلاقاً.";
+  if (level >= 2) return "الإيموجي مسموح بحرية لكن بذوق (٢-٣ كحد أقصى بالرد).";
+  return "إيموجي واحد كحد أقصى بالرد، وأحياناً بلا إيموجي.";
+}
+
+function safeParseJson(value, fallback) {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * يبني نص الشخصية الكامل من صف `agent_profiles`.
+ *
+ * @param {object} profile صف الجدول (أو كائن بنفس الحقول)
+ * @param {object} [extra]
+ * @param {string} [extra.channelRules] قواعد خاصة بالقناة (تعليق إنستغرام علني، واتساب…)
+ * @param {string} [extra.knowledgeContext] معرفة مسترجعة (RAG/منتجات/أسئلة شائعة)
+ * @returns {string}
+ */
+export function buildAgentPrompt(profile, extra = {}) {
+  const p = profile || {};
+  const agentName = p.agent_name || "هالة";
+  const businessName = p.business_name || "النشاط";
+  const dialect = p.dialect || "saudi_najdi";
+  const tone = TONE_RULES[p.tone] || TONE_RULES.friendly;
+  const length = LENGTH_RULES[p.reply_length] || LENGTH_RULES.short;
+  const emoji = emojiRule(typeof p.emoji_level === "number" ? p.emoji_level : 1);
+  const links = safeParseJson(p.knowledge_links, {});
+
+  const identityLines = [
+    `أنتِ "${agentName}"، المساعدة الرقمية لـ"${businessName}".`,
+    p.business_type ? `نوع النشاط: ${p.business_type}.` : null,
+    p.city ? `المقر: ${p.city}.` : null,
+    p.about ? `نبذة عن النشاط: ${p.about}` : null
+  ].filter(Boolean);
+
+  // سياسة الأسعار: الفرق بين تاجر يعرض أسعاره وبين وكالة توجّه للاستشارة.
+  // كانت مكتوبة بالكود لأورا وحدها — صارت إعداداً لكل عميل.
+  const priceRule =
+    Number(p.allow_prices) === 0
+      ? `**ممنوع منعاً باتاً ذكر أي رقم سعر.** لو سُئلتِ عن السعر، وضّحي أنه يختلف حسب الحاجة ووجّهي العميل للتواصل المباشر مع الفريق.`
+      : `تقدرين تذكرين الأسعار **الموجودة فعلاً** ببيانات المتجر أدناه فقط. لا تخترعين سعراً غير مذكور.`;
+
+  const policyLines = [
+    priceRule,
+    p.forbidden_topics ? `مواضيع ممنوع الخوض فيها:\n${p.forbidden_topics}` : null,
+    p.unknown_answer_policy
+      ? `حين لا تعرفين الإجابة: ${p.unknown_answer_policy}`
+      : `حين لا تعرفين الإجابة: قوليها بوضوح ووجّهي العميل للفريق — **ممنوع التخمين أو اختلاق معلومة**.`
+  ].filter(Boolean);
+
+  const escalationLines = [
+    p.working_hours ? `أوقات الدوام: ${p.working_hours}.` : null,
+    p.after_hours_reply ? `خارج الدوام: ${p.after_hours_reply}` : null,
+    p.escalation_number ? `عند التحويل لبشري، الرقم المعتمد: ${p.escalation_number}` : null
+  ].filter(Boolean);
+
+  const linkLines = Object.entries(links)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `- ${k}: ${v}`);
+
+  return `# شخصية "${agentName}"
+
+## من أنتِ
+${identityLines.join("\n")}
+
+## أسلوبك
+- اللهجة: ${dialectLabel(dialect)}.
+- النبرة: ${tone}
+- طول الرد: ${length}
+- الإيموجي: ${emoji}
+${p.custom_instructions ? `\n## تعليمات خاصة من صاحب النشاط\n${p.custom_instructions}` : ""}
+
+## السياسات (إلزامية)
+${policyLines.map((l) => `- ${l}`).join("\n")}
+${escalationLines.length ? `\n## التصعيد والدوام\n${escalationLines.map((l) => `- ${l}`).join("\n")}` : ""}
+${linkLines.length ? `\n## روابط مفيدة (شاركيها عند الحاجة)\n${linkLines.join("\n")}` : ""}
+${extra.knowledgeContext || ""}
+${extra.channelRules || ""}
+
+${WHITE_DIALECT_RULES}`;
+}

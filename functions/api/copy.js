@@ -11,6 +11,13 @@ import { recallStyleExamples } from "../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { requireCompletedAccount } from "../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
+import { getProfile, profileToPromptBlock } from "../_lib/services/storeProfile.js";
+
+// نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
+// الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
+// بمنتج ١٩٥ لا بمنتج ١. تثبيت النافذة يبقيها أداة "لا تكرري نفس الافتتاحية"
+// ولا يسمح لها بأن تصير مرجع الأسلوب؛ المرجع هو بصمة المتجر أدناه.
+const RECENT_OPENINGS_WINDOW = 5;
 
 const TONE_LABELS = {
   white: "لهجة بيضاء تسويقية ودودة",
@@ -28,7 +35,17 @@ function seedKeywords(name, category, extra) {
   return [...base].slice(0, 6);
 }
 
-function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples }) {
+/**
+ * البوابة الوحيدة لحقن البصمة — دالة مصدَّرة عمداً لتكون **مُختبَرة مباشرة**:
+ * الفرق بين `draft` و`approved` هنا هو كل ما يفصل "الإنسان قرر" عن "النموذج
+ * قرر نيابة عنه" عبر دفعة كاملة. مسودة، أو غياب بصمة، أو صف تالف ⇒ "" ⇒
+ * السلوك القديم بلا أي تغيير.
+ */
+export function approvedProfileBlock(profileRow) {
+  return profileRow?.status === "approved" ? profileToPromptBlock(profileRow.profile) : "";
+}
+
+export function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples, profileBlock }) {
   const avoid = recent.length
     ? `\n\n## لا تكرري هذه الافتتاحيات السابقة لنفس المتجر:\n${recent.map((r, i) => `${i + 1}. "${r.opening}"`).join("\n")}`
     : "";
@@ -41,6 +58,11 @@ function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, st
   // same name+category get near-identical generic output regardless of what
   // makes THIS one different.
   const grounding = [];
+  // بصمة المتجر أولاً عمداً — هي **المرساة** (PLAN_BULK_SEO.md §٥ الطبقة ١):
+  // نفس النص حرفياً بكل استدعاء عبر الدفعة كلها، فيقرأه النموذج قبل أي مدخل
+  // خاص بمنتج واحد. تُحقن فقط حين تكون معتمَدة من التاجر — انظر
+  // generateProductCopy أدناه.
+  if (profileBlock) grounding.push(profileBlock);
   if (existingDescription) {
     grounding.push(
       `## الوصف الحالي للمنتج (بيانات حقيقية — حسّني الصياغة والـSEO، لا تخترعي مواصفات غير مذكورة هنا أو بالمزايا المدخلة)\n"${existingDescription}"`
@@ -228,7 +250,16 @@ function parseSeoResponse(raw, name, price) {
 // job that's already rate-limited to ~1/sec by Salla.
 export async function generateProductCopy({ env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, keywordsExtra }) {
   const keywords = seedKeywords(name, category, keywordsExtra);
-  const recent = await recentCopy(env, merchantId).catch(() => []);
+  const recent = await recentCopy(env, merchantId, RECENT_OPENINGS_WINDOW).catch(() => []);
+
+  // بصمة المتجر: **المعتمَدة فقط**. مسودة (`draft`) لم يوافق عليها التاجر لا
+  // تُحقن إطلاقاً — بصمة اخترعها نموذج ثم طُبّقت على ٢٠٠ منتج بلا قرار إنسان
+  // هي أوسع انتهاك ممكن لمبدأ "الـAI يقترح والإنسان يقرر".
+  // الـcatch مقصود ولازم: جدول store_profiles قد لا يكون مطبَّقاً بعد
+  // (migrations/0019 مكتوبة وغير مطبَّقة) — غيابه يجب أن يُبقي السلوك القديم
+  // كما هو حرفياً، لا أن يُسقط توليد المحتوى.
+  const profileRow = await getProfile(env, { merchantId }).catch(() => null);
+  const profileBlock = approvedProfileBlock(profileRow);
 
   const visionNotes = imageUrl
     ? await askVisionAI({
@@ -242,7 +273,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
     : [];
 
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples });
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples, profileBlock });
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
   const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
 
