@@ -4,7 +4,7 @@
 // Generates: Title, SEO Title, Slug, Excerpt, Meta Description, Benefit Description,
 // Specs Table, FAQs, Image ALT, Tags, and JSON-LD Product Schema Markup.
 import { withApi } from "../_lib/core/respond.js";
-import { askWorkersAI, askVisionAI, TEXT_MODEL } from "../_lib/ai/gateway.js";
+import { askWorkersAI, askVisionAI, COPY_MODEL } from "../_lib/ai/gateway.js";
 import { PERSONA_SYSTEM_PROMPT } from "../_lib/ai/persona.js";
 import { recentCopy, saveCopy } from "../_lib/core/db.js";
 import { recallStyleExamples } from "../_lib/ai/memory.js";
@@ -352,7 +352,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     system,
     messages: [{ role: "user", content: userMsg }],
     maxTokens: 1200,
-    model: TEXT_MODEL,
+    model: COPY_MODEL,
     storeId: merchantId // scopes the KV cache — two merchants selling the same product name must not share copy
   });
 
