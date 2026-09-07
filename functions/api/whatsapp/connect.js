@@ -24,7 +24,7 @@
 // WA_SIGNUP_CONFIG_ID (+ the already-present META_APP_ID/WHATSAPP_APP_SECRET),
 // this activates with no code changes.
 import { withApi, json, ApiError } from "../../_lib/core/respond.js";
-import { getSessionMerchantId } from "../../_lib/core/session.js";
+import { requireCompletedAccount } from "../../_lib/core/session.js";
 import { saveWaConnection, getWaConnectionByPhoneId } from "../../_lib/core/db.js";
 import { checkRateLimit } from "../../_lib/core/rateLimit.js";
 import { syncCoexistenceHistory } from "../../_lib/integrations/whatsapp.js";
@@ -77,13 +77,12 @@ async function fetchPhoneDetails(phoneNumberId, businessToken) {
 }
 
 async function connectHandler(body, env, request, requestId, context) {
-  // A real logged-in merchant only. resolveStoreId() would fall back to the
-  // shared "default-store" pseudo-tenant for anonymous callers, which here
-  // would let a stranger bind a WhatsApp number to it.
-  const merchantId = await getSessionMerchantId(request, env);
-  if (!merchantId) {
-    throw new ApiError(401, "سجّل دخولك أولاً لربط واتساب.", "LOGIN_REQUIRED");
-  }
+  // A real logged-in merchant WITH a completed account only. resolveStoreId()
+  // would fall back to the shared "default-store" pseudo-tenant for anonymous
+  // callers, which here would let a stranger bind a WhatsApp number to it; and
+  // binding an external channel is a "real operation", so a Salla session with
+  // no `accounts` row gets 403 ACCOUNT_REQUIRED (see requireCompletedAccount).
+  const merchantId = await requireCompletedAccount(request, env, body?.storeId);
 
   const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
   const rate = await checkRateLimit(env, clientIp, "wa_connect", 5, 300);

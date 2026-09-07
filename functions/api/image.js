@@ -10,7 +10,7 @@
 import { withApi, ApiError } from "../_lib/core/respond.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { generateProductImage, STYLE_PRESETS } from "../_lib/imageProvider.js";
-import { resolveMerchantStoreId } from "../_lib/core/session.js";
+import { requireCompletedAccount } from "../_lib/core/session.js";
 import { checkRateLimit } from "../_lib/core/rateLimit.js";
 
 async function imageHandler(body, env, request) {
@@ -23,7 +23,7 @@ async function imageHandler(body, env, request) {
   }
 
   // Merchant-facing image generation — no anonymous "default-store" path.
-  const merchantId = await resolveMerchantStoreId(request, env, body.storeId);
+  const merchantId = await requireCompletedAccount(request, env, body.storeId);
   const imageBase64 = (body.imageBase64 || "").toString();
   const mime = (body.mime || "image/png").toString();
   const styleKey = STYLE_PRESETS[body.style] ? body.style : "minimal-white";

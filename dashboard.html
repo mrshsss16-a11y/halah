@@ -335,7 +335,95 @@
     <p>حقوق الطبع والنشر © 2026 <strong>أورا للتسويق (Aura Marketing)</strong> — جميع الحقوق محفوظة.</p>
   </footer>
 
+  <!-- إكمال الحساب: يظهر عند أول عملية حقيقية لتاجر سلة دخل بلا تسجيل عندنا -->
+  <div id="acctModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-sm p-6 space-y-4">
+      <div class="space-y-1">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <span class="material-symbols-outlined text-base">lock_person</span>
+          <span>أكمل حسابك</span>
+        </h3>
+        <p id="acctModalMsg" class="text-xs text-slate-600 font-medium leading-relaxed">
+          متجرك مربوط تمام. باقي بس بريدك وكلمة مرور عشان تقدر تستخدم مميزات هالة.
+        </p>
+      </div>
+      <input id="acctEmail" type="email" inputmode="email" placeholder="البريد الإلكتروني"
+             class="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-slate-400" />
+      <input id="acctPassword" type="password" placeholder="كلمة المرور (٨ أحرف على الأقل)"
+             class="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-slate-400" />
+      <div id="acctError" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-medium"></div>
+      <div class="flex gap-2">
+        <button id="acctSubmit" onclick="submitCompleteAccount()"
+                class="flex-1 sleek-btn-black py-3 rounded-xl text-xs transition">إنشاء الحساب</button>
+        <button onclick="closeAccountModal()"
+                class="px-4 py-3 rounded-xl text-xs font-bold text-slate-600 border border-slate-200 transition">لاحقاً</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // ── بوابة إكمال الحساب ────────────────────────────────────────────────
+    // أي استدعاء يرجع code: "ACCOUNT_REQUIRED" (403) معناه: التاجر داخل بجلسة
+    // سلة سارية لكن بلا حساب عندنا. نلتقط ذلك مركزياً بلف fetch مرة واحدة بدل
+    // تكرار الفحص بكل نداء. لا مكتبات جديدة.
+    function openAccountModal(msg) {
+      const el = document.getElementById('acctModal');
+      if (!el) return;
+      if (msg) document.getElementById('acctModalMsg').innerText = msg;
+      document.getElementById('acctError').classList.add('hidden');
+      el.classList.remove('hidden');
+    }
+    function closeAccountModal() {
+      const el = document.getElementById('acctModal');
+      if (el) el.classList.add('hidden');
+    }
+
+    (function () {
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = async function (...args) {
+        const res = await nativeFetch(...args);
+        if (res.status === 403) {
+          // clone(): لا نستهلك الجسم — المستدعي الأصلي لازم يقرأه بنفسه.
+          const peek = await res.clone().json().catch(() => null);
+          if (peek && peek.code === 'ACCOUNT_REQUIRED') openAccountModal(peek.error);
+        }
+        return res;
+      };
+    })();
+
+    async function submitCompleteAccount() {
+      const btn = document.getElementById('acctSubmit');
+      const err = document.getElementById('acctError');
+      const email = document.getElementById('acctEmail').value.trim();
+      const password = document.getElementById('acctPassword').value;
+      err.classList.add('hidden');
+      btn.disabled = true;
+      btn.innerText = 'جارٍ الإنشاء...';
+      try {
+        const res = await fetch('/api/auth/complete_account', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          err.innerText = data.error || 'تعذر إنشاء الحساب. حاول مرة ثانية.';
+          err.classList.remove('hidden');
+          return;
+        }
+        closeAccountModal();
+        // لا نعيد المحاولة آلياً: الطلب الأصلي قد يكون رفعاً بالجملة أو نشراً،
+        // وإعادته بصمت قد تُنفّذ عملية لم يقصدها التاجر الآن.
+        alert('تم إنشاء حسابك. أعد الضغط على الزر اللي كنت تحاول تستخدمه.');
+      } catch (e) {
+        err.innerText = 'تعذر الاتصال. حاول مرة ثانية.';
+        err.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'إنشاء الحساب';
+      }
+    }
+
     let lastCopy = null;
     // chat.js takes the full turn list and picks the last user message itself,
     // so keeping history here is what gives the agent conversational context.

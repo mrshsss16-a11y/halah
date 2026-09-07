@@ -184,6 +184,47 @@ export async function resolveMerchantStoreId(request, env, claimedStoreId) {
 }
 
 /**
+ * Gate for "real operations" — anything that spends our AI budget, writes to
+ * the merchant's Salla store, or binds an external channel (WhatsApp).
+ *
+ * Decision (option ب, project owner 2026-09-07): a Salla merchant installs the
+ * app and lands in the dashboard INSTANTLY with no registration of ours — the
+ * webhook `app.store.authorize` creates the `merchants` row and
+ * /api/auth/salla_embedded issues a full session. That immediate value is the
+ * Easy-Mode experience Salla reviews, so we do NOT block the door. We block the
+ * first real operation instead.
+ *
+ * Three distinct outcomes, deliberately NOT collapsed into one:
+ *   1. Fully anonymous (no session, no addressable merchant)
+ *        → 401 LOGIN_REQUIRED   (thrown by resolveMerchantStoreId — P36 fix)
+ *   2. Salla merchant WITH a valid session but NO row in `accounts`
+ *        → 403 ACCOUNT_REQUIRED (this function; the dashboard shows the
+ *          "complete your account" screen and posts to /api/auth/complete_account)
+ *   3. Completed account (a row in `accounts` for this merchant)
+ *        → passes, returns merchantId
+ *
+ * Read-only endpoints (store/overview, store/status, usage, store/bulk/status)
+ * intentionally keep using resolveStoreId/resolveMerchantStoreId so the merchant
+ * can still see their connected store before completing registration.
+ *
+ * Fail closed: if the account lookup itself errors (D1 down), we do NOT assume a
+ * completed account — the merchant gets ACCOUNT_REQUIRED rather than free access.
+ */
+export async function requireCompletedAccount(request, env, claimedStoreId) {
+  const merchantId = await resolveMerchantStoreId(request, env, claimedStoreId);
+
+  const email = await getAccountEmail(env, merchantId).catch(() => null);
+  if (!email) {
+    throw new ApiError(
+      403,
+      "أكمل تسجيل حسابك عشان تقدر تستخدم هذي الميزة.",
+      "ACCOUNT_REQUIRED"
+    );
+  }
+  return merchantId;
+}
+
+/**
  * Admin gate: session token only carries merchantId (see resolveStoreId
  * above), never email — so this looks up the account's email in D1 and
  * checks it against ADMIN_EMAILS or DB is_admin.
