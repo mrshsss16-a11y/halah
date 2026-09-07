@@ -1104,3 +1104,75 @@ export async function claimIgEvent(env, { eventId, merchantId, kind }) {
     .catch(() => null);
   return Boolean(row);
 }
+
+// ── المرحلة ١ (docs/PLAN_BULK_SEO.md): طابور موجّه بـkind ────────────────────
+// نفس جدول bulk_jobs، وعمود `kind` يقرر أي معالج يصرّف الوظيفة بالـcron.
+// وظائف catalog_sync بلا bulk_job_items إطلاقاً: تقدّمها محفوظ بـ`cursor`
+// (رقم الصفحة التالية بسلة) لأن صفحة واحدة فقط تُسحب لكل تِك — تجاوز حد
+// ١ طلب/ثانية يوقف اتصال المتجر كاملاً لا الطلب وحده.
+
+/** وظيفة نشطة من نوع معيّن لهذا التاجر — لمنع وظيفتين متوازيتين على نفس المتجر. */
+export async function getActiveJobByKind(env, merchantId, kind) {
+  if (!env.DB || !merchantId) return null;
+  return env.DB.prepare(
+    "SELECT id, kind, status, cursor, processed, succeeded, failed, created_at FROM bulk_jobs WHERE merchant_id = ? AND kind = ? AND status = 'running' ORDER BY created_at DESC"
+  )
+    .bind(merchantId, kind)
+    .first();
+}
+
+/** ينشئ وظيفة سحب كتالوج (بلا صفوف — التقدّم بالـcursor). */
+export async function createCatalogSyncJob(env, { id, merchantId }) {
+  await env.DB.prepare(
+    "INSERT INTO bulk_jobs (id, merchant_id, kind, cursor, total) VALUES (?, ?, 'catalog_sync', '1', 0)"
+  )
+    .bind(id, merchantId)
+    .run();
+  return id;
+}
+
+// tenant-audit-ok: مسح على مستوى الخادم لطابور الـcron — بالتعريف عابر
+// للمستأجرين (مثل listActiveBulkJobItems). merchant_id يعود بالصف نفسه
+// ويُمرَّر لكل استدعاء سلة/كتالوج بعده، فالعزل يُفرض بالمستدعي.
+export async function claimNextCatalogSyncJob(env) {
+  return env.DB.prepare(
+    "SELECT id, merchant_id, cursor, processed FROM bulk_jobs WHERE kind = 'catalog_sync' AND status = 'running' ORDER BY updated_at ASC LIMIT 1"
+  ).first();
+}
+
+/** يسجّل نتيجة صفحة واحدة من السحب (عدّاد داخلي، غير مواجه للتاجر). */
+export async function advanceCatalogSyncJob(env, { jobId, imported, nextPage }) {
+  const finished = !nextPage;
+  // tenant-audit-ok: jobId مصدره claimNextCatalogSyncJob() أعلاه (صف طابور
+  // داخلي)، لا مدخل عميل. لا endpoint تاجر يستدعي هذه الدالة؛ لو استُدعيت
+  // يوماً من نقطة تاجر فلازم تمرّ بـgetBulkJob(jobId, merchantId) أولاً.
+  await env.DB.prepare(
+    `UPDATE bulk_jobs SET
+       cursor = ?,
+       total = total + ?,
+       processed = processed + ?,
+       succeeded = succeeded + ?,
+       status = CASE WHEN ? = 1 THEN 'done' ELSE status END,
+       updated_at = datetime('now')
+     WHERE id = ?`
+  )
+    .bind(
+      finished ? null : String(nextPage),
+      imported,
+      imported,
+      imported,
+      finished ? 1 : 0,
+      jobId
+    )
+    .run();
+}
+
+/** يوقف وظيفة سحب متعثّرة (خطأ سلة مثلاً) بدل تركها تدور كل تِك. */
+export async function failCatalogSyncJob(env, jobId) {
+  // tenant-audit-ok: نفس jobId الداخلي الموثوق أعلاه (طابور الـcron لا مدخل عميل).
+  await env.DB.prepare(
+    "UPDATE bulk_jobs SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?"
+  )
+    .bind(jobId)
+    .run();
+}

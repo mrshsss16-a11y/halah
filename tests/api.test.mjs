@@ -1283,6 +1283,250 @@ async function runTests() {
     );
   }
 
+  // ── النشر بعد الاعتماد (docs/INSTAGRAM_PLAN.md §٢.٢) ────────────────────
+  {
+    const { publishApproved } = await import("../functions/_lib/services/publishApproved.js");
+
+    // DB وهمي: ig_connections تربط IG_A بالتاجر m_a فقط، وrecordPublishResult
+    // يسجّل ما وصله.
+    let recorded = null;
+    const pubDb = (igOwner) => ({
+      prepare(sql) {
+        return {
+          bind(...args) {
+            return {
+              first: async () => {
+                if (/FROM ig_connections WHERE ig_user_id/.test(sql)) {
+                  return args[0] === "IG_A"
+                    ? { merchant_id: igOwner, ig_user_id: "IG_A", access_token: "tok" }
+                    : null;
+                }
+                if (/UPDATE review_queue/.test(sql)) {
+                  recorded = { error: args[0], externalId: args[1] };
+                  return { id: args[3], merchant_id: args[4] };
+                }
+                return null;
+              },
+              run: async () => ({ meta: {} })
+            };
+          }
+        };
+      }
+    });
+
+    const igRow = (payload, overrides = {}) => ({
+      id: 1,
+      merchant_id: "m_a",
+      kind: "social_reply",
+      payload: JSON.stringify(payload),
+      ...overrides
+    });
+
+    // النافذة انتهت ⇒ رفض قبل أي نداء لـMeta، برسالة عربية لا خطأ مزوّد غامض.
+    recorded = null;
+    const expired = await publishApproved(
+      { DB: pubDb("m_a") },
+      igRow({
+        channel: "instagram",
+        mode: "comment_reply",
+        igId: "IG_A",
+        commentId: "C1",
+        draft: "أهلين",
+        expiresAt: new Date(Date.now() - 1000).toISOString()
+      })
+    );
+    assert(
+      expired.published === false && /فات وقت الرد/.test(expired.error || ""),
+      "PUB-1: عنصر فاتت نافذته يُرفض برسالة عربية قبل نداء Meta"
+    );
+
+    // عدم تطابق التاجر ⇒ رفض. حمولة تشير لحساب إنستغرام يملكه تاجر آخر لا يجوز
+    // أن ترسل باسمه — هذا تسريب عبر المستأجرين لو مرّ.
+    recorded = null;
+    const mismatch = await publishApproved(
+      { DB: pubDb("m_OTHER") },
+      igRow({
+        channel: "instagram",
+        mode: "comment_reply",
+        igId: "IG_A",
+        commentId: "C1",
+        draft: "أهلين"
+      })
+    );
+    assert(
+      mismatch.published === false && /عدم تطابق/.test(mismatch.error || ""),
+      "PUB-2: حساب إنستغرام يخص تاجراً آخر ⇒ رفض الإرسال (عزل)"
+    );
+
+    // حساب غير مربوط ⇒ رسالة عربية واضحة، لا استثناء يتسرب للمستدعي.
+    recorded = null;
+    const unlinked = await publishApproved(
+      { DB: pubDb("m_a") },
+      igRow({ channel: "instagram", mode: "dm", igId: "IG_UNKNOWN", recipientId: "U1", draft: "x" })
+    );
+    assert(
+      unlinked.published === false && /غير مربوط/.test(unlinked.error || ""),
+      "PUB-3: حساب غير مربوط ⇒ خطأ عربي مسجّل، بلا رمي للمستدعي"
+    );
+
+    // قناة غير مدعومة ⇒ رفض صريح لا نشر صامت.
+    recorded = null;
+    const badChannel = await publishApproved(
+      { DB: pubDb("m_a") },
+      igRow({ channel: "tiktok", draft: "x" })
+    );
+    assert(
+      badChannel.published === false && /قناة غير مدعومة/.test(badChannel.error || ""),
+      "PUB-4: قناة غير مدعومة تُرفض صراحةً"
+    );
+
+    // نوع بلا وجهة خارجية (تقرير) ⇒ الاعتماد نفسه هو النتيجة.
+    const report = await publishApproved(
+      { DB: pubDb("m_a") },
+      { id: 9, merchant_id: "m_a", kind: "report", payload: "{}" }
+    );
+    assert(
+      report.published === true && report.externalId === null,
+      "PUB-5: التقرير لا وجهة نشر خارجية له — الاعتماد يكفي"
+    );
+
+    // فشل النشر يُسجَّل ولا يُرمى — الاعتماد البشري لا يُبطله عطل شبكة.
+    assert(
+      typeof mismatch.error === "string" && mismatch.published === false,
+      "PUB-6: فشل النشر يعود كنتيجة مسجّلة، لا كاستثناء يُبطل الاعتماد"
+    );
+  }
+
+  // ── المرحلة ١: سحب كتالوج سلة (services/catalog.js + توجيه kind) ──────────
+  {
+    const { syncCatalogPage, listCatalog, getCatalogItem } = await import(
+      "../functions/_lib/services/catalog.js"
+    );
+
+    // DB وهمي يسجّل كل استعلام مع قيمه المربوطة.
+    function catalogDb(log) {
+      const rec = (sql) => ({
+        bind: (...args) => {
+          log.push({ sql, args });
+          return {
+            run: async () => ({}),
+            first: async () => null,
+            all: async () => ({ results: [] }),
+            _sql: sql,
+            _args: args
+          };
+        }
+      });
+      return {
+        prepare: rec,
+        batch: async (stmts) => {
+          for (const s of stmts) log.push({ sql: s._sql, args: s._args, batched: true });
+          return [];
+        }
+      };
+    }
+
+    const page1 = {
+      data: [
+        { id: "1", sku: "SKU-A", name: "عباية", price: { amount: 300, currency: "SAR" }, description: "وصف أصلي", categories: [{ name: "عبايات" }] },
+        { id: "2", name: "منتج بلا رمز", price: 100 },          // بلا SKU
+        { id: "3", sku: "SKU-B", name: "شيلة" },
+        { id: "4", sku: "   ", name: "رمز فاضي" }                // يُعدّ كذلك
+      ],
+      pagination: { currentPage: 1, totalPages: 2 }
+    };
+
+    const log = [];
+    const res = await syncCatalogPage(
+      { DB: catalogDb(log) },
+      { merchantId: "m_a", page: 1, fetchPage: async () => page1 }
+    );
+
+    assert(res.imported === 2, "CAT-1: صفّان صالحان يُدرجان من الصفحة");
+    assert(
+      res.skippedNoSku === 2 && res.received === 4,
+      "CAT-2: منتجات بلا SKU تُعدّ صراحةً (٢) ولا تُسقط صامتة"
+    );
+    assert(
+      res.hasMore === true && res.nextPage === 2,
+      "CAT-3: pagination تحدد الصفحة التالية — صفحة واحدة لكل تِك (حد سلة)"
+    );
+
+    const writes = log.filter((l) => l.batched && /INSERT INTO store_products/.test(l.sql));
+    assert(
+      writes.length === 2 && writes.every((w) => /merchant_id/.test(w.sql) && w.args[0] === "m_a"),
+      "CAT-4: كل كتابة على store_products تحمل merchant_id للتاجر الصحيح"
+    );
+    assert(
+      writes.every((w) => /ON CONFLICT\(merchant_id, sku\)/.test(w.sql)),
+      "CAT-5: مفتاح التعارض (merchant_id, sku) — SKU مكرر بين متجرين لا يدهس"
+    );
+    // الوصف الأصلي محفوظ — بدونه ميزة التراجع مستحيلة (المخاطرة ٤ بالخطة).
+    assert(
+      writes[0].args.includes("وصف أصلي"),
+      "CAT-6: current_description يحفظ الوصف الأصلي من سلة"
+    );
+
+    // آخر صفحة: بلا nextPage ⇒ الـcron ينهي الوظيفة.
+    const last = await syncCatalogPage(
+      { DB: catalogDb([]) },
+      {
+        merchantId: "m_a",
+        page: 2,
+        fetchPage: async () => ({ data: [{ sku: "S", name: "n" }], pagination: { currentPage: 2, totalPages: 2 } })
+      }
+    );
+    assert(last.hasMore === false && last.nextPage === null, "CAT-7: آخر صفحة توقف السحب");
+
+    // العزل: قراءة بلا merchantId ترمي (fail closed) لا ترجع كتالوج الجميع.
+    let threw = false;
+    try {
+      await listCatalog({ DB: catalogDb([]) }, { merchantId: "" });
+    } catch {
+      threw = true;
+    }
+    assert(threw, "CAT-8: listCatalog بلا merchantId ترمي — لا قراءة عابرة للمستأجرين");
+
+    const readLog = [];
+    await listCatalog({ DB: catalogDb(readLog) }, { merchantId: "m_b", limit: 10 });
+    await getCatalogItem({ DB: catalogDb(readLog) }, { merchantId: "m_b", sku: "SKU-A" });
+    assert(
+      readLog.length === 2 && readLog.every((r) => /merchant_id = \?/.test(r.sql) && r.args[0] === "m_b"),
+      "CAT-9: كل قراءة من store_products مشروطة بـmerchant_id"
+    );
+
+    // التوجيه: وظيفة catalog_sync لا تُرى كصف توليد، والمسار الحالي سليم.
+    const { claimNextCatalogSyncJob, getActiveJobByKind } = await import(
+      "../functions/_lib/core/db.js"
+    );
+    const routeLog = [];
+    const routeDb = {
+      DB: {
+        prepare: (sql) => ({
+          bind: (...args) => {
+            routeLog.push({ sql, args });
+            return { first: async () => null, run: async () => ({}), all: async () => ({ results: [] }) };
+          },
+          first: async () => {
+            routeLog.push({ sql, args: [] });
+            return null;
+          }
+        })
+      }
+    };
+    await claimNextCatalogSyncJob(routeDb);
+    assert(
+      routeLog.some((r) => /kind = 'catalog_sync'/.test(r.sql) && /status = 'running'/.test(r.sql)),
+      "CAT-10: الـcron يلتقط وظائف catalog_sync فقط بالنوع — مسار seo_generate بلا مساس"
+    );
+    routeLog.length = 0;
+    await getActiveJobByKind(routeDb, "m_c", "catalog_sync");
+    assert(
+      routeLog.length === 1 && /merchant_id = \?/.test(routeLog[0].sql) && routeLog[0].args[0] === "m_c",
+      "CAT-11: فحص الوظيفة النشطة مشروط بالتاجر — يمنع وظيفة ثانية لنفس المتجر"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

@@ -134,12 +134,15 @@ async function transition(env, { merchantId, id, reviewedBy, next, reason = null
     throw invalid("سبب الرفض طويل جداً.", "reviewQueue: reason too long");
   }
 
+  // payload يُعاد مع الاعتماد لأن النشر يحتاجه فوراً (publishApproved.js).
+  // قراءته بنفس العبارة الذرّية بدل SELECT ثانٍ يمنع سباقاً: بين UPDATE وSELECT
+  // منفصلين قد يتغير الصف، فيُنشر محتوى غير الذي اعتُمد.
   const updated = await db
     .prepare(
       `UPDATE review_queue
           SET status = ?, reviewed_by = ?, reviewed_at = datetime('now'), review_note = ?
         WHERE id = ? AND merchant_id = ? AND status = 'pending'
-        RETURNING id, merchant_id, kind, status, reviewed_by, reviewed_at, review_note`
+        RETURNING id, merchant_id, kind, payload, status, reviewed_by, reviewed_at, review_note`
     )
     .bind(next, reviewedBy.trim(), reason === null ? null : String(reason), rowId, mid)
     .first();
@@ -164,4 +167,48 @@ export async function approve(env, { merchantId, id, reviewedBy }) {
 
 export async function reject(env, { merchantId, id, reviewedBy, reason = null }) {
   return transition(env, { merchantId, id, reviewedBy, next: "rejected", reason });
+}
+
+/**
+ * تسجيل نتيجة النشر بعد الاعتماد (migrations/0018).
+ *
+ * لا يلمس `status` إطلاقاً: الحالة قرار الإنسان، والنشر حدث لاحق قد يفشل لأسباب
+ * خارجة عنه (نافذة Meta انتهت، توكن، حد معدل). فشل شبكة لا يجوز أن يمحو قراراً
+ * بشرياً.
+ *
+ * الشرط `status = 'approved'` يمنع تسجيل نشر لصف مرفوض أو معلّق — لا يُنشر إلا
+ * المعتمد، ولا يُسجَّل إلا عليه.
+ */
+export async function recordPublishResult(env, { merchantId, id, externalId = null, error = null }) {
+  const db = requireDb(env);
+  const mid = requireMerchantId(merchantId);
+  const rowId = requireId(id);
+
+  const row = await db
+    .prepare(
+      `UPDATE review_queue
+          SET published_at = CASE WHEN ? IS NULL THEN datetime('now') ELSE published_at END,
+              external_id = COALESCE(?, external_id),
+              publish_error = ?
+        WHERE id = ? AND merchant_id = ? AND status = 'approved'
+        RETURNING id, merchant_id, published_at, external_id, publish_error`
+    )
+    .bind(
+      error === null ? null : String(error).slice(0, 500),
+      externalId === null ? null : String(externalId),
+      error === null ? null : String(error).slice(0, 500),
+      rowId,
+      mid
+    )
+    .first();
+
+  if (!row) {
+    throw new ApiError(
+      404,
+      "العنصر غير موجود أو غير معتمد.",
+      "REVIEW_NOT_APPROVED",
+      "reviewQueue: no approved row to record publish result on"
+    );
+  }
+  return row;
 }

@@ -1,0 +1,219 @@
+// المرحلة ١ من docs/PLAN_BULK_SEO.md — الطبقة الوحيدة اللي تلمس جدول store_products.
+//
+// لماذا طبقة خدمة (services/، معيار M1) بدل استعلامات موزّعة على الـendpoints:
+// شرط العزل (merchant_id) مفروض بمكان واحد لا يمكن نسيانه — نفس منطق
+// reviewQueue.js. أي استدعاء بلا merchantId يرمي فوراً (fail closed)، لا قيمة
+// افتراضية ولا "تمرير برشاقة".
+//
+// حد سلة: ١ طلب/ثانية لكل متجر، وتجاوزه يوقف اتصال المتجر **كاملاً** لا الطلب
+// وحده (.claude/skills/salla-integration/SKILL.md). لذلك syncCatalogPage تسحب
+// **صفحة واحدة فقط** لكل استدعاء، والـcron يستدعيها مرة كل تِك.
+import { ApiError } from "../core/respond.js";
+import { listProducts } from "../integrations/salla.js";
+
+const MAX_LIMIT = 100;
+const DEFAULT_LIMIT = 50;
+const UPSERT_CHUNK = 50; // D1 batch() — جولة واحدة بدل N
+
+function invalid(message, internal) {
+  return new ApiError(400, message, "CATALOG_INVALID", internal);
+}
+
+function requireMerchantId(merchantId) {
+  if (typeof merchantId !== "string" || !merchantId.trim()) {
+    throw invalid("المتجر غير محدد.", "catalog: missing merchantId");
+  }
+  return merchantId.trim();
+}
+
+function requireDb(env) {
+  if (!env?.DB) {
+    throw new ApiError(503, "الخدمة غير متاحة حالياً.", "DB_UNAVAILABLE", "catalog: DB binding missing");
+  }
+  return env.DB;
+}
+
+function text(value, max) {
+  if (value === null || value === undefined) return null;
+  const s = String(value).trim();
+  if (!s) return null;
+  return s.slice(0, max);
+}
+
+/** سعر سلة يجي ككائن {amount, currency} أو رقم أو نص — نطبّعه لنص واحد. */
+function normalizePrice(price) {
+  if (price === null || price === undefined) return null;
+  if (typeof price === "object") {
+    const amount = price.amount ?? price.value ?? null;
+    if (amount === null || amount === undefined) return null;
+    const currency = text(price.currency, 10);
+    return text(currency ? `${amount} ${currency}` : `${amount}`, 40);
+  }
+  return text(price, 40);
+}
+
+/** أول فئة من سلة: categories[].name أو category.name. */
+function normalizeCategory(product) {
+  const list = Array.isArray(product?.categories) ? product.categories : [];
+  const first = list.find((c) => c && (c.name || typeof c === "string"));
+  if (first) return text(typeof first === "string" ? first : first.name, 60);
+  return text(product?.category?.name || product?.category, 60);
+}
+
+function normalizeImage(product) {
+  const main = product?.main_image || product?.image?.url || product?.thumbnail;
+  if (main) return text(typeof main === "string" ? main : main.url, 500);
+  const images = Array.isArray(product?.images) ? product.images : [];
+  const first = images.find((i) => i && (i.url || typeof i === "string"));
+  if (!first) return null;
+  return text(typeof first === "string" ? first : first.url, 500);
+}
+
+/**
+ * يحوّل منتج سلة لصف store_products، أو null لو غير صالح للتخزين.
+ * منتج بلا SKU **لا يُدرَج** — المفتاح الأساسي (merchant_id, sku) يتطلبه.
+ * المستدعي يعدّه ويُبلغ عنه (المخاطرة ٧ بالخطة) بدل إسقاطه صامتاً.
+ */
+function toRow(product) {
+  const sku = text(product?.sku, 100);
+  const name = text(product?.name, 200);
+  if (!sku || !name) return null;
+  return {
+    sku,
+    name,
+    sallaProductId: text(product?.id, 60),
+    price: normalizePrice(product?.price),
+    category: normalizeCategory(product),
+    currentDescription: text(product?.description, 20000),
+    imageUrl: normalizeImage(product)
+  };
+}
+
+/** استنتاج "هل فيه صفحة تالية" من شكل pagination المتغيّر بسلة. */
+function hasMorePages(payload, page, received) {
+  const p = payload?.pagination || {};
+  const current = Number(p.currentPage ?? p.current_page ?? page);
+  const totalPages = Number(p.totalPages ?? p.total_pages);
+  if (Number.isFinite(totalPages) && totalPages > 0) return current < totalPages;
+  // بلا pagination موثوقة: صفحة ممتلئة ⇒ غالباً فيه تالية.
+  return received >= 60;
+}
+
+/**
+ * يسحب **صفحة واحدة** من كتالوج سلة ويخزّنها بـstore_products.
+ *
+ * `fetchPage` منفذ حقن للاختبار فقط (الافتراضي listProducts الحقيقية) — يسمح
+ * باختبار العزل وعدّ منتجات بلا SKU بلا شبكة ولا توكنات.
+ *
+ * @returns {Promise<{imported:number, skippedNoSku:number, received:number,
+ *                    hasMore:boolean, nextPage:number|null, page:number}>}
+ */
+export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = listProducts } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const pageNum = Math.max(1, Math.floor(Number(page) || 1));
+
+  const payload = await fetchPage(env, mid, pageNum);
+  const products = Array.isArray(payload?.data) ? payload.data : [];
+
+  const rows = [];
+  let skippedNoSku = 0;
+  for (const product of products) {
+    const row = toRow(product);
+    if (!row) {
+      skippedNoSku++;
+      continue;
+    }
+    rows.push(row);
+  }
+
+  if (rows.length) {
+    // العزل: merchant_id بكل صف مُدرَج، ومفتاح التعارض (merchant_id, sku)
+    // يمنع أي كتابة فوق صف تاجر ثانٍ حتى لو تكرر SKU بين متجرين.
+    const stmt = db.prepare(
+      `INSERT INTO store_products
+         (merchant_id, sku, salla_product_id, name, price, category, current_description, image_url, synced_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+       ON CONFLICT(merchant_id, sku) DO UPDATE SET
+         salla_product_id = excluded.salla_product_id,
+         name = excluded.name,
+         price = excluded.price,
+         category = excluded.category,
+         current_description = excluded.current_description,
+         image_url = excluded.image_url,
+         synced_at = datetime('now')`
+    );
+    const batch = rows.map((r) =>
+      stmt.bind(mid, r.sku, r.sallaProductId, r.name, r.price, r.category, r.currentDescription, r.imageUrl)
+    );
+    for (let i = 0; i < batch.length; i += UPSERT_CHUNK) {
+      await db.batch(batch.slice(i, i + UPSERT_CHUNK));
+    }
+  }
+
+  const more = hasMorePages(payload, pageNum, products.length);
+  return {
+    page: pageNum,
+    received: products.length,
+    imported: rows.length,
+    skippedNoSku,
+    hasMore: more,
+    nextPage: more ? pageNum + 1 : null
+  };
+}
+
+/** صفحة من كتالوج تاجر واحد — صفر طلبات سلة. */
+export async function listCatalog(env, { merchantId, limit = DEFAULT_LIMIT, offset = 0, category = null } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const lim = Math.min(MAX_LIMIT, Math.max(1, Math.floor(Number(limit) || DEFAULT_LIMIT)));
+  const off = Math.max(0, Math.floor(Number(offset) || 0));
+  const cat = text(category, 60);
+
+  const { results } = cat
+    ? await db
+        .prepare(
+          `SELECT sku, salla_product_id, name, price, category, current_description, image_url, synced_at
+           FROM store_products WHERE merchant_id = ? AND category = ?
+           ORDER BY synced_at DESC, sku ASC LIMIT ? OFFSET ?`
+        )
+        .bind(mid, cat, lim, off)
+        .all()
+    : await db
+        .prepare(
+          `SELECT sku, salla_product_id, name, price, category, current_description, image_url, synced_at
+           FROM store_products WHERE merchant_id = ?
+           ORDER BY synced_at DESC, sku ASC LIMIT ? OFFSET ?`
+        )
+        .bind(mid, lim, off)
+        .all();
+
+  return results || [];
+}
+
+/** منتج واحد بالـSKU — مشروط بالمتجر دائماً (SKU ليس فريداً عالمياً). */
+export async function getCatalogItem(env, { merchantId, sku } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const key = text(sku, 100);
+  if (!key) throw invalid("رمز المنتج (SKU) غير محدد.", "catalog: missing sku");
+
+  return db
+    .prepare(
+      `SELECT sku, salla_product_id, name, price, category, current_description, image_url, synced_at
+       FROM store_products WHERE merchant_id = ? AND sku = ?`
+    )
+    .bind(mid, key)
+    .first();
+}
+
+/** عدّاد الكتالوج — يستعمله endpoint السحب لعرض حجم المتجر بصدق. */
+export async function countCatalog(env, { merchantId } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const row = await db
+    .prepare("SELECT COUNT(*) AS n FROM store_products WHERE merchant_id = ?")
+    .bind(mid)
+    .first();
+  return Number(row?.n || 0);
+}

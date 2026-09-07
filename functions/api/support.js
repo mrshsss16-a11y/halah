@@ -63,6 +63,12 @@ async function supportHandler(body, env, request) {
     }
   }
 
+  // Public identifier, not a secret — see file header. Any site's widget
+  // passes its own storeId; the current site (index.html) omits it, which
+  // keeps defaulting to "hala" so nothing about the existing widget changes.
+  const merchantId = (body.storeId || "hala").toString().slice(0, 40);
+  const isAuraLine = merchantId === "hala";
+
   const incoming = Array.isArray(body.messages) ? body.messages : [];
   const turns = incoming
     .filter((m) => m && (m.role === "user" || m.role === "assistant") && m.content)
@@ -73,39 +79,86 @@ async function supportHandler(body, env, request) {
     return { error: "ما فيه رسالة." };
   }
 
+  const usage = await checkAndConsumeMonthly(env, merchantId, "message");
+  if (!usage.ok) {
+    return {
+      error: `خلص رصيدك الشهري من الرسائل (${usage.limit} رسالة) — يتجدد أول الشهر القادم.`,
+      code: "OUT_OF_CREDITS",
+      remaining: 0
+    };
+  }
+
   const lastUserText = turns[turns.length - 1].content;
-  const memories = await recallSimilar({ env, storeId: "hala", question: lastUserText }).catch(() => []);
+  const memories = await recallSimilar({ env, storeId: merchantId, question: lastUserText }).catch(() => []);
   const ragContext = memories.length
     ? `\n\n## معرفة ذات صلة (استخدميها لو تساعد بالإجابة، تجاهليها لو مو مرتبطة)\n${memories
         .map((m) => `- س: ${m.question}\n  ج: ${m.reply}`)
         .join("\n")}`
     : "";
 
+  // Aura's own sales persona vs. the general merchant persona (same one
+  // chat.js uses) — a future merchant's widget must speak as THEIR
+  // assistant, never as Hala pitching Aura's own services to their visitor.
+  const systemPrompt = isAuraLine ? HALA_SUPPORT_PROMPT : PERSONA_SYSTEM_PROMPT;
+
   let reply = await askWorkersAI({
     env,
-    system: `${HALA_SUPPORT_PROMPT}${ragContext}`,
+    system: `${systemPrompt}${ragContext}`,
     messages: turns,
     maxTokens: 400,
-    storeId: "hala" // Aura's own website widget — single tenant, safe to share
+    storeId: merchantId
   });
 
-  reply = stripFabricatedPricing(reply);
+  // Hala has no published post-trial price (persona rule) — a merchant's own
+  // store legitimately quotes its own product prices, so this guard is
+  // Aura-line only. Applying it generally would strip a merchant's real prices.
+  if (isAuraLine) reply = stripFabricatedPricing(reply);
 
   const wantsWhatsApp = reply.includes(CTA_MARKER);
   reply = reply.replace(CTA_MARKER, "").trim();
 
-  // Pre-filled WhatsApp opener personalized to the conversation topic.
-  const lastUser = turns[turns.length - 1].content.slice(0, 120);
-  const waText = `مرحباً فريق هالة 👋 كنت أتصفح موقعكم وعندي استفسار: ${lastUser}`;
-  const waPhone = env.STORE_WA_PHONE || "966545149591";
+  // Route the handoff to the RIGHT WhatsApp number: Aura's own line for the
+  // Aura widget, the merchant's own connected number otherwise. A merchant
+  // with no WhatsApp connected yet gets no CTA at all — sending their
+  // visitor to Aura's own support line would misroute the conversation.
+  let waPhone = null;
+  if (isAuraLine) {
+    waPhone = env.STORE_WA_PHONE || "966545149591";
+  } else {
+    const conn = await getWaConnectionByMerchant(env, merchantId).catch(() => null);
+    if (conn && conn.status === "active" && conn.display_phone) waPhone = conn.display_phone;
+  }
+
+  let waText = null;
+  let waUrl = null;
+  if (wantsWhatsApp && waPhone) {
+    const lastUser = turns[turns.length - 1].content.slice(0, 120);
+    // Cross-channel memory bridge: this code lets webhook.js pull the full
+    // website conversation back up the moment the visitor's first WhatsApp
+    // message arrives, instead of starting cold — see
+    // docs/AGENT.md §"الذاكرة عبر القنوات" and functions/api/whatsapp/webhook.js.
+    const sessionCode = randomSessionCode();
+    await saveOmnichannelSession(env, {
+      sessionToken: sessionCode,
+      merchantId,
+      chatSummary: lastUserText.slice(0, 300)
+    }).catch(() => {});
+
+    const opener = isAuraLine
+      ? `مرحباً فريق هالة 👋 كنت أتصفح موقعكم وعندي استفسار: ${lastUser}`
+      : `مرحباً 👋 عندي استفسار: ${lastUser}`;
+    waText = `${opener}\n\nمرجع المحادثة: ${sessionCode}`;
+    waUrl = `https://wa.me/${waPhone}?text=${encodeURIComponent(waText)}`;
+  }
 
   return {
     result: reply,
     reply,
-    whatsappCta: wantsWhatsApp,
-    whatsappText: wantsWhatsApp ? waText : null,
-    whatsappUrl: wantsWhatsApp ? `https://wa.me/${waPhone}?text=${encodeURIComponent(waText)}` : null
+    whatsappCta: Boolean(waUrl),
+    whatsappText: waText,
+    whatsappUrl: waUrl,
+    remaining: usage.remaining
   };
 }
 
-export const onRequestPost = withApi(supportHandler);
+export const onRequestPost = withApi(supportHandler, { cors: true });

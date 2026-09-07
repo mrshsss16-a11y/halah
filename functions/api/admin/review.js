@@ -12,6 +12,7 @@
 import { withApi, ApiError } from "../../_lib/core/respond.js";
 import { requireAdmin } from "../../_lib/core/session.js";
 import { listPending, approve, reject } from "../../_lib/services/reviewQueue.js";
+import { publishApproved } from "../../_lib/services/publishApproved.js";
 
 async function reviewHandler(body, env, request) {
   const admin = await requireAdmin(request, env);
@@ -37,7 +38,15 @@ async function reviewHandler(body, env, request) {
     // reviewed_by = إيميل الأدمن من الجلسة، لا قيمة يرسلها العميل (§7: لا تثق
     // بهوية يرسلها العميل). سجل المراجعة لازم يعكس من قرر فعلاً.
     const row = await approve(env, { merchantId, id: body.id, reviewedBy: admin.email });
-    return { ok: true, row };
+
+    // النشر الفعلي — الطبقة الوحيدة المسموح لها الإرسال لمنصة خارجية.
+    // نُنادى هنا مباشرة (لا waitUntil) عمداً: المراجع لازم يشوف نتيجة النشر
+    // بنفس الاستجابة، لأن نافذة إنستغرام قد تكون انتهت وقتها ويحتاج يعرف فوراً.
+    const publish = await publishApproved(env, row);
+
+    // فشل النشر لا يُبطل الاعتماد — القرار البشري سُجِّل، والخطأ مسجّل على الصف
+    // ليُعاد يدوياً. ok تعكس الاعتماد، publish تعكس الإرسال.
+    return { ok: true, row, publish };
   }
 
   if (action === "reject") {

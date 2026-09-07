@@ -5,7 +5,14 @@
 // between items rather than a single big HTTP request or Promise.all.
 import { generateProductCopy } from "../copy.js";
 import { updateProductBySku } from "../../_lib/integrations/salla.js";
-import { listActiveBulkJobItems, completeBulkJobItem } from "../../_lib/core/db.js";
+import {
+  listActiveBulkJobItems,
+  completeBulkJobItem,
+  claimNextCatalogSyncJob,
+  advanceCatalogSyncJob,
+  failCatalogSyncJob
+} from "../../_lib/core/db.js";
+import { syncCatalogPage } from "../../_lib/services/catalog.js";
 import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
 import { generateRequestId } from "../../_lib/core/respond.js";
 import { logError } from "../../_lib/core/errorLog.js";
@@ -42,6 +49,55 @@ export async function onRequestGet(context) {
       status: 500,
       headers: { "content-type": "application/json" }
     });
+  }
+
+  // ── توجيه حسب kind (المرحلة ١، docs/PLAN_BULK_SEO.md) ────────────────────
+  // kind='catalog_sync' → سحب **صفحة واحدة** من كتالوج سلة لكل تِك ثم حفظ رقم
+  // الصفحة التالية بـcursor. صفحة واحدة لأن حد سلة ١ طلب/ثانية لكل متجر
+  // وتجاوزه يوقف اتصال المتجر كاملاً. أي kind آخر (الافتراضي 'seo_generate')
+  // يكمل بالمنطق الحالي تحت بلا أي تغيير.
+  let catalog = null;
+  const syncJob = await claimNextCatalogSyncJob(env).catch(() => null);
+  if (syncJob) {
+    try {
+      const page = Number(syncJob.cursor) > 0 ? Number(syncJob.cursor) : 1;
+      const result = await syncCatalogPage(env, { merchantId: syncJob.merchant_id, page });
+      await advanceCatalogSyncJob(env, {
+        jobId: syncJob.id,
+        imported: result.imported,
+        nextPage: result.nextPage
+      });
+      if (result.skippedNoSku > 0) {
+        // لا إسقاط صامت: المنتجات بلا SKU لا يمكن تخزينها (المفتاح يتطلبه)،
+        // فتُسجَّل صراحةً وتُعاد بالرد (المخاطرة ٧ بالخطة).
+        logError(context, {
+          requestId,
+          path: "cron/bulk_process",
+          code: "CATALOG_ITEMS_WITHOUT_SKU",
+          storeId: syncJob.merchant_id,
+          internal: `job=${syncJob.id} page=${page} skippedNoSku=${result.skippedNoSku}`
+        });
+      }
+      catalog = {
+        jobId: syncJob.id,
+        page,
+        imported: result.imported,
+        skippedNoSku: result.skippedNoSku,
+        hasMore: result.hasMore
+      };
+    } catch (err) {
+      logError(context, {
+        requestId,
+        path: "cron/bulk_process",
+        code: "CATALOG_SYNC_FAILED",
+        storeId: syncJob.merchant_id,
+        internal: `job=${syncJob.id} ${String((err && err.message) || err).slice(0, 250)}`
+      });
+      await failCatalogSyncJob(env, syncJob.id).catch(() => {});
+      catalog = { jobId: syncJob.id, failed: true };
+    }
+    // فاصل قبل أي طلب سلة تالٍ بنفس التِك.
+    await sleep(DELAY_MS);
   }
 
   const items = await listActiveBulkJobItems(env, BATCH_SIZE);
@@ -96,7 +152,7 @@ export async function onRequestGet(context) {
     await sleep(DELAY_MS);
   }
 
-  return new Response(JSON.stringify({ ok: true, picked: items.length, done, failed }), {
+  return new Response(JSON.stringify({ ok: true, picked: items.length, done, failed, catalog }), {
     status: 200,
     headers: { "content-type": "application/json" }
   });

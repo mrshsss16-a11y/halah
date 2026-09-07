@@ -7,7 +7,7 @@
 import { verifyWaSignature, parseInbound, parseEchoes, sendWaText, sendWaInteractiveList, waConfigured, getWaMedia } from "../../_lib/integrations/whatsapp.js";
 import { askWorkersAI, TEXT_MODEL, askVisionAI } from "../../_lib/ai/gateway.js";
 import { PERSONA_SYSTEM_PROMPT, HALA_WHATSAPP_SUPPORT_PROMPT, BOOKING_INSTRUCTIONS, ESCALATION_INSTRUCTIONS, WEEKLY_SLOTS, dialectLabel } from "../../_lib/ai/persona.js";
-import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession, getWaConnectionByPhoneId } from "../../_lib/core/db.js";
+import { recordWaInbound, recordWaOutbound, recentWaHistory, getMarketingContext, saveConsultationBooking, getLastHumanReplyAt, countRecentInboundWithoutResolution, getOmnichannelSession, saveOmnichannelSession, getWaConnectionByPhoneId } from "../../_lib/core/db.js";
 import { recallSimilar } from "../../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
 import { matchAuraGreeting, matchFastIntent } from "../../_lib/ai/intents.js";
@@ -54,6 +54,16 @@ const HUMAN_SILENCE_WINDOW_MS = 2 * 3600 * 1000;
 
 const DISABLE_ESCALATION_GATES = false;
 
+// Cross-channel memory bridge: functions/api/support.js embeds this line in
+// the WhatsApp opener it pre-fills for a "continue on WhatsApp" handoff (see
+// its file header). Matching it here lets the FIRST WhatsApp message from
+// that visitor pull the full website conversation context back up instead
+// of starting cold. Token-scoped lookup (getOmnichannelSession with
+// sessionToken) — not the phone, which isn't known until this exact message
+// arrives, so a phone-only lookup can never find a session created from the
+// website side.
+const SESSION_CODE_RE = /مرجع المحادثة:\s*([A-Z0-9]{6,10})/;
+
 /**
  * `isAuraLine` = this message arrived on Aura's own support number, so the bot
  * speaks as Hala-the-vendor (consultation booking, escalation to our team).
@@ -97,6 +107,32 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
     }
   }
 
+  // Only the first turn of a conversation can carry a fresh handoff code —
+  // checking every turn would let a customer paste an old/foreign code
+  // mid-conversation and reset context they've already built with THIS bot.
+  let omniSession = null;
+  if (env.DB && history.length === 0) {
+    const sessionCode = SESSION_CODE_RE.exec(incomingText)?.[1] || null;
+    if (sessionCode) {
+      omniSession = await getOmnichannelSession(env, { sessionToken: sessionCode, merchantId }).catch(() => null);
+      if (omniSession) {
+        incomingText = incomingText.replace(SESSION_CODE_RE, "").trim();
+        // Backfill phone so a RETURN visit can be found by phone alone —
+        // this first lookup only worked via the token because the row was
+        // created (by support.js) before we knew the visitor's WA number.
+        await saveOmnichannelSession(env, { sessionToken: sessionCode, merchantId, phone }).catch(() => {});
+      } else {
+        logError(context, {
+          requestId,
+          path: "whatsapp/webhook:omnichannel_bridge",
+          code: "SESSION_CODE_NOT_FOUND",
+          internal: `code=${sessionCode}`,
+          storeId: merchantId
+        });
+      }
+    }
+  }
+
   // Merchant monthly message quota (docs/ROADMAP.md m2.2.5) — this path had zero
   // metering before, unlike chat.js/copy.js. "hala" is exempt inside the helper.
   // Quota-exhausted degrades to the same handoff message as an escalation — the
@@ -136,6 +172,15 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
         .join("\n")}`
     : "";
 
+  let omniContext = "";
+  if (omniSession) {
+    omniContext = `\n\n## ذاكرة العميل من شات الموقع
+- ملخص محادثة الموقع: ${omniSession.chat_summary || "تصفح واستفسر عن منتجات"}
+- المنتج الناقشه بالموقع: ${omniSession.last_product || "غير محدد"}
+- طبيعة المحادثة: ${omniSession.theme_category || "استفسار ومبيعات"}
+تذكري العميل برحابة صدر، رحبي به واذكري أنك تذكرين استفساره بالموقع بلهجة سعودية دافئة!`;
+  }
+
   let system;
   if (isAuraLine) {
     system = `${HALA_WHATSAPP_SUPPORT_PROMPT}
@@ -146,23 +191,11 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
 
 ${BOOKING_INSTRUCTIONS}
 
-${ESCALATION_INSTRUCTIONS}`;
+${ESCALATION_INSTRUCTIONS}${omniContext}`;
   } else {
     const ctx = env.DB ? await getMarketingContext(env, merchantId).catch(() => null) : null;
-    // merchantId is mandatory here — the same shopper's number may have a
-    // session with several merchants (see getOmnichannelSession).
-    const omniSession = env.DB ? await getOmnichannelSession(env, { phone, merchantId }).catch(() => null) : null;
     const dialect = (ctx && ctx.dialect) || "saudi_najdi";
     const instructions = (ctx && ctx.instructions) || "لا توجد تعليمات إضافية.";
-    
-    let omniContext = "";
-    if (omniSession) {
-      omniContext = `\n\n## ذاكرة العميل من شات المتجر الإلكتروني
-- ملخص محادثة الموقع: ${omniSession.chat_summary || "تصفح واستفسر عن منتجات"}
-- المنتج الناقشه بالموقع: ${omniSession.last_product || "غير محدد"}
-- طبيعة المحادثة: ${omniSession.theme_category || "استفسار ومبيعات"}
-تذكري العميل برحابة صدر، رحبي به واذكري أنك تذكرين استفساره في الموقع بلهجة سعودية دافئة!`;
-    }
 
     system = `${PERSONA_SYSTEM_PROMPT}
 
