@@ -2179,6 +2179,58 @@ async function runTests() {
     );
     // حجم البرومبت تكلفة بكل استدعاء.
     assert(dresses.length < 700, `TAX-17: الكتيب مختصر (${dresses.length} حرفاً)`);
+
+    // ── الفئات المضافة من قاموس المصطلحات السعودي (2026-09-08) ──
+    const abayas = taxonomyForCategory("عبايات");
+    const jewelry = taxonomyForCategory("مجوهرات");
+    const apparel = taxonomyForCategory("ملابس");
+    assert(
+      [abayas, jewelry, apparel].every((t) => t.length > 0) &&
+        ["عبايات", "مجوهرات", "ملابس"].every((c) => COVERED_CATEGORIES.includes(c)),
+      "TAX-18: عبايات/مجوهرات/ملابس مغطاة بكتيب مصطلحات"
+    );
+    assert(
+      ["كلوش", "بشت", "فراشة", "مطرزة", "مفتوحة"].every((t) => abayas.includes(t)),
+      "TAX-19: مصطلحات العبايات من القاموس موجودة"
+    );
+    assert(
+      ["تشوكر", "سوليتير", "دبلة", "خلخال", "أقراط متدلية", "مرصّع"].every((t) => jewelry.includes(t)),
+      "TAX-20: مصطلحات المجوهرات من القاموس موجودة"
+    );
+    assert(
+      ["أوفر سايز", "بوكسي", "بليزر", "بليسيه", "واسع الساق"].every((t) => apparel.includes(t)),
+      "TAX-21: مصطلحات الملابس من القاموس موجودة"
+    );
+    // المجوهرات: الصورة تُظهر لون المعدن لا مادته — لا ادعاء "ذهب" أو "ألماس".
+    assert(
+      /ذهبي أصفر/.test(jewelry) &&
+        !/ألماس|زركون|استرليني/.test(
+          jewelry.split("\n").filter((l) => l.startsWith("- ")).join("\n")
+        ) &&
+        /لا تُسمّي معدناً ولا حجراً بيقين/.test(jewelry),
+      "TAX-22: معجم المجوهرات يسمّي اللون لا المادة (لا ادعاء ذهب/ألماس)"
+    );
+    // نفس قاعدة TAX-7 مطبَّقة على كل الفئات الجديدة: لا خامات ولا أحكام جودة.
+    assert(
+      [abayas, jewelry, apparel].every(
+        (t) => !/(فاخر|أنيق|عالي الجودة|جودة عالية|مريح|شيفون|كريب|ساتان|قطن|حرير|مخمل|دانتيل|كتان|دنيم|تريكو|كشمير)/.test(t)
+      ),
+      "TAX-23: الفئات الجديدة بلا خامات ولا أحكام جودة"
+    );
+    assert(
+      [abayas, jewelry, apparel].every((t) => t.length < 700),
+      "TAX-24: كل كتيب فئة مختصر (<700 حرف)"
+    );
+    assert(
+      taxonomyForCategory("عباية") === abayas && taxonomyForCategory("اكسسوارات") === jewelry &&
+        taxonomyForCategory("Jewelry") === jewelry && taxonomyForCategory("ازياء") === apparel,
+      "TAX-25: مرادفات الفئات الجديدة تُطبَّع"
+    );
+    // لا تلوّث متبادل: معجم كل فئة مستقل.
+    assert(
+      !abayas.includes("تشوكر") && !jewelry.includes("قصّة A") && !apparel.includes("بذيل حورية"),
+      "TAX-26: لا تسرّب مفردات بين الفئات"
+    );
   }
 
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
