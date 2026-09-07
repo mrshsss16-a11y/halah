@@ -12,7 +12,7 @@ import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { requireCompletedAccount } from "../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 import { getProfile, profileToPromptBlock } from "../_lib/services/storeProfile.js";
-import { taxonomyForCategory } from "../_lib/ai/productTaxonomy.js";
+import { taxonomyForCategory, taxonomyForProduct } from "../_lib/ai/productTaxonomy.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -78,7 +78,14 @@ export const VISION_PROMPT = [
  * فئة غير مغطاة (أو غائبة) ⇒ `VISION_PROMPT` نفسه بالمرجع، بلا حرف زائد.
  */
 export function visionPromptFor(category) {
-  const taxonomy = taxonomyForCategory(category);
+  return visionPromptFromTaxonomy(taxonomyForCategory(category));
+}
+
+/**
+ * نفس البناء، لكن بكتيب جاهز — يسمح لمصدر الكتيب أن يكون الفئة أو اسم المنتج
+ * (انظر `taxonomyForProduct`) بلا ازدواج منطق البناء.
+ */
+export function visionPromptFromTaxonomy(taxonomy) {
   if (!taxonomy) return VISION_PROMPT;
   return [
     VISION_PROMPT,
@@ -333,8 +340,10 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
 
   // كتيب مصطلحات الفئة: يوجّه التسمية بمرحلة الرؤية، ثم يُلزم الوصف النهائي
   // بنفس المصطلحات. فئة غير مغطاة ⇒ "" ⇒ لا فرق عن السلوك القديم.
-  const taxonomyBlock = taxonomyForCategory(category);
-  const visionPrompt = visionPromptFor(category);
+  // الفئة أولاً، ثم اسم المنتج احتياطاً: فئة المتجر بيانات تاجر قد تكون
+  // خاطئة (رُصد "فستان" مصنَّفاً تحت "البلايز" — فسقط الكتيب كله بصمت).
+  const taxonomyBlock = taxonomyForProduct({ category, name });
+  const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock);
   const visionNotes = imageUrl
     ? await askVisionAI({ env, imageUrl, prompt: visionPrompt }).catch(() => null)
     : null;

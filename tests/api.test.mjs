@@ -1952,7 +1952,7 @@ async function runTests() {
     );
     assert(
       /askVisionAI\(\{ env, imageUrl, prompt: visionPrompt \}\)\.catch\(\(\) => null\)/.test(copySrc) &&
-        /const visionPrompt = visionPromptFor\(category\)/.test(copySrc),
+        /const visionPrompt = visionPromptFromTaxonomy\(taxonomyBlock\)/.test(copySrc),
       "VIS-7: التوجيه مصدر واحد، وفشل الرؤية ما زال لا يكسر المسار"
     );
 
@@ -2230,6 +2230,37 @@ async function runTests() {
     assert(
       !abayas.includes("تشوكر") && !jewelry.includes("قصّة A") && !apparel.includes("بذيل حورية"),
       "TAX-26: لا تسرّب مفردات بين الفئات"
+    );
+
+    // ── احتياط اسم المنتج حين تكون فئة المتجر خاطئة (رُصد بفيديو 2026-09-08:
+    //    منتج "فستان" مصنَّف تحت "البلايز" ⇒ سقط الكتيب كله بصمت) ──
+    const { taxonomyForProduct } = await import("../functions/_lib/ai/productTaxonomy.js");
+    assert(
+      taxonomyForProduct({ category: "البلايز", name: "فستان" }) === dresses &&
+        taxonomyForProduct({ category: "", name: "عباية كلوش" }) === abayas,
+      "TAX-27: فئة غير مطابقة تسقط لاسم المنتج بدل إسقاط الكتيب"
+    );
+    assert(
+      taxonomyForProduct({ category: "فساتين", name: "قلادة ذهب" }) === dresses,
+      "TAX-28: الفئة أسبق دائماً — الاسم مصدر احتياطي لا بديل"
+    );
+    // البحث الجزئي بالاسم هو ما أُغلقت القائمة لمنعه — الكلمة الأولى فقط.
+    assert(
+      taxonomyForProduct({ category: "شنط", name: "شنطة تناسب الفساتين" }) === "" &&
+        taxonomyForProduct({ category: "", name: "حزام يناسب الفساتين" }) === "",
+      "TAX-29: اسم يذكر فئة أخرى عرضاً لا يحقن معجمها"
+    );
+    assert(
+      taxonomyForProduct({ category: "", name: "" }) === "" &&
+        taxonomyForProduct({}) === "" && taxonomyForProduct() === "",
+      "TAX-30: غياب الفئة والاسم يرجّع كتيباً فارغاً لا يرمي"
+    );
+    // مسار الرؤية يستهلك الكتيب نفسه أياً كان مصدره.
+    const { visionPromptFromTaxonomy } = await import("../functions/api/copy.js");
+    assert(
+      visionPromptFromTaxonomy("") === VISION_PROMPT &&
+        visionPromptFromTaxonomy(dresses) === visionPromptFor("فساتين"),
+      "TAX-31: بناء توجيه الرؤية واحد سواء جاء الكتيب من الفئة أو الاسم"
     );
   }
 
