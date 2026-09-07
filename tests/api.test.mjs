@@ -1915,6 +1915,61 @@ async function runTests() {
     );
   }
 
+  // ── تحليل الصورة: "وفق الصورة" لا اختلاق (بلاغ 2026-09-07) ────────────────
+  {
+    const { readFileSync } = await import("node:fs");
+    const { VISION_PROMPT, buildSeoSystem } = await import("../functions/api/copy.js");
+    const copySrc = readFileSync(new URL("../functions/api/copy.js", import.meta.url), "utf8");
+
+    assert(
+      /صف ما تراه في الصورة فقط/.test(VISION_PROMPT) &&
+        /ممنوع الاستنتاج أو الافتراض/.test(VISION_PROMPT),
+      "VIS-1: توجيه الرؤية يحصر المخرَج بما هو مرئي ويمنع الاستنتاج"
+    );
+    assert(
+      /عند أي شك لا تذكر الخامة إطلاقاً/.test(VISION_PROMPT),
+      "VIS-2: الخامة لا تُذكر عند الشك — لا تخمين يُقدَّم كحقيقة"
+    );
+    assert(
+      !/اللون، الخامة، الشكل العام/.test(copySrc),
+      "VIS-3: التوجيه القديم الذي يطلب الخامة صراحةً لم يعد موجوداً"
+    );
+    assert(
+      /فاسكت عنه تماماً/.test(VISION_PROMPT),
+      "VIS-4: الغموض يُسكت عنه، لا يُخمَّن ولا يُعتذر عنه"
+    );
+    assert(
+      /ممنوع أي لغة تسويقية/.test(VISION_PROMPT) && !/مهمة للتسويق/.test(VISION_PROMPT),
+      "VIS-5: مرحلة الرؤية وصف محايد — صفر لغة تسويقية"
+    );
+    assert(
+      /٣ إلى ٥ جمل/.test(VISION_PROMPT) && /بلا حشو/.test(VISION_PROMPT),
+      "VIS-6: سقف موسّع للتفاصيل المرئية مع منع الحشو"
+    );
+    assert(
+      /askVisionAI\(\{ env, imageUrl, prompt: VISION_PROMPT \}\)\.catch\(\(\) => null\)/.test(copySrc),
+      "VIS-7: التوجيه مصدر واحد، وفشل الرؤية ما زال لا يكسر المسار"
+    );
+
+    // حصانة المخرَج بالمرحلة التالية.
+    const withVision = buildSeoSystem({
+      recent: [], keywords: ["عباية"], existingDescription: "", styleExamples: [],
+      visionNotes: "عباية سوداء بقصة مستقيمة."
+    });
+    assert(
+      /ليست مواصفات مؤكدة/.test(withVision) && /ما لم يُذكر = غير معروف/.test(withVision),
+      "VIS-8: البرومبت الرئيسي يعامل ملاحظات الرؤية كمرئيات لا كمواصفات"
+    );
+    assert(
+      /ممنوع بناء أي ادعاء جودة أو خامة/.test(withVision),
+      "VIS-9: لا ادعاء خامة/جودة مبني على وصف الرؤية"
+    );
+    assert(
+      !/ملاحظات من تحليل صورة المنتج الفعلية \(استخدميها/.test(copySrc),
+      "VIS-10: الصياغة القديمة المتساهلة لكتلة الرؤية أُزيلت"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);
