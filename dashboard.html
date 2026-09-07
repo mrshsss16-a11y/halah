@@ -192,11 +192,17 @@
       <div id="copyResult" class="hidden space-y-4">
         <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
           <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-            <h3 class="text-sm font-black text-black">الوصف التسويقي — راجعه وعدّله قبل النشر</h3>
+            <h3 class="text-sm font-black text-black">راجع الوصف — عدّله إن حبيت، ثم اعتمد</h3>
             <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
           </div>
-          <textarea id="outDescription" rows="5" class="w-full text-xs leading-relaxed text-black whitespace-pre-wrap bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:border-black"></textarea>
-          <p class="text-[11px] text-slate-500">هذا مسودة — عدّل النص هنا لو تبي، اللي يُنشر بسلة هو النص المكتوب هنا وقت الضغط على "انشر".</p>
+          <div class="space-y-1.5">
+            <label for="outDescription" class="flex items-center gap-1.5 text-[11px] font-bold text-black">
+              <span class="material-symbols-outlined text-sm">edit</span>
+              تقدر تعدّل هنا
+            </label>
+            <textarea id="outDescription" rows="7" class="w-full text-xs leading-relaxed text-black whitespace-pre-wrap bg-white border-2 border-slate-400 rounded-xl p-3 focus:outline-none focus:border-black"></textarea>
+          </div>
+          <p class="text-[11px] text-slate-500">هذا مسودة — اللي يُنشر بسلة هو النص المكتوب هنا بالضبط وقت الضغط على «اعتمد وانشر».</p>
 
           <div class="pt-3 border-t border-slate-200 space-y-2">
             <span class="text-[11px] font-bold text-slate-600">نقاط البيع</span>
@@ -225,11 +231,20 @@
         </div>
 
         <div id="publishBox" class="hidden sleek-card-darkborder rounded-3xl p-6 space-y-3 shadow-sm">
-          <h3 class="text-sm font-black text-black">نشر مباشر على سلة</h3>
-          <p class="text-xs text-slate-600 font-medium">اختر المنتج من متجرك لتحديث وصفه بالوصف أعلاه.</p>
+          <h3 class="text-sm font-black text-black">اعتمد وانشر مباشرة على سلة</h3>
+          <p class="text-xs text-slate-600 font-medium">اختر المنتج من متجرك لتحديث وصفه بالوصف اللي راجعته أعلاه.</p>
           <select id="publishProduct" onchange="onPublishProductChange()" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></select>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="publishBtn" onclick="publishToSalla()" class="sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-base">check_circle</span>
+              <span id="publishBtnText">اعتمد وانشر على سلة</span>
+            </button>
+            <button id="regenBtn" onclick="regenerateCopy()" class="sleek-btn-white py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-base">refresh</span>
+              <span>أعد التوليد</span>
+            </button>
+          </div>
           <div id="publishTargetLine" class="hidden text-[11px] font-bold text-black bg-slate-100 border border-slate-300 rounded-xl px-3 py-2"></div>
-          <button onclick="publishToSalla()" class="w-full sleek-btn-white py-3 rounded-xl text-xs transition">انشر على المنتج</button>
           <div id="publishFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
         </div>
       </div>
@@ -911,20 +926,43 @@
       line.classList.remove('hidden');
     }
 
+    /** «أعد التوليد» — نفس بيانات المنتج المعبّاة بالاستوديو، بلا إعادة كتابة. */
+    function regenerateCopy() {
+      document.getElementById('publishFeedback').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      generateCopy();
+    }
+
+    // قفل النشر: ضغطة مزدوجة على «اعتمد وانشر» يجب ألا ترسل طلبين.
+    // العلم يُفحص قبل أي await، والزر يُعطَّل نصياً — حزامان لا واحد.
+    let publishing = false;
+
     async function publishToSalla() {
+      if (publishing) return;
       const sel = document.getElementById('publishProduct');
       const productId = (sel && sel.value) || (selectedCatalogProduct && selectedCatalogProduct.productId) || '';
       if (!productId) {
-        showMsg('publishFeedback', 'اختر المنتج أولاً من تبويب «منتجاتي» أو من القائمة أعلاه.');
+        showPublishError('اختر المنتج أولاً من تبويب «منتجاتي» أو من القائمة أعلاه.');
         return;
       }
       if (!lastCopy) {
-        showMsg('publishFeedback', 'ولّد الوصف أولاً قبل النشر.');
+        showPublishError('ولّد الوصف أولاً قبل النشر.');
         return;
       }
       // Publish whatever the merchant is looking at right now, including any
       // edits they made in the review textarea — not the original AI draft.
       const editedDescription = document.getElementById('outDescription').value.trim();
+
+      publishing = true;
+      const btn = document.getElementById('publishBtn');
+      const btnText = document.getElementById('publishBtnText');
+      const regen = document.getElementById('regenBtn');
+      if (btn) btn.disabled = true;
+      if (regen) regen.disabled = true;
+      if (btnText) btnText.innerText = 'جاري النشر…';
+      const fb = document.getElementById('publishFeedback');
+      fb.classList.add('hidden');
+
       try {
         const res = await fetch('/api/store/publish', {
           method: 'POST',
@@ -932,10 +970,35 @@
           body: JSON.stringify({ productId, description: editedDescription || lastCopy.copywriting?.description || lastCopy.result })
         });
         const data = await res.json();
-        showMsg('publishFeedback', data?.ok ? 'تم النشر على المنتج ✅' : (data?.error || 'تعذر النشر.'));
+        if (data?.ok) showPublishSuccess();
+        else showPublishError(data?.error || 'تعذر النشر.');
       } catch (e) {
-        showMsg('publishFeedback', 'تعذر الاتصال.');
+        showPublishError('تعذر الاتصال.');
       }
+
+      publishing = false;
+      if (btn) btn.disabled = false;
+      if (regen) regen.disabled = false;
+      if (btnText) btnText.innerText = 'اعتمد وانشر على سلة';
+    }
+
+    /** نجاح صريح بالأخضر. لا رابط منتج: سلة لا تعطينا دومين المتجر ولا رابط
+        المنتج بأي رد نستعمله هنا — فلا نخترع رابطاً (قاعدة الصدق). */
+    function showPublishSuccess() {
+      const fb = document.getElementById('publishFeedback');
+      fb.className = 'p-3 rounded-xl text-xs font-bold bg-green-50 text-green-900 border border-green-600';
+      const t = selectedCatalogProduct;
+      // اسم المنتج من سلة ⇒ escHtml إلزامي (ثغرة XSS أُغلقت بهذا الملف).
+      fb.innerHTML = 'تم النشر على سلة ✅' +
+        (t && t.name ? '<span class="block font-medium mt-1">حُدِّث وصف: ' + escHtml(t.name) + '</span>' : '');
+      fb.classList.remove('hidden');
+    }
+
+    function showPublishError(msg) {
+      const fb = document.getElementById('publishFeedback');
+      fb.className = 'p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black';
+      fb.innerText = msg;
+      fb.classList.remove('hidden');
     }
 
     // ── Bulk product copy (B3) ────────────────────────────────

@@ -2014,6 +2014,49 @@ async function runTests() {
     );
   }
 
+  // ── APPROVE-*: راجع واعتمد بعد التوليد (لوحة التاجر) ───────────────
+  {
+    const { readFileSync } = await import("node:fs");
+    const dashSrc = readFileSync(new URL("../dashboard.html", import.meta.url), "utf8");
+
+    assert(
+      /راجع الوصف — عدّله إن حبيت، ثم اعتمد/.test(dashSrc),
+      "APPROVE-1: عنوان المراجعة صريح فوق الوصف المولَّد"
+    );
+    assert(
+      /id="publishBtn"[\s\S]{0,400}اعتمد وانشر على سلة/.test(dashSrc)
+        && /id="regenBtn"[\s\S]{0,400}أعد التوليد/.test(dashSrc),
+      "APPROVE-2: الزران متجاوران — «اعتمد وانشر» و«أعد التوليد»"
+    );
+    assert(
+      /function regenerateCopy\(\)[\s\S]{0,300}generateCopy\(\);/.test(dashSrc)
+        && /onclick="publishToSalla\(\)"/.test(dashSrc),
+      "APPROVE-3: الزران يستدعيان الدالتين الموجودتين بلا إعادة كتابة"
+    );
+    assert(
+      /let publishing = false;/.test(dashSrc)
+        && /if \(publishing\) return;/.test(dashSrc)
+        && /btnText\.innerText = 'جاري النشر…'/.test(dashSrc),
+      "APPROVE-4: منع النشر المزدوج — علم قبل أي await + تعطيل الزر"
+    );
+    assert(
+      /publishing = false;[\s\S]{0,200}btn\.disabled = false;/.test(dashSrc),
+      "APPROVE-5: الزر يعود قابلاً للضغط بعد انتهاء الطلب"
+    );
+    assert(
+      /'تم النشر على سلة ✅'/.test(dashSrc) && /bg-green-50/.test(dashSrc),
+      "APPROVE-6: حالة نجاح خضراء صريحة"
+    );
+    assert(
+      /fb\.innerHTML = 'تم النشر على سلة ✅'[\s\S]{0,200}escHtml\(t\.name\)/.test(dashSrc),
+      "APPROVE-7: اسم المنتج برسالة النجاح مهرَّب بـescHtml"
+    );
+    assert(
+      !/https:\/\/[^"'\s]*\/p\d|productUrl|store_url/.test(dashSrc),
+      "APPROVE-8: لا رابط منتج مخترع — البيانات لا تتضمن دومين المتجر"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);
