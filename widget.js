@@ -22,8 +22,14 @@
 
   var API_BASE = new URL(thisScript.src).origin;
   var STORE_ID = thisScript.getAttribute("data-store-id") || "hala";
-  var GREETING = thisScript.getAttribute("data-greeting") || "هلا والله 👋 وش تبي تعرف؟";
   var BRAND_LABEL = thisScript.getAttribute("data-label") || "تحدث معنا";
+
+  // المظهر يجي من إعدادات التاجر (/api/widget/config)، لا من كود الموقع
+  // المضيف — عشان التاجر يغيّر اللون والترحيب من لوحته بلا ما يلمس HTML
+  // موقعه ولا ينتظر أحد. سمات السكربت تبقى كتجاوز اختياري.
+  var GREETING = thisScript.getAttribute("data-greeting") || "هلا والله 👋 وش تبي تعرف؟";
+  var PRIMARY = thisScript.getAttribute("data-color") || "#0f172a";
+  var AGENT_NAME = "هالة";
 
   // localStorage لا session جديد بكل صفحة داخل نفس الموقع — يحافظ على تاريخ
   // المحادثة أثناء تنقل الزائر بين صفحات نفس الموقع بجلسة واحدة.
@@ -87,10 +93,16 @@
 
   var launcher = root.querySelector(".launcher");
   var panel = root.querySelector(".panel");
+  var head = root.querySelector(".head");
   var msgsEl = root.querySelector(".msgs");
   var input = root.querySelector("input");
   var sendBtn = root.querySelector(".foot button");
   var opened = false;
+
+  // تطبيق اللون الأولي (من سمة السكربت لو وُجدت) قبل وصول الإعدادات
+  launcher.style.background = PRIMARY;
+  head.style.background = PRIMARY;
+  sendBtn.style.background = PRIMARY;
 
   function addBubble(role, text) {
     var el = document.createElement("div");
@@ -174,4 +186,39 @@
   input.addEventListener("keydown", function (e) {
     if (e.key === "Enter") send();
   });
+
+  // جلب المظهر بعد الرسم الأول: الودجت يظهر فوراً بالقيم الافتراضية ثم يتلوّن،
+  // بدل ما ينتظر الشبكة ويبان متأخراً — وفشل الجلب لا يخفيه.
+  fetch(API_BASE + "/api/widget/config?storeId=" + encodeURIComponent(STORE_ID))
+    .then(function (r) {
+      return r.json();
+    })
+    .then(function (cfg) {
+      if (!cfg) return;
+      if (cfg.enabled === false) {
+        host.remove();
+        return;
+      }
+      if (cfg.primaryColor) {
+        PRIMARY = cfg.primaryColor;
+        launcher.style.background = PRIMARY;
+        head.style.background = PRIMARY;
+        sendBtn.style.background = PRIMARY;
+      }
+      if (cfg.position === "right") {
+        launcher.style.left = "auto";
+        launcher.style.right = "24px";
+        panel.style.left = "auto";
+        panel.style.right = "24px";
+      }
+      if (cfg.agentName) {
+        AGENT_NAME = cfg.agentName;
+        head.textContent = AGENT_NAME + (cfg.businessName ? " — " + cfg.businessName : "");
+      }
+      // الترحيب يُحدَّث فقط لو المحادثة ما بدأت بعد
+      if (cfg.greeting && !history.length) GREETING = cfg.greeting;
+    })
+    .catch(function () {
+      /* الإعدادات تعذّرت — نكمل بالافتراضي، لا نُخفي الودجت */
+    });
 })();

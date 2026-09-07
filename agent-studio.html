@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>لوحة الوكلاء | هالة</title>
+  <meta name="description" content="اضبط شخصية وكيلك، درّبه من معرفتك، جرّبه، وركّبه بموقعك."/>
+
+  <link href="https://fonts.cdnfonts.com/css/din-next-lt-arabic" rel="stylesheet"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'IBM Plex Sans Arabic', 'DIN Next LT Arabic', system-ui, sans-serif; }
+    .headline { font-family: 'Alexandria', 'IBM Plex Sans Arabic', sans-serif; }
+    .field { @apply w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm; }
+    input, select, textarea { outline: none; }
+    input:focus, select:focus, textarea:focus { border-color: #438FB3; box-shadow: 0 0 0 3px rgba(67,143,179,.12); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 antialiased">
+
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
+      <a href="/agents" class="flex items-center gap-2 font-bold headline">
+        <span class="material-symbols-outlined text-[#438FB3]" style="font-variation-settings:'FILL' 1;">support_agent</span>
+        لوحة الوكلاء
+      </a>
+      <div class="flex items-center gap-3 text-sm">
+        <span id="storeBadge" class="hidden sm:inline text-slate-500"></span>
+        <a href="/dashboard" class="px-3 py-2 rounded-lg hover:bg-slate-100">لوحة المتجر</a>
+      </div>
+    </div>
+    <div class="max-w-6xl mx-auto px-5 flex gap-1 overflow-x-auto">
+      <button data-tab="persona"  class="tab px-4 py-3 text-sm font-bold border-b-2 whitespace-nowrap">الشخصية والإعدادات</button>
+      <button data-tab="training" class="tab px-4 py-3 text-sm font-bold border-b-2 whitespace-nowrap">التدريب والأسئلة</button>
+      <button data-tab="test"     class="tab px-4 py-3 text-sm font-bold border-b-2 whitespace-nowrap">تجربة الوكيل</button>
+      <button data-tab="install"  class="tab px-4 py-3 text-sm font-bold border-b-2 whitespace-nowrap">التركيب</button>
+    </div>
+  </header>
+
+  <div id="alert" class="hidden max-w-6xl mx-auto px-5 mt-4">
+    <div id="alertBox" class="rounded-xl px-4 py-3 text-sm font-bold"></div>
+  </div>
+
+  <main class="max-w-6xl mx-auto px-5 py-7">
+
+    <!-- ═══ الشخصية ═══ -->
+    <section data-panel="persona" class="panel space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="headline font-bold text-lg mb-1">الهوية</h2>
+        <p class="text-sm text-slate-500 mb-5">من هو وكيلك ومن يمثّل — يستخدمها بالتعريف عن نفسه.</p>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <label class="block"><span class="text-sm font-bold block mb-1.5">اسم الوكيل</span>
+            <input id="agent_name" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="هالة"/></label>
+          <label class="block"><span class="text-sm font-bold block mb-1.5">اسم النشاط</span>
+            <input id="business_name" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="متجر النخبة"/></label>
+          <label class="block"><span class="text-sm font-bold block mb-1.5">نوع النشاط</span>
+            <input id="business_type" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="متجر إلكتروني · عيادة · مطعم"/></label>
+          <label class="block"><span class="text-sm font-bold block mb-1.5">المدينة</span>
+            <input id="city" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="الرياض"/></label>
+          <label class="block sm:col-span-2"><span class="text-sm font-bold block mb-1.5">نبذة عن النشاط</span>
+            <textarea id="about" rows="3" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="وش تقدّمون بالضبط؟ جملتين تكفي."></textarea></label>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="headline font-bold text-lg mb-1">الأسلوب</h2>
+        <p class="text-sm text-slate-500 mb-5">كيف يتكلم مع عملائك.</p>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <label class="block"><span class="text-sm font-bold block mb-1.5">اللهجة</span>
+            <select id="dialect" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+              <option value="saudi_najdi">سعودي أبيض — نجدية خفيفة</option>
+              <option value="saudi_hijazi">سعودي أبيض — حجازية لطيفة</option>
+              <option value="fusha_friendly">فصحى عصرية ودية</option>
+            </select></label>
+          <label class="block"><span class="text-sm font-bold block mb-1.5">النبرة</span>
+            <select id="tone" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+              <option value="friendly">ودودة ودافئة</option>
+              <option value="formal">مهنية رسمية</option>
+              <option value="concise">مباشرة ومختصرة</option>
+            </select></label>
+          <label class="block"><span class="text-sm font-bold block mb-1.5">طول الرد</span>
+            <select id="reply_length" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+              <option value="short">قصير (سطر-سطرين)</option>
+              <option value="medium">متوسط (٣-٤ أسطر)</option>
+              <option value="detailed">مفصّل عند الحاجة</option>
+            </select></label>
+          <label class="block"><span class="text-sm font-bold block mb-1.5">الإيموجي</span>
+            <select id="emoji_level" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+              <option value="0">ممنوع</option>
+              <option value="1">واحد كحد أقصى</option>
+              <option value="2">حر بذوق</option>
+            </select></label>
+          <label class="block sm:col-span-2"><span class="text-sm font-bold block mb-1.5">تعليمات خاصة</span>
+            <textarea id="custom_instructions" rows="3" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="أي شي تبي وكيلك يلتزم فيه — مثال: دايماً اذكري إن التوصيل مجاني فوق ٢٠٠ ريال."></textarea></label>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="headline font-bold text-lg mb-1">السياسات والتصعيد</h2>
+        <p class="text-sm text-slate-500 mb-5">حدود الوكيل، ومتى يسلّم لبشري.</p>
+        <div class="space-y-4">
+          <label class="flex items-start gap-3 p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50">
+            <input type="checkbox" id="allow_prices" class="mt-1 w-4 h-4"/>
+            <span><span class="font-bold text-sm block">مسموح يذكر الأسعار</span>
+              <span class="text-xs text-slate-500">لو مقفول، يوجّه العميل للفريق بدل ذكر أي رقم — مناسب للخدمات اللي سعرها يختلف حسب الحالة.</span></span>
+          </label>
+          <div class="grid sm:grid-cols-2 gap-4">
+            <label class="block sm:col-span-2"><span class="text-sm font-bold block mb-1.5">مواضيع ممنوعة</span>
+              <textarea id="forbidden_topics" rows="2" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="سطر لكل موضوع"></textarea></label>
+            <label class="block sm:col-span-2"><span class="text-sm font-bold block mb-1.5">لو ما يعرف الإجابة</span>
+              <input id="unknown_answer_policy" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="مثال: قولي إنك بتتأكدين وحوّلي الرسالة للفريق."/></label>
+            <label class="block"><span class="text-sm font-bold block mb-1.5">رقم التصعيد (واتساب)</span>
+              <input id="escalation_number" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" dir="ltr" placeholder="9665xxxxxxxx"/></label>
+            <label class="block"><span class="text-sm font-bold block mb-1.5">أوقات الدوام</span>
+              <input id="working_hours" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="الأحد-الخميس ٩ص-٥م"/></label>
+            <label class="block sm:col-span-2"><span class="text-sm font-bold block mb-1.5">رد خارج الدوام</span>
+              <input id="after_hours_reply" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="نرد عليك أول الدوام بإذن الله."/></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="headline font-bold text-lg mb-1">مظهر الودجت</h2>
+        <p class="text-sm text-slate-500 mb-5">يتطبّق على موقعك مباشرة — بلا تعديل كود الموقع.</p>
+        <div class="grid sm:grid-cols-3 gap-4">
+          <label class="block"><span class="text-sm font-bold block mb-1.5">اللون الأساسي</span>
+            <input type="color" id="primaryColor" value="#0f172a" class="w-full h-11 rounded-xl border border-slate-300 px-1.5"/></label>
+          <label class="block"><span class="text-sm font-bold block mb-1.5">موضع الزر</span>
+            <select id="position" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm">
+              <option value="left">يسار</option><option value="right">يمين</option>
+            </select></label>
+          <label class="block"><span class="text-sm font-bold block mb-1.5">رسالة الترحيب</span>
+            <input id="greeting" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="هلا والله 👋 وش تبي تعرف؟"/></label>
+        </div>
+      </div>
+
+      <div class="flex gap-3 sticky bottom-4">
+        <button id="saveBtn" class="px-6 py-3.5 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 transition shadow-lg">حفظ الإعدادات</button>
+        <button id="reloadBtn" class="px-5 py-3.5 rounded-xl bg-white border border-slate-300 font-bold hover:bg-slate-50 transition">تحديث</button>
+      </div>
+    </section>
+
+    <!-- ═══ التدريب ═══ -->
+    <section data-panel="training" class="panel hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="headline font-bold text-lg mb-1">أضف سؤالاً شائعاً</h2>
+        <p class="text-sm text-slate-500 mb-5">كل سؤال تضيفه يدخل ذاكرة وكيلك ويستخدمه بالرد — معزول لحسابك وحدك.</p>
+        <div class="space-y-3">
+          <input id="faqQ" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="السؤال — مثال: كم يستغرق التوصيل؟"/>
+          <textarea id="faqA" rows="3" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="الجواب كما تبي وكيلك يقوله"></textarea>
+          <button id="faqSave" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800">إضافة</button>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="headline font-bold text-lg mb-1">علّمه معلومة حرة</h2>
+        <p class="text-sm text-slate-500 mb-5">مو كل معرفة تنفع كسؤال — سياسة إرجاع، تفاصيل خدمة، أو أي شي تبيه يعرفه.</p>
+        <textarea id="teachText" rows="4" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm mb-3" placeholder="اكتب المعلومة بلغة طبيعية…"></textarea>
+        <button id="teachBtn" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800">علّم الوكيل</button>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <div class="flex items-center justify-between mb-5">
+          <h2 class="headline font-bold text-lg">الأسئلة الشائعة <span id="faqCount" class="text-sm font-normal text-slate-500"></span></h2>
+          <button id="faqReload" class="text-sm px-3 py-2 rounded-lg hover:bg-slate-100">تحديث</button>
+        </div>
+        <div id="faqList" class="space-y-3"><p class="text-sm text-slate-400">…</p></div>
+      </div>
+    </section>
+
+    <!-- ═══ التجربة ═══ -->
+    <section data-panel="test" class="panel hidden">
+      <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h2 class="headline font-bold text-lg">جرّب وكيلك</h2>
+            <p class="text-sm text-slate-500">محادثة حقيقية بإعداداتك الحالية — احفظ الإعدادات أولاً عشان تجرّب آخر نسخة.</p>
+          </div>
+          <button id="testClear" class="text-sm px-3 py-2 rounded-lg hover:bg-slate-100">مسح</button>
+        </div>
+        <div id="testMsgs" class="p-5 space-y-3 bg-slate-50 min-h-[380px] max-h-[520px] overflow-y-auto text-sm leading-relaxed"></div>
+        <div class="p-4 border-t border-slate-200 flex gap-2">
+          <input id="testInput" class="flex-1 rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm" placeholder="اكتب رسالة كأنك عميل…"/>
+          <button id="testSend" class="px-5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800">إرسال</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ التركيب ═══ -->
+    <section data-panel="install" class="panel hidden space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 p-6">
+        <h2 class="headline font-bold text-lg mb-1">كود التركيب</h2>
+        <p class="text-sm text-slate-500 mb-5">الصقه قبل <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">&lt;/body&gt;</code> بأي صفحة.</p>
+        <div class="bg-slate-900 rounded-xl p-4 overflow-x-auto mb-3" dir="ltr">
+          <code id="snippet" class="text-sm text-slate-100 whitespace-pre"></code>
+        </div>
+        <button id="copyBtn" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800">نسخ الكود</button>
+      </div>
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+        <h3 class="font-bold mb-2 flex items-center gap-2">
+          <span class="material-symbols-outlined text-amber-600">info</span>
+          خطوة إضافية لازمة
+        </h3>
+        <p class="text-sm text-slate-700 leading-relaxed">
+          لأسباب أمنية، الوكيل يشتغل فقط على النطاقات المسموح بها — عشان ما يقدر أي موقع ثاني
+          يركّب وكيلك ويستهلك رصيدك. أرسل لنا نطاق موقعك وبنضيفه لك.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var profile = null;
+
+  // ── تنبيهات ──
+  function notify(msg, ok) {
+    var box = $("alertBox");
+    box.className = "rounded-xl px-4 py-3 text-sm font-bold " +
+      (ok ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+          : "bg-rose-50 text-rose-800 border border-rose-200");
+    box.textContent = msg;
+    $("alert").classList.remove("hidden");
+    setTimeout(function () { $("alert").classList.add("hidden"); }, 4000);
+  }
+
+  // ── التبويبات ──
+  var tabs = document.querySelectorAll(".tab");
+  function activate(name) {
+    tabs.forEach(function (t) {
+      var on = t.dataset.tab === name;
+      t.className = "tab px-4 py-3 text-sm font-bold border-b-2 whitespace-nowrap " +
+        (on ? "border-[#438FB3] text-[#438FB3]" : "border-transparent text-slate-500 hover:text-slate-900");
+    });
+    document.querySelectorAll(".panel").forEach(function (p) {
+      p.classList.toggle("hidden", p.dataset.panel !== name);
+    });
+    if (name === "training") loadFaqs();
+  }
+  tabs.forEach(function (t) { t.addEventListener("click", function () { activate(t.dataset.tab); }); });
+  activate("persona");
+
+  // ── طلب موحّد: يعرض رسالة الخادم العربية بدل كود خام ──
+  function api(url, body) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body || {})
+    }).then(function (r) {
+      // الرد قد لا يكون JSON إطلاقاً (صفحة تسجيل دخول، 404، عطل شبكة) —
+      // بلا هذا الالتفاف تظهر رسالة المتصفح الإنجليزية الخام للتاجر
+      // ("Failed to execute 'json'…") بدل رسالة عربية مفهومة.
+      return r.text().then(function (raw) {
+        var d;
+        try {
+          d = JSON.parse(raw);
+        } catch (e) {
+          if (r.status === 401 || r.status === 403) {
+            throw new Error("جلستك انتهت — سجّل دخولك مرة ثانية.");
+          }
+          throw new Error("تعذّر الاتصال بالخادم الآن. حاول بعد شوي.");
+        }
+        if (!r.ok || d.ok === false) throw new Error(d.error || "تعذّر تنفيذ الطلب.");
+        return d;
+      });
+    });
+  }
+
+  // ── الشخصية ──
+  var TEXT_FIELDS = ["agent_name","business_name","business_type","city","about",
+    "custom_instructions","forbidden_topics","unknown_answer_policy",
+    "escalation_number","working_hours","after_hours_reply"];
+  var SELECTS = ["dialect","tone","reply_length","emoji_level"];
+
+  function fillForm(p) {
+    profile = p;
+    TEXT_FIELDS.concat(SELECTS).forEach(function (f) {
+      if ($(f) && p && p[f] != null) $(f).value = p[f];
+    });
+    $("allow_prices").checked = p ? Number(p.allow_prices) === 1 : true;
+    var look = {};
+    try { look = p && p.appearance ? JSON.parse(p.appearance) : {}; } catch (e) { look = {}; }
+    if (look.primaryColor) $("primaryColor").value = look.primaryColor;
+    if (look.position) $("position").value = look.position;
+    if (look.greeting) $("greeting").value = look.greeting;
+    if (p && p.merchant_id) {
+      $("storeBadge").textContent = "المعرّف: " + p.merchant_id;
+      $("snippet").textContent =
+        '<script src="' + location.origin + '/widget.js" data-store-id="' + p.merchant_id + '"><\/script>';
+    }
+  }
+
+  function loadProfile() {
+    return api("/api/store/persona", { action: "get" })
+      .then(function (d) {
+        fillForm(d.profile);
+        if (!d.configured) notify("ما فيه إعدادات محفوظة بعد — اضبط وكيلك واحفظ.", true);
+      })
+      .catch(function (e) { notify(e.message, false); });
+  }
+
+  $("saveBtn").addEventListener("click", function () {
+    var payload = { allow_prices: $("allow_prices").checked };
+    TEXT_FIELDS.forEach(function (f) { payload[f] = $(f).value.trim(); });
+    SELECTS.forEach(function (f) { payload[f] = $(f).value; });
+    payload.emoji_level = Number($("emoji_level").value);
+    payload.appearance = {
+      primaryColor: $("primaryColor").value,
+      position: $("position").value,
+      greeting: $("greeting").value.trim()
+    };
+    $("saveBtn").disabled = true;
+    api("/api/store/persona", payload)
+      .then(function (d) { fillForm(d.profile); notify("تم الحفظ ✅ وكيلك صار يرد بهذي الإعدادات.", true); })
+      .catch(function (e) { notify(e.message, false); })
+      .finally(function () { $("saveBtn").disabled = false; });
+  });
+
+  $("reloadBtn").addEventListener("click", loadProfile);
+
+  // ── التدريب ──
+  function esc(v) {
+    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function loadFaqs() {
+    api("/api/store/faq", { action: "list" })
+      .then(function (d) {
+        var rows = d.rows || [];
+        $("faqCount").textContent = "(" + rows.length + ")";
+        if (!rows.length) {
+          $("faqList").innerHTML = '<p class="text-sm text-slate-400">ما فيه أسئلة بعد — أضف أول سؤال فوق.</p>';
+          return;
+        }
+        $("faqList").innerHTML = rows.map(function (r) {
+          return '<div class="p-4 rounded-xl border border-slate-200">' +
+            '<div class="flex justify-between gap-3 items-start">' +
+              '<p class="font-bold text-sm">' + esc(r.question) + '</p>' +
+              '<button data-del="' + r.id + '" class="text-xs text-rose-600 hover:underline shrink-0">حذف</button>' +
+            '</div>' +
+            '<p class="text-sm text-slate-600 mt-1.5 leading-relaxed">' + esc(r.answer) + '</p>' +
+          '</div>';
+        }).join("");
+        $("faqList").querySelectorAll("[data-del]").forEach(function (b) {
+          b.addEventListener("click", function () {
+            api("/api/store/faq", { action: "delete", id: Number(b.dataset.del) })
+              .then(loadFaqs)
+              .catch(function (e) { notify(e.message, false); });
+          });
+        });
+      })
+      .catch(function (e) { notify(e.message, false); });
+  }
+
+  $("faqSave").addEventListener("click", function () {
+    var q = $("faqQ").value.trim(), a = $("faqA").value.trim();
+    if (!q || !a) return notify("اكتب السؤال والجواب.", false);
+    api("/api/store/faq", { action: "save", question: q, answer: a })
+      .then(function () { $("faqQ").value = ""; $("faqA").value = ""; loadFaqs(); notify("انضاف ✅", true); })
+      .catch(function (e) { notify(e.message, false); });
+  });
+
+  $("faqReload").addEventListener("click", loadFaqs);
+
+  $("teachBtn").addEventListener("click", function () {
+    var t = $("teachText").value.trim();
+    if (t.length < 10) return notify("النص قصير — اكتب معلومة مفيدة.", false);
+    api("/api/store/faq", { action: "teach", text: t })
+      .then(function () { $("teachText").value = ""; notify("تعلّمها الوكيل ✅", true); })
+      .catch(function (e) { notify(e.message, false); });
+  });
+
+  // ── التجربة ──
+  var testHistory = [];
+  function bubble(role, text) {
+    var wrap = document.createElement("div");
+    wrap.className = role === "user" ? "flex justify-end" : "flex justify-start";
+    var b = document.createElement("div");
+    b.className = role === "user"
+      ? "bg-slate-900 text-white rounded-2xl rounded-tl-sm px-3.5 py-2 max-w-[80%]"
+      : "bg-white border border-slate-200 rounded-2xl rounded-tr-sm px-3.5 py-2 max-w-[80%]";
+    b.textContent = text;
+    wrap.appendChild(b);
+    $("testMsgs").appendChild(wrap);
+    $("testMsgs").scrollTop = $("testMsgs").scrollHeight;
+    return b;
+  }
+
+  function testSend() {
+    var text = $("testInput").value.trim();
+    if (!text) return;
+    bubble("user", text);
+    testHistory.push({ role: "user", content: text });
+    $("testInput").value = "";
+    $("testSend").disabled = true;
+    var typing = bubble("assistant", "…");
+    api("/api/chat", { messages: testHistory })
+      .then(function (d) {
+        var reply = d.reply || d.error || "ما وصل رد.";
+        typing.textContent = reply;
+        if (d.reply) testHistory.push({ role: "assistant", content: d.reply });
+      })
+      .catch(function (e) { typing.textContent = e.message; })
+      .finally(function () { $("testSend").disabled = false; $("testInput").focus(); });
+  }
+
+  $("testSend").addEventListener("click", testSend);
+  $("testInput").addEventListener("keydown", function (e) { if (e.key === "Enter") testSend(); });
+  $("testClear").addEventListener("click", function () { testHistory = []; $("testMsgs").innerHTML = ""; });
+
+  // ── التركيب ──
+  $("copyBtn").addEventListener("click", function () {
+    navigator.clipboard.writeText($("snippet").textContent)
+      .then(function () { notify("انتسخ ✅", true); })
+      .catch(function () { notify("تعذّر النسخ — حدّد الكود وانسخه يدوياً.", false); });
+  });
+
+  loadProfile();
+})();
+</script>
+</body>
+</html>

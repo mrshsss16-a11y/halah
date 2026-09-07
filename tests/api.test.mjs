@@ -1747,6 +1747,92 @@ async function runTests() {
     );
   }
 
+  // ── واجهة "منتجاتي": نقطة قراءة الكتالوج + تدفق البطاقة بلا كتابة يدوية ───
+  {
+    const { readFileSync } = await import("node:fs");
+    const listSrc = readFileSync(
+      new URL("../functions/api/store/catalog/list.js", import.meta.url),
+      "utf8"
+    );
+    const dashSrc = readFileSync(new URL("../dashboard.html", import.meta.url), "utf8");
+
+    assert(
+      /requireCompletedAccount\(request, env, body\.storeId\)/.test(listSrc),
+      "CATUI-1: /api/store/catalog/list يتطلب حساباً مكتملاً — لا قراءة كتالوج بجلسة ناقصة"
+    );
+    assert(
+      /checkRateLimit\(env, clientIp\(request\), "catalog_list"/.test(listSrc),
+      "CATUI-2: نقطة القائمة تحت سقف معدل"
+    );
+    // العزل: merchantId يجي من الجلسة ويُمرَّر لطبقة الخدمة — لا معرّف من العميل.
+    assert(
+      /listCatalog\(env, \{ merchantId/.test(listSrc) &&
+        !/merchantId:\s*body\./.test(listSrc),
+      "CATUI-3: العزل عبر merchantId من الجلسة لا من جسم الطلب"
+    );
+    assert(
+      !/\bDB\b|db\.prepare|SELECT /.test(listSrc),
+      "CATUI-4: النقطة لا تلمس D1 مباشرة — كل استعلام يمرّ بـservices/catalog.js"
+    );
+    assert(
+      /listProducts|salla/i.test(listSrc) === false,
+      "CATUI-5: التصفّح صفر طلبات على سلة — لا يُستهلك حد المتجر"
+    );
+
+    // الواجهة: تبويب منتجاتي موجود، والبطاقة تعبّي وتولّد بلا إدخال يدوي.
+    assert(
+      /switchTab\('catalog'\)/.test(dashSrc) && /id="sectionCatalog"/.test(dashSrc),
+      "CATUI-6: تبويب «منتجاتي» وقسمه موجودان بلوحة التاجر"
+    );
+    const useFn = dashSrc.slice(dashSrc.indexOf("function useCatalogItem"));
+    assert(
+      /pName'\)\.value = it\.name/.test(useFn) &&
+        /pImageUrl'\)\.value = it\.imageUrl/.test(useFn) &&
+        /pExistingDescription'\)\.value = it\.currentDescription/.test(useFn) &&
+        /generateCopy\(\);/.test(useFn.slice(0, 1400)),
+      "CATUI-7: الضغط على بطاقة يعبّي الحقول (اسم/صورة/وصف حالي) ويشغّل التوليد فوراً"
+    );
+    assert(
+      /catalogEmpty[\s\S]{0,400}ما سحبنا منتجاتك بعد/.test(dashSrc),
+      "CATUI-8: حالة فارغة صريحة توجّه للسحب"
+    );
+    // pImageUrl خرج من <details> — لم يعد حقلاً يدوياً مخفياً.
+    const detailsBlocks = dashSrc.match(/<details[\s\S]*?<\/details>/g) || [];
+    assert(
+      detailsBlocks.every((b) => !b.includes('id="pImageUrl"')),
+      "CATUI-9: حقل الصورة ظاهر بالمسار الأساسي لا مخفياً داخل <details>"
+    );
+    assert(
+      !/تحسين وصف موجود بدل كتابة من الصفر/.test(dashSrc),
+      "CATUI-10: العنوان المضلّل «تحسين وصف موجود» أُزيل"
+    );
+    // المسار اليدوي باقٍ: الحقول قابلة للكتابة وgenerateCopy تقرأ من الحقول.
+    assert(
+      /id="pName"[^>]*type="text"/.test(dashSrc) &&
+        /const name = document\.getElementById\('pName'\)\.value\.trim\(\)/.test(dashSrc),
+      "CATUI-11: المسار اليدوي (كتابة الاسم بلا اختيار منتج) لم يُحذف"
+    );
+    // تهريب HTML إلزامي على كل محتوى سلة داخل البطاقة.
+    const cardFn = dashSrc.slice(
+      dashSrc.indexOf("function catalogCard"),
+      dashSrc.indexOf("function useCatalogItem")
+    );
+    const interpolations = cardFn.match(/\$\{[^}]*\}/g) || [];
+    assert(
+      interpolations.length > 0 &&
+        // المسموح بلا escHtml: قِطَع HTML مبنيّة داخلياً (img/badge) وأعلام
+        // ثابتة لا تحمل نصاً من سلة. أي شيء غير ذلك لازم يمرّ بـescHtml.
+        interpolations.every((s) =>
+          /escHtml\(/.test(s) || /^\$\{(img|badge|it\.imageUrl \? 'hidden' : '')\}$/.test(s)
+        ),
+      "CATUI-12: كل محتوى سلة داخل بطاقة المنتج يمرّ بـescHtml — ثغرة XSS لا تُعاد"
+    );
+    assert(
+      /onerror=/.test(cardFn) && /img-fallback/.test(cardFn),
+      "CATUI-13: صورة سلة المحمية تسقط لبديل بدل أيقونة مكسورة"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

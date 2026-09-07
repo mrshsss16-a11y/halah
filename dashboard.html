@@ -97,6 +97,9 @@
       <button id="navTabStudio" onclick="switchTab('studio')" class="tab-on text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
         <span class="material-symbols-outlined text-base">edit_note</span><span>وصف المنتجات</span>
       </button>
+      <button id="navTabCatalog" onclick="switchTab('catalog')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">inventory_2</span><span>منتجاتي</span>
+      </button>
       <button id="navTabAgent" onclick="switchTab('agent')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
         <span class="material-symbols-outlined text-base">support_agent</span><span>وكيل خدمة العملاء</span>
       </button>
@@ -104,6 +107,38 @@
         <span class="material-symbols-outlined text-base">storefront</span><span>متجري</span>
       </button>
     </div>
+
+    <!-- ── 0. My products (Salla catalog) ──────────────────────
+         جوهر المنتج: التاجر يشوف منتجاته الحقيقية ويضغط واحداً، فتتعبّى حقول
+         الاستوديو من سلة ويبدأ التوليد فوراً — صفر كتابة أو لصق يدوي. -->
+    <section id="sectionCatalog" class="hidden space-y-5">
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div class="space-y-1">
+            <h2 class="text-lg font-black text-black">منتجاتي</h2>
+            <p id="catalogCountLine" class="text-xs text-slate-600 font-medium">اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.</p>
+          </div>
+          <button id="catalogSyncBtn" onclick="startCatalogSync()" class="sleek-btn-black px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 whitespace-nowrap">
+            <span class="material-symbols-outlined text-base">sync</span>
+            <span id="catalogSyncBtnText">اسحب منتجاتي من سلة</span>
+          </button>
+        </div>
+
+        <div id="catalogFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+
+        <div id="catalogLoading" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري تحميل منتجاتك…</div>
+
+        <div id="catalogEmpty" class="hidden text-center py-10 space-y-2">
+          <span class="material-symbols-outlined text-4xl text-slate-300">inventory_2</span>
+          <p class="text-xs text-slate-600 font-bold">ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"</p>
+          <p class="text-[11px] text-slate-500">السحب يمشي بالخلفية (صفحة كل عشر دقائق) احتراماً لحدود سلة.</p>
+        </div>
+
+        <div id="catalogGrid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+
+        <button id="catalogMoreBtn" onclick="loadCatalog(catalogNextOffset)" class="hidden w-full sleek-btn-white py-3 rounded-xl text-xs transition">عرض المزيد</button>
+      </div>
+    </section>
 
     <!-- ── 1. Product copy studio ─────────────────────────────── -->
     <section id="sectionStudio" class="space-y-5">
@@ -127,11 +162,22 @@
         </div>
         <textarea id="pFeatures" rows="2" placeholder="مزايا المنتج (اختياري) — افصل بينها بفاصلة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
 
+        <!-- المسار الأساسي: هذين الحقلين يُعبّآن آلياً من بطاقة "منتجاتي".
+             يبقيان ظاهرين وقابلين للتعديل للمسار اليدوي (منتج مو بسلة بعد). -->
+        <div id="studioSourceBanner" class="hidden p-3 rounded-xl bg-slate-50 border border-slate-300 text-[11px] font-bold text-black flex items-center gap-2">
+          <span class="material-symbols-outlined text-base">inventory_2</span>
+          <span id="studioSourceText"></span>
+        </div>
+
+        <div class="space-y-2.5">
+          <label for="pImageUrl" class="block text-[11px] font-bold text-slate-600">صورة المنتج — يحلّلها فعلياً (لون، خامة، شكل) قبل الكتابة</label>
+          <input id="pImageUrl" type="text" placeholder="تُعبَّأ تلقائياً لما تختار منتجاً من «منتجاتي» — أو الصق رابط صورة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" dir="ltr"/>
+        </div>
+
         <details class="text-xs">
-          <summary class="cursor-pointer font-bold text-slate-600 select-none">تحسين وصف موجود بدل كتابة من الصفر (اختياري)</summary>
+          <summary class="cursor-pointer font-bold text-slate-600 select-none">الوصف الحالي للمنتج (اختياري — يُعبَّأ تلقائياً من سلة)</summary>
           <div class="space-y-2.5 pt-2.5">
-            <textarea id="pExistingDescription" rows="3" placeholder="الصق وصف المنتج الحالي بمتجرك — الذكاء الاصطناعي يحسّن صياغته وSEO بدل ما يخترع وصفاً عاماً من الاسم بس" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
-            <input id="pImageUrl" type="text" placeholder="رابط صورة المنتج (اختياري) — يحلّلها فعلياً (لون، خامة، شكل) قبل الكتابة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" dir="ltr"/>
+            <textarea id="pExistingDescription" rows="3" placeholder="وصف المنتج الحالي بمتجرك — الذكاء الاصطناعي يحسّن صياغته وSEO بدل ما يخترع وصفاً عاماً من الاسم بس" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
           </div>
         </details>
 
@@ -441,7 +487,7 @@
     let chatHistory = [];
 
     function switchTab(tab) {
-      const tabs = ['studio', 'agent', 'store'];
+      const tabs = ['studio', 'catalog', 'agent', 'store'];
       tabs.forEach(t => {
         const btn = document.getElementById('navTab' + t.charAt(0).toUpperCase() + t.slice(1));
         const sec = document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -450,6 +496,140 @@
       });
       if (tab === 'agent') { loadAgentContext(); loadWaStatus(); }
       if (tab === 'store') loadStore();
+      if (tab === 'catalog' && !catalogLoadedOnce) loadCatalog(0);
+    }
+
+    // ── منتجاتي (كتالوج سلة المسحوب) ───────────────────────────────────
+    // الهدف: صفر كتابة يدوية. البطاقة تحمل بيانات المنتج كاملة بذاكرة الصفحة
+    // (catalogItems)، والنقر يعبّي حقول الاستوديو ويشغّل generateCopy() فوراً.
+    // أسماء/أوصاف/روابط سلة كلها من محتوى التاجر ⇒ كل إدراج بـinnerHTML يمرّ
+    // بـescHtml (ثغرة XSS أُغلقت بهذا الملف — لا تُعاد).
+    let catalogItems = {};
+    let catalogNextOffset = 0;
+    let catalogLoadedOnce = false;
+
+    async function loadCatalog(offset = 0) {
+      const grid = document.getElementById('catalogGrid');
+      const loading = document.getElementById('catalogLoading');
+      const empty = document.getElementById('catalogEmpty');
+      const moreBtn = document.getElementById('catalogMoreBtn');
+
+      if (offset === 0) { catalogItems = {}; grid.innerHTML = ''; }
+      document.getElementById('catalogFeedback').classList.add('hidden');
+      empty.classList.add('hidden');
+      moreBtn.classList.add('hidden');
+      loading.classList.remove('hidden');
+
+      try {
+        const res = await fetch('/api/store/catalog/list?limit=24&offset=' + encodeURIComponent(offset));
+        const data = await res.json().catch(() => ({}));
+        loading.classList.add('hidden');
+
+        if (!res.ok || data?.error) {
+          showMsg('catalogFeedback', data?.error || 'تعذر تحميل منتجاتك. حاول مرة ثانية.');
+          return;
+        }
+
+        catalogLoadedOnce = true;
+        const items = data.items || [];
+        items.forEach(it => { catalogItems[it.sku] = it; grid.appendChild(catalogCard(it)); });
+
+        const count = Object.keys(catalogItems).length;
+        grid.classList.toggle('hidden', count === 0);
+        empty.classList.toggle('hidden', count !== 0);
+        catalogNextOffset = data.nextOffset || 0;
+        moreBtn.classList.toggle('hidden', !data.hasMore);
+
+        document.getElementById('catalogCountLine').innerText = count
+          ? `${count} من ${data.total} منتج — اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.`
+          : 'اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.';
+      } catch (err) {
+        loading.classList.add('hidden');
+        showMsg('catalogFeedback', 'تعذر الاتصال. حاول مرة ثانية.');
+      }
+    }
+
+    function catalogCard(it) {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'text-right rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-black transition shadow-sm';
+      card.dataset.sku = it.sku;
+
+      // صور سلة قد تكون محمية (hotlink/CDN مقيّد): لو فشل التحميل نُخفي الـimg
+      // ونُظهر بديلاً نصياً بدل أيقونة مكسورة. onerror داخل السمة يحتاج تهريب
+      // الاقتباسات — escHtml يهرّب ' و " أيضاً.
+      const img = it.imageUrl
+        ? `<img src="${escHtml(it.imageUrl)}" alt="${escHtml(it.name)}" loading="lazy" referrerpolicy="no-referrer"
+              class="w-full h-28 object-cover bg-slate-100"
+              onerror="var f=this.parentElement&&this.parentElement.querySelector('.img-fallback'); if(f)f.classList.remove('hidden'); this.remove();"/>`
+        : '';
+      const badge = it.hasDescription
+        ? ''
+        : '<span class="absolute top-2 left-2 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-full">بلا وصف</span>';
+
+      card.innerHTML =
+        `<div class="relative">
+           ${img}
+           <div class="img-fallback ${it.imageUrl ? 'hidden' : ''} w-full h-28 bg-slate-100 flex items-center justify-center">
+             <span class="material-symbols-outlined text-3xl text-slate-400">image_not_supported</span>
+           </div>
+           ${badge}
+         </div>
+         <div class="p-2.5 space-y-1">
+           <div class="text-xs font-bold text-black leading-snug truncate" title="${escHtml(it.name)}">${escHtml(it.name)}</div>
+           <div class="text-[11px] text-slate-500">${escHtml(it.price || '')}${it.category ? ' · ' + escHtml(it.category) : ''}</div>
+         </div>`;
+
+      card.addEventListener('click', () => useCatalogItem(it.sku));
+      return card;
+    }
+
+    /** بطاقة → حقول الاستوديو → توليد فوري. لا إدخال يدوي إطلاقاً. */
+    function useCatalogItem(sku) {
+      const it = catalogItems[sku];
+      if (!it) return;
+
+      document.getElementById('pName').value = it.name || '';
+      // السعر حقل رقمي؛ سلة تعطيه كنص فيه العملة ("350 SAR") — نأخذ الرقم فقط.
+      const priceNum = String(it.price || '').match(/[\d.]+/);
+      document.getElementById('pPrice').value = priceNum ? priceNum[0] : '';
+      document.getElementById('pCategory').value = it.category || '';
+      document.getElementById('pExistingDescription').value = it.currentDescription || '';
+      document.getElementById('pImageUrl').value = it.imageUrl || '';
+
+      const banner = document.getElementById('studioSourceBanner');
+      // innerText لا innerHTML — اسم المنتج من سلة.
+      document.getElementById('studioSourceText').innerText = 'المصدر: ' + (it.name || '') + ' (' + sku + ') — مسحوب من سلة';
+      banner.classList.remove('hidden');
+
+      switchTab('studio');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      generateCopy();
+    }
+
+    async function startCatalogSync() {
+      const btn = document.getElementById('catalogSyncBtn');
+      const txt = document.getElementById('catalogSyncBtnText');
+      btn.disabled = true;
+      txt.innerText = 'جاري البدء…';
+      try {
+        const res = await fetch('/api/store/catalog/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data?.error) {
+          showMsg('catalogFeedback', data?.error || 'تعذر بدء السحب. حاول مرة ثانية.');
+        } else {
+          showMsg('catalogFeedback', data.message || 'بدأ سحب منتجات متجرك.');
+          loadCatalog(0);
+        }
+      } catch (err) {
+        showMsg('catalogFeedback', 'تعذر الاتصال. حاول مرة ثانية.');
+      }
+      btn.disabled = false;
+      txt.innerText = 'اسحب منتجاتي من سلة';
     }
 
     // ── WhatsApp connection (Embedded Signup) ──────────────────────────
