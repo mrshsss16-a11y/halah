@@ -1951,7 +1951,8 @@ async function runTests() {
       "VIS-6: سقف موسّع للتفاصيل المرئية مع منع الحشو"
     );
     assert(
-      /askVisionAI\(\{ env, imageUrl, prompt: VISION_PROMPT \}\)\.catch\(\(\) => null\)/.test(copySrc),
+      /askVisionAI\(\{ env, imageUrl, prompt: visionPrompt \}\)\.catch\(\(\) => null\)/.test(copySrc) &&
+        /const visionPrompt = visionPromptFor\(category\)/.test(copySrc),
       "VIS-7: التوجيه مصدر واحد، وفشل الرؤية ما زال لا يكسر المسار"
     );
 
@@ -2087,6 +2088,97 @@ async function runTests() {
       !/https:\/\/[^"'\s]*\/p\d|productUrl|store_url/.test(dashSrc),
       "APPROVE-8: لا رابط منتج مخترع — البيانات لا تتضمن دومين المتجر"
     );
+  }
+
+  // ── كتيب مصطلحات المنتجات (مفردات محكومة حسب الفئة) ──────────────────
+  {
+    const { taxonomyForCategory, COVERED_CATEGORIES } = await import("../functions/_lib/ai/productTaxonomy.js");
+    const { VISION_PROMPT, visionPromptFor, buildSeoSystem } = await import("../functions/api/copy.js");
+
+    const dresses = taxonomyForCategory("فساتين");
+    assert(
+      COVERED_CATEGORIES.includes("فساتين") && dresses.length > 0,
+      "TAX-1: فئة الفساتين مغطاة بكتيب مصطلحات"
+    );
+    assert(
+      ["قصّة A", "ماكسي", "ميدي", "ميني", "قفطان", "بذيل حورية", "بلوزون"].every((t) => dresses.includes(t)),
+      "TAX-2: مصطلحات القصّة/السيلويت موجودة بالنص"
+    );
+    assert(
+      ["دائرية", "V", "قارب", "مربعة", "واقفة", "حمالات", "مكشوفة الكتفين"].every((t) => dresses.includes(t)),
+      "TAX-3: مصطلحات الياقة موجودة بالنص"
+    );
+    assert(
+      ["ثلاثة أرباع", "بلا أكمام", "منفوخة", "فراشة", "ضيّقة"].every((t) => dresses.includes(t)),
+      "TAX-4: مصطلحات الأكمام موجودة بالنص"
+    );
+    assert(
+      ["حزام", "كسرات", "طبقات", "شق جانبي", "أزرار أمامية", "تطريز ظاهر", "منقّطة", "مخططة"].every((t) => dresses.includes(t)),
+      "TAX-5: التفاصيل المرئية والطبعة موجودة بالنص"
+    );
+    assert(
+      ["سهرات", "مناسبات", "يومي", "عمل", "صيفي", "شتوي"].every((t) => dresses.includes(t)),
+      "TAX-6: الاستخدام المقترح موجود بالنص"
+    );
+
+    // الكتيب مفردات وصف — لا خامات ولا أحكام جودة تتسلل من الباب الخلفي.
+    assert(
+      !/(فاخر|أنيق|عالي الجودة|جودة عالية|مريح|شيفون|كريب|ساتان|قطن|حرير)/.test(dresses),
+      "TAX-7: الكتيب بلا خامات ولا أحكام جودة — تسمية فقط"
+    );
+
+    // فئة غير مغطاة أو غائبة ⇒ التوجيه القديم حرفياً (نمط SP-12).
+    assert(
+      taxonomyForCategory("عطور") === "" && taxonomyForCategory("") === "" &&
+        taxonomyForCategory(undefined) === "" && taxonomyForCategory(null) === "",
+      "TAX-8: فئة غير مغطاة أو غائبة ترجّع كتيباً فارغاً لا كتيباً مخترعاً"
+    );
+    assert(
+      visionPromptFor("عطور") === VISION_PROMPT && visionPromptFor("") === VISION_PROMPT &&
+        visionPromptFor(undefined) === VISION_PROMPT,
+      "TAX-9: بلا كتيب، توجيه الرؤية مطابق حرفياً للسلوك السابق"
+    );
+
+    const withTax = visionPromptFor("فساتين");
+    assert(
+      withTax.startsWith(VISION_PROMPT) && withTax.includes(dresses),
+      "TAX-10: الكتيب يُحقن فوق التوجيه القديم بلا استبداله"
+    );
+    assert(
+      /استخدم المصطلحات التالية حصراً/.test(withTax) && /ولا تخترع بديلاً/.test(withTax),
+      "TAX-11: الحقن يحصر التسمية بالمعجم ويمنع اختراع بديل"
+    );
+    // الكتيب لا ينقض منع الاختلاق — قواعد VIS ما زالت بالنص المحقون.
+    assert(
+      /ممنوع الاستنتاج أو الافتراض/.test(withTax) && /عند أي شك لا تذكر الخامة إطلاقاً/.test(withTax),
+      "TAX-12: منع الاختلاق باقٍ حرفياً بعد الحقن"
+    );
+    // مرادفات الفئة كما يكتبها التاجر فعلاً.
+    assert(
+      taxonomyForCategory("الفساتين") === dresses && taxonomyForCategory("ازياء نسائيه") === dresses &&
+        taxonomyForCategory("Dresses") === dresses,
+      "TAX-13: مرادفات الفئة تُطبَّع (تشكيل/همزة/تاء مربوطة/لاتيني)"
+    );
+
+    // إلزام الاتساق بالوصف النهائي — يُحقن فقط مع رؤية + كتيب.
+    const seoArgs = { recent: [], keywords: ["فستان"], existingDescription: "", styleExamples: [] };
+    const seoWithBoth = buildSeoSystem({ ...seoArgs, visionNotes: "فستان ماكسي بقصّة A.", taxonomyBlock: dresses });
+    assert(
+      /التزمي بنفس مصطلحات ملاحظات الصورة حرفياً/.test(seoWithBoth) && /لا مرادفات/.test(seoWithBoth),
+      "TAX-14: الوصف النهائي مُلزَم بنفس المصطلحات لا بمرادفاتها"
+    );
+    const seoNoTax = buildSeoSystem({ ...seoArgs, visionNotes: "فستان ماكسي بقصّة A." });
+    assert(
+      seoNoTax === buildSeoSystem({ ...seoArgs, visionNotes: "فستان ماكسي بقصّة A.", taxonomyBlock: "" }) &&
+        !/التزمي بنفس مصطلحات/.test(seoNoTax),
+      "TAX-15: بلا كتيب، البرومبت الرئيسي مطابق حرفياً للسلوك السابق"
+    );
+    assert(
+      !/التزمي بنفس مصطلحات/.test(buildSeoSystem({ ...seoArgs, visionNotes: "", taxonomyBlock: dresses })),
+      "TAX-16: بلا ملاحظات صورة لا يُحقن إلزام الاتساق"
+    );
+    // حجم البرومبت تكلفة بكل استدعاء.
+    assert(dresses.length < 700, `TAX-17: الكتيب مختصر (${dresses.length} حرفاً)`);
   }
 
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);

@@ -12,6 +12,7 @@ import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { requireCompletedAccount } from "../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 import { getProfile, profileToPromptBlock } from "../_lib/services/storeProfile.js";
+import { taxonomyForCategory } from "../_lib/ai/productTaxonomy.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -67,7 +68,30 @@ export const VISION_PROMPT = [
   "- بلا حشو: إن كانت التفاصيل المرئية قليلة فاكتفِ بجملتين."
 ].join("\n");
 
-export function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples, profileBlock }) {
+/**
+ * التوجيه البصري + كتيب مصطلحات الفئة إن كانت مغطاة.
+ *
+ * الكتيب **مفردات تسمية**، لا رخصة استنتاج: النموذج ما زال ممنوعاً من وصف ما
+ * لا يراه (VIS-1..10)، والكتيب يحدد فقط *بأي اسم* يسمّي ما رآه. لذلك السطر
+ * الأخير حاسم — لا مصطلح ينطبق ⇒ صمت، لا "أقرب مصطلح".
+ *
+ * فئة غير مغطاة (أو غائبة) ⇒ `VISION_PROMPT` نفسه بالمرجع، بلا حرف زائد.
+ */
+export function visionPromptFor(category) {
+  const taxonomy = taxonomyForCategory(category);
+  if (!taxonomy) return VISION_PROMPT;
+  return [
+    VISION_PROMPT,
+    "",
+    "## مصطلحات التسمية",
+    "استخدم المصطلحات التالية حصراً عند التسمية. لو ما ينطبق أي مصطلح على ما تراه، اسكت عنه ولا تخترع بديلاً ولا تستخدم الأقرب.",
+    "هذي أسماء لما تراه فقط — لا تجعلها ذريعة لوصف تفصيل غير ظاهر بالصورة.",
+    "",
+    taxonomy
+  ].join("\n");
+}
+
+export function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples, profileBlock, taxonomyBlock }) {
   const avoid = recent.length
     ? `\n\n## لا تكرري هذه الافتتاحيات السابقة لنفس المتجر:\n${recent.map((r, i) => `${i + 1}. "${r.opening}"`).join("\n")}`
     : "";
@@ -129,6 +153,13 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
     ? `\n6. **الوصف والنبذة يجب أن يذكرا صراحةً** اللون ونوع القصّة (كما وردا بملاحظات صورة المنتج أعلاه)، مع اقتراح استخدام معقول (مناسبة/موسم/إطلالة) مشتق من هذي المرئيات وحدها. تجاهل هذي التفاصيل مع توفرها = وصف ناقص مرفوض.`
     : "";
 
+  // اتساق المصطلح عبر الدفعة: ملاحظات الرؤية صارت تُسمّي بمعجم مغلق، فلو
+  // "ترجمها" الوصف النهائي لمرادف ("قصّة A" ⇒ "منسدلة") ضاع الغرض كله —
+  // ٢٠٠ منتج بمئتي تسمية مختلفة لنفس القصّة. يُحقن فقط حين توجد رؤية وكتيب.
+  const taxonomyOutputRule = visionNotes && taxonomyBlock
+    ? `\n7. **التزمي بنفس مصطلحات ملاحظات الصورة حرفياً** عند تسمية القصّة والياقة والأكمام — لا مرادفات ولا إعادة صياغة. اتساق التسمية عبر منتجات المتجر مقصود.`
+    : "";
+
   return `${PERSONA_SYSTEM_PROMPT}${groundingBlock}
 
 ---
@@ -146,7 +177,7 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
    طبيعي، جمل متدفقة، مو قائمة كلمات مفتاحية متتالية. حقول الـSEO المنفصلة
    (seoTitle, metaDescription, focusKeyword) هي مكان التحسين التقني —
    description وexcerpt وwhatsapp تبقى إنسانية بالكامل حتى لو فيها كلمات
-   مفتاحية طبيعية بسياقها.${visionOutputRule}
+   مفتاحية طبيعية بسياقها.${visionOutputRule}${taxonomyOutputRule}
 
 أرجعي **JSON فقط** بهذا الشكل بالضبط بدون أي نص خارج الـ JSON:
 {
@@ -300,15 +331,19 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   const profileRow = await getProfile(env, { merchantId }).catch(() => null);
   const profileBlock = approvedProfileBlock(profileRow);
 
+  // كتيب مصطلحات الفئة: يوجّه التسمية بمرحلة الرؤية، ثم يُلزم الوصف النهائي
+  // بنفس المصطلحات. فئة غير مغطاة ⇒ "" ⇒ لا فرق عن السلوك القديم.
+  const taxonomyBlock = taxonomyForCategory(category);
+  const visionPrompt = visionPromptFor(category);
   const visionNotes = imageUrl
-    ? await askVisionAI({ env, imageUrl, prompt: VISION_PROMPT }).catch(() => null)
+    ? await askVisionAI({ env, imageUrl, prompt: visionPrompt }).catch(() => null)
     : null;
 
   const styleExamples = category
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
     : [];
 
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples, profileBlock });
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples, profileBlock, taxonomyBlock });
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
   const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
 
