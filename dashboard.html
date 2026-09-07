@@ -131,7 +131,7 @@
         <div id="catalogEmpty" class="hidden text-center py-10 space-y-2">
           <span class="material-symbols-outlined text-4xl text-slate-300">inventory_2</span>
           <p class="text-xs text-slate-600 font-bold">ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"</p>
-          <p class="text-[11px] text-slate-500">السحب يمشي بالخلفية (صفحة كل عشر دقائق) احتراماً لحدود سلة.</p>
+          <p class="text-[11px] text-slate-500">تظهر أول دفعة منتجات فوراً، وإن كان متجرك كبير يوصل الباقي خلال دقائق.</p>
         </div>
 
         <div id="catalogGrid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
@@ -611,7 +611,7 @@
       const btn = document.getElementById('catalogSyncBtn');
       const txt = document.getElementById('catalogSyncBtnText');
       btn.disabled = true;
-      txt.innerText = 'جاري البدء…';
+      txt.innerText = 'جاري السحب…';
       try {
         const res = await fetch('/api/store/catalog/sync', {
           method: 'POST',
@@ -622,7 +622,9 @@
         if (!res.ok || data?.error) {
           showMsg('catalogFeedback', data?.error || 'تعذر بدء السحب. حاول مرة ثانية.');
         } else {
-          showMsg('catalogFeedback', data.message || 'بدأ سحب منتجات متجرك.');
+          // الرسالة تجي من الخادم بناءً على نتيجة الصفحة الأولى الحقيقية
+          // (عدد مسحوب فعلاً + هل بقي شيء) — لا وعد بما لم يحصل.
+          showMsg('catalogFeedback', data.message || 'تم سحب منتجات متجرك.');
           loadCatalog(0);
         }
       } catch (err) {

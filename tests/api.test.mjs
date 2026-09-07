@@ -1525,6 +1525,88 @@ async function runTests() {
       routeLog.length === 1 && /merchant_id = \?/.test(routeLog[0].sql) && routeLog[0].args[0] === "m_c",
       "CAT-11: فحص الوظيفة النشطة مشروط بالتاجر — يمنع وظيفة ثانية لنفس المتجر"
     );
+
+    // ── الصفحة الأولى فوراً (تجربة التاجر) ───────────────────────────────
+    // ثلاثة أشياء تُختبَر لأن كسرها مكلف:
+    //  ١. **طلب سلة واحد** عند البدء — حلقة هنا تتجاوز ١ طلب/ثانية فتوقف
+    //     اتصال المتجر كاملاً لا الطلب وحده.
+    //  ٢. hasMore=false ⇒ **لا وظيفة** تنتظر تِكاً بلا شغل.
+    //  ٣. فشل الصفحة الأولى ⇒ **لا وظيفة** توهم بنجاح ولا تحجز الحارس.
+    const { syncFirstPage } = await import("../functions/api/store/catalog/sync.js");
+
+    /** env وهمي يسجّل كل كتابة على bulk_jobs (إنشاء الوظيفة/تقديم الـcursor). */
+    function jobEnv(jobLog) {
+      return {
+        DB: {
+          prepare: (sql) => ({
+            bind: (...args) => {
+              jobLog.push({ sql, args });
+              return { run: async () => ({}), first: async () => null, all: async () => ({ results: [] }) };
+            }
+          })
+        }
+      };
+    }
+
+    // متجر كبير: صفحة أولى + وظيفة للباقي، والـcursor على الصفحة ٢.
+    const bigLog = [];
+    let bigCalls = 0;
+    const bigPages = [];
+    const big = await syncFirstPage(jobEnv(bigLog), "m_a", {
+      syncPage: async (_env, opts) => {
+        bigCalls++;
+        bigPages.push(opts.page);
+        return { page: opts.page, received: 60, imported: 60, skippedNoSku: 0, hasMore: true, nextPage: 2 };
+      }
+    });
+    assert(
+      bigCalls === 1 && bigPages[0] === 1,
+      "CAT-12: طلب سلة **واحد** عند البدء (الصفحة ١ فقط) — لا حلقة تتجاوز حد ١ طلب/ثانية"
+    );
+    assert(
+      big.imported === 60 && big.hasMore === true && typeof big.jobId === "string",
+      "CAT-13: متجر كبير — التاجر يشوف ٦٠ منتجاً فوراً ووظيفة تكمل الباقي"
+    );
+    assert(
+      bigLog.some((r) => /INSERT INTO bulk_jobs/.test(r.sql) && r.args.includes("m_a")) &&
+        bigLog.some((r) => /UPDATE bulk_jobs SET/.test(r.sql) && r.args[0] === "2"),
+      "CAT-14: الوظيفة تُنشأ للتاجر نفسه والـcursor يبدأ من الصفحة ٢ — لا إعادة سحب الصفحة ١"
+    );
+
+    // متجر صغير: صفحة واحدة تكفي ⇒ لا وظيفة إطلاقاً.
+    const smallLog = [];
+    let smallCalls = 0;
+    const small = await syncFirstPage(jobEnv(smallLog), "m_b", {
+      syncPage: async () => {
+        smallCalls++;
+        return { page: 1, received: 12, imported: 12, skippedNoSku: 0, hasMore: false, nextPage: null };
+      }
+    });
+    assert(
+      smallCalls === 1 && small.imported === 12 && small.hasMore === false && small.jobId === null,
+      "CAT-15: متجر بصفحة واحدة ينتهي فوراً — لا وظيفة معلّقة تنتظر cron بلا داعٍ"
+    );
+    assert(
+      !smallLog.some((r) => /bulk_jobs/.test(r.sql)),
+      "CAT-16: hasMore=false ⇒ صفر كتابات على bulk_jobs"
+    );
+
+    // فشل الصفحة الأولى: يُرمى للمستدعي، ولا وظيفة تُنشأ.
+    const failLog = [];
+    let failThrew = false;
+    try {
+      await syncFirstPage(jobEnv(failLog), "m_c", {
+        syncPage: async () => {
+          throw new Error("salla 401");
+        }
+      });
+    } catch {
+      failThrew = true;
+    }
+    assert(
+      failThrew && !failLog.some((r) => /bulk_jobs/.test(r.sql)),
+      "CAT-17: فشل الصفحة الأولى لا يُنشئ وظيفة — لا نجاح موهوم ولا حارس محجوز"
+    );
   }
 
   // ── شخصية الوكيل من البيانات (migrations/0021_agent_profiles.sql) ──────────
