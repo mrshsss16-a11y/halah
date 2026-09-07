@@ -7,6 +7,12 @@ import { withApi, json } from "../../_lib/core/respond.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { logError } from "../../_lib/core/errorLog.js";
+import {
+  isResetOtpLocked,
+  recordResetOtpFailure,
+  clearResetOtpAttempts
+} from "../../_lib/core/db.js";
 
 async function hashOtp(email, otp) {
   const data = new TextEncoder().encode(`${email}:${otp}`);
@@ -19,6 +25,21 @@ function timingSafeEqual(a, b) {
   let diff = 0;
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
+}
+
+// Records one failed OTP entry. A DB error here is logged but not surfaced —
+// the caller is already returning the generic `invalid` response either way.
+async function countResetFailure(env, email, request) {
+  try {
+    await recordResetOtpFailure(env, email);
+  } catch (err) {
+    logError({ env }, {
+      requestId: request.headers.get("cf-ray") || null,
+      path: "/api/auth/reset_password",
+      code: "reset_failure_record_failed",
+      internal: err?.message
+    });
+  }
 }
 
 async function resetPasswordHandler(body, env, request) {
@@ -47,6 +68,22 @@ async function resetPasswordHandler(body, env, request) {
   // file) so this can't be used to probe which emails have pending resets.
   const invalid = { ok: false, error: "رمز التحقق غير صحيح أو منتهي الصلاحية." };
 
+  // P39: per-email guess counter. checkRateLimit() above is per-IP and fails
+  // OPEN when KV is down, so it cannot be the only guard on a 6-digit code.
+  // This one fails CLOSED: if we can't read the counter we refuse the reset
+  // rather than hand out an unlimited-guess window.
+  try {
+    if (await isResetOtpLocked(env, email)) return json(invalid, 400);
+  } catch (err) {
+    logError({ env }, {
+      requestId: request.headers.get("cf-ray") || null,
+      path: "/api/auth/reset_password",
+      code: "reset_lockout_check_failed",
+      internal: err?.message
+    });
+    return json({ ok: false, error: "الخدمة غير متاحة حالياً." }, 503);
+  }
+
   const row = await env.DB.prepare(
     "SELECT otp_code FROM password_resets WHERE email = ? AND expires_at > datetime('now')"
   )
@@ -54,10 +91,20 @@ async function resetPasswordHandler(body, env, request) {
     .first()
     .catch(() => null);
 
-  if (!row?.otp_code) return json(invalid, 400);
+  // Counts against the same budget as a wrong code: an attacker must not be
+  // able to tell "no pending reset" apart from "wrong code" by probing.
+  if (!row?.otp_code) {
+    await countResetFailure(env, email, request);
+    return json(invalid, 400);
+  }
 
   const providedHash = await hashOtp(email, otpCode);
-  if (!timingSafeEqual(providedHash, row.otp_code)) return json(invalid, 400);
+  if (!timingSafeEqual(providedHash, row.otp_code)) {
+    // On the 5th failure this burns the OTP row outright, so even the correct
+    // code is dead afterwards and a new one must be requested.
+    await countResetFailure(env, email, request);
+    return json(invalid, 400);
+  }
 
   const { hash, salt } = await hashPassword(newPassword);
   // tenant-audit-ok: password reset is keyed by the OTP-verified email — the
@@ -76,6 +123,8 @@ async function resetPasswordHandler(body, env, request) {
   await env.DB.prepare("DELETE FROM password_resets WHERE email = ?").bind(email).run().catch(() => {});
   // Clear any lockout from failed logins before the reset.
   await env.DB.prepare("DELETE FROM login_attempts WHERE email = ?").bind(email).run().catch(() => {});
+  // …and the per-email OTP guess counter (namespaced key, separate row).
+  await clearResetOtpAttempts(env, email).catch(() => {});
 
   return json({ ok: true, message: "تم تحديث كلمة المرور بنجاح. تقدر تسجل دخولك الآن." });
 }

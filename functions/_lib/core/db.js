@@ -845,3 +845,79 @@ export async function saveStoreFaqs(env, storeId, faqs) {
   }
   return true;
 }
+
+// ── Password-reset OTP brute-force protection (P39) ──
+//
+// The 6-digit OTP has a 15-minute window and only 10^6 values, so an attacker
+// who can retry freely guesses it. The only guard was checkRateLimit() per IP,
+// which fails OPEN when KV is down and is trivially defeated by rotating IPs.
+//
+// This reuses the existing `login_attempts` table rather than adding one: the
+// email key is namespaced with a `pwreset:` prefix so a reset lockout never
+// locks the account out of login (and a login lockout never blocks a reset —
+// the whole point of the reset flow).
+//
+// Every function here THROWS on a DB error; callers must fail CLOSED (refuse
+// the reset) rather than swallowing the error and letting the guess through.
+
+const RESET_OTP_MAX_FAILURES = 5;
+
+function resetAttemptKey(email) {
+  return `pwreset:${email}`;
+}
+
+// The counter only lives as long as the OTP window itself: a stale row (older
+// than RESET_OTP_WINDOW_MINUTES) is treated as no attempts at all, so a locked
+// -out user can request a fresh code and try again once the window passes.
+const RESET_OTP_WINDOW_MINUTES = 15;
+
+/** True if this email has burned through its OTP guesses. Throws if the DB is unreachable. */
+export async function isResetOtpLocked(env, email) {
+  // RESET_OTP_WINDOW_MINUTES is a code constant, not user input — safe to
+  // interpolate into the datetime() modifier (D1 can't bind inside one).
+  const row = await env.DB.prepare(
+    `SELECT failed_count FROM login_attempts
+      WHERE email = ? AND updated_at > datetime('now', '-' || ? || ' minutes')`
+  )
+    .bind(resetAttemptKey(email), RESET_OTP_WINDOW_MINUTES)
+    .first();
+  return (row?.failed_count ?? 0) >= RESET_OTP_MAX_FAILURES;
+}
+
+/**
+ * Records one failed OTP entry. On the RESET_OTP_MAX_FAILURES-th failure it
+ * BURNS the pending OTP (deletes the password_resets row) so even the correct
+ * code is dead afterwards — the user must request a fresh one.
+ * Returns true if the code was burned by this call. Throws on a DB error.
+ */
+export async function recordResetOtpFailure(env, email) {
+  const key = resetAttemptKey(email);
+  await env.DB.prepare(
+    `INSERT INTO login_attempts (email, failed_count, updated_at)
+     VALUES (?, 1, datetime('now'))
+     ON CONFLICT (email) DO UPDATE SET
+       failed_count = CASE
+         WHEN login_attempts.updated_at > datetime('now', '-' || ? || ' minutes')
+         THEN login_attempts.failed_count + 1
+         ELSE 1
+       END,
+       updated_at = datetime('now')`
+  )
+    .bind(key, RESET_OTP_WINDOW_MINUTES)
+    .run();
+
+  const row = await env.DB.prepare("SELECT failed_count FROM login_attempts WHERE email = ?")
+    .bind(key)
+    .first();
+
+  if ((row?.failed_count ?? 0) >= RESET_OTP_MAX_FAILURES) {
+    await env.DB.prepare("DELETE FROM password_resets WHERE email = ?").bind(email).run();
+    return true;
+  }
+  return false;
+}
+
+/** Clears the OTP failure counter (successful reset, or a freshly issued code). */
+export async function clearResetOtpAttempts(env, email) {
+  await env.DB.prepare("DELETE FROM login_attempts WHERE email = ?").bind(resetAttemptKey(email)).run();
+}
