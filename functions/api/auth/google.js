@@ -10,6 +10,7 @@ import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { isAdminEmail } from "../../_lib/core/adminEmails.js";
 
 const TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token=";
 
@@ -66,6 +67,16 @@ async function googleAuthHandler(body, env, request) {
 
     if (account?.merchant_id) {
       merchantId = account.merchant_id;
+    } else if (isAdminEmail(env, email)) {
+      // P38 — this branch AUTO-PROVISIONS an `accounts` row, and an admin
+      // address in that table is full admin (requireAdmin matches the email
+      // against ADMIN_EMAILS; there is no is_admin column). Google verifying
+      // the address is not enough: ADMIN_EMAILS may list an address on a domain
+      // we do not control, or a Google Workspace address whose mailbox is held
+      // by someone else. An admin whose account already exists still signs in
+      // above; only the create-on-first-sign-in path is refused. Same generic
+      // message as elsewhere — no enumeration.
+      return json({ ok: false, error: "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك." }, 409);
     } else {
       // First Google sign-in for this address: provision merchant + account.
       // The password is random and unusable — this account signs in via Google.
@@ -86,11 +97,7 @@ async function googleAuthHandler(body, env, request) {
     }
   }
 
-  const adminEmails = (env?.ADMIN_EMAILS || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  const isAdmin = adminEmails.includes(email);
+  const isAdmin = isAdminEmail(env, email);
   const token = await createSessionToken(env, merchantId);
 
   return json(

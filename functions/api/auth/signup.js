@@ -6,6 +6,7 @@ import { hashPassword } from "../../_lib/core/auth.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
+import { adminEmailList, isAdminEmail } from "../../_lib/core/adminEmails.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -40,6 +41,18 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "كلمة المرور لازم تكون ٨ أحرف على الأقل." }, 400);
   }
 
+  // P38 — never let self-service signup create an account with an address that
+  // ADMIN_EMAILS grants admin to. requireAdmin() matches the accounts.email
+  // column against that secret, so such a row IS full admin. Until now the only
+  // thing standing in the way was the accidental 409 below (both admin
+  // addresses happen to be registered already); an admin address that is NOT
+  // yet in `accounts` was a free admin account for whoever signed up first.
+  // Same generic message + status as "email already taken" so this endpoint
+  // can't be used to enumerate which addresses are admin.
+  if (isAdminEmail(env, email)) {
+    return json({ ok: false, error: "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك." }, 409);
+  }
+
   const existing = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?")
     .bind(email)
     .first();
@@ -53,10 +66,7 @@ export async function onRequestPost(context) {
   // (Cloudflare/Groq/OpenRouter combined) runs dry every day. Admin accounts
   // don't count against it.
   const TRIAL_MERCHANT_CAP = 20;
-  const adminEmails = (env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
+  const adminEmails = adminEmailList(env);
   const placeholders = adminEmails.map(() => "?").join(",") || "''";
   // tenant-audit-ok: deliberate cross-tenant COUNT — the trial cap
   // (TRIAL_MERCHANT_CAP) is a global limit on total signups, not per-merchant.

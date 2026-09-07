@@ -15,6 +15,7 @@ import { json } from "../../_lib/core/respond.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { getSessionMerchantId } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
+import { isAdminEmail } from "../../_lib/core/adminEmails.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -49,6 +50,13 @@ export async function onRequestPost(context) {
   }
   if (password.length < 8) {
     return json({ ok: false, error: "كلمة المرور لازم تكون ٨ أحرف على الأقل." }, 400);
+  }
+
+  // P38 — same rule as signup.js: this endpoint also INSERTs into `accounts`,
+  // so an ADMIN_EMAILS address here would mint a full admin (attached to a
+  // Salla merchant, no less). Same generic 409 to avoid enumeration.
+  if (isAdminEmail(env, email)) {
+    return json({ ok: false, error: "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك." }, 409);
   }
 
   // The merchant row must actually exist (it does for any Salla install); fail

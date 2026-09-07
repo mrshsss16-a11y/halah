@@ -295,6 +295,71 @@ async function runTests() {
   const googleMod = await import("../functions/api/auth/google.js");
   assert(typeof googleMod.onRequestPost === "function", "google.js exports valid onRequestPost middleware");
 
+  // 9b. P38 — no self-service path may create an account with an ADMIN_EMAILS
+  // address. requireAdmin() matches accounts.email against that secret and
+  // there is no is_admin column, so such a row IS full admin. These are
+  // behavioural: the endpoint must answer 409 and must NEVER reach the DB
+  // INSERT (the mock throws on any DB use, so a regression fails loudly).
+  const { isAdminEmail } = await import("../functions/_lib/core/adminEmails.js");
+  const adminEnv = { ADMIN_EMAILS: " Admin@Aura.SA , second@aura.sa ", SESSION_SECRET: env.SESSION_SECRET };
+  assert(isAdminEmail(adminEnv, "admin@aura.sa"), "isAdminEmail trims and lowercases both sides");
+  assert(isAdminEmail(adminEnv, "  SECOND@aura.sa "), "isAdminEmail handles spaces around commas");
+  assert(!isAdminEmail(adminEnv, "merchant@aura.sa"), "isAdminEmail rejects a non-admin address");
+  assert(!isAdminEmail({ ADMIN_EMAILS: "" }, ""), "isAdminEmail never matches an empty address");
+
+  const explodingDb = {
+    prepare() {
+      throw new Error("signup reached the database with an admin email");
+    }
+  };
+  function jsonReq(body, headers = {}) {
+    return new Request("https://x/api", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify(body)
+    });
+  }
+
+  const signupRes = await signupMod.onRequestPost({
+    request: jsonReq({ email: "  ADMIN@aura.sa ", password: "longenoughpw" }),
+    env: { ...adminEnv, DB: explodingDb }
+  });
+  const signupBody = await signupRes.json();
+  assert(signupRes.status === 409, `signup rejects an ADMIN_EMAILS address (got ${signupRes.status})`);
+  assert(
+    signupBody.error === "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك.",
+    "signup admin rejection reuses the generic 'email taken' message (no admin enumeration)"
+  );
+
+  const adminRejectCompleteMod = await import("../functions/api/auth/complete_account.js");
+  const completeToken = await createSessionToken(adminEnv, "m_test_admin_reject");
+  const completeRes = await adminRejectCompleteMod.onRequestPost({
+    request: jsonReq(
+      { email: "second@AURA.sa", password: "longenoughpw" },
+      { Cookie: `hala_session=${encodeURIComponent(completeToken)}` }
+    ),
+    env: { ...adminEnv, DB: explodingDb }
+  });
+  assert(completeRes.status === 409, `complete_account rejects an ADMIN_EMAILS address (got ${completeRes.status})`);
+
+  // A non-admin address must still get past the guard and reach the DB — proves
+  // the check is targeted, not a blanket refusal.
+  let reachedDb = false;
+  const countingDb = {
+    prepare() {
+      reachedDb = true;
+      return { bind: () => ({ first: async () => null, run: async () => ({}) }) };
+    },
+    batch: async () => []
+  };
+  await signupMod
+    .onRequestPost({
+      request: jsonReq({ email: "merchant@example.com", password: "longenoughpw" }),
+      env: { ...adminEnv, DB: countingDb }
+    })
+    .catch(() => {});
+  assert(reachedDb, "signup still proceeds normally for a non-admin address");
+
   // 10. Tenant isolation (2026-09-05 audit — two real leaks found in production)
   //
   // These reproduce the exact failures, so reintroducing either breaks the build:

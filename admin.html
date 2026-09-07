@@ -614,7 +614,7 @@
       stream.innerHTML += `
         <div class="flex justify-end">
           <div class="bg-black text-white p-2.5 rounded-xl max-w-[85%] font-medium shadow-sm">
-            ${text}
+            ${esc(text)}
           </div>
         </div>
       `;
@@ -635,8 +635,8 @@
         stream.innerHTML += `
           <div class="flex items-start gap-2">
             <div class="bg-white border border-slate-300 text-black p-2.5 rounded-xl max-w-[85%] leading-relaxed shadow-sm font-medium">
-              ${reply}
-              <span class="block text-[9px] text-slate-500 font-mono mt-1">سرعة الرد: ${latency} (${data?.source})</span>
+              ${esc(reply)}
+              <span class="block text-[9px] text-slate-500 font-mono mt-1">سرعة الرد: ${esc(latency)} (${esc(data?.source)})</span>
             </div>
           </div>
         `;

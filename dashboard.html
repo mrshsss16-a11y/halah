@@ -362,6 +362,17 @@
   </div>
 
   <script>
+    // Escape anything that comes from the API or from Salla data (product
+    // names, order references/statuses, uploaded SKUs) before it goes into
+    // innerHTML. Salla content is merchant/customer-controlled, so an
+    // un-escaped `${...}` is XSS in the merchant's own dashboard session.
+    // Also safe for values inside quoted HTML attributes (escapes both quotes).
+    function escHtml(v) {
+      return String(v ?? '').replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+      ));
+    }
+
     // ── بوابة إكمال الحساب ────────────────────────────────────────────────
     // أي استدعاء يرجع code: "ACCOUNT_REQUIRED" (403) معناه: التاجر داخل بجلسة
     // سلة سارية لكن بلا حساب عندنا. نلتقط ذلك مركزياً بلف fetch مرة واحدة بدل
@@ -514,8 +525,18 @@
     // separately from the auth code that comes back in the FB.login callback —
     // both halves are needed, so stash this one until the callback fires.
     let waSignupSession = null;
+    // Exact-match allowlist, not endsWith(): `endsWith('facebook.com')` also
+    // accepts https://evil-facebook.com and https://notfacebook.com, letting any
+    // page that can open a window here inject a WABA/phone id (P42/P55).
+    const WA_SIGNUP_ORIGINS = [
+      'https://www.facebook.com',
+      'https://web.facebook.com',
+      'https://business.facebook.com',
+      'https://m.facebook.com',
+      'https://facebook.com'
+    ];
     window.addEventListener('message', (event) => {
-      if (!String(event.origin).endsWith('facebook.com')) return;
+      if (!WA_SIGNUP_ORIGINS.includes(event.origin)) return;
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'WA_EMBEDDED_SIGNUP' && data.data) {
@@ -733,9 +754,7 @@
 
           // sku comes from the merchant's uploaded CSV and error from caught
           // Salla API responses — escape both before innerHTML (SECURITY_AUDIT L5).
-          const escHtml = v => String(v ?? '').replace(/[&<>"']/g, c => (
-            { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-          ));
+          // escHtml is defined once at the top of this script block.
           const failedEl = document.getElementById('bulkFailedList');
           failedEl.innerHTML = (data.failedItems || []).map(i => `${escHtml(i.sku)} — ${escHtml(i.error || 'فشل')}`).join('<br>');
 
@@ -854,7 +873,8 @@
             orders.forEach(o => {
               const row = document.createElement('div');
               row.className = 'p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-black flex justify-between gap-2';
-              row.innerHTML = `<span>${o.reference || o.id}</span><span class="text-slate-500">${o.status || ''}</span>`;
+              // reference/status come straight from the Salla Orders API.
+              row.innerHTML = `<span>${escHtml(o.reference || o.id)}</span><span class="text-slate-500">${escHtml(o.status || '')}</span>`;
               orderList.appendChild(row);
             });
           }

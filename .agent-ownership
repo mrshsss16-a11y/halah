@@ -1,0 +1,65 @@
+# فهرس ملكية المسارات — من يكتب أين
+#
+# مرجع docs/AGENT_ORCHESTRATION.md §٢. القاعدة: مسار واحد = مالك واحد في أي
+# مرحلة. وكيل يحتاج تعديلاً خارج ملكيته يكتب طلباً في docs/PROBLEMS.md ولا
+# يلمس الملف.
+#
+# سبب وجود هذا الملف: يوم 2026-09-06 عدّل وكيلان scripts/backup-db.mjs
+# باتجاهين متعاكسين، ووكيل ثالث أضاف [observability] لـwrangler.toml فكسر
+# النشر كلياً. الملكية المكتوبة تمنع الاثنين.
+#
+# الصيغة: <نمط المسار> = <الوكيل المالك>
+
+# ── البنية: كل ما يمس البناء والنشر والمخطط ──────────────────────────────
+# ⚠️ الأخطر على الإطلاق: خطأ هنا يُسقط كل الـendpoints على الإنتاج.
+wrangler.toml        = infra
+package.json         = infra
+scripts/**           = infra
+_headers             = infra
+migrations/**        = infra
+dist/**              = infra   # مولَّد — لا يُحرَّر يدوياً إطلاقاً
+
+# ── الأمن والحوكمة ────────────────────────────────────────────────────────
+functions/_lib/core/session.js    = security
+functions/_lib/core/auth.js       = security
+functions/_lib/core/meter.js      = security
+functions/_lib/core/rateLimit.js  = security
+functions/_lib/core/security.js   = security
+functions/_lib/core/oauthState.js = security
+functions/_lib/core/crypto.js     = security
+functions/_lib/core/db.js         = security
+functions/_lib/core/errorLog.js   = security
+
+# استثناء موثّق: respond.js يمسّ شكل الاستجابة والأخطاء معاً — تُسنَد ملكيته
+# للبنية أثناء المرحلة ١ (رسائل D4 العربية)، وتعود للأمن بعدها.
+functions/_lib/core/respond.js    = infra   # مؤقت: المرحلة ١ فقط
+
+# ── النواة الذكية ─────────────────────────────────────────────────────────
+# persona.js مصدر واحد للهجة (M2) — أي نسخة ثانية تفرّق اللهجة، وهي الخندق.
+functions/_lib/ai/**              = ai-core
+
+# ── المحوّلات الخارجية ────────────────────────────────────────────────────
+functions/_lib/integrations/**    = adapters
+functions/_lib/imageProvider.js   = adapters
+
+# ── الواجهة ونقاط الدخول ──────────────────────────────────────────────────
+functions/api/**                  = surface
+*.html                            = surface
+partials/**                       = surface
+
+# ── التوثيق ───────────────────────────────────────────────────────────────
+# الوثائق الحاكمة: تُحدَّث في المرحلة ٤ فقط (قاعدة م٣) — تغييرها أثناء عمل
+# الوكلاء يجعل المرجع يتحرك تحت من يقرأه.
+AGENT.md                          = docs-phase4
+CLAUDE.md                         = docs-phase4
+docs/AGENT_ORCHESTRATION.md       = docs-phase4
+docs/PARALLEL_TRACKS.md           = docs-phase4
+.agent-ownership                  = docs-phase4
+
+# استثناء: سجل المشاكل هو قناة التواصل بين الوكلاء — الكل يضيف (append)،
+# ولا أحد يعيد كتابة سطور غيره.
+docs/PROBLEMS.md                  = append-only-all
+
+# ── خارج نطاق الوكلاء ─────────────────────────────────────────────────────
+backups/**                        = none   # بيانات عملاء حقيقية — لا تُقرأ ولا تُرفع
+persona/**                        = ai-core
