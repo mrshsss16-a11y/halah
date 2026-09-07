@@ -14,6 +14,42 @@
 // rating, and gets the number banned — taking every merchant down at once.
 const GRAPH = "https://graph.facebook.com/v21.0";
 
+// SSRF: أي URL لم يبنِه كودنا (يأتي من رد Graph أو من ويبهوك أو من D1) يجب أن
+// يُثبَّت مضيفه قبل أن نلصق به توكن التاجر. رابط تنزيل الوسائط تحديداً يأتي من رد
+// Graph نفسه (`data.url`)، فلو تلوّث ذلك الرد ذهب توكن الأعمال لمضيف المهاجم.
+// القائمة صريحة — لا أنماط عامة ولا "ينتهي بـfacebook.com" (يمرّر evilfacebook.com).
+const WA_ALLOWED_HOSTS = new Set([
+  "graph.facebook.com",
+  "lookaside.fbsbx.com",
+  "mmg.whatsapp.net"
+]);
+
+/** True for host itself or any subdomain of it — نقطة الفصل إلزامية. */
+function hostAllowed(hostname) {
+  if (WA_ALLOWED_HOSTS.has(hostname)) return true;
+  return hostname.endsWith(".fbcdn.net") || hostname === "fbcdn.net";
+}
+
+/**
+ * fail closed: يرمي قبل أي طلب لو المخطط ليس https أو المضيف خارج القائمة.
+ * يجب استدعاؤه **قبل** بناء ترويسة Authorization — لا يُرسَل التوكن إطلاقاً.
+ */
+export function assertWaUrlAllowed(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(String(rawUrl));
+  } catch {
+    throw new Error("رابط واتساب غير صالح — رُفض قبل إرسال أي بيانات اعتماد.");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error(`مخطط غير مسموح (${parsed.protocol}) — رُفض قبل إرسال التوكن.`);
+  }
+  if (!hostAllowed(parsed.hostname)) {
+    throw new Error(`مضيف غير مسموح (${parsed.hostname}) — رُفض قبل إرسال توكن التاجر.`);
+  }
+  return parsed.toString();
+}
+
 /**
  * Resolve which credentials to send with. A merchant connection always wins;
  * env is the fallback for Aura's own line.
@@ -57,7 +93,7 @@ export async function verifyWaSignature(rawBody, signatureHeader, appSecret) {
 export async function sendWaText(env, { to, body, conn = null }) {
   const creds = waCreds(env, conn);
   if (!creds) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
-  const res = await fetch(`${GRAPH}/${creds.phoneId}/messages`, {
+  const res = await fetch(assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${creds.token}`,
@@ -82,7 +118,7 @@ export async function sendWaText(env, { to, body, conn = null }) {
 export async function sendWaTemplate(env, { to, template, lang = "ar", components = [], conn = null }) {
   const creds = waCreds(env, conn);
   if (!creds) throw new Error("WhatsApp غير مفعّل.");
-  const res = await fetch(`${GRAPH}/${creds.phoneId}/messages`, {
+  const res = await fetch(assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${creds.token}`,
@@ -104,7 +140,7 @@ export async function sendWaTemplate(env, { to, template, lang = "ar", component
 export async function sendWaInteractiveList(env, { to, bodyText, buttonText, rows, conn = null }) {
   const creds = waCreds(env, conn);
   if (!creds) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
-  const res = await fetch(`${GRAPH}/${creds.phoneId}/messages`, {
+  const res = await fetch(assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${creds.token}`,
@@ -174,13 +210,16 @@ export async function getWaMedia(env, mediaId, conn = null) {
   const creds = waCreds(env, conn);
   if (!creds) throw new Error("WhatsApp غير مفعّل.");
 
-  const res = await fetch(`${GRAPH}/${mediaId}`, {
+  const metaUrl = assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(mediaId)}`);
+  const res = await fetch(metaUrl, {
     headers: { Authorization: `Bearer ${creds.token}` }
   });
   const data = await res.json();
   if (!res.ok || !data.url) throw new Error(`whatsapp media GET failed: ${res.status}`);
 
-  const dlRes = await fetch(data.url, {
+  // `data.url` يأتي من رد Graph — ليس من كودنا. ثبّت مضيفه قبل لصق التوكن به.
+  const dlUrl = assertWaUrlAllowed(data.url);
+  const dlRes = await fetch(dlUrl, {
     headers: { Authorization: `Bearer ${creds.token}` }
   });
   if (!dlRes.ok) throw new Error(`whatsapp media download failed: ${dlRes.status}`);
@@ -214,7 +253,7 @@ export async function getWaMedia(env, mediaId, conn = null) {
  * number) and new messages still flow in normally from that point on.
  */
 export async function requestCoexistenceSync(wabaId, businessToken, syncType) {
-  const res = await fetch(`${GRAPH}/${wabaId}/smb_app_data`, {
+  const res = await fetch(assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(wabaId)}/smb_app_data`), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${businessToken}`,
