@@ -957,3 +957,73 @@ export async function lookupAccountForGoogle(env, email) {
     isGoogleAccount: Boolean(merchantId && merchantId.startsWith(GOOGLE_MERCHANT_PREFIX))
   };
 }
+
+// ── P59 (G4): تطبيع البريد + محاسبة مقاعد التجربة ──
+//
+// سقف التجربة (TRIAL_MERCHANT_CAP) يُحتسب بمطابقة نصية على `accounts.email`.
+// هذا يجعله قابلاً للالتفاف بصيغ مختلفة لنفس الصندوق البريدي:
+//   a+1@x.com · a+2@x.com …  → أي مزوّد يتجاهل ما بعد `+` بالجزء المحلي.
+//   a.b@gmail.com = ab@gmail.com → **جيميل وحده** يتجاهل النقاط.
+// تحقُّق تقني (2026-09-07، support.google.com/mail/answer/7436150): جوجل تنص
+// صراحةً أن النقاط لا تغيّر عنوان @gmail.com، وتنص **بنفس الصفحة** أن نطاقات
+// Workspace (yourdomain.com) النقاط فيها تُغيّر العنوان فعلاً. لذلك حذف النقاط
+// مقصور على `gmail.com`/`googlemail.com` فقط — تعميمه على كل النطاقات يدمج
+// عناوين لأشخاص مختلفين (مثلاً على Fastmail/Exchange) ويمنع تسجيلاً مشروعاً.
+// `googlemail.com` هو نفس صندوق `gmail.com` فيُوحَّد للنطاق نفسه.
+//
+// ملاحظة مقصودة: التطبيع للمقارنة فقط — الصف يُخزَّن بالعنوان كما كتبه التاجر
+// (بعد lowercase). تغيير المخزَّن كان سيكسر تسجيل الدخول، لأن `login.js` يبحث
+// بالعنوان المُدخَل حرفياً.
+const GMAIL_DOMAINS = new Set(["gmail.com", "googlemail.com"]);
+
+/** الصيغة المعيارية للمقارنة فقط. لا تُخزَّن ولا تُعرض للمستخدم. */
+export function normalizeEmailForDedupe(email) {
+  const raw = String(email || "").trim().toLowerCase();
+  const at = raw.lastIndexOf("@");
+  if (at <= 0 || at === raw.length - 1) return raw;
+  let local = raw.slice(0, at);
+  let domain = raw.slice(at + 1);
+
+  const plus = local.indexOf("+");
+  // `plus > 0` عمداً: عنوان يبدأ بـ`+` جزؤه المحلي كله وسم — لا نُفرغه.
+  if (plus > 0) local = local.slice(0, plus);
+
+  if (GMAIL_DOMAINS.has(domain)) {
+    domain = "gmail.com";
+    local = local.split(".").join("");
+  }
+
+  return local ? `${local}@${domain}` : raw;
+}
+
+/**
+ * محاسبة مقعد تجربة واحدة: كم حساباً غير أدمن موجود، وهل البريد المطلوب
+ * (بصيغته المعيارية) مأخوذ مسبقاً بأي صيغة.
+ *
+ * يفشل مغلقاً: أي خطأ D1 يُرمى للمستدعي ليرفض الطلب، لا "تمرير برشاقة".
+ *
+ * @returns {Promise<{ count: number, duplicate: boolean }>}
+ */
+export async function trialSeatUsage(env, email, adminEmails = []) {
+  const admins = new Set(adminEmails.map((a) => String(a || "").trim().toLowerCase()).filter(Boolean));
+  const target = normalizeEmailForDedupe(email);
+
+  // tenant-audit-ok: عدّ/مطابقة عابرة للمستأجرين عن قصد — سقف التجربة حدّ عام
+  // على مجموع التسجيلات، ومطابقة البريد فحص تفرّد على عمود عام. الجدول محدود
+  // بالسقف نفسه (٢٠ + حسابات الأدمن) فالمسح رخيص.
+  const { results } = await env.DB.prepare("SELECT email FROM accounts").all();
+
+  let count = 0;
+  let duplicate = false;
+  for (const row of results || []) {
+    const stored = String(row?.email || "").trim().toLowerCase();
+    if (!stored) continue;
+    // المطابقة قبل استثناء الأدمن: صيغة معيارية تساوي عنوان أدمن (admin+x@…)
+    // تُرفض كمكرّر بنفس رسالة «مسجّل مسبقاً» — لا تعداد ولا مقعد إضافي.
+    if (target && normalizeEmailForDedupe(stored) === target) duplicate = true;
+    if (admins.has(stored)) continue; // حسابات الأدمن لا تحتسب من المقاعد
+    count += 1;
+  }
+
+  return { count, duplicate };
+}

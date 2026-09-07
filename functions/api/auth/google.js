@@ -10,8 +10,8 @@ import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { checkRateLimit } from "../../_lib/core/rateLimit.js";
-import { isAdminEmail } from "../../_lib/core/adminEmails.js";
-import { lookupAccountForGoogle } from "../../_lib/core/db.js";
+import { adminEmailList, isAdminEmail } from "../../_lib/core/adminEmails.js";
+import { lookupAccountForGoogle, trialSeatUsage } from "../../_lib/core/db.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
 // Same text for every "we won't create/link an account for this address" case
@@ -117,6 +117,44 @@ async function googleAuthHandler(body, env, request, requestId, context) {
       // message as elsewhere — no enumeration.
       return json({ ok: false, error: EXISTING_ACCOUNT_MSG, code: "PASSWORD_ACCOUNT_EXISTS" }, 409);
     } else {
+      // P59/G4 — this branch CREATES an account, so it must consume a trial
+      // seat exactly like signup.js. Before today it created merchants with no
+      // cap at all: Google sign-in bypassed the 20-seat limit entirely AND
+      // raised the counter, pushing COUNT(*) past 20 and locking every real
+      // password signup out with a permanent 403. An account-creating path
+      // that doesn't count is a total bypass — worse than disposable emails.
+      //
+      // No email normalization here on purpose: the address comes verified from
+      // Google, and Google itself refuses to mint two accounts that differ only
+      // by dots or a `+tag`, so the alias trick has nothing to work with. The
+      // existing exact lookup above (P41/P38) stays untouched.
+      const TRIAL_MERCHANT_CAP = 20;
+      let seats;
+      try {
+        seats = await trialSeatUsage(env, "", adminEmailList(env));
+      } catch (err) {
+        logError(context, {
+          requestId,
+          path: "/api/auth/google",
+          code: "GOOGLE_SEAT_LOOKUP_FAILED",
+          internal: String(err?.message || err)
+        });
+        return json(
+          { ok: false, error: "تعذر إنشاء الحساب حالياً. حاول بعد قليل.", code: "SEAT_LOOKUP_FAILED" },
+          503
+        );
+      }
+      if (seats.count >= TRIAL_MERCHANT_CAP) {
+        return json(
+          {
+            ok: false,
+            error: "خلصت مقاعد التجربة المجانية حالياً — تواصل معنا وبنسجلك بأول مقعد يفتح.",
+            code: "TRIAL_FULL"
+          },
+          403
+        );
+      }
+
       // First Google sign-in for this address: provision merchant + account.
       // The password is random and unusable — this account signs in via Google.
       const randomBytes = new Uint8Array(32);

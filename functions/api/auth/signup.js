@@ -7,6 +7,8 @@ import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { adminEmailList, isAdminEmail } from "../../_lib/core/adminEmails.js";
+import { trialSeatUsage } from "../../_lib/core/db.js";
+import { logError } from "../../_lib/core/errorLog.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -53,29 +55,43 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك." }, 409);
   }
 
-  const existing = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?")
-    .bind(email)
-    .first();
-  if (existing) {
-    return json({ ok: false, error: "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك." }, 409);
-  }
-
+  // P59/G4 — duplicate check AND seat count both run on the NORMALIZED address
+  // (lowercase, `+tag` stripped, dots removed for gmail.com only). The old
+  // literal `WHERE email = ?` let one mailbox take all 20 seats via
+  // `me+1@gmail.com`, `me+2@…`, `m.e@gmail.com` … See normalizeEmailForDedupe
+  // in _lib/core/db.js for why dots are a Gmail-only rule.
+  //
   // Trial registration cap (docs/ROADMAP.md m2.2.5, 2026-08-07): the free-tier
   // AI capacity behind every merchant is shared, not per-merchant — 15-20
   // active stores is the real ceiling before the account-wide free quota
   // (Cloudflare/Groq/OpenRouter combined) runs dry every day. Admin accounts
   // don't count against it.
   const TRIAL_MERCHANT_CAP = 20;
-  const adminEmails = adminEmailList(env);
-  const placeholders = adminEmails.map(() => "?").join(",") || "''";
-  // tenant-audit-ok: deliberate cross-tenant COUNT — the trial cap
-  // (TRIAL_MERCHANT_CAP) is a global limit on total signups, not per-merchant.
-  const { count } = (await env.DB.prepare(
-    `SELECT COUNT(*) AS count FROM accounts WHERE email NOT IN (${placeholders})`
-  )
-    .bind(...adminEmails)
-    .first()) || { count: 0 };
-  if (count >= TRIAL_MERCHANT_CAP) {
+  let seats;
+  try {
+    seats = await trialSeatUsage(env, email, adminEmailList(env));
+  } catch (err) {
+    // Fail closed: an unreadable accounts table is not "zero accounts".
+    try {
+      logError(context, {
+        path: "/api/auth/signup",
+        code: "SIGNUP_SEAT_LOOKUP_FAILED",
+        internal: String(err?.message || err)
+      });
+    } catch {
+      // نفس الـDB المعطوب هو سبب الخطأ — لا نُسقط الرد بسببه.
+    }
+    return json(
+      { ok: false, error: "تعذر إنشاء الحساب حالياً. حاول بعد قليل.", code: "SEAT_LOOKUP_FAILED" },
+      503
+    );
+  }
+
+  if (seats.duplicate) {
+    return json({ ok: false, error: "هذا البريد مسجّل مسبقاً — سجّل دخول بدل ذلك." }, 409);
+  }
+
+  if (seats.count >= TRIAL_MERCHANT_CAP) {
     return json(
       {
         ok: false,
