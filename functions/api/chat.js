@@ -13,7 +13,7 @@ import { PERSONA_SYSTEM_PROMPT, dialectLabel } from "../_lib/ai/persona.js";
 import { recallSimilar, rememberReply } from "../_lib/ai/memory.js";
 import { getMarketingContext, saveOmnichannelSession } from "../_lib/core/db.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
-import { resolveStoreId } from "../_lib/core/session.js";
+import { resolveMerchantStoreId } from "../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 
 const SCORE_THRESHOLD = 7;
@@ -127,7 +127,9 @@ async function chatHandler(body, env, request) {
     return { error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
   }
 
-  const storeId = await resolveStoreId(request, env, body.storeId);
+  // Merchant bot preview (dashboard.html) — the only caller. Aura's public
+  // visitor widget is /api/support, which stays open by design.
+  const storeId = await resolveMerchantStoreId(request, env, body.storeId);
 
   const usage = await checkAndConsumeMonthly(env, storeId, "message");
   if (!usage.ok) {

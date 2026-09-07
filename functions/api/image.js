@@ -10,7 +10,7 @@
 import { withApi, ApiError } from "../_lib/core/respond.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { generateProductImage, STYLE_PRESETS } from "../_lib/imageProvider.js";
-import { resolveStoreId } from "../_lib/core/session.js";
+import { resolveMerchantStoreId } from "../_lib/core/session.js";
 import { checkRateLimit } from "../_lib/core/rateLimit.js";
 
 async function imageHandler(body, env, request) {
@@ -22,7 +22,8 @@ async function imageHandler(body, env, request) {
     throw new ApiError(429, "تجاوزت حد طلبات التوليد المسموح به. يرجى الانتظار دقيقة.", "RATE_LIMITED");
   }
 
-  const merchantId = await resolveStoreId(request, env, body.storeId);
+  // Merchant-facing image generation — no anonymous "default-store" path.
+  const merchantId = await resolveMerchantStoreId(request, env, body.storeId);
   const imageBase64 = (body.imageBase64 || "").toString();
   const mime = (body.mime || "image/png").toString();
   const styleKey = STYLE_PRESETS[body.style] ? body.style : "minimal-white";

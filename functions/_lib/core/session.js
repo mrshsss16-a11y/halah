@@ -154,6 +154,36 @@ export async function resolveStoreId(request, env, claimedStoreId) {
 }
 
 /**
+ * Same tenant resolution as resolveStoreId(), MINUS the anonymous
+ * "default-store" demo bucket.
+ *
+ * Why it exists (2026-09-07): resolveStoreId() falling back to "default-store"
+ * is correct for the anonymous website widget, but /api/copy, /api/chat and
+ * /api/image inherited it too — so a full commercial copy + SEO engine (and an
+ * image generator, and the store chat model) ran for anyone on the internet
+ * with no account at all. Live-verified: `POST /api/copy` with no cookie
+ * returned a complete product description + JSON-LD schema.
+ *
+ * Callers that spend an AI model call on merchant-facing work must use this
+ * instead. Still honored without a session: a REAL account-less Salla
+ * Easy-Mode merchant addressed by its unguessable m_ id — that install flow
+ * has no login and is metered per tenant. Salla dashboard merchants get a
+ * proper session cookie via /api/auth/salla_embedded, so the embedded flow is
+ * unaffected either way.
+ *
+ * Intentionally NOT applied to /api/support (Aura's own visitor widget, fixed
+ * storeId "hala", rate limited) or the WhatsApp webhook (signature verified) —
+ * those are deliberate public channels.
+ */
+export async function resolveMerchantStoreId(request, env, claimedStoreId) {
+  const storeId = await resolveStoreId(request, env, claimedStoreId);
+  if (storeId === "default-store") {
+    throw new ApiError(401, "سجّل دخولك أولاً.", "LOGIN_REQUIRED");
+  }
+  return storeId;
+}
+
+/**
  * Admin gate: session token only carries merchantId (see resolveStoreId
  * above), never email — so this looks up the account's email in D1 and
  * checks it against ADMIN_EMAILS or DB is_admin.

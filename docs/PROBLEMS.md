@@ -99,6 +99,47 @@
 | P34 | **توقيع إنستغرام يختلف عن واتساب** — يُحسب على **unicode-escaped** لا على البايتات المفكوكة | "we generate the signature using an escaped unicode version of the payload... `äöå` → `äöå`" | نسخ `verifyWaSignature` حرفياً **يفشل على أي نص عربي** — وكل محتوانا عربي | ⬜ قيد تنفيذ للمحوّل |
 | P35 | ٣ حقول إعدادات ترفضها المراجعة | `terms_of_service_url` و`data_deletion_url` = `https://www.facebook.com/` · `contact_email_verified: false` منذ 2026-08-07 | أي مراجعة مستقبلية تُرفض شكلياً · وتفوتك تنبيهات ميتا الحرجة | ⬜ دقائق — `YOUR_TASKS.md` بند ٤ |
 
+---
+
+## P36 — محرك الوصف التجاري كان مفتوحاً للإنترنت بلا تسجيل دخول (حرج)
+
+**الاكتشاف (تحقق حي 2026-09-07، بلا أي كوكي جلسة):**
+
+```
+POST https://halah.aura.sa/api/copy -d '{"name":"عطر عود ملكي","category":"عطور","price":"350"}'
+→ {"ok":true,"result":"...وصف كامل...","seo":{...عنوان، slug، metaDescription، keywords، jsonLdSchema...}}
+```
+
+**السبب الجذري:** `resolveStoreId` (`functions/_lib/core/session.js:123`) يسقط لـ`"default-store"`
+عند غياب الجلسة. هذا مقصود ومطلوب لودجت الموقع المجهولة، لكنه امتد بالوراثة لكل نقطة
+تستدعي نموذج AI: `copy.js` · `chat.js` · `image.js` · `store/bulk/upload.js`.
+
+**الأثر:** استنزاف مجاني للذكاء الاصطناعي على فاتورة المشروع · منافس يستخدم المحرك
+التجاري الكامل (وصف + حزمة SEO + JSON-LD) بلا حساب · علامة حمراء بمراجعة أمان سلة.
+
+**الإصلاح:** دالة جديدة `resolveMerchantStoreId` بـ`functions/_lib/core/session.js:156-183`
+— نفس منطق `resolveStoreId` **ناقص** دلو `default-store` المجهول؛ ترمي
+`401 LOGIN_REQUIRED` برسالة `"سجّل دخولك أولاً."`. طُبِّقت على:
+
+| الملف:السطر | النقطة |
+|---|---|
+| `functions/api/copy.js:12,275` | `/api/copy` |
+| `functions/api/chat.js:16,133` | `/api/chat` |
+| `functions/api/image.js:13,26` | `/api/image` |
+| `functions/api/store/bulk/upload.js:7,23` | `/api/store/bulk/upload` (يُجدول حتى ٥٠٠ توليد) |
+
+**ما بقي مفتوحاً عمداً:** `/api/support` (ودجت زوار أورا نفسها، `storeId:"hala"` ثابت،
+`checkRateLimit` ٢٠/دقيقة) و`/api/whatsapp/webhook` (محمي بتوقيع `X-Hub-Signature-256`).
+كذلك تاجر سلة Easy-Mode بلا حساب لا يزال يُعرَّف بمعرّفه `m_` غير القابل للتخمين —
+مسار مقصود وموثّق بـ`session.js` ومقاس بالحصة لكل مستأجر. تاجر لوحة سلة المضمّنة
+غير متأثر: يحصل على كوكي جلسة حقيقي من `functions/api/auth/salla_embedded.js:67`.
+
+**حارس الارتداد (M6):** `tests/api.test.mjs` — أربع حالات تؤكد `401 LOGIN_REQUIRED`
+للنقاط الأربع بلا جلسة، وحالة خامسة تؤكد أن `resolveStoreId` **لا يزال** يرجّع
+`default-store` لحركة الودجت المجهولة (حماية من إغلاق مفرط). ٦٦/٦٦ اختبار.
+
+**الحالة:** ✅ أُغلق بالكود 2026-09-07 — بانتظار النشر والتحقق الحي.
+
 **خطأ بوثيقتنا صُحِّح:** `PARALLEL_TRACKS.md` و`YOUR_TASKS.md` كانا يطلبان ربط إنستغرام بصفحة
 فيسبوك وصلاحيات `instagram_manage_*` — أسماء **مسار Facebook Login**، تناقض قرارنا المتخذ
 (Instagram Login). البيانات الحية تؤكد القرار: `pages_show_list`/`pages_read_engagement`/

@@ -9,7 +9,7 @@ import { PERSONA_SYSTEM_PROMPT } from "../_lib/ai/persona.js";
 import { recentCopy, saveCopy } from "../_lib/core/db.js";
 import { recallStyleExamples } from "../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
-import { resolveStoreId } from "../_lib/core/session.js";
+import { resolveMerchantStoreId } from "../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 
 const TONE_LABELS = {
@@ -269,7 +269,10 @@ async function copyHandler(body, env, request) {
     return { error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
   }
 
-  const merchantId = await resolveStoreId(request, env, body.storeId);
+  // Session (or a real account-less Salla merchant id) required — never the
+  // anonymous "default-store" bucket: this is a full commercial copy+SEO
+  // engine, not the visitor widget. See resolveMerchantStoreId().
+  const merchantId = await resolveMerchantStoreId(request, env, body.storeId);
   const name = (body.name || "").toString().trim().slice(0, 200);
   const price = (body.price || "").toString().trim().slice(0, 40);
   const tone = TONE_LABELS[body.tone] ? body.tone : "white";

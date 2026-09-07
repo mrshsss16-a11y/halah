@@ -93,6 +93,42 @@ async function runTests() {
   const copyMod = await import("../functions/api/copy.js");
   assert(typeof copyMod.onRequestPost === "function", "copy.js exports valid onRequestPost middleware");
 
+  // 6b. REGRESSION GUARD (M6, PROBLEMS.md P29 — verified live 2026-09-07):
+  // /api/copy used to fall through resolveStoreId() to the anonymous
+  // "default-store" bucket, so anyone on the internet with no cookie got a
+  // full product description + SEO/JSON-LD bundle on our AI bill. These
+  // handlers must now reject with 401 LOGIN_REQUIRED BEFORE any model call.
+  // If any of these turn green-with-200 again, the hole is back.
+  const anonEnv = { SESSION_SECRET: "test-secret-12345" }; // no DB, no KV, no cookie
+  const anonReq = (url) =>
+    new Request(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "عطر عود ملكي", productName: "عطر عود ملكي", category: "عطور", price: "350" })
+    });
+
+  for (const [label, mod, url] of [
+    ["/api/copy", copyMod, "https://x.test/api/copy"],
+    ["/api/chat", await import("../functions/api/chat.js"), "https://x.test/api/chat"],
+    ["/api/image", await import("../functions/api/image.js"), "https://x.test/api/image"],
+    ["/api/store/bulk/upload", await import("../functions/api/store/bulk/upload.js"), "https://x.test/api/store/bulk/upload"]
+  ]) {
+    const req = anonReq(url);
+    const res = await mod.onRequestPost({ request: req, env: anonEnv });
+    const payload = await res.json().catch(() => ({}));
+    assert(
+      res.status === 401 && payload.code === "LOGIN_REQUIRED",
+      `${label} rejects an anonymous (no-session) caller with 401 LOGIN_REQUIRED (got ${res.status} ${payload.code})`
+    );
+  }
+
+  // The public visitor widget must stay anonymous — it is the deliberate
+  // exception (fixed storeId "hala", rate limited). Guard against an
+  // over-broad future lockdown breaking Aura's own site chat.
+  const sessionMod = await import("../functions/_lib/core/session.js");
+  const anonWidgetStore = await sessionMod.resolveStoreId(anonReq("https://x.test/api/support"), anonEnv, undefined);
+  assert(anonWidgetStore === "default-store", "resolveStoreId still returns default-store for anonymous widget traffic");
+
   // 7. Pillar 2 — customer-service agents (store chat + WhatsApp)
   const chatMod = await import("../functions/api/chat.js");
   assert(typeof chatMod.onRequestPost === "function", "chat.js exports valid onRequestPost middleware");

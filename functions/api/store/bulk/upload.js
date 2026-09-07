@@ -4,7 +4,7 @@
 // few items per 10-minute tick (Salla's real limit is 1 req/sec — see
 // .claude/skills/salla-integration/SKILL.md — so this can't run inline).
 import { withApi } from "../../../_lib/core/respond.js";
-import { resolveStoreId } from "../../../_lib/core/session.js";
+import { resolveMerchantStoreId } from "../../../_lib/core/session.js";
 import { createBulkJob } from "../../../_lib/core/db.js";
 import { getMonthlyUsage } from "../../../_lib/core/meter.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
@@ -19,7 +19,8 @@ async function bulkUploadHandler(body, env, request) {
     return { ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
   }
 
-  const merchantId = await resolveStoreId(request, env, body.storeId);
+  // Queues up to 500 AI generations for the cron drainer — never anonymously.
+  const merchantId = await resolveMerchantStoreId(request, env, body.storeId);
   const tone = ["white", "formal", "luxury", "deals", "funny"].includes(body.tone) ? body.tone : "white";
   const rawRows = Array.isArray(body.rows) ? body.rows : [];
 
