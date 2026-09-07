@@ -39,6 +39,9 @@ async function catalogListHandler(body, env, request) {
     ok: true,
     items: page.map((r) => ({
       sku: r.sku,
+      // معرّف المنتج بسلة — به تنشر الواجهة الوصف مباشرة بلا كتابة يدوية.
+      // قد يكون null لصفوف قديمة سُحبت قبل تخزينه؛ الواجهة تتعامل مع الفراغ.
+      productId: r.salla_product_id || null,
       name: r.name,
       price: r.price,
       category: r.category,

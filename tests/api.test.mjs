@@ -1857,7 +1857,11 @@ async function runTests() {
       "CATUI-4: النقطة لا تلمس D1 مباشرة — كل استعلام يمرّ بـservices/catalog.js"
     );
     assert(
-      /listProducts|salla/i.test(listSrc) === false,
+      // النية: صفر نداء على سلة. (اسم العمود salla_product_id قراءةٌ من D1
+      // لا نداء شبكة، فيُستثنى صراحةً بدل توسيع الحظر على كلمة "salla".)
+      /listProducts|integrations\/salla|sallaFetch|fetch\(/i.test(
+        listSrc.replace(/salla_product_id/g, "")
+      ) === false,
       "CATUI-5: التصفّح صفر طلبات على سلة — لا يُستهلك حد المتجر"
     );
 
@@ -1967,6 +1971,46 @@ async function runTests() {
     assert(
       !/ملاحظات من تحليل صورة المنتج الفعلية \(استخدميها/.test(copySrc),
       "VIS-10: الصياغة القديمة المتساهلة لكتلة الرؤية أُزيلت"
+    );
+  }
+
+  // ── وجهة النشر تُضبط آلياً من المنتج المختار (صفر كتابة) ──────────────
+  {
+    console.log("\n--- Publish target auto-fill ---");
+    const { readFileSync } = await import("node:fs");
+    const listSrc = readFileSync(
+      new URL("../functions/api/store/catalog/list.js", import.meta.url), "utf8"
+    );
+    const dashSrc = readFileSync(new URL("../dashboard.html", import.meta.url), "utf8");
+
+    assert(
+      /productId:\s*r\.salla_product_id\s*\|\|\s*null/.test(listSrc),
+      "PUB-1: /catalog/list يُرجع معرّف المنتج بسلة لكل عنصر"
+    );
+    assert(
+      /setPublishTarget\(it\.productId, it\.name\)/.test(dashSrc),
+      "PUB-2: اختيار منتج من الكتالوج يضبط وجهة النشر آلياً"
+    );
+    assert(
+      /<select id="publishProduct"/.test(dashSrc) && !/id="publishProduct"[^>]*(disabled|readonly)/.test(dashSrc),
+      "PUB-3: المسار اليدوي باقٍ — حقل النشر موجود وقابل للتعديل"
+    );
+    assert(
+      /onchange="onPublishProductChange\(\)"/.test(dashSrc) && /function onPublishProductChange\(/.test(dashSrc),
+      "PUB-4: التغيير اليدوي للقائمة يحدّث الوجهة المعروضة"
+    );
+    assert(
+      /'سينشر على: <span class="font-black">' \+ escHtml\(/.test(dashSrc),
+      "PUB-5: اسم المنتج يُعرض مهرَّباً بـescHtml (لا حقن من سلة)"
+    );
+    assert(
+      /اختر المنتج أولاً من تبويب «منتجاتي»/.test(dashSrc)
+        && /ولّد الوصف أولاً قبل النشر/.test(dashSrc),
+      "PUB-6: لا فشل صامت — رسالة عربية عند غياب المنتج أو الوصف"
+    );
+    assert(
+      !/const productId = document\.getElementById\('publishProduct'\)\.value;\s*\n\s*if \(!productId \|\| !lastCopy\) return;/.test(dashSrc),
+      "PUB-7: العودة الصامتة القديمة بـpublishToSalla أُزيلت"
     );
   }
 

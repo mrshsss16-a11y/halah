@@ -227,7 +227,8 @@
         <div id="publishBox" class="hidden sleek-card-darkborder rounded-3xl p-6 space-y-3 shadow-sm">
           <h3 class="text-sm font-black text-black">نشر مباشر على سلة</h3>
           <p class="text-xs text-slate-600 font-medium">اختر المنتج من متجرك لتحديث وصفه بالوصف أعلاه.</p>
-          <select id="publishProduct" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></select>
+          <select id="publishProduct" onchange="onPublishProductChange()" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></select>
+          <div id="publishTargetLine" class="hidden text-[11px] font-bold text-black bg-slate-100 border border-slate-300 rounded-xl px-3 py-2"></div>
           <button onclick="publishToSalla()" class="w-full sleek-btn-white py-3 rounded-xl text-xs transition">انشر على المنتج</button>
           <div id="publishFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
         </div>
@@ -505,6 +506,9 @@
     // أسماء/أوصاف/روابط سلة كلها من محتوى التاجر ⇒ كل إدراج بـinnerHTML يمرّ
     // بـescHtml (ثغرة XSS أُغلقت بهذا الملف — لا تُعاد).
     let catalogItems = {};
+    // المنتج المختار من "منتجاتي" — به يعرف النشر وجهته بلا كتابة يدوية.
+    // { productId, name } أو null. التاجر يقدر يغيّره من قائمة النشر يدوياً.
+    let selectedCatalogProduct = null;
     let catalogNextOffset = 0;
     let catalogLoadedOnce = false;
 
@@ -601,6 +605,9 @@
       // innerText لا innerHTML — اسم المنتج من سلة.
       document.getElementById('studioSourceText').innerText = 'المصدر: ' + (it.name || '') + ' (' + sku + ') — مسحوب من سلة';
       banner.classList.remove('hidden');
+
+      // وجهة النشر تُضبط آلياً من المنتج نفسه — لا يكتب التاجر معرّفاً بيده.
+      setPublishTarget(it.productId, it.name);
 
       switchTab('studio');
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -860,9 +867,61 @@
       });
     }
 
+    // ── وجهة النشر ────────────────────────────────────────────────────
+    // اختيار منتج من "منتجاتي" يضبط قائمة النشر آلياً. القائمة تبقى قابلة
+    // للتعديل: التاجر يقدر يختار منتجاً آخر يدوياً وقتها نحدّث السطر التوضيحي.
+    function setPublishTarget(productId, name) {
+      const sel = document.getElementById('publishProduct');
+      const id = productId == null ? '' : String(productId);
+      // صف كتالوج قديم بلا معرّف سلة: لا نترك وجهة سابقة معلّقة تضلّل التاجر.
+      if (!sel || !id) { selectedCatalogProduct = null; onPublishProductChange(); return; }
+
+      // المنتج قد لا يكون ضمن الخيارات المحمّلة من حالة المتجر — نضيفه.
+      let opt = Array.prototype.find.call(sel.options, o => o.value === id);
+      if (!opt) {
+        opt = document.createElement('option');
+        opt.value = id;
+        opt.innerText = name || id; // innerText لا innerHTML — اسم من سلة.
+        sel.appendChild(opt);
+      }
+      sel.value = id;
+      selectedCatalogProduct = { productId: id, name: name || '' };
+      document.getElementById('publishBox').classList.remove('hidden');
+      renderPublishTarget();
+    }
+
+    function onPublishProductChange() {
+      const sel = document.getElementById('publishProduct');
+      const id = sel && sel.value ? String(sel.value) : '';
+      if (!id) { selectedCatalogProduct = null; }
+      else if (!selectedCatalogProduct || selectedCatalogProduct.productId !== id) {
+        const opt = sel.options[sel.selectedIndex];
+        selectedCatalogProduct = { productId: id, name: opt ? opt.text : '' };
+      }
+      renderPublishTarget();
+    }
+
+    /** «سينشر على: اسم المنتج» — أوضح من معرّف رقمي. الاسم من سلة ⇒ escHtml. */
+    function renderPublishTarget() {
+      const line = document.getElementById('publishTargetLine');
+      if (!line) return;
+      const t = selectedCatalogProduct;
+      if (!t || !t.productId) { line.classList.add('hidden'); line.innerHTML = ''; return; }
+      line.innerHTML = 'سينشر على: <span class="font-black">' + escHtml(t.name || t.productId) + '</span>';
+      line.classList.remove('hidden');
+    }
+
     async function publishToSalla() {
-      const productId = document.getElementById('publishProduct').value;
-      if (!productId || !lastCopy) return;
+      const sel = document.getElementById('publishProduct');
+      const productId = (sel && sel.value) || (selectedCatalogProduct && selectedCatalogProduct.productId) || '';
+      if (!productId) {
+        showMsg('publishFeedback', 'اختر المنتج أولاً من تبويب «منتجاتي» أو من القائمة أعلاه.');
+        return;
+      }
+      if (!lastCopy) {
+        showMsg('publishFeedback', 'ولّد الوصف أولاً قبل النشر.');
+        return;
+      }
       // Publish whatever the merchant is looking at right now, including any
       // edits they made in the review textarea — not the original AI draft.
       const editedDescription = document.getElementById('outDescription').value.trim();
@@ -1041,7 +1100,11 @@
             opt.innerText = p.name;
             sel.appendChild(opt);
           });
+          // إعادة بناء القائمة تمسح الخيار المُضاف من "منتجاتي" — نُعيد ضبطه.
+          const keep = selectedCatalogProduct;
           document.getElementById('publishBox').classList.toggle('hidden', !(data.products || []).length);
+          if (keep && keep.productId) setPublishTarget(keep.productId, keep.name);
+          else onPublishProductChange();
 
           const orderList = document.getElementById('orderList');
           orderList.innerHTML = '';
