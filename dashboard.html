@@ -1028,7 +1028,12 @@
         const res = await fetch('/api/store/publish', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ productId, description: editedDescription || lastCopy.copywriting?.description || lastCopy.result })
+          body: JSON.stringify({
+            productId,
+            description: editedDescription || lastCopy.copywriting?.description || lastCopy.result,
+            // حقول السيو المعروضة للتاجر تُنشر معه — كانت تُولَّد وتُعرض ثم تُهمَل.
+            seo: lastCopy.seo || null
+          })
         });
         const data = await res.json();
         if (data?.ok) showPublishSuccess();

@@ -2787,6 +2787,27 @@ async function runTests() {
       !/Math\.random\(\)/.test(chatSrc),
       "KB-11: كود الجلسة من crypto لا Math.random"
     );
+
+    // ── نشر مفرد: حقول السيو المعروضة تصل سلة فعلاً (رُصد 2026-09-08) ──
+    const pubSrc = read("../functions/api/store/publish.js");
+    assert(
+      /metadata:/.test(pubSrc) && /body\?\.seo\?\.metaDescription/.test(pubSrc),
+      "SEOPUB-1: النشر المفرد يرسل metadata لا الوصف وحده"
+    );
+    assert(
+      /status === 422 && withMeta\.metadata/.test(pubSrc) &&
+        /updateProduct\(env, merchantId, productId, fields\)/.test(pubSrc),
+      "SEOPUB-2: رفض سلة لحقول SEO (422) يسقط للوصف وحده لا يُسقط النشر"
+    );
+    assert(
+      /seo: lastCopy\.seo \|\| null/.test(read("../dashboard.html")),
+      "SEOPUB-3: الواجهة ترسل حقول السيو التي عرضتها للتاجر"
+    );
+    // المساران يعِدان بنفس الشي — لا يتناقضان.
+    assert(
+      /metadata/.test(read("../functions/_lib/services/publishApproved.js")),
+      "SEOPUB-4: المسار الجماعي والمفرد ينشران نفس الحقول"
+    );
   }
 
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
