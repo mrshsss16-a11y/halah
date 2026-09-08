@@ -225,23 +225,36 @@ async function chatHandler(body, env, request) {
   }
 
   let whatsappTransitionUrl = null;
-  let personalCoupon = null;
+  // كان هنا كوبون **مختلَق** يُبنى من اسم العميل بصيغة ثابتة ويُرسَل له
+  // برسالة واتساب جاهزة. هذا الكود غير موجود بأي متجر سلة — لم يُنشأ قط عبر
+  // أي API، ولا يملك النظام صلاحية `marketing.read_write` أصلاً. العميل
+  // يوصل الدفع فيُرفض الكود، والتاجر يتحمّل النتيجة.
+  //
+  // يخالف AGENT.md §الصدق حرفياً ("لا أكواد خصم مخترعة") وينطبق عليه معيار
+  // **Q1** بـdocs/DEFERRED.md — مخرج مفبرك يصل عميلاً، فلا يُؤجَّل.
+  // أُزيل 2026-09-08. الكوبون الحصري الحقيقي (طلب صاحب المشروع) يُبنى عبر
+  // `POST /admin/v2/coupons` بـ`usage_limit_per_user` و`expiry_date` — ميزة
+  // صادرة تمرّ ببوابة P10، لا سطراً يُلصق هنا.
+  const personalCoupon = null;
 
   if (isBuyIntent) {
-    const sessionCode = body.sessionCode || Math.random().toString(36).slice(2, 10).toUpperCase();
-    const namePart = (customerName || "VIP").toUpperCase().replace(/[^A-Z]/g, "").slice(0, 5) || "VIP";
-    personalCoupon = `HALA-${namePart}-10`;
-    
-    const waPhone = env.STORE_WA_PHONE || "966500000000"; 
-    const waMessage = encodeURIComponent(`مرحباً، أريد إتمام الشراء باستخدام الكوبون ${personalCoupon}. كود الجلسة: ${sessionCode}`);
-    whatsappTransitionUrl = `https://wa.me/${waPhone}?text=${waMessage}`;
-    
-    await saveOmnichannelSession(env, { 
-      merchantId: storeId, 
-      sessionToken: sessionCode, 
-      chatSummary: summary, 
-      lastProduct: discussedProduct, 
-      themeCategory: theme 
+    const sessionCode = body.sessionCode || crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
+
+    // بلا رقم مضبوط لا رابط. الافتراضي السابق كان رقماً وهمياً مكتوباً
+    // بالشيفرة يُرسَل لعملاء حقيقيين — ونفس قاعدة الأسرار تنطبق:
+    // غياب القيمة = لا ميزة، لا قيمة افتراضية مخترعة.
+    const waPhone = String(env.STORE_WA_PHONE || "").replace(/[^\d]/g, "");
+    if (waPhone) {
+      const waMessage = encodeURIComponent(`مرحباً، أبغى أكمل الشراء. كود الجلسة: ${sessionCode}`);
+      whatsappTransitionUrl = `https://wa.me/${waPhone}?text=${waMessage}`;
+    }
+
+    await saveOmnichannelSession(env, {
+      merchantId: storeId,
+      sessionToken: sessionCode,
+      chatSummary: summary,
+      lastProduct: discussedProduct,
+      themeCategory: theme
     });
   }
 

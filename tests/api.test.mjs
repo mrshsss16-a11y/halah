@@ -2772,6 +2772,21 @@ async function runTests() {
         /\$\{SUPPORT_PLAYBOOK\}/.test(chatSrc) && /\$\{PERSONA_SYSTEM_PROMPT\}/.test(chatSrc),
       "KB-8: الكتيب يُحقن فوق الشخصية بلا استبدالها"
     );
+
+    // ── Q1: صفر كوبون مخترع وصفر رقم واتساب افتراضي (أُزيلا 2026-09-08) ──
+    assert(
+      !/HALA-\$\{/.test(chatSrc) && !/personalCoupon = `/.test(chatSrc) &&
+        /const personalCoupon = null/.test(chatSrc),
+      "KB-9: لا كوبون مخترع يُبنى ويُرسَل للعميل (AGENT.md §الصدق · Q1)"
+    );
+    assert(
+      !/966500000000/.test(chatSrc) && /if \(waPhone\)/.test(chatSrc),
+      "KB-10: بلا STORE_WA_PHONE مضبوط لا رابط — لا رقم افتراضي وهمي"
+    );
+    assert(
+      !/Math\.random\(\)/.test(chatSrc),
+      "KB-11: كود الجلسة من crypto لا Math.random"
+    );
   }
 
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
