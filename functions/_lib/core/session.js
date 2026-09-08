@@ -191,11 +191,31 @@ export async function getSessionMerchantId(request, env) {
  *
  * The anonymous demo flow ("default-store") is untouched.
  */
+const ACTIVE_TTL_SECONDS = 600;
+
+/**
+ * merchants.last_active_at (migrations/0024) — a real "is anyone using this?"
+ * signal for the limited launch. KV-throttled to one D1 write per merchant per
+ * 10 minutes; fire-and-forget so it never delays or fails a request.
+ */
+export function touchLastActive(env, merchantId) {
+  if (!env?.DB || !merchantId) return;
+  const kv = env.HALA_CACHE;
+  const key = `la:${merchantId}`;
+  const run = async () => {
+    if (kv && (await kv.get(key).catch(() => null))) return;
+    await env.DB.prepare("UPDATE merchants SET last_active_at = datetime('now') WHERE id = ?").bind(merchantId).run();
+    if (kv) await kv.put(key, "1", { expirationTtl: ACTIVE_TTL_SECONDS }).catch(() => {});
+  };
+  run().catch(() => {});
+}
+
 export async function resolveStoreId(request, env, claimedStoreId) {
   const sessionMerchantId = await getSessionMerchantId(request, env);
   const claimed = (claimedStoreId || "default-store").toString().slice(0, 40);
 
   if (sessionMerchantId) {
+    touchLastActive(env, sessionMerchantId);
     if (claimed !== "default-store" && claimed !== sessionMerchantId) {
       const admin = await requireAdmin(request, env);
       if (admin) return claimed;

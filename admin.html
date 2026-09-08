@@ -101,6 +101,9 @@
         <span class="material-symbols-outlined text-base">science</span>
         <span>مختبر الميزات الجديدة</span>
       </button>
+      <button id="navTabLaunch" onclick="switchAdminTab('launch')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">rocket_launch</span><span>الإطلاق</span>
+      </button>
       <button id="navTabImages" onclick="switchAdminTab('images')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
         <span class="material-symbols-outlined text-base">imagesmode</span>
         <span>صور المنتجات (بيتا)</span>
@@ -121,11 +124,11 @@
 
         <div class="sleek-white-card rounded-2xl p-6 space-y-3">
           <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-600">السلات المستردة بالريال</span>
-            <span class="material-symbols-outlined text-black">shopping_cart_checkout</span>
+            <span class="text-xs font-bold text-slate-600">متاجر نشطة آخر ٧ أيام</span>
+            <span class="material-symbols-outlined text-black">bolt</span>
           </div>
-          <div id="kpiCartSar" class="text-3xl font-black text-black">+14,250 ر.س</div>
-          <p class="text-[11px] text-slate-500 font-mono">مبيعات محققة بالريال السعودي</p>
+          <div id="kpiActive7d" class="text-3xl font-black text-black">--</div>
+          <p class="text-[11px] text-slate-500 font-mono">من last_active_at الحقيقي (لا تقدير)</p>
         </div>
 
         <div class="sleek-white-card rounded-2xl p-6 space-y-3">
@@ -377,6 +380,33 @@
     </section>
 
     <!-- ── Product image generation — closed beta, admin only ───── -->
+    <section id="sectionLaunch" class="hidden space-y-6">
+      <div class="sleek-white-card rounded-3xl p-6 space-y-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-lg font-black text-black">متابعة الإطلاق المحدود</h2>
+            <p class="text-xs text-slate-600 font-medium">أرقام حقيقية من D1 — معايير الخروج: ٢٠ محادثة بلا تدخل · ٥ حجوزات · صفر عطل صامت أسبوعاً · ٣ تجار ربطوا · ١٠ أوصاف منشورة</p>
+          </div>
+          <button onclick="loadLaunch()" class="sleek-btn-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"><span class="material-symbols-outlined text-base">sync</span><span>تحديث</span></button>
+        </div>
+        <div id="launchKpis" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center"></div>
+        <div id="launchErrors" class="text-xs text-slate-700"></div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="sleek-white-card rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black">نشاط التجار</h3>
+          <div class="overflow-x-auto"><table class="w-full text-right text-[11px]">
+            <thead><tr class="bg-slate-100 font-bold"><th class="p-2 rounded-r-lg">المتجر</th><th class="p-2">آخر نشاط</th><th class="p-2">كتالوج</th><th class="p-2">منشور</th><th class="p-2 rounded-l-lg">واتساب ٧ي</th></tr></thead>
+            <tbody id="launchActivity" class="divide-y divide-slate-200 text-black"></tbody>
+          </table></div>
+        </div>
+        <div class="sleek-white-card rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black">تغذية راجعة من التجار</h3>
+          <div id="launchFeedback" class="space-y-2 text-xs text-black"></div>
+        </div>
+      </div>
+    </section>
+
     <section id="sectionImages" class="hidden space-y-6">
       <div class="sleek-white-card-darkborder rounded-3xl p-7 bg-white text-black space-y-5 shadow-md">
         <div class="space-y-1 border-b border-slate-200 pb-5">
@@ -449,7 +479,7 @@
 
     function switchAdminTab(tab) {
       activeTab = tab;
-      const tabs = ['overview', 'auraWa', 'accounts', 'bookings', 'tester', 'images'];
+      const tabs = ['overview', 'auraWa', 'accounts', 'bookings', 'tester', 'images', 'launch'];
       tabs.forEach(t => {
         const btn = document.getElementById('navTab' + t.charAt(0).toUpperCase() + t.slice(1));
         const sec = document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -465,6 +495,7 @@
       if (tab === 'accounts') loadAccountsList();
       if (tab === 'bookings') loadBookingsList();
       if (tab === 'auraWa') loadAuraWaConfig();
+      if (tab === 'launch') loadLaunch();
     }
 
     // ── Product image generation (closed beta, admin only) ──────
@@ -559,6 +590,7 @@
           if (document.getElementById('kpiMerchants')) document.getElementById('kpiMerchants').innerText = data.stats.merchantsCount ?? data.stats.merchants ?? 1;
           if (document.getElementById('kpiBookings')) document.getElementById('kpiBookings').innerText = data.stats.bookingsCount ?? data.stats.bookings ?? 0;
           if (document.getElementById('kpiTotalUsageToday')) document.getElementById('kpiTotalUsageToday').innerText = `${data.stats.totalCreditsUsedToday ?? 0} رصيد`;
+          if (document.getElementById('kpiActive7d')) document.getElementById('kpiActive7d').innerText = data.stats.activeMerchants7d ?? '--';
         }
       } catch (err) {
         console.error('Failed to load admin overview:', err);
@@ -644,6 +676,35 @@
       } catch (err) {
         console.error('Test error:', err);
       }
+    }
+
+    async function loadLaunch() {
+      const kpis = document.getElementById('launchKpis');
+      kpis.innerHTML = '<div class="col-span-4 text-slate-500 p-4">جاري التحميل…</div>';
+      try {
+        const res = await fetch('/api/admin/launch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        const data = await res.json();
+        if (!data?.ok) { kpis.innerHTML = `<div class="col-span-4 text-rose-700 p-4">${esc(data?.error || 'تعذر التحميل')}</div>`; return; }
+        const st = data.stats || {};
+        const kpi = (label, val, sub) => `<div class="rounded-2xl border border-slate-200 p-3"><div class="text-2xl font-black text-black">${esc(val ?? '—')}</div><div class="text-[11px] font-bold text-slate-700">${esc(label)}</div>${sub ? `<div class="text-[10px] text-slate-500">${esc(sub)}</div>` : ''}</div>`;
+        kpis.innerHTML = [
+          kpi('متاجر نشطة ٧ أيام', st.activeMerchants7d, `من ${st.merchantsTotal} · اليوم ${st.activeMerchants1d}`),
+          kpi('رسائل واتساب واردة ٧ أيام', st.whatsappIn7d, `ردود: ${st.whatsappOut7d}`),
+          kpi('جلسات ودجت ٧ أيام', st.widgetSessions7d ?? 'غير متاح'),
+          kpi('حجوزات ٧ أيام', st.bookings7d),
+          kpi('أوصاف مولَّدة ٧ أيام', st.descriptionsGenerated7d, `نُشر: ${st.descriptionsPublished7d}`),
+          kpi('طابور المراجعة', st.reviewPending, `بانتظار النشر ${st.reviewAwaitingPublish} · فشل ${st.reviewPublishFailed}`),
+          kpi('أخطاء ٢٤ ساعة', st.errors24h),
+          kpi('تقييم ٣٠ يوم', st.feedbackAvg30d === null ? 'لا تقييمات' : `${st.feedbackAvg30d}/5`, `${st.feedbackCount30d} تقييم`)
+        ].join('');
+        document.getElementById('launchErrors').innerHTML = (st.topErrors24h || []).length
+          ? 'أكثر الأخطاء ٢٤ ساعة: ' + st.topErrors24h.map(e => `<span class="font-mono">${esc(e.code)}</span> ×${esc(e.count)}`).join(' · ')
+          : 'صفر أخطاء آخر ٢٤ ساعة.';
+        const act = document.getElementById('launchActivity');
+        act.innerHTML = (data.activity || []).map(a => `<tr><td class="p-2 font-bold">${esc((a.storeName || a.email || a.merchantId) + (a.disabled ? ' (معطّل)' : ''))}</td><td class="p-2 font-mono text-slate-600">${esc((a.lastActiveAt || '—').slice(0, 16))}</td><td class="p-2">${esc(a.catalogCount)}</td><td class="p-2">${esc(a.publishedCount)}</td><td class="p-2">${esc(a.waMessages7d)}</td></tr>`).join('') || '<tr><td colspan="5" class="p-3 text-slate-500">لا تجار بعد.</td></tr>';
+        const fb = document.getElementById('launchFeedback');
+        fb.innerHTML = (data.feedback || []).map(f => `<div class="rounded-xl border border-slate-200 p-3"><div class="flex justify-between"><span class="font-black">${esc(f.score)}/5 — ${esc(f.store_name || f.merchant_id)}</span><span class="text-[10px] text-slate-500 font-mono">${esc((f.created_at || '').slice(0, 16))}</span></div><div class="mt-1 text-slate-700">${esc(f.comment || '')}</div></div>`).join('') || '<div class="text-slate-500">لا تغذية راجعة بعد.</div>';
+      } catch (e) { kpis.innerHTML = '<div class="col-span-4 text-rose-700 p-4">تعذر الاتصال.</div>'; }
     }
 
     async function loadAccountsList() {

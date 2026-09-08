@@ -57,6 +57,7 @@ const ADMIN_CROSS_TENANT_FILES = new Set([
   "functions/api/admin/overview.js",
   "functions/api/admin/style_library.js",
   "functions/api/admin/aura_whatsapp.js",
+  "functions/api/admin/launch.js", // لوحة الإطلاق: عدّادات عابرة للمتاجر خلف requireAdmin + سطر تدقيق
   "functions/api/cron/reminders.js", // يعالج كل التذكيرات المستحقة عبر كل المتاجر بالتصميم
   "functions/api/cron/bulk_process.js", // يعالج طابور كل المتاجر بالتصميم
   "functions/api/cron/healthcheck.js"

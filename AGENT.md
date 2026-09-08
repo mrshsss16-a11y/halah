@@ -50,9 +50,9 @@ functions/
     auth/         signup · login · logout · me · google · complete_account · forgot_password
                   reset_password · send_verification · verify_email · salla_embedded · salla/{install,callback}
     store/        status · config · context · overview · publish · logo · persona · profile · faq
-                  catalog/{sync,list} · bulk/{upload,generate,status} · review/{list,decide}
+                  catalog/{sync,list} · bulk/{upload,generate,status} · review/{list,decide} · feedback
     admin/        overview · accounts · bookings · conversations · faq · errors · review
-                  style_library · aura_whatsapp
+                  style_library · aura_whatsapp · launch (متابعة الإطلاق)
     whatsapp/     webhook (استقبال) · send · connect · status
     instagram/    webhook (مبني، غير مفعَّل — ينتظر P29/P30)
     webhooks/     salla
@@ -66,9 +66,9 @@ docs/archive/         تجارب ومزايا مؤرشفة لا تُبنى ول�
 docs/COMPLETION_PATH.md   مسار الإتمام الحالي (المرجع التنفيذي)
 *.html               صفحات ثابتة تمر بـ #include ثم scripts/stage.mjs → dist/
 partials/            مكونات #include (fouc-theme, app-shell)
-migrations/          مخطط D1 (0001..0023) — انظر §6
+migrations/          مخطط D1 (0001..0024) — انظر §6
 persona/             نسخ مرجعية للشخصية (التشغيلية في functions/_lib/ai/persona.js — عدّل الاثنين)
-tests/api.test.mjs   ٣٥٤ تأكيداً (عزل · توقيع · حصة · مصادقة · كتيّب المصطلحات · نماذج الرؤية)
+tests/api.test.mjs   ٣٦٦ تأكيداً (عزل · توقيع · حصة · مصادقة · كتيّب المصطلحات · نماذج الرؤية)
 scripts/             stage · verify-dist · audit-isolation + audit-security (ضمن npm test) · backup-db · smoke-test (ضمن deploy)
 ```
 
@@ -127,7 +127,7 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ## 6. قاعدة البيانات — D1 `halah-tr-db`
 
-- Migrations في `migrations/` (0001..0023 — كلها مطبَّقة على البعيد، تحقق 2026-09-08). طبّق بـ:
+- Migrations في `migrations/` (0001..0024 — كلها مطبَّقة على البعيد، تحقق 2026-09-08). طبّق بـ:
   `npx wrangler d1 migrations apply halah-tr-db --remote`
 - 0003 placeholder (للحفاظ على تسلسل الأرقام). 0010 أنشأ الجداول الناقصة سابقاً.
 - جداول قديمة (legacy) لا تزال موجودة من بناء سابق: `users`, `faqs`, `store_connections`,

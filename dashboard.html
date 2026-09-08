@@ -285,6 +285,29 @@
         </div>
       </div>
 
+      <!-- ── تغذية راجعة (المرحلة ٤): سؤال واحد، مرة واحدة ── -->
+      <div id="feedbackCard" class="hidden sleek-card rounded-3xl p-5 space-y-3 shadow-sm border border-black">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-black text-black">كيف تجربتك مع هالة لين الآن؟</h3>
+            <p class="text-[11px] text-slate-600 font-medium">تقييمك يوصلنا مباشرة — سؤال واحد بس.</p>
+          </div>
+          <button onclick="dismissFeedback()" class="text-slate-400 hover:text-black" title="لاحقاً"><span class="material-symbols-outlined text-base">close</span></button>
+        </div>
+        <div class="flex gap-2" id="feedbackStars">
+          <button onclick="pickFeedbackScore(1)" data-score="1" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">١</button>
+          <button onclick="pickFeedbackScore(2)" data-score="2" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">٢</button>
+          <button onclick="pickFeedbackScore(3)" data-score="3" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">٣</button>
+          <button onclick="pickFeedbackScore(4)" data-score="4" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">٤</button>
+          <button onclick="pickFeedbackScore(5)" data-score="5" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">٥</button>
+        </div>
+        <textarea id="feedbackComment" rows="2" placeholder="شي حبّيته أو شي عطّلك؟ (اختياري)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+        <div class="flex items-center gap-2">
+          <button id="feedbackSendBtn" onclick="sendFeedback()" class="sleek-btn-black px-4 py-2 rounded-xl text-xs" disabled>أرسل</button>
+          <span id="feedbackMsg" class="text-[11px] font-bold text-slate-600"></span>
+        </div>
+      </div>
+
       <!-- ── المراجعة الجماعية (المرحلة ٢): الـAI يقترح، التاجر يقرر ── -->
       <div id="reviewCard" class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
         <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4 flex-wrap">
@@ -1243,6 +1266,7 @@
         showMsg('reviewFeedback', action === 'reject'
           ? `رُفض ${n}${failedNote}.`
           : `اعتُمد ${n}${failedNote} — يُنشر على سلة تدريجياً خلال دقائق، تابع تبويب «معتمد بانتظار النشر».`);
+        if (action !== 'reject') maybeShowFeedback();
         setReviewCounts(data.counts);
         loadReview('pending');
       } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
@@ -1272,6 +1296,44 @@
         showMsg('reviewFeedback', data?.ok ? data.message : (data?.error || 'تعذر التراجع.'));
         loadReview('published');
       } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+    }
+
+    // ── تغذية راجعة (المرحلة ٤) ────────────────────────────────
+    // تُعرض مرة واحدة بعد أول تفاعل حقيقي (توليد/نشر/اعتماد) — لا تزعج بالدخول الأول.
+    let feedbackScore = 0;
+    const FB_KEY = 'hala_feedback_done';
+    function feedbackDone() { try { return localStorage.getItem(FB_KEY) === '1'; } catch (e) { return false; } }
+    function maybeShowFeedback() {
+      if (feedbackDone()) return;
+      let n = 0;
+      try { n = Number(localStorage.getItem('hala_actions') || 0) + 1; localStorage.setItem('hala_actions', String(n)); } catch (e) { n = 2; }
+      if (n >= 2) document.getElementById('feedbackCard').classList.remove('hidden');
+    }
+    function dismissFeedback() {
+      document.getElementById('feedbackCard').classList.add('hidden');
+      try { localStorage.setItem(FB_KEY, '1'); } catch (e) {}
+    }
+    function pickFeedbackScore(n) {
+      feedbackScore = n;
+      document.querySelectorAll('.fb-star').forEach(b => {
+        const on = Number(b.dataset.score) === n;
+        b.className = 'fb-star ' + (on ? 'sleek-btn-black' : 'sleek-btn-white') + ' w-10 h-10 rounded-xl text-sm font-black';
+      });
+      document.getElementById('feedbackSendBtn').disabled = false;
+    }
+    async function sendFeedback() {
+      if (!feedbackScore) return;
+      const btn = document.getElementById('feedbackSendBtn'); btn.disabled = true;
+      try {
+        const res = await fetch('/api/store/feedback', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ score: feedbackScore, comment: document.getElementById('feedbackComment').value, context: 'studio' })
+        });
+        const data = await res.json();
+        document.getElementById('feedbackMsg').innerText = data?.ok ? (data.message || 'شكراً!') : (data?.error || 'تعذر الإرسال.');
+        if (data?.ok) { try { localStorage.setItem(FB_KEY, '1'); } catch (e) {} setTimeout(() => document.getElementById('feedbackCard').classList.add('hidden'), 1500); }
+        else btn.disabled = false;
+      } catch (e) { document.getElementById('feedbackMsg').innerText = 'تعذر الاتصال.'; btn.disabled = false; }
     }
 
     // ── Agent settings ────────────────────────────────────────

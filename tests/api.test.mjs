@@ -2677,6 +2677,56 @@ async function runTests() {
     assert(/audit-security\.mjs/.test(read("../package.json")), "ح٢-ح٨: تدقيق الأمن مربوط بـnpm test");
   }
 
+  // ── المرحلة ٤ (docs/COMPLETION_PATH.md 4.3/4.5) — متابعة الإطلاق ─────────
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const { touchLastActive } = await import("../functions/_lib/core/session.js");
+    const { launchStats, saveMerchantFeedback } = await import("../functions/_lib/core/db.js");
+
+    // LAUNCH-1 — last_active_at مخنوق بـKV: مفتاح موجود = صفر كتابة D1؛ غيابه = كتابة واحدة + وضع المفتاح.
+    let writes = 0; let kvPuts = 0;
+    const mkEnv = (kvHas) => ({
+      HALA_CACHE: { get: async () => (kvHas ? "1" : null), put: async () => { kvPuts++; } },
+      DB: { prepare: (sql) => ({ bind: (...a) => ({ run: async () => { if (/UPDATE merchants SET last_active_at/.test(sql) && a[0] === "m_t") writes++; return {}; } }) }) }
+    });
+    touchLastActive(mkEnv(true), "m_t"); await new Promise((r) => setTimeout(r, 10));
+    assert(writes === 0 && kvPuts === 0, "LAUNCH-1a: مفتاح KV حاضر → لا كتابة D1 (خنق ١٠ دقائق)");
+    touchLastActive(mkEnv(false), "m_t"); await new Promise((r) => setTimeout(r, 10));
+    assert(writes === 1 && kvPuts === 1, "LAUNCH-1b: بلا مفتاح → كتابة واحدة مقيّدة بـid + وضع المفتاح");
+    assert(/touchLastActive\(env, sessionMerchantId\)/.test(read("../functions/_lib/core/session.js")), "LAUNCH-1c: resolveStoreId يلمس last_active_at عند أي طلب بجلسة");
+
+    // LAUNCH-2 — التغذية الراجعة معزولة بالتاجر ومحدودة ١-٥.
+    let fbBind = null;
+    const fbEnv = { DB: { prepare: (sql) => ({ bind: (...a) => ({ run: async () => { if (/INSERT INTO merchant_feedback/.test(sql)) fbBind = a; return { meta: { last_row_id: 7 } }; } }) }) } };
+    const fbId = await saveMerchantFeedback(fbEnv, { merchantId: "m_f", score: 4, comment: "ممتاز", context: "studio" });
+    assert(fbId === 7 && fbBind[0] === "m_f" && fbBind[1] === 4, "LAUNCH-2a: saveMerchantFeedback يكتب merchant_id من الجلسة والدرجة");
+    const fbSrc = read("../functions/api/store/feedback.js");
+    assert(/score < 1 \|\| score > 5/.test(fbSrc) && /resolveMerchantStoreId\(request, env, body\.storeId\)/.test(fbSrc) && /checkRateLimit/.test(fbSrc), "LAUNCH-2b: endpoint التغذية الراجعة يرفض خارج ١-٥، بهوية الجلسة، وبحد معدل");
+
+    // LAUNCH-3 — الصدق: لا رقم مبيعات مخترع بلوحة الأدمن.
+    const adminHtml = read("../admin.html");
+    assert(!/14,250/.test(adminHtml) && !/kpiCartSar/.test(adminHtml) && /kpiActive7d/.test(adminHtml), "LAUNCH-3: مؤشر «+14,250 ر.س» المفبرك أُزيل من لوحة الأدمن (قاعدة الصدق §11) وحلّ محله نشاط حقيقي");
+    assert(/id="sectionLaunch"/.test(adminHtml) && /\/api\/admin\/launch/.test(adminHtml), "LAUNCH-3b: تبويب الإطلاق موجود بلوحة الأدمن");
+
+    // LAUNCH-4 — launchStats أرقام حقيقية من D1 (mock) ولا تسقط عند جدول ناقص.
+    const stStmt = (sql) => ({
+      first: async () => { if (/omnichannel_sessions/.test(sql)) throw new Error("no such table"); if (/AVG\(score\)/.test(sql)) return { n: 2, avg: 4.5 }; return { n: 3 }; },
+      all: async () => ({ results: [{ code: "X", n: 2 }] })
+    });
+    const stEnv = { DB: { prepare: (sql) => ({ ...stStmt(sql), bind: () => stStmt(sql) }) } };
+    const st = await launchStats(stEnv);
+    assert(st.activeMerchants7d === 3 && st.widgetSessions7d === null && st.feedbackAvg30d === 4.5 && st.topErrors24h[0].code === "X", "LAUNCH-4: launchStats يعيد العدّادات، وجدول غير متاح = null لا رقم مخترع");
+
+    // LAUNCH-5 — admin/launch خلف requireAdmin + سطر تدقيق + بإعفاء التدقيق الموثّق.
+    const launchSrc = read("../functions/api/admin/launch.js");
+    assert(/requireAdmin\(request, env\)/.test(launchSrc) && /recordAdminAction\(context/.test(launchSrc), "LAUNCH-5a: admin/launch محمي بـrequireAdmin ويسجّل تدقيقاً");
+    assert(/functions\/api\/admin\/launch\.js/.test(read("../scripts/audit-isolation.mjs")), "LAUNCH-5b: إعفاء admin/launch موثّق بسبب في audit-isolation");
+    assert(/ADD COLUMN last_active_at/.test(read("../migrations/0024_launch_monitoring.sql")) && /CREATE TABLE IF NOT EXISTS merchant_feedback/.test(read("../migrations/0024_launch_monitoring.sql")), "LAUNCH-6: هجرة 0024 — last_active_at + merchant_feedback");
+    const dash = read("../dashboard.html");
+    assert(/id="feedbackCard"/.test(dash) && /\/api\/store\/feedback/.test(dash) && /maybeShowFeedback\(\)/.test(dash), "LAUNCH-7: بطاقة التغذية الراجعة بالداشبورد تظهر بعد تفاعل حقيقي لا بالدخول الأول");
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);
