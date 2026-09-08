@@ -11,6 +11,7 @@ import { send as igSend } from "../integrations/instagram.js";
 import { updateProductBySku } from "../integrations/salla.js";
 import { recordPublishResult } from "./reviewQueue.js";
 import { markPublished } from "./catalog.js";
+import { buildSallaProductFields } from "./sallaProductPayload.js";
 
 /**
  * نافذة الإرسال انتهت؟ عنصر فات أوانه يفشل عند Meta برسالة غامضة — نرفضه قبل
@@ -71,35 +72,36 @@ async function publishDescription(env, { merchantId, payload }) {
   if (!sku) throw new Error("حمولة الوصف بلا رمز SKU — لا يمكن تحديد المنتج.");
   if (!description) throw new Error("حمولة الوصف فارغة — رُفض النشر.");
 
-  const fields = { description: description.slice(0, 20000) };
-  const seoTitle = String(payload?.seo?.title || "").trim().slice(0, 120);
-  const seoMeta = String(payload?.seo?.metaDescription || "").trim().slice(0, 320);
-  const withMeta = seoTitle || seoMeta
-    ? { ...fields, metadata: { ...(seoTitle ? { title: seoTitle } : {}), ...(seoMeta ? { description: seoMeta } : {}) } }
-    : fields;
+  // أسماء حقول سلة الحقيقية (metadata_title/metadata_description/subtitle، والوصف HTML)
+  // من services/sallaProductPayload.js — المصدر الوحيد لهذا التحويل.
+  const { fields, descriptionOnly, hasSeo } = buildSallaProductFields({
+    description,
+    excerpt: payload?.copywriting?.excerpt || payload?.excerpt || "",
+    highlights: payload?.copywriting?.highlights || payload?.highlights || [],
+    faqs: payload?.faqs || [],
+    seo: payload?.seo || null
+  });
 
-  const attempt = async (body) => {
+  const attempt = async (body, fallback) => {
     try {
       return await updateProductBySku(env, merchantId, sku, body);
     } catch (err) {
-      const msg = String(err?.message || err);
-      const m = msg.match(/HTTP (\d{3})/);
-      const status = m ? Number(m[1]) : 0;
+      const status = Number(err?.status) || Number((String(err?.message || "").match(/HTTP (\d{3})/) || [])[1]) || 0;
       if (status === 429) {
         const e = new Error("سلة أوقفت الطلبات مؤقتاً (حد المعدل) — يُستأنف بالتِك التالي.");
-        e.retryAfter = true;
+        e.retryAfter = err?.retryAfter || true;
         throw e;
       }
-      if (status === 422 && body.metadata) {
-        // حقول SEO رُفضت — الوصف وحده.
-        return updateProductBySku(env, merchantId, sku, fields);
+      if (status === 422 && fallback) {
+        // حقول السيو رُفضت — الوصف وحده مرة واحدة، ثم أي فشل يُسجَّل على الصف.
+        return updateProductBySku(env, merchantId, sku, fallback);
       }
       throw err;
     }
   };
 
-  const result = await attempt(withMeta);
-  await markPublished(env, { merchantId, sku, description: fields.description }).catch(() => {});
+  const result = await attempt(fields, hasSeo ? descriptionOnly : null);
+  await markPublished(env, { merchantId, sku, description }).catch(() => {});
   return String(result?.data?.id || sku);
 }
 

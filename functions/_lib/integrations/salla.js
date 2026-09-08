@@ -94,7 +94,14 @@ export async function sallaFetch(env, merchantId, path, opts = {}) {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`salla API ${path}: HTTP ${res.status} ${body.slice(0, 200)}`);
+    const err = new Error(`salla API ${path}: HTTP ${res.status} ${body.slice(0, 200)}`);
+    // مصنَّف للمستدعين: ٤٢٩ يحمل Retry-After (توثيق سلة doc-421125) حتى يوقف
+    // النشر الجماعي التِك كاملاً بدل التخمين من نص الرسالة.
+    err.status = res.status;
+    const ra = Number(res.headers.get("Retry-After"));
+    err.retryAfter = Number.isFinite(ra) && ra > 0 ? ra : null;
+    err.rateLimitRemaining = res.headers.get("X-RateLimit-Remaining");
+    throw err;
   }
   return res.json();
 }

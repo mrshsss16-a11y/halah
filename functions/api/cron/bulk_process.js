@@ -119,6 +119,7 @@ function buildDescriptionPayload({ item, parsed, catalogRow }) {
     description: String(parsed?.copywriting?.description || "").trim().slice(0, 5000),
     seo: parsed?.seo || null,
     copywriting: parsed?.copywriting || null,
+    faqs: Array.isArray(parsed?.faqs) ? parsed.faqs.slice(0, 5) : [],
     generatedAt: new Date().toISOString()
   };
 }

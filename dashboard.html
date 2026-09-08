@@ -1031,8 +1031,11 @@
           body: JSON.stringify({
             productId,
             description: editedDescription || lastCopy.copywriting?.description || lastCopy.result,
-            // حقول السيو المعروضة للتاجر تُنشر معه — كانت تُولَّد وتُعرض ثم تُهمَل.
-            seo: lastCopy.seo || null
+            // حقول السيو والنقاط والأسئلة تُنشر مع الوصف (services/sallaProductPayload.js):
+            // metadata_title/metadata_description/subtitle + وصف HTML منظّم.
+            seo: lastCopy.seo || null,
+            copywriting: lastCopy.copywriting || null,
+            faqs: lastCopy.faqs || []
           })
         });
         const data = await res.json();
@@ -1180,6 +1183,23 @@
       document.getElementById('reviewCountsLine').innerText = parts.length ? parts.join(' · ') : 'كل وصف مولَّد بالجملة يمرّ من هنا. ما يُنشر على سلة إلا ما تعتمده.';
     }
 
+    // ما يُنشر فعلاً مع الوصف على سلة (نفس البناء بـservices/sallaProductPayload.js):
+    // النقاط والأسئلة داخل وصف الصفحة، والعنوان/الميتا بحقول السيو، والنبذة تحت الاسم.
+    function publishExtras(r) {
+      const hl = (r.highlights || []).map(h => `<li>${escHtml(h)}</li>`).join('');
+      const faqs = (r.faqs || []).map(f => `<li><b>${escHtml(f.q || '')}</b> — ${escHtml(f.a || '')}</li>`).join('');
+      const meta = [
+        r.seo?.seoTitle || r.seo?.title ? `عنوان البحث: ${escHtml(r.seo.seoTitle || r.seo.title)}` : '',
+        r.seo?.metaDescription ? `وصف البحث: ${escHtml(r.seo.metaDescription)}` : '',
+        r.excerpt ? `تحت اسم المنتج: ${escHtml(r.excerpt)}` : ''
+      ].filter(Boolean).join('<br>');
+      if (!hl && !faqs && !meta) return '';
+      return `<details class="text-[11px] text-slate-700 rounded-xl bg-slate-50 border border-slate-200 p-2"><summary class="cursor-pointer font-bold">ما يُنشر مع الوصف (نقاط · أسئلة · سيو)</summary>
+        ${hl ? `<ul class="list-disc pr-4 mt-1">${hl}</ul>` : ''}
+        ${faqs ? `<ul class="pr-4 mt-1">${faqs}</ul>` : ''}
+        ${meta ? `<div class="mt-1 text-slate-600">${meta}</div>` : ''}</details>`;
+    }
+
     function reviewCard(r) {
       const div = document.createElement('div');
       div.className = 'rounded-2xl border border-slate-200 bg-white p-4 space-y-2';
@@ -1198,9 +1218,9 @@
       let body = '';
       if (reviewState === 'pending') {
         body = `<textarea class="review-desc w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" rows="5" data-id="${r.id}">${escHtml(r.description || '')}</textarea>
+          ${publishExtras(r)}
           <div class="flex gap-2 items-center">
             <button onclick="saveReviewEdit(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">احفظ تعديلي</button>
-            <span class="text-[10px] text-slate-500">${r.seo?.title ? 'عنوان SEO: ' + escHtml(r.seo.title) : ''}</span>
           </div>`;
       } else {
         body = `<div class="text-xs text-black whitespace-pre-wrap">${escHtml(r.description || '')}</div>`;

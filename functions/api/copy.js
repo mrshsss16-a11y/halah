@@ -177,7 +177,11 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
 1. العنوان يطابق طريقة بحث الناس: [النوع] + [الخاصية المميزة] + [الفئة/الاستخدام].
 2. الميتا ديسكربشن (120-160 حرفاً): يحتوي منفعة + كلمة مفتاحية + دعوة للفعل وإجابة أهم اعتراض.
 3. النبذة المختصرة: سطرين دقيقين (أقل من 250 حرفاً).
-4. النقاط التفصيلية: تحول كل مواصفة إلى فائدة حقيقية للمستخدم.
+4. النقاط التفصيلية (highlights): فائدة حقيقية لكل مواصفة **وردت فعلاً** بالمزايا المدخلة
+   أو الوصف الحالي أو ملاحظات الصورة. لا مواصفة معروفة = لا نقطة — ممنوع اختراع ضمان
+   أو مدة توصيل أو خامة أو منشأ أو "جودة عالية" لم يذكرها التاجر. نقطتان صادقتان أفضل
+   من خمس مخترعة. نفس القاعدة على specsTable وfaqs وobjectionKiller: من الحقائق المتاحة
+   فقط، وإلا اتركيها فارغة.
 5. **القاعدة الأهم — اكتبي لعميل حقيقي، مو لمحرك بحث:** ممنوع حشو الكلمة
    المفتاحية بشكل مصطنع أو تكرارها بلا داعٍ. لو "description" (حقل الوصف
    التسويقي بالذات) قرأه إنسان، لازم يحس إنه مكتوب له هو بالتحديد — أسلوب
@@ -198,7 +202,7 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
   },
   "copywriting": {
     "excerpt": "<نبذة مختصرة <= 250 حرفاً>",
-    "description": "<وصف تفصيلي جذاب بالنبرة المطلوبة 2-3 جمل>",
+    "description": "<وصف تفصيلي بالنبرة المطلوبة: ٣-٥ جمل (٦٠-١٢٠ كلمة) بفقرة أو فقرتين مفصولتين بسطر فارغ — يُنشر على صفحة المنتج بسلة>",
     "highlights": ["<فائدة ملموسة 1>", "<فائدة ملموسة 2>", "<فائدة ملموسة 3>"],
     "objectionKiller": "<جملة معالجة أهم اعتراض: المقاس/الضمان/الشحن>",
     "whatsapp": "<نسخة قصيرة جداً للواتساب سطرين + إيموجي>",
@@ -243,18 +247,14 @@ function parseSeoResponse(raw, name, price) {
         const title = String(p.seo?.title || name).slice(0, 60);
         const metaDesc = String(p.seo?.metaDescription || p.copywriting.excerpt || p.copywriting.description).slice(0, 160);
 
-        // Construct Schema.org JSON-LD Product Markup for Google & AI Comparison Engines
+        // Schema.org JSON-LD — مرجعي للتاجر فقط (سلة تولّد بنيتها بنفسها على صفحة
+        // المنتج). السعر يظهر فقط إن أُدخل، ولا ادعاء توفر: لا نعرف المخزون.
         const jsonLdSchema = {
           "@context": "https://schema.org/",
           "@type": "Product",
           "name": title,
           "description": metaDesc,
-          "offers": {
-            "@type": "Offer",
-            "priceCurrency": "SAR",
-            "price": price || "0",
-            "availability": "https://schema.org/InStock"
-          }
+          ...(price ? { "offers": { "@type": "Offer", "priceCurrency": "SAR", "price": String(price) } } : {})
         };
 
         return {
@@ -271,14 +271,12 @@ function parseSeoResponse(raw, name, price) {
             excerpt: String(p.copywriting.excerpt || metaDesc).slice(0, 250),
             description: String(p.copywriting.description || metaDesc).trim(),
             highlights: Array.isArray(p.copywriting.highlights) ? p.copywriting.highlights.map(String) : [],
-            objectionKiller: String(p.copywriting.objectionKiller || "ضمان سنتين وتوصيل سريع لكل مناطق المملكة").trim(),
+            // لا قيم افتراضية مخترعة (ضمان، مدة توصيل…) — غياب الحقل يبقى فارغاً (§11).
+            objectionKiller: String(p.copywriting.objectionKiller || "").trim(),
             whatsapp: String(p.copywriting.whatsapp || p.copywriting.excerpt || p.copywriting.description).trim(),
-            callToAction: String(p.copywriting.callToAction || "اطلبه الآن واحصل على توصيل سريع!").trim()
+            callToAction: String(p.copywriting.callToAction || "اطلبه الآن").trim()
           },
-          specsTable: Array.isArray(p.specsTable) ? p.specsTable : [
-            { key: "الضمان", value: "سنتين" },
-            { key: "التوصيل", value: "2-5 أيام عمل" }
-          ],
+          specsTable: Array.isArray(p.specsTable) ? p.specsTable.filter((r) => r && r.key && r.value) : [],
           faqs: Array.isArray(p.faqs) ? p.faqs : [],
           imageAlt: String(p.imageAlt || `${name} في السعودية`),
           tags: Array.isArray(p.tags) ? p.tags.map((t) => String(t).replace(/^#/, "").trim()) : []
@@ -289,35 +287,38 @@ function parseSeoResponse(raw, name, price) {
     }
   }
 
-  const plain = source.trim() || `${name} بأفضل جودة وسعر في السعودية.`;
+  // سقوط بلا اختلاق: لو رجّع النموذج نصاً غير JSON نستخدم النص كما هو، ولو لم
+  // يرجّع شيئاً فالوصف فارغ (المستدعي يعامل الفراغ كفشل توليد، لا كوصف).
+  // لا وعود جودة ولا ضمان ولا مدة توصيل — ادعاءات لم يقلها أحد (§11).
+  const plain = source.trim();
   return {
     seo: {
       title: name.slice(0, 60),
-      seoTitle: `${name} | أفضل سعر في السعودية`.slice(0, 65),
+      seoTitle: name.slice(0, 65),
       slug: name.replace(/\s+/g, "-").slice(0, 60),
       metaDescription: plain.slice(0, 160),
       focusKeyword: name,
-      lsiKeywords: [name, "متجر سعودي", "توصيل سريع"],
+      lsiKeywords: [],
       jsonLdSchema: {
         "@context": "https://schema.org/",
         "@type": "Product",
         "name": name,
-        "description": plain.slice(0, 150),
-        "offers": { "@type": "Offer", "priceCurrency": "SAR", "price": price || "0" }
+        ...(plain ? { "description": plain.slice(0, 150) } : {}),
+        ...(price ? { "offers": { "@type": "Offer", "priceCurrency": "SAR", "price": String(price) } } : {})
       }
     },
     copywriting: {
       excerpt: plain.slice(0, 250),
       description: plain,
-      highlights: ["جودة عالية مضمونة", "توصيل سريع لكل مناطق المملكة", "دعم موثوق"],
-      objectionKiller: "ضمان شامل وتوصيل سريع خلال 2-5 أيام.",
+      highlights: [],
+      objectionKiller: "",
       whatsapp: plain,
-      callToAction: "اطلب الآن واستمتع بالتوصيل السريع!"
+      callToAction: ""
     },
-    specsTable: [{ key: "الضمان", value: "سنتين" }],
+    specsTable: [],
     faqs: [],
     imageAlt: name,
-    tags: [name, "السعودية", "متجر_إلكتروني"]
+    tags: []
   };
 }
 

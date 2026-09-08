@@ -2420,7 +2420,7 @@ async function runTests() {
     // BULK-4 — publishApproved: وصف معتمد يُكتب بالـSKU، و٤٢٩ يرفع retryAfter، و٤٢٢ يسقط للوصف وحده.
     const pubSrc = read("../functions/_lib/services/publishApproved.js");
     assert(
-      /row\?\.kind === "description"/.test(pubSrc) && /status === 429/.test(pubSrc) && /status === 422 && body\.metadata/.test(pubSrc) && /markPublished/.test(pubSrc),
+      /row\?\.kind === "description"/.test(pubSrc) && /status === 429/.test(pubSrc) && /status === 422 && fallback/.test(pubSrc) && /buildSallaProductFields/.test(pubSrc) && /markPublished/.test(pubSrc),
       "BULK-4: publishApproved يعالج description بالـSKU مع ٤٢٩→retryAfter و٤٢٢→الوصف وحده ويعلّم الكتالوج"
     );
 
@@ -2791,12 +2791,12 @@ async function runTests() {
     // ── نشر مفرد: حقول السيو المعروضة تصل سلة فعلاً (رُصد 2026-09-08) ──
     const pubSrc = read("../functions/api/store/publish.js");
     assert(
-      /metadata:/.test(pubSrc) && /body\?\.seo\?\.metaDescription/.test(pubSrc),
-      "SEOPUB-1: النشر المفرد يرسل metadata لا الوصف وحده"
+      /buildSallaProductFields\(/.test(pubSrc) && /seo: body\.seo/.test(pubSrc) && !/metadata:\s*\{/.test(pubSrc),
+      "SEOPUB-1: النشر المفرد يرسل حقول سلة الحقيقية عبر sallaProductPayload (لا كائن metadata متداخل)"
     );
     assert(
-      /status === 422 && withMeta\.metadata/.test(pubSrc) &&
-        /updateProduct\(env, merchantId, productId, fields\)/.test(pubSrc),
+      /Number\(err\?\.status\) === 422 && hasSeo/.test(pubSrc) &&
+        /updateProduct\(env, merchantId, productId, descriptionOnly\)/.test(pubSrc),
       "SEOPUB-2: رفض سلة لحقول SEO (422) يسقط للوصف وحده لا يُسقط النشر"
     );
     assert(
@@ -2808,6 +2808,49 @@ async function runTests() {
       /metadata/.test(read("../functions/_lib/services/publishApproved.js")),
       "SEOPUB-4: المسار الجماعي والمفرد ينشران نفس الحقول"
     );
+  }
+
+  // ── مراجعة السيو ومطابقة حقول سلة (2026-09-08) ─────────────────────────
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const { buildSallaProductFields, composeDescriptionHtml } = await import("../functions/_lib/services/sallaProductPayload.js");
+
+    const built = buildSallaProductFields({
+      description: "عباية سوداء بقصّة A.\n\nتناسب المناسبات المسائية.",
+      excerpt: "عباية سوداء أنيقة للمناسبات. تفاصيل إضافية هنا.",
+      highlights: ["قصّة A", "<script>x</script>"],
+      faqs: [{ q: "هل تتوفر مقاسات؟", a: "حسب المتجر." }, { q: "", a: "بلا سؤال" }],
+      seo: { seoTitle: "عباية سوداء بقصّة A | متجر", metaDescription: "عباية سوداء بقصّة A تناسب المناسبات — اطلبيها الآن.", slug: "عباية-سوداء" }
+    });
+    assert(
+      "metadata_title" in built.fields && "metadata_description" in built.fields && "subtitle" in built.fields && !("metadata" in built.fields),
+      "SALLA-1: حقول السيو بأسمائها الرسمية من المستوى الأعلى (metadata_title/metadata_description/subtitle) — لا كائن metadata"
+    );
+    assert(!("metadata_url" in built.fields) && !("slug" in built.fields), "SALLA-2: metadata_url لا يُرسل أبداً — لا تغيير لرابط منتج مفهرس");
+    assert(
+      /^<p>عباية سوداء بقصّة A\.<\/p><p>تناسب المناسبات المسائية\.<\/p><ul><li>قصّة A<\/li><li>&lt;script&gt;x&lt;\/script&gt;<\/li><\/ul><h3>هل تتوفر مقاسات؟<\/h3><p>حسب المتجر\.<\/p>$/.test(built.fields.description),
+      "SALLA-3: الوصف HTML منظّم (فقرات + نقاط + أسئلة)، كل نص مهرَّب، والسؤال الفارغ يُسقط"
+    );
+    assert(built.fields.subtitle === "عباية سوداء أنيقة للمناسبات." && built.fields.metadata_title.length <= 65 && built.fields.metadata_description.length <= 160, "SALLA-4: subtitle أول جملة من النبذة، وحدود ٦٥/١٦٠ للعنوان/الوصف");
+    assert(built.descriptionOnly.description === built.fields.description && Object.keys(built.descriptionOnly).length === 1 && built.hasSeo === true, "SALLA-5: حمولة الاحتياط (٤٢٢) = الوصف وحده");
+    let emptyThrew = false;
+    try { buildSallaProductFields({ description: "   " }); } catch { emptyThrew = true; }
+    assert(emptyThrew && composeDescriptionHtml({}) === "", "SALLA-6: وصف فارغ يرمي — لا نشر لصفحة فارغة");
+    const noSeo = buildSallaProductFields({ description: "نص" });
+    assert(noSeo.hasSeo === false && Object.keys(noSeo.fields).join() === "description", "SALLA-7: بلا سيو = حقل الوصف فقط، لا حقول فارغة تمسح ما عند التاجر");
+
+    // الصدق: لا قيم افتراضية مخترعة بمحرك الوصف.
+    const copySrc = read("../functions/api/copy.js");
+    assert(
+      !/ضمان سنتين/.test(copySrc) && !/2-5 أيام/.test(copySrc) && !/جودة عالية مضمونة/.test(copySrc) && !/أفضل جودة وسعر/.test(copySrc) && !/InStock/.test(copySrc) && !/price \|\| "0"/.test(copySrc),
+      "SALLA-8: صفر ضمان/توصيل/توفر/سعر مخترع بسقوط parseSeoResponse (§11)"
+    );
+    assert(/لا مواصفة معروفة = لا نقطة/.test(copySrc) && /٣-٥ جمل/.test(copySrc), "SALLA-9: البرومبت يمنع نقاط مخترعة ويطلب وصفاً بحجم صفحة منتج");
+    const sallaSrc = read("../functions/_lib/integrations/salla.js");
+    assert(/err\.status = res\.status/.test(sallaSrc) && /Retry-After/.test(sallaSrc), "SALLA-10: أخطاء سلة مصنَّفة بالحالة وRetry-After (توثيق حد المعدل)");
+    const dash = read("../dashboard.html");
+    assert(/copywriting: lastCopy\.copywriting \|\| null/.test(dash) && /function publishExtras/.test(dash), "SALLA-11: النشر المفرد يرسل النقاط/الأسئلة، وشاشة المراجعة تعرض ما يُنشر مع الوصف");
   }
 
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
