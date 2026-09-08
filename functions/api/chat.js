@@ -10,6 +10,7 @@
 import { withApi } from "../_lib/core/respond.js";
 import { askWorkersAI } from "../_lib/ai/gateway.js";
 import { PERSONA_SYSTEM_PROMPT, dialectLabel } from "../_lib/ai/persona.js";
+import { SUPPORT_PLAYBOOK } from "../_lib/ai/supportPlaybook.js";
 import { recallSimilar, rememberReply } from "../_lib/ai/memory.js";
 import { getMarketingContext, saveOmnichannelSession } from "../_lib/core/db.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
@@ -53,6 +54,10 @@ function buildChatSystem({ dialect, storeInstructions, examples, products }) {
     : "لا توجد أمثلة سابقة بعد لهذا المتجر (بداية جديدة) — اعتمدي على الشخصية والتعليمات فقط.";
 
   return `${PERSONA_SYSTEM_PROMPT}
+
+---
+
+${SUPPORT_PLAYBOOK}
 
 ---
 

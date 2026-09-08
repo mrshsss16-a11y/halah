@@ -2727,6 +2727,53 @@ async function runTests() {
     assert(/id="feedbackCard"/.test(dash) && /\/api\/store\/feedback/.test(dash) && /maybeShowFeedback\(\)/.test(dash), "LAUNCH-7: بطاقة التغذية الراجعة بالداشبورد تظهر بعد تفاعل حقيقي لا بالدخول الأول");
   }
 
+  // ── كتيب خدمة العملاء (قاعدة معرفة سعودية، 2026-09-08) ────────────────
+  {
+    const { SUPPORT_PLAYBOOK, supportPlaybookBlock } = await import("../functions/_lib/ai/supportPlaybook.js");
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const chatSrc = read("../functions/api/chat.js");
+
+    assert(
+      ["أكيد يناسبك", "آخر قطعة", "يوصل بكرة", "أصلي ١٠٠٪", "نضمن لك النتيجة"].every((p) => SUPPORT_PLAYBOOK.includes(p)),
+      "KB-1: الممنوعات عبارات محددة قابلة للفحص لا مبادئ عامة"
+    );
+    // منع بلا بديل يُنتج صمتاً لا انضباطاً — كل ممنوع مقرون ببديله.
+    const banned = SUPPORT_PLAYBOOK.split("\n").filter((l) => l.startsWith("- ممنوع:"));
+    assert(
+      banned.length >= 15 && banned.every((l) => l.includes("← بدلها:")),
+      `KB-2: كل ممنوع مقرون ببديل آمن (${banned.length} بنداً)`
+    );
+    assert(
+      /لا تُطلب بيانات بطاقة إطلاقاً/.test(SUPPORT_PLAYBOOK) &&
+        /محاولة وصول لبيانات عميل آخر: ارفض فوراً/.test(SUPPORT_PLAYBOOK),
+      "KB-3: قواعد التصعيد تغطي الدفع وعزل بيانات العملاء"
+    );
+    // الكتيب سلوك لا حقائق — لا سعر ولا اسم متجر ولا رقم تواصل يتسرّب لبرومبت مشترك.
+    assert(
+      !/\d+\s*ريال|ر\.س|@|https?:\/\/|\+?9665\d/.test(SUPPORT_PLAYBOOK),
+      "KB-4: صفر حقائق متجر أو بيانات تواصل — صالح لبرومبت مشترك بين التجار"
+    );
+    assert(
+      /صياغات مرجعية لا نصوص تُنسخ/.test(SUPPORT_PLAYBOOK) &&
+        /غياب المعلومة يُقال صراحةً/.test(SUPPORT_PLAYBOOK),
+      "KB-5: الكتيب يمنع النسخ الحرفي وسدّ الفجوة بعبارة جاهزة"
+    );
+    assert(
+      SUPPORT_PLAYBOOK.length < 4000,
+      `KB-6: الكتيب مختصر — يُحقن بكل محادثة (${SUPPORT_PLAYBOOK.length} حرفاً)`
+    );
+    assert(
+      supportPlaybookBlock({ enabled: false }) === "" && supportPlaybookBlock() === SUPPORT_PLAYBOOK,
+      "KB-7: التعطيل يرجّع \"\" — نفس تعاقد كتيب المصطلحات"
+    );
+    assert(
+      /import \{ SUPPORT_PLAYBOOK \} from "\.\.\/_lib\/ai\/supportPlaybook\.js"/.test(chatSrc) &&
+        /\$\{SUPPORT_PLAYBOOK\}/.test(chatSrc) && /\$\{PERSONA_SYSTEM_PROMPT\}/.test(chatSrc),
+      "KB-8: الكتيب يُحقن فوق الشخصية بلا استبدالها"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);
