@@ -1439,3 +1439,46 @@ export async function launchStats(env) {
     feedbackAvg30d: feedbackAgg?.avg === null || feedbackAgg?.avg === undefined ? null : Math.round(Number(feedbackAgg.avg) * 10) / 10
   };
 }
+
+// ── فك الربط بسلة (migrations/0025) ────────────────────────────────────────
+
+/**
+ * يقطع وصول هالة لمتجر التاجر فوراً عند حذفه التطبيق (`app.uninstalled`).
+ *
+ * كان هذا الحدث **غير معالَج إطلاقاً**: التاجر يحذف التطبيق ويبقى توكن وصوله
+ * محفوظاً عندنا للأبد — صلاحية على متجر لم يعد يأذن لنا (Q3 بـdocs/DEFERRED.md).
+ *
+ * ما يحدث بالضبط:
+ *   ١. **حذف** توكنات سلة — لا تعطيل. توكن محفوظ بلا إذن دَين أمني لا سجل.
+ *   ٢. إلغاء أي مهمة جملة قيد التشغيل — وإلا ظل الـcron يطرق باب متجر مغلق
+ *      ويستهلك حد المعدل ويملأ سجل الأخطاء بفشل متوقع.
+ *   ٣. ختم `salla_disconnected_at` ليعرض الداشبورد الحالة بصدق.
+ *
+ * بيانات المتجر (المنتجات، الأوصاف المعتمدة، الطابور) **تبقى**: التاجر قد
+ * يعيد التثبيت، و`upsertMerchantFromSalla` يعيده لنفس `merchantId` فيستأنف
+ * من حيث وقف. الحذف الكامل مسار منفصل بطلب صريح (data-deletion.html).
+ */
+export async function revokeSallaConnection(env, merchantId) {
+  if (!env?.DB || !merchantId) return { revoked: false };
+  const stmts = [
+    env.DB.prepare("DELETE FROM oauth_tokens WHERE merchant_id = ? AND platform = 'salla'").bind(merchantId),
+    env.DB.prepare("UPDATE bulk_jobs SET status = 'cancelled', updated_at = datetime('now') WHERE merchant_id = ? AND status = 'running'").bind(merchantId),
+    env.DB.prepare("UPDATE merchants SET salla_disconnected_at = datetime('now') WHERE id = ?").bind(merchantId)
+  ];
+  await env.DB.batch(stmts);
+  return { revoked: true, merchantId };
+}
+
+/** حالة الربط كما تُعرض للتاجر — بلا ادعاء "مربوط" لمتجر بلا توكن. */
+export async function getSallaConnectionState(env, merchantId) {
+  if (!env?.DB || !merchantId) return { connected: false, disconnectedAt: null };
+  const row = await env.DB.prepare(
+    `SELECT m.salla_disconnected_at AS d,
+            (SELECT COUNT(*) FROM oauth_tokens t WHERE t.merchant_id = m.id AND t.platform = 'salla') AS n
+       FROM merchants m WHERE m.id = ?`
+  )
+    .bind(merchantId)
+    .first()
+    .catch(() => null);
+  return { connected: Number(row?.n || 0) > 0, disconnectedAt: row?.d || null };
+}

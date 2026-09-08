@@ -215,7 +215,7 @@
           <div class="grid grid-cols-1 gap-2.5 text-xs">
             <div><span class="font-bold text-slate-600">العنوان:</span> <span id="outTitle" class="text-black"></span></div>
             <div><span class="font-bold text-slate-600">عنوان البحث:</span> <span id="outSeoTitle" class="text-black"></span></div>
-            <div><span class="font-bold text-slate-600">الرابط:</span> <span id="outSlug" class="text-black font-mono"></span></div>
+            <div><span class="font-bold text-slate-600">الرابط:</span> <span id="outSlug" dir="auto" class="text-black font-mono"></span></div>
             <div><span class="font-bold text-slate-600">وصف الميتا:</span> <span id="outMeta" class="text-black"></span></div>
             <div><span class="font-bold text-slate-600">الكلمة المفتاحية:</span> <span id="outFocusKw" class="text-black"></span></div>
             <div><span class="font-bold text-slate-600">الوسوم:</span> <span id="outTags" class="text-black"></span></div>
@@ -254,7 +254,7 @@
           <h2 class="text-lg font-black text-black">وصف منتجاتك بالجملة</h2>
           <p class="text-xs text-slate-600 font-medium">
             أسهل طريق: <b>توليد من منتجاتك المسحوبة</b> — يبدأ بالأعلى أثراً (بلا وصف، ثم القصير)، وما فوق حصة الشهر يُكمَل تلقائياً أول الشهر الجاي.
-            أو الصق قائمة يدوياً (سطر لكل منتج): <span dir="ltr" class="font-mono">اسم,سعر,فئة,SKU</span>.
+            أو الصق قائمة يدوياً (سطر لكل منتج): <span dir="auto" class="font-mono">اسم,سعر,فئة,<bdi>SKU</bdi></span>.
             <b>لا يُنشر شيء على سلة قبل ما تراجعه وتعتمده</b> بالقسم اللي تحت.
           </p>
         </div>
@@ -262,7 +262,7 @@
           <span class="material-symbols-outlined text-base">auto_awesome</span><span>ولّد أوصاف منتجاتي المسحوبة</span>
         </button>
         <div class="text-[11px] text-slate-500 font-bold text-center">— أو —</div>
-        <textarea id="bulkRows" rows="5" placeholder="عباية سوداء مطرزة,350,عبايات,SKU-001&#10;عطر عود ملكي 100مل,220,عطور,SKU-002" dir="ltr" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono focus:outline-none focus:border-black"></textarea>
+        <textarea id="bulkRows" rows="5" placeholder="عباية سوداء مطرزة,350,عبايات,SKU-001&#10;عطر عود ملكي 100مل,220,عطور,SKU-002" dir="auto" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono focus:outline-none focus:border-black"></textarea>
         <select id="bulkTone" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
           <option value="white">لهجة بيضاء تسويقية ودودة</option>
           <option value="formal">فصحى رسمية راقية</option>
@@ -448,6 +448,46 @@
             <span>اربط متجر سلة الآن</span>
           </a>
         </div>
+      </div>
+
+      <!-- ── فك الربط وحذف البيانات — متطلب صريح بمراجعة سلة، ووعد يُقال بفيديو
+           الاستخدام. عرضه بلا تنفيذه ادعاء؛ ولذلك يشرح ما يحدث بالضبط. ── -->
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="space-y-1 border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-black text-black">فك الربط وحذف البيانات</h2>
+          <p class="text-xs text-slate-600 font-medium">تحكّمك الكامل بوصول هالة لمتجرك</p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <span class="text-xs font-black text-black block">إيقاف وصول هالة لمتجرك</span>
+          <p class="text-[11px] text-slate-600 font-medium leading-relaxed">
+            أزل تطبيق هالة من <span class="font-black">إعدادات تطبيقاتك في سلة</span>.
+            بمجرد الإزالة ينقطع وصولنا لمنتجاتك فوراً: تُحذف مفاتيح الوصول من عندنا،
+            ويتوقف أي توليد أو نشر قيد التنفيذ.
+          </p>
+          <p class="text-[11px] text-slate-600 font-medium leading-relaxed">
+            أوصافك المولَّدة تبقى محفوظة هنا لو رجعت وثبّت التطبيق مرة ثانية —
+            ولحذفها نهائياً استخدم الرابط أدناه.
+          </p>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+          <span class="text-xs font-black text-black block">حذف بياناتك نهائياً</span>
+          <p class="text-[11px] text-slate-600 font-medium leading-relaxed">
+            الحذف نهائي ولا يمكن التراجع عنه.
+          </p>
+          <a href="/data-deletion.html" target="_blank" rel="noopener"
+             class="inline-flex items-center gap-2 sleek-btn-white px-4 py-2.5 rounded-xl text-xs font-black">
+            <span class="material-symbols-outlined text-base">delete_forever</span>
+            <span>صفحة طلب حذف البيانات</span>
+          </a>
+        </div>
+
+        <p class="text-[11px] text-slate-500 font-medium">
+          <a href="/privacy.html" target="_blank" rel="noopener" class="underline">سياسة الخصوصية</a>
+          ·
+          <a href="/terms.html" target="_blank" rel="noopener" class="underline">الشروط</a>
+        </p>
       </div>
     </section>
 
@@ -1040,9 +1080,9 @@
         });
         const data = await res.json();
         if (data?.ok) showPublishSuccess();
-        else showPublishError(data?.error || 'تعذر النشر.');
+        else showPublishError(data?.error, data?.code);
       } catch (e) {
-        showPublishError('تعذر الاتصال.');
+        showPublishError('ما قدرنا نتصل بسلة — تأكد من الإنترنت وجرّب مرة ثانية.');
       }
 
       publishing = false;
@@ -1063,10 +1103,27 @@
       fb.classList.remove('hidden');
     }
 
-    function showPublishError(msg) {
+    // رسالة الفشل يجب أن تُقرأ كخطأ (لا كإشعار محايد)، وتقول الخطوة التالية،
+    // وتطمئن التاجر أن نصه لم يضع — أكثر ما يخيفه عند فشل النشر أنه يعيد الكتابة.
+    const PUBLISH_ERRORS = {
+      SALLA_RATE_LIMITED: 'سلة أوقفت الطلبات مؤقتاً لأن عددها تجاوز الحد. انتظر دقيقة وجرّب مرة ثانية.',
+      SALLA_NOT_CONNECTED: 'متجرك غير مرتبط بسلة. افتح تبويب «متجري» واربطه، ثم أعد النشر.',
+      ACCOUNT_REQUIRED: 'أكمل بيانات حسابك قبل النشر على متجرك.',
+      LOGIN_REQUIRED: 'انتهت جلستك. سجّل دخولك من جديد ثم أعد النشر.'
+    };
+    function showPublishError(msg, code) {
       const fb = document.getElementById('publishFeedback');
-      fb.className = 'p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black';
-      fb.innerText = msg;
+      fb.className = 'p-3.5 rounded-xl text-xs font-bold bg-red-50 text-red-900 border border-red-300 space-y-1';
+      const text = (code && PUBLISH_ERRORS[code]) || msg || 'تعذر النشر.';
+      fb.innerHTML = '';
+      const line = document.createElement('p');
+      line.className = 'font-black';
+      line.innerText = '⚠︎ ' + text;
+      const keep = document.createElement('p');
+      keep.className = 'font-medium text-red-800';
+      keep.innerText = 'وصفك محفوظ هنا كما هو — ما ضاع شيء.';
+      fb.appendChild(line);
+      fb.appendChild(keep);
       fb.classList.remove('hidden');
     }
 
@@ -1209,7 +1266,7 @@
           ${r.imageUrl ? `<img src="${escHtml(r.imageUrl)}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-lg object-cover bg-slate-100" onerror="this.remove()">` : ''}
           <div class="flex-1 min-w-0">
             <div class="text-sm font-black text-black truncate">${escHtml(r.name || r.sku || '')}</div>
-            <div class="text-[11px] text-slate-500 font-mono" dir="ltr">${escHtml(r.sku || '')}${r.category ? ' · ' + escHtml(r.category) : ''}</div>
+            <div class="text-[11px] text-slate-500 font-mono" dir="auto"><bdi>${escHtml(r.sku || '')}</bdi>${r.category ? ' · ' + '<bdi>' + escHtml(r.category) + '</bdi>' : ''}</div>
           </div>
         </div>`;
       const current = r.currentDescription

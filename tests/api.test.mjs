@@ -2853,6 +2853,94 @@ async function runTests() {
     assert(/copywriting: lastCopy\.copywriting \|\| null/.test(dash) && /function publishExtras/.test(dash), "SALLA-11: النشر المفرد يرسل النقاط/الأسئلة، وشاشة المراجعة تعرض ما يُنشر مع الوصف");
   }
 
+  // ── فك الربط بسلة + رسالة الخطأ + النص المختلط (2026-09-09) ──────────
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const { revokeSallaConnection, getSallaConnectionState } = await import("../functions/_lib/core/db.js");
+    const hookSrc = read("../functions/api/webhooks/salla.js");
+    const dash = read("../dashboard.html");
+
+    assert(
+      /case "app\.uninstalled":/.test(hookSrc) && /revokeSallaConnection\(env, merchantId\)/.test(hookSrc),
+      "UNLINK-1: app.uninstalled معالَج ويستدعي فك الربط (كان مفقوداً كلياً)"
+    );
+    assert(
+      /case "app\.subscription\.expired":/.test(hookSrc) && /case "app\.trial\.expired":/.test(hookSrc),
+      "UNLINK-2: انتهاء الاشتراك/التجربة يُعامَل كفك ربط — لم يعد لنا إذن"
+    );
+
+    // التوكن يُحذف لا يُعطَّل، والمهام الجارية تُلغى، والختم يُسجَّل — بدفعة واحدة.
+    const sqlLog = [];
+    const revEnv = {
+      DB: {
+        prepare: (q) => ({ bind: (...b) => { sqlLog.push({ q: q.replace(/\s+/g, " ").trim(), b }); return { run: async () => ({}) }; } }),
+        batch: async (st) => st
+      }
+    };
+    const revOut = await revokeSallaConnection(revEnv, "m_test");
+    assert(
+      revOut.revoked === true && sqlLog.length === 3 &&
+        /DELETE FROM oauth_tokens/.test(sqlLog[0].q) && /platform = 'salla'/.test(sqlLog[0].q) &&
+        sqlLog[0].b[0] === "m_test",
+      "UNLINK-3: توكنات سلة تُحذف (لا تُعطَّل) للتاجر وحده"
+    );
+    assert(
+      /UPDATE bulk_jobs SET status = 'cancelled'/.test(sqlLog[1].q) && /status = 'running'/.test(sqlLog[1].q),
+      "UNLINK-4: مهام الجملة الجارية تُلغى — لا cron يطرق باب متجر مغلق"
+    );
+    assert(
+      /UPDATE merchants SET salla_disconnected_at/.test(sqlLog[2].q),
+      "UNLINK-5: ختم وقت فك الربط يُسجَّل ليُعرض بصدق"
+    );
+    assert(
+      (await revokeSallaConnection({}, "m_x")).revoked === false &&
+        (await revokeSallaConnection(revEnv, "")).revoked === false,
+      "UNLINK-6: بلا DB أو بلا تاجر لا كتابة ولا رمي"
+    );
+
+    const stEnv = (n, d) => ({ DB: { prepare: () => ({ bind: () => ({ first: async () => ({ n, d }) }) }) } });
+    assert(
+      (await getSallaConnectionState(stEnv(1, null), "m")).connected === true &&
+        (await getSallaConnectionState(stEnv(0, "2026-09-09"), "m")).connected === false,
+      "UNLINK-7: حالة الربط من وجود التوكن لا من عمود منفصل"
+    );
+    assert(
+      /ADD COLUMN salla_disconnected_at/.test(read("../migrations/0025_salla_disconnect.sql")),
+      "UNLINK-8: هجرة 0025 تضيف salla_disconnected_at"
+    );
+    assert(
+      /فك الربط وحذف البيانات/.test(dash) && /\/data-deletion\.html/.test(dash) && /\/privacy\.html/.test(dash),
+      "UNLINK-9: الداشبورد يعرض فك الربط وحذف البيانات وسياسة الخصوصية"
+    );
+
+    assert(
+      /bg-red-50/.test(dash) && /وصفك محفوظ هنا كما هو/.test(dash),
+      "ERRUI-1: فشل النشر يظهر كخطأ صريح مع طمأنة أن الوصف لم يضع"
+    );
+    assert(
+      /SALLA_RATE_LIMITED: '/.test(dash) && /showPublishError\(data\?\.error, data\?\.code\)/.test(dash),
+      "ERRUI-2: رموز أخطاء سلة تُترجم لرسائل عربية بخطوة تالية"
+    );
+    assert(
+      !/showPublishError\('تعذر الاتصال\.'\)/.test(dash) && /تأكد من الإنترنت وجرّب مرة ثانية/.test(dash),
+      "ERRUI-3: انقطاع الشبكة رسالته تقول ما يفعله التاجر"
+    );
+
+    assert(
+      !/dir="ltr" class="font-mono">اسم/.test(dash) && /<bdi>SKU<\/bdi>/.test(dash),
+      "BIDI-1: سطر صيغة الجملة يعزل SKU بدل فرض LTR على العربي"
+    );
+    assert(
+      /id="outSlug" dir="auto"/.test(dash),
+      "BIDI-2: الرابط العربي بخط مونو له اتجاه صريح"
+    );
+    assert(
+      /<bdi>\$\{escHtml\(r\.sku \|\| ''\)\}<\/bdi>/.test(dash),
+      "BIDI-3: بطاقة المنتج تعزل SKU عن الفئة العربية"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

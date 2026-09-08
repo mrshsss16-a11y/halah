@@ -9,9 +9,16 @@
 //   app.store.authorize → upsert merchant + save access/refresh tokens (this
 //                         IS the OAuth flow in Easy Mode — no callback dance)
 //   app.installed       → upsert merchant
+//   app.uninstalled     → حذف توكنات سلة + إلغاء مهام الجملة (فك ربط فوري)
 //   abandoned.cart      → store cart for the WhatsApp recovery feature
 //   order.created       → log (dashboard feed reads webhook_log for now)
-import { upsertMerchantFromSalla, saveTokens, logWebhook, saveAbandonedCart } from "../../_lib/core/db.js";
+import {
+  upsertMerchantFromSalla,
+  saveTokens,
+  logWebhook,
+  saveAbandonedCart,
+  revokeSallaConnection
+} from "../../_lib/core/db.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
 function json(data, status = 200) {
@@ -67,6 +74,18 @@ async function handleEvent(env, event, payload) {
         sallaMerchantId,
         storeName: (data.store && data.store.name) || data.store_name || null
       });
+    }
+    // كان هذا الحدث **مفقوداً**: التاجر يحذف التطبيق ويبقى توكن وصوله محفوظاً
+    // عندنا للأبد. سلة ترسل `app.uninstalled` عند الحذف، وقد ترسل
+    // `app.subscription.expired`/`app.trial.expired` عند انتهاء الاشتراك —
+    // الثلاثة تعني نفس الشيء أمنياً: لم يعد لنا إذن على هذا المتجر.
+    case "app.uninstalled":
+    case "app.subscription.expired":
+    case "app.trial.expired": {
+      if (!sallaMerchantId) return null;
+      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
+      await revokeSallaConnection(env, merchantId);
+      return merchantId;
     }
     case "abandoned.cart": {
       if (!sallaMerchantId) return null;
