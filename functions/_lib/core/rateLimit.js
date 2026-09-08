@@ -1,3 +1,4 @@
+import { logError } from "./errorLog.js";
 // Cloudflare sets cf-connecting-ip on every real request and it cannot be
 // spoofed by the client. Do NOT fall back to x-forwarded-for — that IS client
 // controlled, so an attacker would just rotate it to get a fresh limiter bucket
@@ -47,7 +48,7 @@ export async function checkRateLimit(env, clientIp, actionKey = "global", limit 
       resetInSeconds: ttl
     };
   } catch (error) {
-    console.error("Rate limit check failed", error);
+    logError({ env }, { requestId: null, path: "core/rateLimit", code: "RATE_LIMIT_CHECK_FAILED", internal: `${actionKey}: ${error?.message || error} — failing open` });
     return { allowed: true, remaining: limit, resetInSeconds: 0 };
   }
 }

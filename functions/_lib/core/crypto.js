@@ -60,3 +60,19 @@ export async function decryptSecret(env, payload) {
     return null;
   }
 }
+
+/**
+ * Constant-time string comparison for shared secrets (CRON_SECRET, bearer
+ * tokens). Mirrors the byte-XOR loop already used for webhook signatures in
+ * integrations/whatsapp.js and api/webhooks/salla.js — one helper instead of
+ * three copies. Length mismatch returns false immediately: the length of a
+ * shared secret is not sensitive, only its content is.
+ */
+export function timingSafeEqualStr(a, b) {
+  const x = String(a ?? "");
+  const y = String(b ?? "");
+  if (x.length !== y.length) return false;
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x.charCodeAt(i) ^ y.charCodeAt(i);
+  return diff === 0;
+}

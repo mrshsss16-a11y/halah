@@ -12,6 +12,7 @@
 //   abandoned.cart      → store cart for the WhatsApp recovery feature
 //   order.created       → log (dashboard feed reads webhook_log for now)
 import { upsertMerchantFromSalla, saveTokens, logWebhook, saveAbandonedCart } from "../../_lib/core/db.js";
+import { logError } from "../../_lib/core/errorLog.js";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -158,7 +159,7 @@ export async function onRequestPost(context) {
       try {
         merchantId = await handleEvent(env, event, payload);
       } catch (err) {
-        console.error("[salla-webhook]", event, err);
+        logError(context, { requestId: null, path: "webhooks/salla", code: "SALLA_EVENT_FAILED", internal: `${event}: ${err?.message || err}`, storeId: merchantId });
         // Temporary diagnostic (2026-08-08): app.store.authorize was silently
         // failing to persist tokens with zero trace of why. Capture the error
         // message (never the tokens themselves) so it's visible without a live

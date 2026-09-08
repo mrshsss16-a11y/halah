@@ -174,7 +174,10 @@ async function chatHandler(body, env, request) {
   // 2026-09-06, P24). No frontend ever sent botInstructions/storeInstructions;
   // dropping it is a pure fix, not a feature loss.
   const storeInstructions = ((saved && saved.instructions) || "").toString().slice(0, 2000);
-  const debug = env.HALA_DEBUG_AI === "1" || body.debug === true;
+  // Debug payload is gated by the env flag only. The request-body flag used to be honoured
+  // too, which let any caller pull the retrieved style examples out of the
+  // response (P23). The flag must stay unset on production.
+  const debug = env.HALA_DEBUG_AI === "1";
 
   const system = buildChatSystem({ dialect, storeInstructions, examples, products });
 

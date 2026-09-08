@@ -286,7 +286,7 @@ export async function onRequestPost(context) {
     }
     const conn = await getWaConnectionByPhoneId(env, phoneNumberId);
     if (conn) return { merchantId: conn.merchant_id, isAuraLine: false, conn };
-    console.error("[wa-webhook] unknown phone_number_id, dropping:", phoneNumberId);
+    logError(context, { requestId: null, path: "whatsapp/webhook", code: "WA_UNKNOWN_PHONE_ID", internal: `unknown phone_number_id ${phoneNumberId} — event dropped` });
     return null;
   }
 
@@ -307,7 +307,7 @@ export async function onRequestPost(context) {
           if (!route) continue;
           await recordWaOutbound(env, { merchantId: route.merchantId, phone: echo.to, body: echo.text, waMessageId: echo.id, source: "human" });
         } catch (err) {
-          console.error("[wa-webhook-echo]", err);
+          logError(context, { requestId: `wa:${echo.id}`, path: "whatsapp/webhook", code: "WA_ECHO_RECORD_FAILED", internal: err?.message || String(err) });
         }
       }
       for (const msg of inbound) {
@@ -334,7 +334,7 @@ export async function onRequestPost(context) {
               const outId = await sendWaText(env, { to: msg.from, body: confirmText, conn });
               await recordWaOutbound(env, { merchantId, phone: msg.from, body: confirmText, waMessageId: outId, source: "bot" });
             } else {
-              console.error("[wa-webhook] unmatched list_reply", msg.listReplyId);
+              logError(context, { requestId: `wa:${msg.id}`, path: "whatsapp/webhook", code: "WA_UNMATCHED_LIST_REPLY", internal: `list_reply id ${msg.listReplyId}`, storeId: merchantId });
             }
             continue;
           }
@@ -346,7 +346,7 @@ export async function onRequestPost(context) {
               const transcript = await env.AI.run('@cf/openai/whisper', { audio: [...new Uint8Array(audioBuffer)] });
               msg.text = transcript.text;
             } catch (err) {
-              console.error("[wa-webhook-audio]", err);
+              logError(context, { requestId: `wa:${msg.id}`, path: "whatsapp/webhook", code: "WA_AUDIO_TRANSCRIBE_FAILED", internal: err?.message || String(err), storeId: merchantId });
             }
           }
 
@@ -358,7 +358,7 @@ export async function onRequestPost(context) {
               // Treat the vision output as text context for the RAG autoReply.
               msg.text = `[أرسل العميل صورة. التفاصيل: ${visionText}]\n${msg.imageCaption ? `رسالة العميل: ${msg.imageCaption}` : ""}`;
             } catch (err) {
-              console.error("[wa-webhook-image]", err);
+              logError(context, { requestId: `wa:${msg.id}`, path: "whatsapp/webhook", code: "WA_IMAGE_VISION_FAILED", internal: err?.message || String(err), storeId: merchantId });
             }
           }
 
@@ -414,7 +414,7 @@ export async function onRequestPost(context) {
             }
           }
         } catch (err) {
-          console.error("[wa-webhook]", err);
+          logError(context, { requestId: `wa:${msg.id}`, path: "whatsapp/webhook", code: "WA_MESSAGE_HANDLING_FAILED", internal: err?.message || String(err), storeId: merchantId });
         }
       }
     })()

@@ -4,6 +4,7 @@
 // so this processes a small batch sequentially with an explicit delay
 // between items rather than a single big HTTP request or Promise.all.
 import { generateProductCopy } from "../copy.js";
+import { timingSafeEqualStr } from "../../_lib/core/crypto.js";
 import { updateProductBySku } from "../../_lib/integrations/salla.js";
 import {
   listActiveBulkJobItems,
@@ -37,7 +38,7 @@ export async function onRequestGet(context) {
   }
   const authHeader = request.headers.get("Authorization") || "";
   const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (provided !== env.CRON_SECRET) {
+  if (!timingSafeEqualStr(provided, env.CRON_SECRET)) {
     return new Response(JSON.stringify({ ok: false, error: "غير مصرّح بهذا الطلب.", code: "UNAUTHORIZED", requestId }), {
       status: 401,
       headers: { "content-type": "application/json" }

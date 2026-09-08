@@ -1,6 +1,7 @@
 // GET /api/cron/reminders
 // Automated 30-Minute WhatsApp Appointment Reminders Cron Trigger
 import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
+import { timingSafeEqualStr } from "../../_lib/core/crypto.js";
 import { generateRequestId } from "../../_lib/core/respond.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
@@ -67,7 +68,7 @@ export async function onRequestGet(context) {
   }
   const authHeader = request.headers.get("Authorization") || "";
   const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (provided !== env.CRON_SECRET) {
+  if (!timingSafeEqualStr(provided, env.CRON_SECRET)) {
     return new Response(JSON.stringify({ ok: false, error: "غير مصرّح بهذا الطلب.", code: "UNAUTHORIZED", requestId }), {
       status: 401,
       headers: { "content-type": "application/json" }
@@ -95,7 +96,7 @@ export async function onRequestGet(context) {
     // guards against re-sending — getTargetSlotLabel() is hour-granularity, so
     // the same booking would otherwise match on every run for close to an hour.
     const query = `
-      SELECT id, name, phone, preferred_slot_label
+      SELECT id, ticket_code, name, phone, preferred_slot_label
       FROM consultation_bookings
       WHERE (status = 'pending' OR status IS NULL)
         AND preferred_slot_label = ?
@@ -106,10 +107,19 @@ export async function onRequestGet(context) {
 
     let sent = 0;
     if (waConfigured(env) && results && results.length) {
-      const employeePhone = env.STORE_WA_PHONE || env.MERCHANT_WA_PHONE || "966500000000"; // Fallback to a default if not set
+      // No fabricated fallback number (honesty rule, AGENT.md §11 / P49): when no
+      // employee phone is configured the employee reminder is skipped and logged
+      // once per run — the client reminder still goes out.
+      const employeePhone = env.STORE_WA_PHONE || env.MERCHANT_WA_PHONE || null;
+      if (!employeePhone) {
+        logError(context, { requestId, path: "cron/reminders", code: "EMPLOYEE_PHONE_MISSING", internal: "STORE_WA_PHONE/MERCHANT_WA_PHONE not configured — employee reminders skipped" });
+      }
 
       for (const booking of results) {
-        const ticket = `AURA-${String(booking.id).padStart(5, "0")}`;
+        // P18: ticket_code column (written by saveConsultationBooking in core/db.js)
+        // is the single source of truth. The id-derived form is only a fallback
+        // for legacy rows created before migration 0009 added the column.
+        const ticket = booking.ticket_code || `AURA-${String(booking.id).padStart(5, "0")}`;
         const name = booking.name ? `أهلاً ${booking.name}` : "أهلاً بك";
         
         // Reminder for Client
@@ -124,11 +134,13 @@ export async function onRequestGet(context) {
           body: clientReminder
         }).catch(() => {});
 
-        // Send to Employee
-        await sendWaText(env, {
-          to: employeePhone,
-          body: employeeReminder
-        }).catch(() => {});
+        // Send to Employee (only when a real number is configured)
+        if (employeePhone) {
+          await sendWaText(env, {
+            to: employeePhone,
+            body: employeeReminder
+          }).catch(() => {});
+        }
 
         await env.DB.prepare("UPDATE consultation_bookings SET reminder_sent_at = datetime('now') WHERE id = ?")
           .bind(booking.id)

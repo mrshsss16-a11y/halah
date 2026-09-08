@@ -4,6 +4,7 @@
 // something breaks — deduped via KV so an ongoing outage doesn't spam every
 // 10 minutes, but re-alerts hourly if still down.
 import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
+import { timingSafeEqualStr } from "../../_lib/core/crypto.js";
 import { generateRequestId } from "../../_lib/core/respond.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
@@ -22,7 +23,7 @@ export async function onRequestGet(context) {
   }
   const authHeader = request.headers.get("Authorization") || "";
   const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (provided !== env.CRON_SECRET) {
+  if (!timingSafeEqualStr(provided, env.CRON_SECRET)) {
     return new Response(JSON.stringify({ ok: false, error: "غير مصرّح بهذا الطلب.", code: "UNAUTHORIZED", requestId }), {
       status: 401,
       headers: { "content-type": "application/json" }

@@ -246,13 +246,10 @@ graphify update .          # تحديث الجراف بعد التعديل (AST 
   `whatsapp/webhook.js` **مُقاس فعلاً** (`checkAndConsumeMonthly` — `webhook.js:110-111`).
   البند مغلق كلياً (P4 ✅). الفرع الأخير منه (fail-open عند فشل الفحص) **حُسم بقرار مدير
   2026-09-06** — انظر قسم "باطل" أعلاه، لم يعد دَيناً.
-- **رقم التذكرة لا يزال مزدوج المصدر (تصحيح: النسخة السابقة من هذا القسم ادّعت خطأً أنه موحَّد):**
-  `functions/_lib/core/db.js:524-527` يكتب عمود `ticket_code`، بينما
-  `functions/api/cron/reminders.js:112` **يعيد حسابه** من `booking.id`. الإصلاح:
-  `reminders.js` يقرأ العمود. — P18 ⬜ مفتوح.
+- ~~رقم التذكرة مزدوج المصدر~~ — P18 ✅ أُغلق 2026-09-08: `reminders.js` يقرأ `booking.ticket_code` (اختبار P18-1). معه أُزيل رقم الموظف المفبرك `966500000000` (P49) — غياب `STORE_WA_PHONE` = تخطي تذكير الموظف مع `logError`.
 - **`whatsapp/webhook.js` بلا `checkRateLimit` على الطلب الوارد:** الاستيراد موجود (سطر ١٥)
   لكن الاستدعاء الوحيد (سطر ١١٩) خنقُ تنبيهات داخلي، لا بوابة طلب. — P21 ⬜ مفتوح.
-- ٩ ملفات لا تزال تستخدم `console.error` خام بدل `logError()` — الهجرة جزئية.
+- ~~٩ ملفات `console.error` خام~~ — ✅ 2026-09-08: صفر `console.error` خارج `errorLog.js`، محروس باختبار LOG-1. P23 وP26 أُغلقا بنفس الدفعة (`timingSafeEqualStr` بـ`core/crypto.js`).
 - لا cron trigger أصلي بـ`wrangler.toml` — **معالج فعلياً** عبر `cron-worker/` منفصل (Pages لا يدعم cron triggers أصلاً)، هذا السطر توثيقي لا دَين حقيقي.
 - توكن واتساب دائم بدل المؤقت — **يفكّ الحجب الحالي**، أولوية قصوى (مسار د، `PARALLEL_TRACKS.md`).
 

@@ -1,3 +1,4 @@
+import { logError } from "./errorLog.js";
 // Core Security & Anti-Spam Module for Hala AI OS
 // Handles Cloudflare Turnstile bot verification, XSS input sanitization, and security headers.
 
@@ -43,7 +44,7 @@ export async function verifyTurnstileToken(env, token, clientIp = "") {
       error: data?.["error-codes"]?.[0] ?? "Turnstile verification failed"
     };
   } catch (err) {
-    console.error("[turnstile-error]", err);
+    logError({ env }, { requestId: null, path: "core/security.verifyTurnstileToken", code: "TURNSTILE_VERIFY_FAILED", internal: err?.message || String(err) });
     // Allow fallback on temporary network glitch if configured
     return { success: false, error: "Failed to reach verification service" };
   }

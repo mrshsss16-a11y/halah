@@ -1,6 +1,7 @@
 // POST /api/stats — real, honest numbers only (no fabricated social proof —
 // same rule enforced on the marketer persona itself in functions/_lib/persona.js).
 import { json } from "../_lib/core/respond.js";
+import { logError } from "../_lib/core/errorLog.js";
 
 // A missing table or a renamed column must not take the whole endpoint down —
 // this feeds public-facing counters, so degrade to 0 rather than 500.
@@ -9,7 +10,7 @@ async function scalar(env, sql, key, fallback = 0) {
   const row = await env.DB.prepare(sql)
     .first()
     .catch((err) => {
-      console.error("[stats]", key, err);
+      logError({ env }, { requestId: null, path: "stats", code: "STATS_QUERY_FAILED", internal: `${key}: ${err?.message || err}` });
       return null;
     });
   return row?.[key] ?? fallback;

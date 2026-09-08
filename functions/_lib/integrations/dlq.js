@@ -1,3 +1,4 @@
+import { logError } from "../core/errorLog.js";
 /**
  * Dead Letter Queue (DLQ) for failed webhooks.
  * Logs failed webhooks to D1 database for later retry or analysis.
@@ -22,7 +23,7 @@ export async function logFailedWebhook(env, { platform, event, merchantId, paylo
       
     return true;
   } catch (err) {
-    console.error("Failed to log webhook to DLQ:", err);
+    logError({ env }, { requestId: null, path: "integrations/dlq.logFailedWebhook", code: "DLQ_WRITE_FAILED", internal: err?.message || String(err), storeId: merchantId || null });
     return false;
   }
 }
@@ -46,7 +47,7 @@ export async function getFailedWebhooks(env, merchantId) {
       
     return results || [];
   } catch (err) {
-    console.error("Failed to retrieve failed webhooks:", err);
+    logError({ env }, { requestId: null, path: "integrations/dlq.getFailedWebhooks", code: "DLQ_READ_FAILED", internal: err?.message || String(err), storeId: merchantId || null });
     return [];
   }
 }

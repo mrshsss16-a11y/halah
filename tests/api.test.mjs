@@ -2352,6 +2352,46 @@ async function runTests() {
     );
   }
 
+  // ── المرحلة ١.٧ (COMPLETION_PATH) — P18 · P23 · P26 · console.error ─────
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const { timingSafeEqualStr } = await import("../functions/_lib/core/crypto.js");
+
+    assert(timingSafeEqualStr("abc", "abc") === true && timingSafeEqualStr("abc", "abd") === false
+      && timingSafeEqualStr("abc", "abcd") === false && timingSafeEqualStr(undefined, "") === true,
+      "P26-1: timingSafeEqualStr يطابق/يرفض صح ويتحمل undefined");
+    for (const f of ["bulk_process", "healthcheck", "reminders"]) {
+      const src = read(`../functions/api/cron/${f}.js`);
+      assert(!src.includes("provided !== env.CRON_SECRET") && src.includes("timingSafeEqualStr(provided, env.CRON_SECRET)"),
+        `P26-2: cron/${f} يقارن CRON_SECRET بمقارنة ثابتة الزمن`);
+    }
+
+    const rem = read("../functions/api/cron/reminders.js");
+    assert(/SELECT id, ticket_code,/.test(rem) && rem.includes("booking.ticket_code ||"),
+      "P18-1: التذكير يقرأ عمود ticket_code (المصدر الوحيد) بدل إعادة حسابه");
+    assert(!rem.includes("966500000000") && rem.includes("if (employeePhone)"),
+      "P49/P18-2: لا رقم موظف مفبرك — يُتخطى التذكير عند غياب الرقم");
+
+    const chat = read("../functions/api/chat.js");
+    assert(!chat.includes("body.debug"), "P23: علم debug لا يُقرأ من جسم الطلب — من البيئة فقط");
+
+    // كل console.error خام هاجر إلى logError (errorLog.js هو السنك الوحيد المسموح).
+    const { readdirSync, statSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const root = new URL("../functions", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
+    const offenders = [];
+    const walk = (dir) => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (p.endsWith(".js") && !p.endsWith("errorLog.js") && readFileSync(p, "utf8").includes("console.error(")) offenders.push(name);
+      }
+    };
+    walk(root);
+    assert(offenders.length === 0, `LOG-1: صفر console.error خام خارج errorLog.js (المخالف: ${offenders.join(", ") || "لا شيء"})`);
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

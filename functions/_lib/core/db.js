@@ -1,6 +1,7 @@
 // Unified D1 access layer (binding: DB → halah-tr-db). All queries live here —
 // endpoints never write raw SQL. merchants.id is the canonical storeId.
 import { encryptSecret, decryptSecret } from "./crypto.js";
+import { logError } from "./errorLog.js";
 import { sanitizeInput } from "./security.js";
 
 export async function getMerchant(env, merchantId) {
@@ -100,7 +101,7 @@ export async function logWebhook(env, { platform, event, merchantId, payload, si
       .bind(platform, event || null, merchantId || null, JSON.stringify(payload).slice(0, 8000), signatureOk ? 1 : 0)
       .run();
   } catch (err) {
-    console.error(`[logWebhook] Non-fatal DB error:`, err.message);
+    logError({ env }, { requestId: null, path: "core/db.logWebhook", code: "DB_LOG_WEBHOOK_FAILED", internal: err?.message });
   }
 }
 
@@ -277,7 +278,7 @@ export async function recordWaInbound(env, { merchantId, phone, name, body, waMe
       .bind(merchantId || "hala", phone, (body || "").slice(0, 4000), waMessageId || null)
       .run();
   } catch (err) {
-    console.error(`[recordWaInbound] Non-fatal DB error:`, err.message);
+    logError({ env }, { requestId: null, path: "core/db.recordWaInbound", code: "DB_RECORD_WA_INBOUND_FAILED", internal: err?.message, storeId: merchantId || null });
   }
 }
 
@@ -289,7 +290,7 @@ export async function recordWaOutbound(env, { merchantId, phone, body, waMessage
       .bind(merchantId || "hala", phone, (body || "").slice(0, 4000), waMessageId || null, source)
       .run();
   } catch (err) {
-    console.error(`[recordWaOutbound] Non-fatal DB error:`, err.message);
+    logError({ env }, { requestId: null, path: "core/db.recordWaOutbound", code: "DB_RECORD_WA_OUTBOUND_FAILED", internal: err?.message, storeId: merchantId || null });
   }
 }
 
@@ -729,7 +730,7 @@ export async function getWeeklyStoreStats(env, merchantId) {
       periodDays: 7
     };
   } catch (err) {
-    console.error("[getWeeklyStoreStats] Error compiling stats:", err);
+    logError({ env }, { requestId: null, path: "core/db.getWeeklyStoreStats", code: "DB_WEEKLY_STATS_FAILED", internal: err?.message || String(err) });
     return {
       merchantId,
       totalReplies: 35,
