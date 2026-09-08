@@ -866,11 +866,11 @@ export async function listActiveBulkJobItems(env, limit) {
 // off `item` rows already produced by listActiveBulkJobItems() below, which
 // joins bulk_jobs internally. No merchant-facing endpoint calls this directly;
 // if one ever does, it must pass through getBulkJob(jobId, merchantId) first.
-export async function completeBulkJobItem(env, { itemId, jobId, status, description, error }) {
+export async function completeBulkJobItem(env, { itemId, jobId, status, description, error, seoPayload = null, reviewId = null }) {
   await env.DB.prepare(
-    "UPDATE bulk_job_items SET status = ?, description = ?, error = ?, updated_at = datetime('now') WHERE id = ?"
+    "UPDATE bulk_job_items SET status = ?, description = ?, error = ?, seo_payload = ?, review_id = ?, updated_at = datetime('now') WHERE id = ?"
   )
-    .bind(status, description || null, error || null, itemId)
+    .bind(status, description || null, error || null, seoPayload === null ? null : String(seoPayload).slice(0, 20000), reviewId, itemId)
     .run();
 
   const succeededDelta = status === "done" ? 1 : 0;
@@ -1277,4 +1277,57 @@ export async function failCatalogSyncJob(env, jobId) {
   )
     .bind(jobId)
     .run();
+}
+
+// ── المرحلة ٢: إحياء المؤجَّل شهرياً (docs/PLAN_BULK_SEO.md §٦) ─────────────
+// صفوف قُصّت عن حصة الشهر تُخزَّن بحالة skipped وسبب DEFERRED_MARKER بدل رفضها.
+// يستدعيها الـcron كل تِك: لكل متجر عنده صفوف مؤجَّلة وحصة متبقية، يُعاد
+// حتى `remaining` صفاً إلى pending ويُفتح الطابور من جديد — التاجر لا يعيد شيئاً.
+export const DEFERRED_MARKER = "مؤجّل للشهر القادم";
+
+export async function listMerchantsWithDeferredItems(env, limit = 20) {
+  // tenant-audit-ok: استعلام cron عابر للمتاجر بالتصميم — يجمع المتاجر ذات الصفوف المؤجَّلة ثم كل ما بعده معزول بـmerchant_id.
+  const { results } = await env.DB.prepare(
+    `SELECT j.merchant_id AS merchant_id, COUNT(*) AS deferred
+       FROM bulk_job_items i JOIN bulk_jobs j ON j.id = i.job_id
+      WHERE i.status = 'skipped' AND i.error = ?
+      GROUP BY j.merchant_id ORDER BY MIN(i.updated_at) ASC LIMIT ?`
+  )
+    .bind(DEFERRED_MARKER, limit)
+    .all();
+  return results || [];
+}
+
+export async function reviveDeferredItems(env, { merchantId, limit }) {
+  const cap = Math.max(0, Math.floor(Number(limit) || 0));
+  if (!cap) return 0;
+  // الصفوف المؤجَّلة لهذا المتجر فقط (عبر bulk_jobs.merchant_id)، الأقدم أولاً.
+  const { results } = await env.DB.prepare(
+    `SELECT i.id AS id, i.job_id AS job_id
+       FROM bulk_job_items i JOIN bulk_jobs j ON j.id = i.job_id
+      WHERE j.merchant_id = ? AND i.status = 'skipped' AND i.error = ?
+      ORDER BY i.updated_at ASC, i.row_index ASC LIMIT ?`
+  )
+    .bind(merchantId, DEFERRED_MARKER, cap)
+    .all();
+  const rows = results || [];
+  if (!rows.length) return 0;
+
+  const stmts = [];
+  const jobs = new Set();
+  for (const r of rows) {
+    // tenant-audit-ok: id مصدره الاستعلام المعزول أعلاه (نفس الدالة)، لا مدخل عميل.
+    stmts.push(env.DB.prepare("UPDATE bulk_job_items SET status = 'pending', error = NULL, updated_at = datetime('now') WHERE id = ?").bind(r.id));
+    jobs.add(r.job_id);
+  }
+  for (const jobId of jobs) {
+    const n = rows.filter((r) => r.job_id === jobId).length;
+    stmts.push(
+      env.DB.prepare(
+        "UPDATE bulk_jobs SET status = 'running', processed = processed - ?, failed = failed - ?, updated_at = datetime('now') WHERE id = ? AND merchant_id = ?"
+      ).bind(n, n, jobId, merchantId)
+    );
+  }
+  await env.DB.batch(stmts);
+  return rows.length;
 }

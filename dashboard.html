@@ -253,11 +253,15 @@
         <div class="space-y-1 border-b border-slate-200 pb-4">
           <h2 class="text-lg font-black text-black">وصف منتجاتك بالجملة</h2>
           <p class="text-xs text-slate-600 font-medium">
-            الصق قائمة منتجات (سطر لكل منتج): <span dir="ltr" class="font-mono">اسم,سعر,فئة,SKU</span> —
-            يكتب الوصف لكل واحد ثم ينشره على سلة تلقائياً. بحكم حدود سلة، المعالجة تمشي تدريجياً
-            بالخلفية (~٦٠ منتج/دقيقة)، مو فورية.
+            أسهل طريق: <b>توليد من منتجاتك المسحوبة</b> — يبدأ بالأعلى أثراً (بلا وصف، ثم القصير)، وما فوق حصة الشهر يُكمَل تلقائياً أول الشهر الجاي.
+            أو الصق قائمة يدوياً (سطر لكل منتج): <span dir="ltr" class="font-mono">اسم,سعر,فئة,SKU</span>.
+            <b>لا يُنشر شيء على سلة قبل ما تراجعه وتعتمده</b> بالقسم اللي تحت.
           </p>
         </div>
+        <button id="bulkGenerateBtn" onclick="startCatalogGenerate()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-base">auto_awesome</span><span>ولّد أوصاف منتجاتي المسحوبة</span>
+        </button>
+        <div class="text-[11px] text-slate-500 font-bold text-center">— أو —</div>
         <textarea id="bulkRows" rows="5" placeholder="عباية سوداء مطرزة,350,عبايات,SKU-001&#10;عطر عود ملكي 100مل,220,عطور,SKU-002" dir="ltr" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono focus:outline-none focus:border-black"></textarea>
         <select id="bulkTone" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
           <option value="white">لهجة بيضاء تسويقية ودودة</option>
@@ -266,7 +270,7 @@
           <option value="deals">حماس عروض</option>
           <option value="funny">خفة دم سعودية</option>
         </select>
-        <button id="bulkBtn" onclick="startBulkJob()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition">ابدأ المعالجة بالجملة</button>
+        <button id="bulkBtn" onclick="startBulkJob()" class="w-full sleek-btn-white py-3.5 rounded-xl text-xs transition">ابدأ التوليد من القائمة الملصوقة</button>
         <div id="bulkFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
 
         <div id="bulkProgress" class="hidden space-y-2 pt-2">
@@ -279,6 +283,39 @@
           </div>
           <div id="bulkFailedList" class="text-[11px] text-rose-700 space-y-0.5"></div>
         </div>
+      </div>
+
+      <!-- ── المراجعة الجماعية (المرحلة ٢): الـAI يقترح، التاجر يقرر ── -->
+      <div id="reviewCard" class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4 flex-wrap">
+          <div class="space-y-1">
+            <h2 class="text-lg font-black text-black">راجع واعتمد — قبل أي نشر</h2>
+            <p id="reviewCountsLine" class="text-xs text-slate-600 font-medium">كل وصف مولَّد بالجملة يمرّ من هنا. ما يُنشر على سلة إلا ما تعتمده.</p>
+          </div>
+          <button onclick="loadReview(reviewState)" class="sleek-btn-white px-3 py-2 rounded-xl text-xs transition flex items-center gap-1">
+            <span class="material-symbols-outlined text-base">refresh</span><span>تحديث</span>
+          </button>
+        </div>
+
+        <div class="flex gap-2 flex-wrap text-[11px] font-bold">
+          <button data-state="pending" onclick="loadReview('pending')" class="review-tab tab-on px-3 py-1.5 rounded-lg">بانتظار مراجعتك <span id="rvPending">0</span></button>
+          <button data-state="awaiting_publish" onclick="loadReview('awaiting_publish')" class="review-tab tab-off px-3 py-1.5 rounded-lg">معتمد بانتظار النشر <span id="rvAwaiting">0</span></button>
+          <button data-state="published" onclick="loadReview('published')" class="review-tab tab-off px-3 py-1.5 rounded-lg">نُشر على سلة <span id="rvPublished">0</span></button>
+          <button data-state="publish_failed" onclick="loadReview('publish_failed')" class="review-tab tab-off px-3 py-1.5 rounded-lg">فشل نشره <span id="rvFailed">0</span></button>
+          <button data-state="rejected" onclick="loadReview('rejected')" class="review-tab tab-off px-3 py-1.5 rounded-lg">مرفوض <span id="rvRejected">0</span></button>
+        </div>
+
+        <div id="reviewActions" class="hidden flex gap-2 flex-wrap">
+          <button onclick="decideReview('approve_all')" class="sleek-btn-black px-4 py-2.5 rounded-xl text-xs transition">اعتمد الكل</button>
+          <button onclick="decideReview('approve')" class="sleek-btn-white px-4 py-2.5 rounded-xl text-xs transition">اعتمد المحدد</button>
+          <button onclick="decideReview('reject')" class="sleek-btn-white px-4 py-2.5 rounded-xl text-xs transition text-rose-700">ارفض المحدد</button>
+          <label class="text-[11px] font-bold text-slate-600 flex items-center gap-1 mr-auto"><input type="checkbox" id="reviewSelectAll" onchange="toggleReviewAll(this.checked)"> تحديد الكل</label>
+        </div>
+
+        <div id="reviewFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+        <div id="reviewLoading" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري التحميل…</div>
+        <div id="reviewEmpty" class="hidden text-xs text-slate-500 font-medium py-6 text-center">لا شيء هنا الآن.</div>
+        <div id="reviewList" class="space-y-3"></div>
       </div>
     </section>
 
@@ -513,6 +550,7 @@
       if (tab === 'agent') { loadAgentContext(); loadWaStatus(); }
       if (tab === 'store') loadStore();
       if (tab === 'catalog' && !catalogLoadedOnce) loadCatalog(0);
+      if (tab === 'studio' && !reviewLoadedOnce) { reviewLoadedOnce = true; loadReview('pending'); }
     }
 
     // ── منتجاتي (كتالوج سلة المسحوب) ───────────────────────────────────
@@ -1063,14 +1101,177 @@
           failedEl.innerHTML = (data.failedItems || []).map(i => `${escHtml(i.sku)} — ${escHtml(i.error || 'فشل')}`).join('<br>');
 
           if (data.status === 'done') {
-            document.getElementById('bulkProgressLabel').innerText = `اكتمل: ${data.succeeded} نجح، ${data.failed} فشل`;
+            document.getElementById('bulkProgressLabel').innerText = `اكتمل: ${data.succeeded} جاهز للمراجعة، ${data.failed} فشل/مؤجَّل`;
             clearInterval(bulkPollTimer);
             document.getElementById('bulkBtn').disabled = false;
+            loadReview('pending');
+          } else if (data.succeeded > 0 && (data.processed % 20 === 0)) {
+            loadReview(reviewState);
           }
         } catch (e) { /* keep polling */ }
       };
       tick();
       bulkPollTimer = setInterval(tick, 15000);
+    }
+
+    // ── توليد من الكتالوج (المرحلة ٢) ─────────────────────────
+    async function startCatalogGenerate() {
+      const btn = document.getElementById('bulkGenerateBtn');
+      btn.disabled = true;
+      document.getElementById('bulkFeedback').classList.add('hidden');
+      try {
+        const res = await fetch('/api/store/bulk/generate', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tone: document.getElementById('bulkTone').value })
+        });
+        const data = await res.json();
+        if (!data?.ok) { showMsg('bulkFeedback', data?.error || 'تعذر بدء التوليد.'); btn.disabled = false; return; }
+        showMsg('bulkFeedback', data.message + (data.upgradeHint ? ' ' + data.upgradeHint : '') + ` (تقدير: ~${data.etaMinutes} دقيقة)`);
+        document.getElementById('bulkProgress').classList.remove('hidden');
+        pollBulkJob(data.jobId);
+      } catch (e) { showMsg('bulkFeedback', 'تعذر الاتصال.'); }
+      btn.disabled = false;
+    }
+
+    // ── المراجعة الجماعية (المرحلة ٢) ─────────────────────────
+    let reviewState = 'pending';
+    let reviewLoadedOnce = false;
+    let reviewRows = [];
+
+    function setReviewCounts(c) {
+      if (!c) return;
+      document.getElementById('rvPending').innerText = c.pending;
+      document.getElementById('rvAwaiting').innerText = c.awaitingPublish;
+      document.getElementById('rvPublished').innerText = c.published;
+      document.getElementById('rvFailed').innerText = c.publishFailed;
+      document.getElementById('rvRejected').innerText = c.rejected;
+      const parts = [];
+      if (c.pending) parts.push(`${c.pending} بانتظار قرارك`);
+      if (c.awaitingPublish) parts.push(`${c.awaitingPublish} معتمد يُنشر خلال دقائق (بحدود سلة: ~٢٠ كل ١٠ دقائق)`);
+      if (c.publishFailed) parts.push(`${c.publishFailed} فشل نشره`);
+      document.getElementById('reviewCountsLine').innerText = parts.length ? parts.join(' · ') : 'كل وصف مولَّد بالجملة يمرّ من هنا. ما يُنشر على سلة إلا ما تعتمده.';
+    }
+
+    function reviewCard(r) {
+      const div = document.createElement('div');
+      div.className = 'rounded-2xl border border-slate-200 bg-white p-4 space-y-2';
+      div.dataset.id = r.id;
+      const head = `<div class="flex items-start gap-2">
+          ${reviewState === 'pending' ? `<input type="checkbox" class="review-check mt-1" data-id="${r.id}">` : ''}
+          ${r.imageUrl ? `<img src="${escHtml(r.imageUrl)}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-lg object-cover bg-slate-100" onerror="this.remove()">` : ''}
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-black text-black truncate">${escHtml(r.name || r.sku || '')}</div>
+            <div class="text-[11px] text-slate-500 font-mono" dir="ltr">${escHtml(r.sku || '')}${r.category ? ' · ' + escHtml(r.category) : ''}</div>
+          </div>
+        </div>`;
+      const current = r.currentDescription
+        ? `<details class="text-[11px] text-slate-600"><summary class="cursor-pointer font-bold">الوصف الحالي على سلة</summary><div class="mt-1 whitespace-pre-wrap">${escHtml(r.currentDescription)}</div></details>`
+        : `<div class="text-[11px] text-slate-500 font-bold">الحالي: بلا وصف</div>`;
+      let body = '';
+      if (reviewState === 'pending') {
+        body = `<textarea class="review-desc w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" rows="5" data-id="${r.id}">${escHtml(r.description || '')}</textarea>
+          <div class="flex gap-2 items-center">
+            <button onclick="saveReviewEdit(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">احفظ تعديلي</button>
+            <span class="text-[10px] text-slate-500">${r.seo?.title ? 'عنوان SEO: ' + escHtml(r.seo.title) : ''}</span>
+          </div>`;
+      } else {
+        body = `<div class="text-xs text-black whitespace-pre-wrap">${escHtml(r.description || '')}</div>`;
+        if (reviewState === 'publish_failed') {
+          body += `<div class="text-[11px] text-rose-700 font-bold">${escHtml(r.publishError || 'فشل النشر')}</div>
+            <button onclick="retryReview(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">أعد المحاولة</button>`;
+        }
+        if (reviewState === 'published') {
+          body += `<div class="flex gap-2 items-center"><span class="text-[11px] text-slate-500">نُشر ${escHtml((r.publishedAt || '').slice(0, 16))}</span>
+            <button onclick="revertReview('${escHtml(r.sku || '')}')" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px] text-rose-700">تراجع — رجّع الأصل</button></div>`;
+        }
+        if (reviewState === 'rejected' && r.reviewNote) body += `<div class="text-[11px] text-slate-500">السبب: ${escHtml(r.reviewNote)}</div>`;
+      }
+      div.innerHTML = head + current + body;
+      return div;
+    }
+
+    async function loadReview(state) {
+      reviewState = state || 'pending';
+      document.querySelectorAll('.review-tab').forEach(b => {
+        const on = b.dataset.state === reviewState;
+        b.classList.toggle('tab-on', on); b.classList.toggle('tab-off', !on);
+      });
+      document.getElementById('reviewActions').classList.toggle('hidden', reviewState !== 'pending');
+      const list = document.getElementById('reviewList');
+      const loading = document.getElementById('reviewLoading');
+      const empty = document.getElementById('reviewEmpty');
+      list.innerHTML = ''; empty.classList.add('hidden'); loading.classList.remove('hidden');
+      document.getElementById('reviewFeedback').classList.add('hidden');
+      try {
+        const res = await fetch('/api/store/review/list', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ state: reviewState, limit: 100 })
+        });
+        const data = await res.json();
+        loading.classList.add('hidden');
+        if (!data?.ok) { showMsg('reviewFeedback', data?.error || 'تعذر التحميل.'); return; }
+        setReviewCounts(data.counts);
+        reviewRows = data.rows || [];
+        if (!reviewRows.length) { empty.classList.remove('hidden'); return; }
+        reviewRows.forEach(r => list.appendChild(reviewCard(r)));
+      } catch (e) { loading.classList.add('hidden'); showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+    }
+
+    function selectedReviewIds() {
+      return [...document.querySelectorAll('.review-check:checked')].map(c => Number(c.dataset.id));
+    }
+    function toggleReviewAll(on) { document.querySelectorAll('.review-check').forEach(c => { c.checked = on; }); }
+
+    async function postDecide(payload) {
+      const res = await fetch('/api/store/review/decide', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      return res.json();
+    }
+
+    async function decideReview(action) {
+      const payload = { action };
+      if (action !== 'approve_all') {
+        payload.ids = selectedReviewIds();
+        if (!payload.ids.length) { showMsg('reviewFeedback', 'حدّد عنصراً واحداً على الأقل.'); return; }
+      }
+      try {
+        const data = await postDecide(payload);
+        if (!data?.ok) { showMsg('reviewFeedback', data?.error || 'تعذر التنفيذ.'); return; }
+        const n = data.approved ?? data.rejected ?? 0;
+        const failedNote = (data.failed || []).length ? ` (${data.failed.length} ما انطبق عليه)` : '';
+        showMsg('reviewFeedback', action === 'reject'
+          ? `رُفض ${n}${failedNote}.`
+          : `اعتُمد ${n}${failedNote} — يُنشر على سلة تدريجياً خلال دقائق، تابع تبويب «معتمد بانتظار النشر».`);
+        setReviewCounts(data.counts);
+        loadReview('pending');
+      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+    }
+
+    async function saveReviewEdit(id) {
+      const ta = document.querySelector(`.review-desc[data-id="${id}"]`);
+      if (!ta) return;
+      try {
+        const data = await postDecide({ action: 'update', id, description: ta.value });
+        showMsg('reviewFeedback', data?.ok ? 'حُفظ تعديلك — اللي يُنشر هو النص المكتوب هنا بالضبط.' : (data?.error || 'تعذر الحفظ.'));
+      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+    }
+
+    async function retryReview(id) {
+      try {
+        const data = await postDecide({ action: 'retry', id });
+        showMsg('reviewFeedback', data?.ok ? data.message : (data?.error || 'تعذر.'));
+        loadReview('publish_failed');
+      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+    }
+
+    async function revertReview(sku) {
+      if (!confirm('نرجّع الوصف الأصلي لهذا المنتج على سلة؟')) return;
+      try {
+        const data = await postDecide({ action: 'revert', sku });
+        showMsg('reviewFeedback', data?.ok ? data.message : (data?.error || 'تعذر التراجع.'));
+        loadReview('published');
+      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
     }
 
     // ── Agent settings ────────────────────────────────────────
@@ -1287,6 +1488,8 @@
       } catch (e) {}
       loadUsage();
       loadStore();
+      reviewLoadedOnce = true;
+      loadReview('pending');
 
       if (inSallaFrame) window.salla?.embedded?.ready?.();
     });

@@ -212,3 +212,201 @@ export async function recordPublishResult(env, { merchantId, id, externalId = nu
   }
   return row;
 }
+
+// ── المرحلة ٢ (docs/COMPLETION_PATH.md) — المراجعة الجماعية والنشر المتأخر ──
+
+const MAX_BATCH_IDS = 100;
+
+/**
+ * اعتماد جماعي: حلقة فوق transition (لا SQL جديد) — كل صف يمر بنفس شرط
+ * `status = 'pending' AND merchant_id = ?`. فشل صف (مُراجَع مسبقاً، أو لمتجر
+ * ثانٍ) لا يوقف الباقي ولا يُخفى: يُعاد بقائمة failed مع سببه.
+ */
+export async function approveMany(env, { merchantId, ids, reviewedBy }) {
+  const list = Array.isArray(ids) ? ids.slice(0, MAX_BATCH_IDS) : [];
+  if (!list.length) throw invalid("لم تحدد أي عنصر.", "reviewQueue.approveMany: empty ids");
+  const approved = [];
+  const failed = [];
+  for (const id of list) {
+    try {
+      const row = await transition(env, { merchantId, id, reviewedBy, next: "approved" });
+      approved.push(row);
+    } catch (err) {
+      failed.push({ id, error: err?.userMessage || err?.message || "تعذّر الاعتماد." });
+    }
+  }
+  return { approved, failed };
+}
+
+export async function rejectMany(env, { merchantId, ids, reviewedBy, reason = null }) {
+  const list = Array.isArray(ids) ? ids.slice(0, MAX_BATCH_IDS) : [];
+  if (!list.length) throw invalid("لم تحدد أي عنصر.", "reviewQueue.rejectMany: empty ids");
+  const rejected = [];
+  const failed = [];
+  for (const id of list) {
+    try {
+      const row = await transition(env, { merchantId, id, reviewedBy, next: "rejected", reason });
+      rejected.push(row);
+    } catch (err) {
+      failed.push({ id, error: err?.userMessage || err?.message || "تعذّر الرفض." });
+    }
+  }
+  return { rejected, failed };
+}
+
+/**
+ * تحرير سطري قبل الاعتماد: يُدمج `patch` فوق الحمولة الحالية — مشروط
+ * `status = 'pending'` (ما اعتُمد أو رُفض لا يُعدَّل بصمت بعد القرار).
+ * القراءة والكتابة بعبارتين: الدمج يحتاج المحتوى الحالي، ثم الكتابة بشرط
+ * pending — لو تغيّرت الحالة بينهما تفشل الكتابة صراحة (٤٠٤)، لا نجاح كاذب.
+ */
+export async function updatePayload(env, { merchantId, id, patch }) {
+  const db = requireDb(env);
+  const mid = requireMerchantId(merchantId);
+  const rowId = requireId(id);
+  if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
+    throw invalid("التعديل غير صالح.", "reviewQueue.updatePayload: patch not an object");
+  }
+
+  const current = await db
+    .prepare(`SELECT payload FROM review_queue WHERE id = ? AND merchant_id = ? AND status = 'pending'`)
+    .bind(rowId, mid)
+    .first();
+  if (!current) {
+    throw new ApiError(404, "العنصر غير موجود أو تمت مراجعته مسبقاً.", "REVIEW_NOT_PENDING", "reviewQueue.updatePayload: no pending row");
+  }
+
+  let base;
+  try {
+    base = JSON.parse(current.payload);
+  } catch {
+    throw invalid("محتوى العنصر غير قابل للتعديل.", "reviewQueue.updatePayload: payload not JSON");
+  }
+  if (!base || typeof base !== "object" || Array.isArray(base)) {
+    throw invalid("محتوى العنصر غير قابل للتعديل.", "reviewQueue.updatePayload: payload not an object");
+  }
+
+  const merged = normalizePayload({ ...base, ...patch, editedAt: new Date().toISOString() });
+  const updated = await db
+    .prepare(
+      `UPDATE review_queue SET payload = ?
+        WHERE id = ? AND merchant_id = ? AND status = 'pending'
+        RETURNING id, merchant_id, kind, payload, status, created_at`
+    )
+    .bind(merged, rowId, mid)
+    .first();
+  if (!updated) {
+    throw new ApiError(404, "العنصر غير موجود أو تمت مراجعته مسبقاً.", "REVIEW_NOT_PENDING", "reviewQueue.updatePayload: lost race");
+  }
+  return updated;
+}
+
+/** عدّادات صادقة لشاشة المراجعة: معلّق · معتمد بانتظار النشر · نُشر · فشل نشره · مرفوض. */
+export async function countByState(env, { merchantId, kind }) {
+  const db = requireDb(env);
+  const mid = requireMerchantId(merchantId);
+  if (!REVIEW_KINDS.includes(kind)) throw invalid("نوع المحتوى غير مدعوم.", "reviewQueue.countByState: unknown kind");
+  const row = await db
+    .prepare(
+      `SELECT
+         SUM(status = 'pending') AS pending,
+         SUM(status = 'approved' AND published_at IS NULL AND publish_error IS NULL) AS awaiting_publish,
+         SUM(status = 'approved' AND published_at IS NOT NULL) AS published,
+         SUM(status = 'approved' AND published_at IS NULL AND publish_error IS NOT NULL) AS publish_failed,
+         SUM(status = 'rejected') AS rejected
+       FROM review_queue WHERE merchant_id = ? AND kind = ?`
+    )
+    .bind(mid, kind)
+    .first();
+  return {
+    pending: Number(row?.pending || 0),
+    awaitingPublish: Number(row?.awaiting_publish || 0),
+    published: Number(row?.published || 0),
+    publishFailed: Number(row?.publish_failed || 0),
+    rejected: Number(row?.rejected || 0)
+  };
+}
+
+const STATE_WHERE = {
+  awaiting_publish: "status = 'approved' AND published_at IS NULL AND publish_error IS NULL",
+  published: "status = 'approved' AND published_at IS NOT NULL",
+  publish_failed: "status = 'approved' AND published_at IS NULL AND publish_error IS NOT NULL",
+  rejected: "status = 'rejected'"
+};
+
+/** صفوف بحالة نشر معيّنة لمتجر واحد — لشاشة المراجعة (published/failed/rejected). */
+export async function listByState(env, { merchantId, kind, state, limit = DEFAULT_LIMIT }) {
+  const db = requireDb(env);
+  const mid = requireMerchantId(merchantId);
+  const cap = Math.min(Math.max(Number(limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+  if (!REVIEW_KINDS.includes(kind)) throw invalid("نوع المحتوى غير مدعوم.", "reviewQueue.listByState: unknown kind");
+  const where = STATE_WHERE[state];
+  if (!where) throw invalid("الحالة غير مدعومة.", "reviewQueue.listByState: unknown state");
+  // tenant-audit-ok: الشرط `merchant_id = ?` ثابت بالنص؛ `where` أحد أربعة نصوص ثابتة بـSTATE_WHERE، لا مدخل عميل.
+  const { results } = await db
+    .prepare(
+      `SELECT id, merchant_id, kind, payload, status, reviewed_at, published_at, publish_error, review_note
+         FROM review_queue WHERE merchant_id = ? AND kind = ? AND ${where}
+        ORDER BY COALESCE(reviewed_at, created_at) DESC, id DESC LIMIT ?`
+    )
+    .bind(mid, kind, cap)
+    .all();
+  return results || [];
+}
+
+/**
+ * إعادة محاولة نشر صف معتمد فشل نشره: يمسح publish_error فقط. الحالة لا تُمس
+ * (القرار البشري قائم)، والـcron يلتقطه بالتِك التالي.
+ */
+export async function retryPublish(env, { merchantId, id }) {
+  const db = requireDb(env);
+  const mid = requireMerchantId(merchantId);
+  const rowId = requireId(id);
+  const row = await db
+    .prepare(
+      `UPDATE review_queue SET publish_error = NULL
+        WHERE id = ? AND merchant_id = ? AND status = 'approved' AND published_at IS NULL
+        RETURNING id, merchant_id, status`
+    )
+    .bind(rowId, mid)
+    .first();
+  if (!row) throw new ApiError(404, "العنصر غير موجود أو نُشر فعلاً.", "REVIEW_NOT_APPROVED", "reviewQueue.retryPublish: no row");
+  return row;
+}
+
+/**
+ * للـcron فقط: أي متجر عنده أوصاف معتمدة لم تُنشر؟ يُعاد **متجر واحد** لكل تِك
+ * (الأقدم اعتماداً) — حد سلة ١ طلب/ثانية **لكل متجر**، فتقييد التِك بمتجر واحد
+ * يجعل الفاصل الثابت فاصلاً حقيقياً لذلك المتجر، لا فاصلاً عاماً ينكسر مع
+ * متجرين نشطين (المخاطرة ١ بـdocs/PLAN_BULK_SEO.md).
+ */
+export async function claimNextPublishMerchant(env, { kind = "description" } = {}) {
+  const db = requireDb(env);
+  // tenant-audit-ok: استعلام cron عابر للمتاجر بالتصميم — يختار متجراً واحداً ثم كل ما بعده معزول به.
+  const row = await db
+    .prepare(
+      `SELECT merchant_id FROM review_queue
+        WHERE kind = ? AND status = 'approved' AND published_at IS NULL AND publish_error IS NULL
+        ORDER BY reviewed_at ASC, id ASC LIMIT 1`
+    )
+    .bind(kind)
+    .first();
+  return row?.merchant_id || null;
+}
+
+/** المعتمَد غير المنشور لمتجر واحد، الأقدم اعتماداً أولاً (يطابق idx_review_queue_unpublished). */
+export async function listApprovedUnpublished(env, { merchantId, kind = "description", limit = DEFAULT_LIMIT }) {
+  const db = requireDb(env);
+  const mid = requireMerchantId(merchantId);
+  const cap = Math.min(Math.max(Number(limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+  const { results } = await db
+    .prepare(
+      `SELECT id, merchant_id, kind, payload, status, reviewed_by, reviewed_at
+         FROM review_queue
+        WHERE merchant_id = ? AND kind = ? AND status = 'approved' AND published_at IS NULL AND publish_error IS NULL
+        ORDER BY reviewed_at ASC, id ASC LIMIT ?`
+    )
+    .bind(mid, kind, cap)
+    .all();
+  return results || [];
+}

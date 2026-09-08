@@ -132,19 +132,22 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = l
     // يمنع أي كتابة فوق صف تاجر ثانٍ حتى لو تكرر SKU بين متجرين.
     const stmt = db.prepare(
       `INSERT INTO store_products
-         (merchant_id, sku, salla_product_id, name, price, category, current_description, image_url, synced_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+         (merchant_id, sku, salla_product_id, name, price, category, current_description, original_description, image_url, synced_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
        ON CONFLICT(merchant_id, sku) DO UPDATE SET
          salla_product_id = excluded.salla_product_id,
          name = excluded.name,
          price = excluded.price,
          category = excluded.category,
          current_description = excluded.current_description,
+         -- الأصل يُكتب مرة واحدة فقط (migrations/0022) — السحب لا يمحو ما
+         -- يحتاجه "التراجع" بعد نشر هالة.
+         original_description = COALESCE(store_products.original_description, excluded.current_description),
          image_url = excluded.image_url,
          synced_at = datetime('now')`
     );
     const batch = rows.map((r) =>
-      stmt.bind(mid, r.sku, r.sallaProductId, r.name, r.price, r.category, r.currentDescription, r.imageUrl)
+      stmt.bind(mid, r.sku, r.sallaProductId, r.name, r.price, r.category, r.currentDescription, r.currentDescription, r.imageUrl)
     );
     for (let i = 0; i < batch.length; i += UPSERT_CHUNK) {
       await db.batch(batch.slice(i, i + UPSERT_CHUNK));
@@ -200,7 +203,7 @@ export async function getCatalogItem(env, { merchantId, sku } = {}) {
 
   return db
     .prepare(
-      `SELECT sku, salla_product_id, name, price, category, current_description, image_url, synced_at
+      `SELECT sku, salla_product_id, name, price, category, current_description, original_description, hala_published_at, image_url, synced_at
        FROM store_products WHERE merchant_id = ? AND sku = ?`
     )
     .bind(mid, key)
@@ -216,4 +219,65 @@ export async function countCatalog(env, { merchantId } = {}) {
     .bind(mid)
     .first();
   return Number(row?.n || 0);
+}
+
+/**
+ * أولوية الحصة (docs/PLAN_BULK_SEO.md §٦): أعلى عائد SEO أولاً —
+ * بلا وصف إطلاقاً ← وصف قصير (< ٨٠ حرفاً) ← الأحدث سحباً. يُحسب من الجدول
+ * المحلي، صفر طلبات سلة. المنتجات التي نشرت عليها هالة سابقاً تأتي آخراً.
+ */
+export async function listPriorityCatalog(env, { merchantId, limit = 500 } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const cap = Math.min(Math.max(Number(limit) || 1, 1), 500);
+  const { results } = await db
+    .prepare(
+      `SELECT sku, name, price, category, current_description, image_url, hala_published_at
+         FROM store_products
+        WHERE merchant_id = ?
+        ORDER BY (hala_published_at IS NOT NULL) ASC,
+                 (COALESCE(LENGTH(current_description), 0) = 0) DESC,
+                 (COALESCE(LENGTH(current_description), 0) < 80) DESC,
+                 synced_at DESC
+        LIMIT ?`
+    )
+    .bind(mid, cap)
+    .all();
+  return results || [];
+}
+
+/**
+ * بعد نشر هالة وصفاً على سلة: الحالي = ما نُشر، والأصل يبقى كما هو.
+ * لا يُنشئ صفاً: منتج غير مسحوب (مسار CSV اليدوي) يبقى بلا صف — لا نخترع
+ * بيانات كتالوج من صف رفع يدوي.
+ */
+export async function markPublished(env, { merchantId, sku, description } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const key = text(sku, 100);
+  if (!key) return;
+  await db
+    .prepare(
+      `UPDATE store_products
+          SET current_description = ?, hala_published_at = datetime('now')
+        WHERE merchant_id = ? AND sku = ?`
+    )
+    .bind(text(description, 20000), mid, key)
+    .run();
+}
+
+/** بعد التراجع: الحالي يعود للأصل، وعلامة نشر هالة تُمسح. */
+export async function markReverted(env, { merchantId, sku } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const key = text(sku, 100);
+  if (!key) return;
+  await db
+    .prepare(
+      `UPDATE store_products
+          SET current_description = original_description, hala_published_at = NULL
+        WHERE merchant_id = ? AND sku = ?`
+    )
+    .bind(mid, key)
+    .run();
 }

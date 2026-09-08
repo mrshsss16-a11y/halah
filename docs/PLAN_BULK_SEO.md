@@ -165,7 +165,7 @@ ALTER TABLE bulk_job_items ADD COLUMN published_at TEXT;
 
 ---
 
-## ٧. الترتيب التنفيذي
+## ٧. الترتيب التنفيذي — ✅ الخطوات ١-٩ منفَّذة 2026-09-08 (`COMPLETION_PATH.md` المرحلة ٢). فروق عن التصميم: لا `services/bulkPipeline.js` (المنطق بـ`cron/bulk_process.js` بثلاث دوال tick) · النشر يُصرَّف من `review_queue` مباشرة (لا وظيفة `seo_publish` منفصلة — الصف المعتمد غير المنشور هو الطابور) · حقول SEO المرسلة لسلة: `description` + `metadata.title/description` مع سقوط للوصف وحده عند ٤٢٢.
 
 | # | العمل | يعتمد على |
 |---|---|---|

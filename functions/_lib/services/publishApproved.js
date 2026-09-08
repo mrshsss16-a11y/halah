@@ -8,7 +8,9 @@
 // بنفسها ولا تقرر ما يُنشر — القرار اتُّخذ بشرياً قبلها.
 import { getIgConnectionByUserId } from "../core/db.js";
 import { send as igSend } from "../integrations/instagram.js";
+import { updateProductBySku } from "../integrations/salla.js";
 import { recordPublishResult } from "./reviewQueue.js";
+import { markPublished } from "./catalog.js";
 
 /**
  * نافذة الإرسال انتهت؟ عنصر فات أوانه يفشل عند Meta برسالة غامضة — نرفضه قبل
@@ -53,6 +55,55 @@ async function publishInstagram(env, { merchantId, payload }) {
 }
 
 /**
+ * كتابة وصف معتمد على منتج سلة بالـSKU.
+ *
+ * الحقول: `description` (النص المعتمد كما اعتمده التاجر حرفياً — لا إعادة توليد
+ * بعد القرار) + `metadata.title/description` من حزمة SEO. لو رفضت سلة حقول
+ * metadata (٤٢٢) نعيد المحاولة بالوصف وحده مرة واحدة بدل إسقاط النشر كله —
+ * الوصف هو الوعد الأساسي، وSEO تحسين فوقه.
+ *
+ * ٤٢٩ (حد المعدل): لا إعادة محاولة هنا إطلاقاً — يُرمى خطأ يحمل retryAfter
+ * ليوقف الـcron التِك الحالي كاملاً لهذا المتجر (تجاوز الحد يقطع اتصال المتجر).
+ */
+async function publishDescription(env, { merchantId, payload }) {
+  const sku = String(payload?.sku || "").trim();
+  const description = String(payload?.description || "").trim();
+  if (!sku) throw new Error("حمولة الوصف بلا رمز SKU — لا يمكن تحديد المنتج.");
+  if (!description) throw new Error("حمولة الوصف فارغة — رُفض النشر.");
+
+  const fields = { description: description.slice(0, 20000) };
+  const seoTitle = String(payload?.seo?.title || "").trim().slice(0, 120);
+  const seoMeta = String(payload?.seo?.metaDescription || "").trim().slice(0, 320);
+  const withMeta = seoTitle || seoMeta
+    ? { ...fields, metadata: { ...(seoTitle ? { title: seoTitle } : {}), ...(seoMeta ? { description: seoMeta } : {}) } }
+    : fields;
+
+  const attempt = async (body) => {
+    try {
+      return await updateProductBySku(env, merchantId, sku, body);
+    } catch (err) {
+      const msg = String(err?.message || err);
+      const m = msg.match(/HTTP (\d{3})/);
+      const status = m ? Number(m[1]) : 0;
+      if (status === 429) {
+        const e = new Error("سلة أوقفت الطلبات مؤقتاً (حد المعدل) — يُستأنف بالتِك التالي.");
+        e.retryAfter = true;
+        throw e;
+      }
+      if (status === 422 && body.metadata) {
+        // حقول SEO رُفضت — الوصف وحده.
+        return updateProductBySku(env, merchantId, sku, fields);
+      }
+      throw err;
+    }
+  };
+
+  const result = await attempt(withMeta);
+  await markPublished(env, { merchantId, sku, description: fields.description }).catch(() => {});
+  return String(result?.data?.id || sku);
+}
+
+/**
  * ينشر صفاً معتمداً ويسجّل النتيجة عليه.
  *
  * لا يرمي للمستدعي عند فشل النشر: الاعتماد نجح فعلاً، والفشل يُسجَّل على الصف
@@ -72,7 +123,22 @@ export async function publishApproved(env, row) {
     payload = null;
   }
 
-  // أنواع بلا وجهة نشر خارجية (تقرير، صورة، وصف) — الاعتماد نفسه هو النتيجة.
+  // وصف منتج معتمد → يُكتب على سلة (المرحلة ٢، docs/COMPLETION_PATH.md).
+  // يُستدعى من cron/bulk_process بفاصل ≥ ١.١ث لكل متجر — **لا** من endpoint
+  // التاجر مباشرة، لأن حد سلة ١ طلب/ثانية يقطع اتصال المتجر كاملاً عند تجاوزه.
+  if (row?.kind === "description") {
+    try {
+      const externalId = await publishDescription(env, { merchantId, payload });
+      await recordPublishResult(env, { merchantId, id, externalId, error: null });
+      return { published: true, externalId, error: null };
+    } catch (err) {
+      const error = String(err?.message || err).slice(0, 500);
+      await recordPublishResult(env, { merchantId, id, error }).catch(() => {});
+      return { published: false, externalId: null, error, retryAfter: err?.retryAfter || null };
+    }
+  }
+
+  // أنواع بلا وجهة نشر خارجية (تقرير، صورة) — الاعتماد نفسه هو النتيجة.
   // تُسجَّل كمنشورة بلا معرّف خارجي حتى لا تظهر أبداً بقائمة "معتمد ولم يُنشر".
   if (row?.kind !== "social_reply") {
     await recordPublishResult(env, { merchantId, id, externalId: null, error: null }).catch(() => {});

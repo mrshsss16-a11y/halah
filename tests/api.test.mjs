@@ -2392,6 +2392,144 @@ async function runTests() {
     assert(offenders.length === 0, `LOG-1: صفر console.error خام خارج errorLog.js (المخالف: ${offenders.join(", ") || "لا شيء"})`);
   }
 
+  // ── المرحلة ٢ (docs/COMPLETION_PATH.md) — الجملة عبر بوابة المراجعة ─────
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+
+    // BULK-1 — الفصل: مسار التوليد لا يستورد سلة إطلاقاً، وينشر حصراً عبر publishApproved.
+    const cron = read("../functions/api/cron/bulk_process.js");
+    assert(
+      !/integrations\/salla\.js/.test(cron) && !/updateProductBySku/.test(cron),
+      "BULK-1: cron/bulk_process لا يستورد سلة ولا updateProductBySku — التوليد صفر كتابة على سلة"
+    );
+    assert(
+      /enqueue\(env, \{ merchantId: item\.merchant_id, kind: "description"/.test(cron) && /publishApproved\(env, row\)/.test(cron),
+      "BULK-2: التوليد يدخل review_queue بنوع description، والنشر يمرّ بـpublishApproved فقط"
+    );
+    assert(
+      /claimNextPublishMerchant/.test(cron) && /stoppedByRateLimit = true/.test(cron) && /SALLA_DELAY_MS = 1100/.test(cron),
+      "BULK-3: النشر متجر واحد لكل تِك، فاصل ≥ ١.١ث، توقف عند ٤٢٩"
+    );
+
+    // BULK-4 — publishApproved: وصف معتمد يُكتب بالـSKU، و٤٢٩ يرفع retryAfter، و٤٢٢ يسقط للوصف وحده.
+    const pubSrc = read("../functions/_lib/services/publishApproved.js");
+    assert(
+      /row\?\.kind === "description"/.test(pubSrc) && /status === 429/.test(pubSrc) && /status === 422 && body\.metadata/.test(pubSrc) && /markPublished/.test(pubSrc),
+      "BULK-4: publishApproved يعالج description بالـSKU مع ٤٢٩→retryAfter و٤٢٢→الوصف وحده ويعلّم الكتالوج"
+    );
+
+    // BULK-5 — approveMany: كل صف بشرط pending + merchant_id؛ فشل صف لا يوقف الباقي ولا يُخفى.
+    const { approveMany, updatePayload, countByState, listByState } = await import("../functions/_lib/services/reviewQueue.js");
+    const seen = [];
+    const rqDb = {
+      prepare(sql) {
+        return {
+          bind(...args) {
+            return {
+              first: async () => {
+                if (/UPDATE review_queue\s+SET status = \?/.test(sql)) {
+                  seen.push({ id: args[3], mid: args[4] });
+                  // الصف ٣ "مُراجَع مسبقاً" — صفر صفوف متأثرة.
+                  return args[3] === 3 ? null : { id: args[3], merchant_id: args[4], kind: "description", status: args[0], payload: "{}" };
+                }
+                if (/SELECT payload FROM review_queue/.test(sql)) {
+                  return args[0] === 7 ? { payload: JSON.stringify({ sku: "S1", description: "قديم" }) } : null;
+                }
+                if (/UPDATE review_queue SET payload/.test(sql)) {
+                  return { id: args[1], merchant_id: args[2], kind: "description", payload: args[0], status: "pending" };
+                }
+                if (/SUM\(status = 'pending'\)/.test(sql)) {
+                  return { pending: 2, awaiting_publish: 1, published: 3, publish_failed: 0, rejected: 1 };
+                }
+                return null;
+              },
+              all: async () => ({ results: [] }),
+              run: async () => ({ meta: {} })
+            };
+          }
+        };
+      }
+    };
+    const many = await approveMany({ DB: rqDb }, { merchantId: "m_a", ids: [1, 3, 5], reviewedBy: "merchant:m_a" });
+    assert(
+      many.approved.length === 2 && many.failed.length === 1 && many.failed[0].id === 3 && seen.every((s) => s.mid === "m_a" && /UPDATE/.test("UPDATE")),
+      "BULK-5: approveMany يعتمد ٢ ويُبلّغ فشل الثالث صراحة، وكل تحديث مقيّد بـmerchant_id"
+    );
+    assert(
+      seen.length === 3 && seen.every((s) => s.mid === "m_a"),
+      "BULK-6: صفر تحديث بلا merchant_id — العزل على كل صف بالاعتماد الجماعي"
+    );
+
+    // BULK-7 — updatePayload: يدمج فوق الحمولة الحالية بشرط pending؛ غير المعلّق يُرفض ٤٠٤.
+    const edited = await updatePayload({ DB: rqDb }, { merchantId: "m_a", id: 7, patch: { description: "جديد" } });
+    const editedPayload = JSON.parse(edited.payload);
+    assert(
+      editedPayload.sku === "S1" && editedPayload.description === "جديد" && typeof editedPayload.editedAt === "string",
+      "BULK-7: التحرير السطري يدمج الوصف الجديد فوق الحمولة ويحتفظ بالـSKU"
+    );
+    let notPending = null;
+    try {
+      await updatePayload({ DB: rqDb }, { merchantId: "m_a", id: 8, patch: { description: "x" } });
+    } catch (e) {
+      notPending = e;
+    }
+    assert(notPending?.status === 404 && notPending?.code === "REVIEW_NOT_PENDING", "BULK-8: تعديل عنصر غير معلّق يُرفض ٤٠٤ بلا كتابة");
+
+    // BULK-9 — العدّادات الصادقة تفرّق "معتمد بانتظار النشر" عن "نُشر".
+    const counts = await countByState({ DB: rqDb }, { merchantId: "m_a", kind: "description" });
+    assert(
+      counts.pending === 2 && counts.awaitingPublish === 1 && counts.published === 3 && counts.rejected === 1,
+      "BULK-9: countByState يعيد معلّق/بانتظار النشر/نُشر/مرفوض منفصلة"
+    );
+    let badState = null;
+    try {
+      await listByState({ DB: rqDb }, { merchantId: "m_a", kind: "description", state: "1=1 OR" });
+    } catch (e) {
+      badState = e;
+    }
+    assert(badState?.status === 400, "BULK-10: حالة غير معروفة تُرفض ٤٠٠ — لا تركيب SQL من مدخل عميل");
+
+    // BULK-11 — التراجع: الأصل يُكتب مرة واحدة ولا يمحوه السحب.
+    const catalogSrc = read("../functions/_lib/services/catalog.js");
+    assert(
+      /original_description = COALESCE\(store_products\.original_description, excluded\.current_description\)/.test(catalogSrc),
+      "BULK-11: سحب الكتالوج يحفظ original_description مرة واحدة (COALESCE) — التراجع ممكن بعد نشر هالة"
+    );
+    const migration = read("../migrations/0022_catalog_original_description.sql");
+    assert(/ADD COLUMN original_description/.test(migration) && /ADD COLUMN hala_published_at/.test(migration), "BULK-12: هجرة 0022 تضيف original_description وhala_published_at");
+
+    // BULK-13 — التراجع يرفض ما لم تنشره هالة، ويُرجع الأصل حتى لو كان فارغاً (بلا اختراع نص).
+    const decideSrc = read("../functions/api/store/review/decide.js");
+    assert(
+      /NOTHING_TO_REVERT/.test(decideSrc) && /NOT_IN_CATALOG/.test(decideSrc) && /item\.original_description \|\| ""/.test(decideSrc) && /markReverted/.test(decideSrc),
+      "BULK-13: revert مقيّد بما نشرته هالة، ويُرجع الأصل كما هو (حتى الفارغ)"
+    );
+    assert(
+      /requireCompletedAccount\(request, env, body\.storeId\)/.test(decideSrc) && /reviewedBy = `merchant:\$\{merchantId\}`/.test(decideSrc),
+      "BULK-14: قرارات التاجر بهوية الجلسة (reviewed_by من الجلسة لا من الجسم)"
+    );
+
+    // BULK-15 — الحصة الصادقة: أولوية + تأجيل بدل رفض + إحياء شهري.
+    const genSrc = read("../functions/api/store/bulk/generate.js");
+    assert(
+      /listPriorityCatalog/.test(genSrc) && /DEFERRED_MARKER/.test(genSrc) && /باقتك تغطي/.test(genSrc),
+      "BULK-15: التوليد من الكتالوج بأولوية SEO، وما فوق الحصة مؤجَّل بنص صادق"
+    );
+    assert(/tickReviveDeferred/.test(cron) && /reviveDeferredItems/.test(cron), "BULK-16: الـcron يُحيي المؤجَّل عند تجدّد الحصة بلا فعل من التاجر");
+    assert(
+      /ORDER BY \(hala_published_at IS NOT NULL\) ASC,\s*\(COALESCE\(LENGTH\(current_description\), 0\) = 0\) DESC/.test(catalogSrc),
+      "BULK-17: أولوية الحصة — بلا وصف أولاً، ثم القصير، وما نشرته هالة آخراً"
+    );
+
+    // BULK-18 — الداشبورد: لا وعد بنشر تلقائي؛ زر توليد من الكتالوج وشاشة مراجعة.
+    const dash = read("../dashboard.html");
+    assert(
+      !/ينشره على سلة تلقائياً/.test(dash) && /لا يُنشر شيء على سلة قبل ما تراجعه وتعتمده/.test(dash) && /\/api\/store\/review\/decide/.test(dash) && /\/api\/store\/bulk\/generate/.test(dash),
+      "BULK-18: الداشبورد يعد بالمراجعة لا بالنشر التلقائي، ويصل شاشة المراجعة والتوليد من الكتالوج"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

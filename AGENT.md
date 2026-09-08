@@ -50,7 +50,7 @@ functions/
     auth/         signup · login · logout · me · google · complete_account · forgot_password
                   reset_password · salla_embedded · salla/{install,callback}
     store/        status · config · context · overview · publish · logo · persona · profile · faq
-                  catalog/{sync,list} · bulk/{upload,status}
+                  catalog/{sync,list} · bulk/{upload,generate,status} · review/{list,decide}
     admin/        overview · accounts · bookings · conversations · faq · errors · review
                   style_library · aura_whatsapp
     whatsapp/     webhook (استقبال) · send · connect · status
@@ -58,7 +58,7 @@ functions/
     webhooks/     salla
     consultation/ book
     widget/       config
-    cron/         reminders · healthcheck · bulk_process   (يضربها cron-worker/ كل ١٠ دقائق)
+    cron/         reminders · healthcheck · bulk_process (٣ مراحل: سحب كتالوج · توليد→review_queue · نشر المعتمَد متجر/تِك)
     security/     pdpl_audit   (تقييم تقني، وليس شهادة امتثال قانوني)
     chat · copy · image · support · usage · stats · health
 cron-worker/         Worker منفصل بجدولة */10 — Pages لا يدعم cron triggers
@@ -66,9 +66,9 @@ docs/archive/         تجارب ومزايا مؤرشفة لا تُبنى ول�
 docs/COMPLETION_PATH.md   مسار الإتمام الحالي (المرجع التنفيذي)
 *.html               صفحات ثابتة تمر بـ #include ثم scripts/stage.mjs → dist/
 partials/            مكونات #include (fouc-theme, app-shell)
-migrations/          مخطط D1 (0001..0021) — انظر §6
+migrations/          مخطط D1 (0001..0022) — انظر §6
 persona/             نسخ مرجعية للشخصية (التشغيلية في functions/_lib/ai/persona.js — عدّل الاثنين)
-tests/api.test.mjs   ٢٩١ تأكيداً (عزل · توقيع · حصة · مصادقة · كتيّب المصطلحات · نماذج الرؤية)
+tests/api.test.mjs   ٣١٧ تأكيداً (عزل · توقيع · حصة · مصادقة · كتيّب المصطلحات · نماذج الرؤية)
 scripts/             stage · verify-dist · audit-isolation (ضمن npm test) · backup-db · smoke-test (ضمن deploy)
 ```
 
@@ -127,7 +127,7 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ## 6. قاعدة البيانات — D1 `halah-tr-db`
 
-- Migrations في `migrations/` (0001..0021 — كلها مطبَّقة على البعيد، تحقق 2026-09-08). طبّق بـ:
+- Migrations في `migrations/` (0001..0022 — كلها مطبَّقة على البعيد، تحقق 2026-09-08). طبّق بـ:
   `npx wrangler d1 migrations apply halah-tr-db --remote`
 - 0003 placeholder (للحفاظ على تسلسل الأرقام). 0010 أنشأ الجداول الناقصة سابقاً.
 - جداول قديمة (legacy) لا تزال موجودة من بناء سابق: `users`, `faqs`, `store_connections`,
