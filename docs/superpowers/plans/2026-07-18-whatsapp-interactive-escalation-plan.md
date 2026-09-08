@@ -1,3 +1,5 @@
+> ⚠️ **متجاوَز (2026-09-08)** — الحالات هنا تاريخية ولا تُعتمد. المرجع الحالي للتنفيذ: [`COMPLETION_PATH.md`](../../COMPLETION_PATH.md).
+
 # أزرار حجز تفاعلية + تصعيد تلقائي — خطة التنفيذ
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

@@ -1,7 +1,7 @@
 # AGENT.md — دليل بنية مشروع هالة (Hala AI OS) لأي وكيل ذكاء اصطناعي
 
 > اقرأ هذا الملف كامل قبل أي تعديل. يشرح البنية، القواعد الصارمة، والمشاكل المفتوحة.
-> آخر تدقيق شامل: 2026-07-31.
+> آخر تدقيق شامل: 2026-07-31 · §٣ و§٦ مُزامنان مع الشجرة 2026-09-08.
 
 ---
 
@@ -32,35 +32,44 @@ Bindings معرّفة في `wrangler.toml`: `AI`, `VECTORIZE_INDEX`, `DB`, `HALA
 
 ---
 
-## 3. خريطة المجلدات
+## 3. خريطة المجلدات (متحقَّق من الشجرة 2026-09-08 — ٥٢ endpoint، ٢١ هجرة)
 
 ```
 functions/
   _lib/
     ai/           gateway (تعاقب المزودين) · persona · memory (RAG) · intents · typoCorrector
-    core/         db · session · auth · crypto · meter (حصص) · rateLimit · respond · security
-    integrations/ salla · trendyol · zid · whatsapp · dlq
+                  productTaxonomy (كتيّب مصطلحات الفئات للوصف والرؤية)
+    core/         db · session · auth · adminEmails · crypto · meter (حصص شهرية) · rateLimit
+                  respond (withApi + requestId) · errors (كتالوج رسائل عربية) · errorLog (→ D1)
+                  security · cors · oauthState
+    integrations/ salla · whatsapp · instagram · dlq        (trendyol/zid مؤرشفان)
+    services/     catalog (سحب كتالوج سلة) · storeProfile (بصمة المتجر) · reviewQueue (بوابة
+                  المراجعة البشرية) · publishApproved (المكان الوحيد لإرسال مخرج AI لمنصة خارجية)
     imageProvider.js   (klein أساسي + Hugging Face احتياطي)
   api/
-    auth/         signup · login · logout · me · google · forgot_password · reset_password
-                  salla/{install,callback} · zid/{install,callback}
-    store/        status · config · context · overview · publish · logo · persona · report
-                  broadcast · campaign · cart_recovery · digest · ingest · recovery
-                  instant_agent · sandbox · ocr · voice · zatca
-    admin/        overview · accounts · bookings · conversations · faq · project · aura_whatsapp
-    trendyol/     connect · sync · qa
-    webhooks/     salla · trendyol · shipping · zid
-    whatsapp/     webhook (استقبال) · send (إرسال)
-    chat · copy · image · scan · support · usage · stats · health
-    cron/reminders.js       (تذكير مواعيد — لكن لا cron trigger مضبوط في wrangler.toml بعد)
-    security/pdpl_audit.js   (تقييم تقني، وليس شهادة امتثال قانوني)
-docs/archive/         تجارب مؤرشفة لا تُبنى ولا تُنشر (astro-experiment/ — انظر §4)
-*.html               صفحات ثابتة قديمة تمر بـ #include ثم scripts/stage.mjs → dist/
+    auth/         signup · login · logout · me · google · complete_account · forgot_password
+                  reset_password · salla_embedded · salla/{install,callback}
+    store/        status · config · context · overview · publish · logo · persona · profile · faq
+                  catalog/{sync,list} · bulk/{upload,status}
+    admin/        overview · accounts · bookings · conversations · faq · errors · review
+                  style_library · aura_whatsapp
+    whatsapp/     webhook (استقبال) · send · connect · status
+    instagram/    webhook (مبني، غير مفعَّل — ينتظر P29/P30)
+    webhooks/     salla
+    consultation/ book
+    widget/       config
+    cron/         reminders · healthcheck · bulk_process   (يضربها cron-worker/ كل ١٠ دقائق)
+    security/     pdpl_audit   (تقييم تقني، وليس شهادة امتثال قانوني)
+    chat · copy · image · support · usage · stats · health
+cron-worker/         Worker منفصل بجدولة */10 — Pages لا يدعم cron triggers
+docs/archive/         تجارب ومزايا مؤرشفة لا تُبنى ولا تُنشر (astro-experiment، deprioritized-features)
+docs/COMPLETION_PATH.md   مسار الإتمام الحالي (المرجع التنفيذي)
+*.html               صفحات ثابتة تمر بـ #include ثم scripts/stage.mjs → dist/
 partials/            مكونات #include (fouc-theme, app-shell)
-migrations/          مخطط D1 (0001..0010) — انظر §6
+migrations/          مخطط D1 (0001..0021) — انظر §6
 persona/             نسخ مرجعية للشخصية (التشغيلية في functions/_lib/ai/persona.js — عدّل الاثنين)
-tests/api.test.mjs   26 اختبار
-scripts/stage.mjs    بناء dist/ للنظام الثابت القديم
+tests/api.test.mjs   ٢٩١ تأكيداً (عزل · توقيع · حصة · مصادقة · كتيّب المصطلحات · نماذج الرؤية)
+scripts/             stage · verify-dist · audit-isolation (ضمن npm test) · backup-db · smoke-test (ضمن deploy)
 ```
 
 ---
@@ -118,7 +127,7 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ## 6. قاعدة البيانات — D1 `halah-tr-db`
 
-- Migrations في `migrations/` (0001..0010). طبّق بـ:
+- Migrations في `migrations/` (0001..0021 — كلها مطبَّقة على البعيد، تحقق 2026-09-08). طبّق بـ:
   `npx wrangler d1 migrations apply halah-tr-db --remote`
 - 0003 placeholder (للحفاظ على تسلسل الأرقام). 0010 أنشأ الجداول الناقصة سابقاً.
 - جداول قديمة (legacy) لا تزال موجودة من بناء سابق: `users`, `faqs`, `store_connections`,
