@@ -6,13 +6,13 @@
 import { withApi, json } from "../../_lib/core/respond.js";
 import { saveConsultationBooking } from "../../_lib/core/db.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
-import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 
 const PHONE_RE = /^\+?\d{9,15}$/;
 
 async function bookHandler(body, env, request) {
-  const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rateCheck = await checkRateLimit(env, clientIp, "consultation_book", 5, 300);
+  const ip = clientIp(request);
+  const rateCheck = await checkRateLimit(env, ip, "consultation_book", 5, 300);
   if (!rateCheck.allowed) {
     return json({ ok: false, error: `محاولات كثيرة جداً. حاول بعد ${rateCheck.resetInSeconds} ثانية.` }, 429);
   }

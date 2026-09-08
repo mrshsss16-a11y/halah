@@ -5,12 +5,15 @@
 // only — this is a one-time/occasional ingestion tool, not a merchant-facing
 // endpoint.
 import { withApi } from "../../_lib/core/respond.js";
+import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
 import { storeStyleExample } from "../../_lib/ai/memory.js";
 
-async function styleLibraryHandler(body, env, request) {
+async function styleLibraryHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);
   if (!admin) return { ok: false, error: "غير مصرح.", code: "FORBIDDEN" };
+  // P9 — سطر تدقيق: من قرأ/عدّل ماذا ومتى (migrations/0023 audit_log).
+  recordAdminAction(context, { admin, action: String(body.action || "read"), path: new URL(request.url).pathname, targetMerchantId: body.merchantId || body.storeId || null, requestId });
 
   if (body.action === "ingest") {
     const rows = Array.isArray(body.rows) ? body.rows : [];

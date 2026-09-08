@@ -25,6 +25,7 @@ function sectionFailure(env, { requestId, storeId, code, err }) {
 }
 
 async function overviewHandler(body, env, request, requestId) {
+  // store-gate-ok: نظرة عامة للقراءة — يشوفها التاجر قبل إكمال الحساب بالتصميم (requireCompletedAccount docstring)
   const merchantId = await resolveStoreId(request, env, body.storeId);
   const merchant = merchantId ? await getMerchant(env, merchantId) : null;
   if (!merchant) {

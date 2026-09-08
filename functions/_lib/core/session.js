@@ -7,12 +7,24 @@ import { ApiError } from "./respond.js";
 // expense (SECURITY_AUDIT C2/H7).
 const RESERVED_STORE_IDS = new Set(["hala"]);
 
-// Signed session cookie — no DB round trip to verify. Token shape:
-// `${merchantId}.${expiryUnix}.${hmacHex}`, HMAC-SHA256(SESSION_SECRET, `${merchantId}.${expiryUnix}`).
-// Same signing pattern as the Salla webhook signature check (functions/api/webhooks/salla.js)
-// for consistency: timing-safe compare, Web Crypto only.
+// Signed session cookie. Token shape (P40, migrations/0023):
+// `${merchantId}.${expiryUnix}.${sessionVersion}.${hmacHex}`,
+// HMAC-SHA256(SESSION_SECRET, `${merchantId}.${expiryUnix}.${sessionVersion}`).
+//
+// `sessionVersion` mirrors accounts.session_version. Logout, password reset and
+// account disable bump it; any token carrying an older version fails verification,
+// so a stolen cookie dies with the event instead of living out its 30 days.
+// The current version is read from KV (`sv:<merchantId>`, 1h TTL) and falls back
+// to D1. A merchant with NO accounts row (Salla Easy-Mode install) has version 0.
+// Read failure on both = fail closed (no session), per §7 "absence = error".
+//
+// Legacy 3-part tokens (issued before 0023) are accepted ONLY as version 0 — the
+// migration seeds every account at 0, so nobody is logged out by the deploy, and
+// the first bump retires them all.
 const COOKIE_NAME = "hala_session";
 const SESSION_DAYS = 30;
+const VERSION_TTL_SECONDS = 3600;
+const versionKey = (merchantId) => `sv:${merchantId}`;
 
 async function hmacHex(secret, message) {
   const key = await crypto.subtle.importKey(
@@ -43,10 +55,55 @@ function getSessionSecret(env) {
   throw new ApiError(500, "متغير البيئة SESSION_SECRET غير معرف. يرجى ضبطه في إعدادات البيئة.", "SESSION_SECRET_MISSING");
 }
 
+/**
+ * Current session_version for a merchant. KV first, D1 second, then fail closed
+ * (returns null → caller treats the session as invalid). No accounts row = 0.
+ */
+export async function currentSessionVersion(env, merchantId) {
+  const kv = env?.HALA_CACHE;
+  if (kv) {
+    const cached = await kv.get(versionKey(merchantId)).catch(() => null);
+    if (cached !== null && cached !== undefined && cached !== "") {
+      const n = Number(cached);
+      if (Number.isInteger(n) && n >= 0) return n;
+    }
+  }
+  if (!env?.DB) return null;
+  let row;
+  try {
+    row = await env.DB.prepare("SELECT session_version FROM accounts WHERE merchant_id = ?").bind(merchantId).first();
+  } catch {
+    return null;
+  }
+  const version = row ? Number(row.session_version) || 0 : 0;
+  if (kv) kv.put(versionKey(merchantId), String(version), { expirationTtl: VERSION_TTL_SECONDS }).catch(() => {});
+  return version;
+}
+
+/**
+ * Invalidate every live session of a merchant: bump the column, refresh the KV
+ * mirror. Called by logout, password reset and account disable. A merchant with
+ * no accounts row has nothing to bump (their id is their only credential).
+ */
+export async function bumpSessionVersion(env, merchantId) {
+  if (!env?.DB || !merchantId) return null;
+  const row = await env.DB.prepare(
+    "UPDATE accounts SET session_version = session_version + 1 WHERE merchant_id = ? RETURNING session_version"
+  )
+    .bind(merchantId)
+    .first();
+  const version = row ? Number(row.session_version) : null;
+  if (version !== null && env?.HALA_CACHE) {
+    await env.HALA_CACHE.put(versionKey(merchantId), String(version), { expirationTtl: VERSION_TTL_SECONDS }).catch(() => {});
+  }
+  return version;
+}
+
 export async function createSessionToken(env, merchantId) {
   const secret = getSessionSecret(env);
   const expiry = Math.floor(Date.now() / 1000) + SESSION_DAYS * 24 * 3600;
-  const payload = `${merchantId}.${expiry}`;
+  const version = (await currentSessionVersion(env, merchantId)) ?? 0;
+  const payload = `${merchantId}.${expiry}.${version}`;
   const mac = await hmacHex(secret, payload);
   return `${payload}.${mac}`;
 }
@@ -55,12 +112,26 @@ export async function verifySessionToken(env, token) {
   if (!token) return null;
   const secret = getSessionSecret(env);
   const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [merchantId, expiryStr, mac] = parts;
+  let merchantId, expiryStr, versionStr, mac;
+  if (parts.length === 4) {
+    [merchantId, expiryStr, versionStr, mac] = parts;
+  } else if (parts.length === 3) {
+    [merchantId, expiryStr, mac] = parts;
+    versionStr = null; // legacy token — signed without a version, valid only at version 0
+  } else {
+    return null;
+  }
   const expiry = Number(expiryStr);
   if (!merchantId || !Number.isFinite(expiry) || expiry < Math.floor(Date.now() / 1000)) return null;
-  const expectedMac = await hmacHex(secret, `${merchantId}.${expiryStr}`);
+  const signed = versionStr === null ? `${merchantId}.${expiryStr}` : `${merchantId}.${expiryStr}.${versionStr}`;
+  const expectedMac = await hmacHex(secret, signed);
   if (!timingSafeEqual(mac, expectedMac)) return null;
+
+  const tokenVersion = versionStr === null ? 0 : Number(versionStr);
+  if (!Number.isInteger(tokenVersion) || tokenVersion < 0) return null;
+  const current = await currentSessionVersion(env, merchantId);
+  if (current === null) return null; // fail closed: cannot confirm the version
+  if (tokenVersion !== current) return null;
   return merchantId;
 }
 

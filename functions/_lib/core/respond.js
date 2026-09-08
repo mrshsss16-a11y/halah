@@ -4,7 +4,8 @@
 import { getSecurityHeaders } from "./security.js";
 import { logError } from "./errorLog.js";
 import { classifyError, messageFor, statusFor } from "./errors.js";
-import { resolveAllowedOrigin, corsHeaders } from "./cors.js";
+import { resolveAllowedOrigin, corsHeaders, widgetAllowlist } from "./cors.js";
+import { assertTrustedWrite } from "./csrf.js";
 
 // Short, URL-safe, no external dep — collision odds irrelevant here (it's a
 // correlation id for logs/support, not a security token).
@@ -61,6 +62,20 @@ export function withApi(handler, { cors = false } = {}) {
     const requestId = generateRequestId();
     const extraHeaders = cors ? corsHeaders(resolveAllowedOrigin(request, env)) : {};
     let body = {};
+    const path = new URL(request.url).pathname;
+
+    // P42 — before touching the body: Origin allowlist + JSON-only writes. One
+    // point for every withApi endpoint; raw handlers call assertTrustedWrite
+    // themselves; webhooks are signature-guarded and never pass through here.
+    try {
+      assertTrustedWrite(request, env, { allowedOrigins: cors ? widgetAllowlist(env) : [] });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        logError(context, { requestId, path, code: err.code, internal: err.internal || err.message });
+        return json({ ok: false, error: err.message, code: err.code, requestId }, err.status, { "X-Request-Id": requestId, ...extraHeaders });
+      }
+      throw err;
+    }
 
     if (request.method === "POST" || request.method === "PUT" || request.method === "PATCH") {
       try {
@@ -76,8 +91,6 @@ export function withApi(handler, { cors = false } = {}) {
         body = {};
       }
     }
-
-    const path = new URL(request.url).pathname;
 
     try {
       const result = await handler(body, env, request, requestId, context);

@@ -9,7 +9,7 @@ import { withApi, json } from "../../_lib/core/respond.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { hashPassword } from "../../_lib/core/auth.js";
-import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { adminEmailList, isAdminEmail } from "../../_lib/core/adminEmails.js";
 import { lookupAccountForGoogle, trialSeatUsage } from "../../_lib/core/db.js";
 import { logError } from "../../_lib/core/errorLog.js";
@@ -43,9 +43,8 @@ async function verifyGoogleIdToken(env, credential) {
 }
 
 async function googleAuthHandler(body, env, request, requestId, context) {
-  const clientIp =
-    request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rateCheck = await checkRateLimit(env, clientIp, "google_auth", 10, 60);
+  const ip = clientIp(request);
+  const rateCheck = await checkRateLimit(env, ip, "google_auth", 10, 60);
   if (!rateCheck.allowed) {
     return json({ ok: false, error: `محاولات كثيرة جداً. حاول بعد ${rateCheck.resetInSeconds} ثانية.` }, 429);
   }

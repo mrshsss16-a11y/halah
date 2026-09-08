@@ -26,7 +26,7 @@
 import { withApi, json, ApiError } from "../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../_lib/core/session.js";
 import { saveWaConnection, getWaConnectionByPhoneId } from "../../_lib/core/db.js";
-import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { syncCoexistenceHistory } from "../../_lib/integrations/whatsapp.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
@@ -84,8 +84,8 @@ async function connectHandler(body, env, request, requestId, context) {
   // no `accounts` row gets 403 ACCOUNT_REQUIRED (see requireCompletedAccount).
   const merchantId = await requireCompletedAccount(request, env, body?.storeId);
 
-  const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rate = await checkRateLimit(env, clientIp, "wa_connect", 5, 300);
+  const ip = clientIp(request);
+  const rate = await checkRateLimit(env, ip, "wa_connect", 5, 300);
   if (!rate.allowed) {
     return json({ ok: false, error: `محاولات كثيرة. حاول بعد ${rate.resetInSeconds} ثانية.` }, 429);
   }

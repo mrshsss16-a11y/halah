@@ -9,6 +9,7 @@ import { resolveStoreId } from "../_lib/core/session.js";
 async function usageHandler(body, env, request) {
   // Same tenant-isolation rule as every other store endpoint — without it,
   // any storeId's usage numbers were readable anonymously.
+  // store-gate-ok: قراءة الحصة فقط — التاجر يشوف رصيده قبل إكمال الحساب (بلا كتابة ولا استهلاك AI)
   const merchantId = await resolveStoreId(request, env, body?.storeId);
   const monthly = await getMonthlyUsage(env, merchantId);
 

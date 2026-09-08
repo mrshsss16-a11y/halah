@@ -8,6 +8,7 @@ import { resolveStoreId } from "../../_lib/core/session.js";
 const MAX_LOGO_BYTES = 500_000; // data URL length cap — small watermark, not a full asset
 
 async function logoHandler(body, env, request) {
+  // store-gate-ok: الشعار قراءة عامة لودجت المتجر — بلا كتابة ولا AI
   const merchantId = await resolveStoreId(request, env, body.storeId);
   const incoming = (body.logoDataUrl || "").toString();
 

@@ -1,6 +1,7 @@
 // POST /api/stats — real, honest numbers only (no fabricated social proof —
 // same rule enforced on the marketer persona itself in functions/_lib/persona.js).
 import { json } from "../_lib/core/respond.js";
+import { assertTrustedWrite } from "../_lib/core/csrf.js";
 import { logError } from "../_lib/core/errorLog.js";
 
 // A missing table or a renamed column must not take the whole endpoint down —
@@ -18,6 +19,11 @@ async function scalar(env, sql, key, fallback = 0) {
 
 export async function onRequestPost(context) {
   const env = context?.env;
+  try {
+    assertTrustedWrite(context.request, env);
+  } catch (err) {
+    return json({ ok: false, error: err.message, code: err.code || "CSRF_REJECTED" }, err.status || 403);
+  }
 
   // NOTE: abandoned_carts stores the cart value in `total` (see
   // migrations/0002_copy_and_whatsapp.sql) — not `amount`.

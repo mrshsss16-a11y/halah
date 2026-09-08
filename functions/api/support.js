@@ -23,7 +23,7 @@ import { askWorkersAI } from "../_lib/ai/gateway.js";
 import { HALA_SUPPORT_PROMPT, PERSONA_SYSTEM_PROMPT, buildAgentPrompt } from "../_lib/ai/persona.js";
 import { recallSimilar } from "../_lib/ai/memory.js";
 import { sanitizeInput, verifyTurnstileToken } from "../_lib/core/security.js";
-import { checkRateLimit } from "../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
 import { saveOmnichannelSession, getWaConnectionByMerchant, getAgentProfile } from "../_lib/core/db.js";
 import { corsPreflight } from "../_lib/core/cors.js";
@@ -50,14 +50,14 @@ function stripFabricatedPricing(reply) {
 }
 
 async function supportHandler(body, env, request) {
-  const clientIp = request?.headers?.get("cf-connecting-ip") || request?.headers?.get("x-forwarded-for") || "127.0.0.1";
-  const rateCheck = await checkRateLimit(env, clientIp, "support_chat", 20, 60);
+  const ip = clientIp(request);
+  const rateCheck = await checkRateLimit(env, ip, "support_chat", 20, 60);
   if (!rateCheck.allowed) {
     throw new ApiError(429, "تجاوزت عدد طلبات المحادثة المسموحة. انتظر دقيقة وكرر المحاولة.", "RATE_LIMIT_EXCEEDED");
   }
 
   if (body.turnstileToken) {
-    const turnstileResult = await verifyTurnstileToken(env, body.turnstileToken, clientIp);
+    const turnstileResult = await verifyTurnstileToken(env, body.turnstileToken, ip);
     if (!turnstileResult.success) {
       throw new ApiError(400, "فشل التحقق من عدم كونك بوت سبام.", "TURNSTILE_FAILED");
     }

@@ -7,6 +7,7 @@ import { saveMarketingContext, getMarketingContext } from "../../_lib/core/db.js
 import { resolveStoreId } from "../../_lib/core/session.js";
 
 async function contextHandler(body, env, request) {
+  // store-gate-ok: سياق المتجر للودجت العام — قراءة معزولة بالجلسة أو بمعرّف m_ غير قابل للتخمين
   const merchantId = await resolveStoreId(request, env, body.storeId);
 
   if (body.dialect !== undefined || body.instructions !== undefined) {

@@ -10,13 +10,16 @@
 // لا استعلام D1 مباشر هنا إطلاقاً: الوسيط الوحيد لجدول review_queue هو الخدمة،
 // حتى يبقى شرط العزل بمكان واحد لا يمكن نسيانه بنسخة/لصق مستقبلية.
 import { withApi, ApiError } from "../../_lib/core/respond.js";
+import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
 import { listPending, approve, reject } from "../../_lib/services/reviewQueue.js";
 import { publishApproved } from "../../_lib/services/publishApproved.js";
 
-async function reviewHandler(body, env, request) {
+async function reviewHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);
   if (!admin) return { ok: false, error: "غير مصرح.", code: "FORBIDDEN" };
+  // P9 — سطر تدقيق: من قرأ/عدّل ماذا ومتى (migrations/0023 audit_log).
+  recordAdminAction(context, { admin, action: String(body.action || "read"), path: new URL(request.url).pathname, targetMerchantId: body.merchantId || body.storeId || null, requestId });
 
   const merchantId = typeof body.merchantId === "string" ? body.merchantId.trim() : "";
   if (!merchantId) {

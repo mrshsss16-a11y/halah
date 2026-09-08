@@ -1,13 +1,16 @@
 // POST /api/admin/faq
 // body: { action: "list" } | { action: "save", id?, question, answer } | { action: "delete", id } | { action: "reembed" }
 import { withApi } from "../../_lib/core/respond.js";
+import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
 import { listHalaFaq, saveHalaFaqEntry, deleteHalaFaqEntry } from "../../_lib/core/db.js";
 import { reembedHalaFaq, deleteHalaFaqEmbedding } from "../../_lib/ai/memory.js";
 
-async function faqHandler(body, env, request) {
+async function faqHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);
   if (!admin) return { ok: false, error: "غير مصرح.", code: "FORBIDDEN" };
+  // P9 — سطر تدقيق: من قرأ/عدّل ماذا ومتى (migrations/0023 audit_log).
+  recordAdminAction(context, { admin, action: String(body.action || "read"), path: new URL(request.url).pathname, targetMerchantId: body.merchantId || body.storeId || null, requestId });
 
   const action = body.action;
   if (action === "list") {

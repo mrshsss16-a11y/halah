@@ -12,13 +12,13 @@
 import { withApi, json } from "../../_lib/core/respond.js";
 import { getMerchantBySalla } from "../../_lib/core/db.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
-import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 
 const INTROSPECT_URL = "https://api.salla.dev/exchange-authority/v1/introspect";
 
 async function sallaEmbeddedHandler(body, env, request) {
-  const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rate = await checkRateLimit(env, clientIp, "salla_embedded_auth", 20, 60);
+  const ip = clientIp(request);
+  const rate = await checkRateLimit(env, ip, "salla_embedded_auth", 20, 60);
   if (!rate.allowed) {
     return json({ ok: false, error: "محاولات كثيرة، حاول بعد شوي." }, 429);
   }

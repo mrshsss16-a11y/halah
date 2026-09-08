@@ -6,8 +6,9 @@
 import { withApi, json } from "../../_lib/core/respond.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
-import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { logError } from "../../_lib/core/errorLog.js";
+import { bumpSessionVersion } from "../../_lib/core/session.js";
 import {
   isResetOtpLocked,
   recordResetOtpFailure,
@@ -43,9 +44,8 @@ async function countResetFailure(env, email, request) {
 }
 
 async function resetPasswordHandler(body, env, request) {
-  const clientIp =
-    request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rateCheck = await checkRateLimit(env, clientIp, "reset_password", 10, 60);
+  const ip = clientIp(request);
+  const rateCheck = await checkRateLimit(env, ip, "reset_password", 10, 60);
   if (!rateCheck.allowed) {
     return json({ ok: false, error: `محاولات كثيرة جداً. حاول بعد ${rateCheck.resetInSeconds} ثانية.` }, 429);
   }
@@ -118,6 +118,18 @@ async function resetPasswordHandler(body, env, request) {
     .catch(() => null);
 
   if (!update) return json({ ok: false, error: "تعذر تحديث كلمة المرور." }, 500);
+
+  // P40 — a password reset must evict whoever holds the old sessions (the
+  // attacker the victim is resetting to get rid of). Lookup by the OTP-verified
+  // email, then bump. Failure here is logged, not swallowed: the reset already
+  // succeeded, but an un-evicted session is exactly the gap P40 closes.
+  // tenant-audit-ok: email is the OTP-verified identity (see UPDATE above).
+  const owner = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?").bind(email).first().catch(() => null);
+  if (owner?.merchant_id) {
+    await bumpSessionVersion(env, owner.merchant_id).catch((e) =>
+      logError({ env }, { requestId: null, path: "/api/auth/reset_password", code: "SESSION_BUMP_FAILED", storeId: owner.merchant_id, internal: e?.message })
+    );
+  }
 
   // Single use: burn the OTP so it can't be replayed.
   await env.DB.prepare("DELETE FROM password_resets WHERE email = ?").bind(email).run().catch(() => {});

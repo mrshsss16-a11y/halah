@@ -1,15 +1,22 @@
 import { json } from "../../_lib/core/respond.js";
+import { assertTrustedWrite } from "../../_lib/core/csrf.js";
 import { verifyPassword, hashPassword } from "../../_lib/core/auth.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
 import { isAccountDisabled, isLoginLocked, recordLoginFailure, clearLoginAttempts } from "../../_lib/core/db.js";
 import { sanitizeInput, verifyTurnstileToken } from "../../_lib/core/security.js";
-import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  // P42 — CSRF gate (Origin allowlist + JSON-only body) for this raw handler.
+  try {
+    assertTrustedWrite(request, env);
+  } catch (err) {
+    return json({ ok: false, error: err.message, code: err.code || "CSRF_REJECTED" }, err.status || 403);
+  }
 
-  const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rateCheck = await checkRateLimit(env, clientIp, "login_attempt", 10, 60);
+  const ip = clientIp(request);
+  const rateCheck = await checkRateLimit(env, ip, "login_attempt", 10, 60);
   if (!rateCheck.allowed) {
     return json({ ok: false, error: `محاولات دخول كثيرة جداً. حاول بعد ${rateCheck.resetInSeconds} ثانية.` }, 429);
   }
@@ -22,7 +29,7 @@ export async function onRequestPost(context) {
   }
 
   if (body.turnstileToken) {
-    const turnstile = await verifyTurnstileToken(env, body.turnstileToken, clientIp);
+    const turnstile = await verifyTurnstileToken(env, body.turnstileToken, ip);
     if (!turnstile.success) {
       return json({ ok: false, error: "فشل فحص الأمان لمكافحة البوتات (Turnstile)." }, 400);
     }

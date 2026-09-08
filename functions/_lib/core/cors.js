@@ -20,6 +20,11 @@ function allowlist(env) {
     .filter(Boolean);
 }
 
+/** The raw allowlist — shared with csrf.js so a widget origin passes the CSRF gate too. */
+export function widgetAllowlist(env) {
+  return allowlist(env);
+}
+
 /** Returns the Origin header value if (and only if) it's allowlisted, else null. */
 export function resolveAllowedOrigin(request, env) {
   const origin = request.headers.get("Origin");

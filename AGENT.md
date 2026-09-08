@@ -39,16 +39,16 @@ functions/
   _lib/
     ai/           gateway (تعاقب المزودين) · persona · memory (RAG) · intents · typoCorrector
                   productTaxonomy (كتيّب مصطلحات الفئات للوصف والرؤية)
-    core/         db · session · auth · adminEmails · crypto · meter (حصص شهرية) · rateLimit
+    core/         db · session (توكن بنسخة P40) · csrf (P42) · auditLog (P9) · auth · adminEmails · crypto · meter · rateLimit
                   respond (withApi + requestId) · errors (كتالوج رسائل عربية) · errorLog (→ D1)
                   security · cors · oauthState
-    integrations/ salla · whatsapp · instagram · dlq        (trendyol/zid مؤرشفان)
+    integrations/ salla · whatsapp · instagram · email (Resend، fail-closed) · dlq   (trendyol/zid مؤرشفان)
     services/     catalog (سحب كتالوج سلة) · storeProfile (بصمة المتجر) · reviewQueue (بوابة
                   المراجعة البشرية) · publishApproved (المكان الوحيد لإرسال مخرج AI لمنصة خارجية)
     imageProvider.js   (klein أساسي + Hugging Face احتياطي)
   api/
     auth/         signup · login · logout · me · google · complete_account · forgot_password
-                  reset_password · salla_embedded · salla/{install,callback}
+                  reset_password · send_verification · verify_email · salla_embedded · salla/{install,callback}
     store/        status · config · context · overview · publish · logo · persona · profile · faq
                   catalog/{sync,list} · bulk/{upload,generate,status} · review/{list,decide}
     admin/        overview · accounts · bookings · conversations · faq · errors · review
@@ -66,10 +66,10 @@ docs/archive/         تجارب ومزايا مؤرشفة لا تُبنى ول�
 docs/COMPLETION_PATH.md   مسار الإتمام الحالي (المرجع التنفيذي)
 *.html               صفحات ثابتة تمر بـ #include ثم scripts/stage.mjs → dist/
 partials/            مكونات #include (fouc-theme, app-shell)
-migrations/          مخطط D1 (0001..0022) — انظر §6
+migrations/          مخطط D1 (0001..0023) — انظر §6
 persona/             نسخ مرجعية للشخصية (التشغيلية في functions/_lib/ai/persona.js — عدّل الاثنين)
-tests/api.test.mjs   ٣١٧ تأكيداً (عزل · توقيع · حصة · مصادقة · كتيّب المصطلحات · نماذج الرؤية)
-scripts/             stage · verify-dist · audit-isolation (ضمن npm test) · backup-db · smoke-test (ضمن deploy)
+tests/api.test.mjs   ٣٥٤ تأكيداً (عزل · توقيع · حصة · مصادقة · كتيّب المصطلحات · نماذج الرؤية)
+scripts/             stage · verify-dist · audit-isolation + audit-security (ضمن npm test) · backup-db · smoke-test (ضمن deploy)
 ```
 
 ---
@@ -127,7 +127,7 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ## 6. قاعدة البيانات — D1 `halah-tr-db`
 
-- Migrations في `migrations/` (0001..0022 — كلها مطبَّقة على البعيد، تحقق 2026-09-08). طبّق بـ:
+- Migrations في `migrations/` (0001..0023 — كلها مطبَّقة على البعيد، تحقق 2026-09-08). طبّق بـ:
   `npx wrangler d1 migrations apply halah-tr-db --remote`
 - 0003 placeholder (للحفاظ على تسلسل الأرقام). 0010 أنشأ الجداول الناقصة سابقاً.
 - جداول قديمة (legacy) لا تزال موجودة من بناء سابق: `users`, `faqs`, `store_connections`,
@@ -139,8 +139,9 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ## 7. الأمن وعزل المتاجر (multi-tenant)
 
-- **الجلسة:** كوكي موقّع HMAC، الشكل `merchantId.expiry.hmac` (`core/session.js`). لا لمسة DB
-  للتحقق. `SESSION_SECRET` **إلزامي** — الكود يرمي خطأ بدونه (لا قيمة افتراضية مكتوبة).
+- **الجلسة:** كوكي موقّع HMAC، الشكل `merchantId.expiry.sessionVersion.hmac` (`core/session.js`). النسخة
+  تُقرأ من KV (`sv:<merchant>`) ثم D1؛ الخروج/إعادة التعيين/التعطيل يرفعونها فيقتلون كل توكن أقدم (P40).
+- **CSRF:** `core/csrf.js` داخل `withApi()` وبالمعالجات الخام — Origin بقائمة سماح + جسم JSON فقط (P42). `SESSION_SECRET` **إلزامي** — الكود يرمي خطأ بدونه (لا قيمة افتراضية مكتوبة).
 - **`resolveStoreId`:** الجلسة تتغلب دائماً على أي `storeId` يدّعيه العميل. متجر بلا حساب
   (تثبيت سلة Easy-Mode) يُعرّف بـ id غير قابل للتخمين فقط.
 - **`requireAdmin`:** يتحقق من إيميل الحساب مقابل `ADMIN_EMAILS` (سر بيئة) فقط. **لا عمود
@@ -247,8 +248,7 @@ graphify update .          # تحديث الجراف بعد التعديل (AST 
   البند مغلق كلياً (P4 ✅). الفرع الأخير منه (fail-open عند فشل الفحص) **حُسم بقرار مدير
   2026-09-06** — انظر قسم "باطل" أعلاه، لم يعد دَيناً.
 - ~~رقم التذكرة مزدوج المصدر~~ — P18 ✅ أُغلق 2026-09-08: `reminders.js` يقرأ `booking.ticket_code` (اختبار P18-1). معه أُزيل رقم الموظف المفبرك `966500000000` (P49) — غياب `STORE_WA_PHONE` = تخطي تذكير الموظف مع `logError`.
-- **`whatsapp/webhook.js` بلا `checkRateLimit` على الطلب الوارد:** الاستيراد موجود (سطر ١٥)
-  لكن الاستدعاء الوحيد (سطر ١١٩) خنقُ تنبيهات داخلي، لا بوابة طلب. — P21 ⬜ مفتوح.
+- ~~ويبهوك واتساب بلا `checkRateLimit`~~ — P21 ✅ 2026-09-08: ٦٠٠/دقيقة بعد التوقيع.
 - ~~٩ ملفات `console.error` خام~~ — ✅ 2026-09-08: صفر `console.error` خارج `errorLog.js`، محروس باختبار LOG-1. P23 وP26 أُغلقا بنفس الدفعة (`timingSafeEqualStr` بـ`core/crypto.js`).
 - لا cron trigger أصلي بـ`wrangler.toml` — **معالج فعلياً** عبر `cron-worker/` منفصل (Pages لا يدعم cron triggers أصلاً)، هذا السطر توثيقي لا دَين حقيقي.
 - توكن واتساب دائم بدل المؤقت — **يفكّ الحجب الحالي**، أولوية قصوى (مسار د، `PARALLEL_TRACKS.md`).

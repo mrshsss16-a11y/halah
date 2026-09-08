@@ -11,7 +11,7 @@
 //    than pretending a message was sent.
 import { withApi, json } from "../../_lib/core/respond.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
-import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
 
 /** SHA-256 hex of `${email}:${otp}` — salted by email so codes aren't interchangeable. */
@@ -30,9 +30,8 @@ function generateOtp() {
 }
 
 async function forgotPasswordHandler(body, env, request) {
-  const clientIp =
-    request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for") || "127.0.0.1";
-  const rateCheck = await checkRateLimit(env, clientIp, "forgot_password", 5, 60);
+  const ip = clientIp(request);
+  const rateCheck = await checkRateLimit(env, ip, "forgot_password", 5, 60);
   if (!rateCheck.allowed) {
     return json(
       { ok: false, error: `محاولات كثيرة جداً لاستعادة كلمة المرور. حاول بعد ${rateCheck.resetInSeconds} ثانية.` },

@@ -12,7 +12,7 @@ import { recallSimilar } from "../../_lib/ai/memory.js";
 import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
 import { matchAuraGreeting, matchFastIntent } from "../../_lib/ai/intents.js";
 import { logError } from "../../_lib/core/errorLog.js";
-import { checkRateLimit } from "../../_lib/core/rateLimit.js";
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 
 // Manager decision 2026-09-06: quota-check errors (D1/KV outage) stay
 // fail-OPEN — a transient infra blip must not stop the bot replying to every
@@ -261,6 +261,17 @@ export async function onRequestPost(context) {
     env.WHATSAPP_APP_SECRET
   );
   if (!ok) return new Response(JSON.stringify({ error: "invalid signature" }), { status: 401, headers: { "content-type": "application/json" } });
+
+  // P21 — second line of defence behind the signature: a leaked app secret (or
+  // a compromised Meta-side relay) must not turn into unbounded AI spend. Meta
+  // delivers in bursts, so the ceiling is generous; a real flood still stops.
+  // Fails OPEN on KV outage (same manager decision as the quota check below,
+  // P28) — the signature stays the hard gate.
+  const flood = await checkRateLimit(env, clientIp(request), "wa_webhook", 600, 60).catch(() => ({ allowed: true }));
+  if (!flood.allowed) {
+    logError(context, { requestId: null, path: "whatsapp/webhook", code: "WA_WEBHOOK_RATE_LIMITED", internal: "signed webhook flood — 600/min exceeded" });
+    return new Response("ok", { status: 200 }); // 200 so Meta does not retry-storm; the burst is dropped, not queued
+  }
 
   let payload;
   try {

@@ -12,6 +12,7 @@
 // their own email+password to another merchant's Salla store, i.e. a full
 // takeover of that tenant.
 import { json } from "../../_lib/core/respond.js";
+import { assertTrustedWrite } from "../../_lib/core/csrf.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { getSessionMerchantId } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
@@ -21,6 +22,12 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+  // P42 — CSRF gate (Origin allowlist + JSON-only body) for this raw handler.
+  try {
+    assertTrustedWrite(request, env);
+  } catch (err) {
+    return json({ ok: false, error: err.message, code: err.code || "CSRF_REJECTED" }, err.status || 403);
+  }
 
   const rl = await checkRateLimit(env, clientIp(request), "complete_account", 5, 3600);
   if (!rl.allowed) {

@@ -3,8 +3,13 @@ import { hashPassword, verifyPassword } from "../functions/_lib/core/auth.js";
 import { saveConsultationBooking } from "../functions/_lib/core/db.js";
 import { createSessionToken, verifySessionToken } from "../functions/_lib/core/session.js";
 
+// P40: session tokens carry accounts.session_version, verified KV-first. This
+// mirror answers "0" for everyone so token tests never need a D1 mock — and so
+// tests that assert "must not reach the DB" keep meaning exactly that.
+const sessionVersionKv = { get: async () => "0", put: async () => {}, delete: async () => {} };
 const env = {
-  SESSION_SECRET: "test-secret-12345"
+  SESSION_SECRET: "test-secret-12345",
+  HALA_CACHE: sessionVersionKv
 };
 
 async function runTests() {
@@ -72,7 +77,7 @@ async function runTests() {
   }
   
   const token = await createSessionToken(env, merchantId);
-  assert(token.split(".").length === 3, "createSessionToken created valid format token");
+  assert(token.split(".").length === 4, "createSessionToken created valid format token (merchant.expiry.version.mac — P40)");
   const verifiedId = await verifySessionToken(env, token);
   assert(verifiedId === merchantId, "verifySessionToken successfully verified the token");
 
@@ -301,7 +306,7 @@ async function runTests() {
   // behavioural: the endpoint must answer 409 and must NEVER reach the DB
   // INSERT (the mock throws on any DB use, so a regression fails loudly).
   const { isAdminEmail } = await import("../functions/_lib/core/adminEmails.js");
-  const adminEnv = { ADMIN_EMAILS: " Admin@Aura.SA , second@aura.sa ", SESSION_SECRET: env.SESSION_SECRET };
+  const adminEnv = { ADMIN_EMAILS: " Admin@Aura.SA , second@aura.sa ", SESSION_SECRET: env.SESSION_SECRET, HALA_CACHE: sessionVersionKv };
   assert(isAdminEmail(adminEnv, "admin@aura.sa"), "isAdminEmail trims and lowercases both sides");
   assert(isAdminEmail(adminEnv, "  SECOND@aura.sa "), "isAdminEmail handles spaces around commas");
   assert(!isAdminEmail(adminEnv, "merchant@aura.sa"), "isAdminEmail rejects a non-admin address");
@@ -2528,6 +2533,148 @@ async function runTests() {
       !/ينشره على سلة تلقائياً/.test(dash) && /لا يُنشر شيء على سلة قبل ما تراجعه وتعتمده/.test(dash) && /\/api\/store\/review\/decide/.test(dash) && /\/api\/store\/bulk\/generate/.test(dash),
       "BULK-18: الداشبورد يعد بالمراجعة لا بالنشر التلقائي، ويصل شاشة المراجعة والتوليد من الكتالوج"
     );
+  }
+
+  // ── المرحلة ٣ (docs/COMPLETION_PATH.md) — بوابة "قبل أول تاجر حقيقي" ────
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const { createSessionToken, verifySessionToken, bumpSessionVersion, currentSessionVersion } = await import("../functions/_lib/core/session.js");
+    const { assertTrustedWrite } = await import("../functions/_lib/core/csrf.js");
+    const { withApi } = await import("../functions/_lib/core/respond.js");
+
+    // P40 — إبطال الجلسات: نسخة الحساب تُضمَّن بالتوقيع؛ الرفع يقتل كل توكن أقدم.
+    const versions = new Map([["m_v", 0]]);
+    const kvStore = new Map();
+    const vEnv = {
+      SESSION_SECRET: "test-secret-12345",
+      HALA_CACHE: { get: async (k) => kvStore.get(k) ?? null, put: async (k, v) => { kvStore.set(k, v); }, delete: async () => {} },
+      DB: {
+        prepare(sql) {
+          return {
+            bind(...args) {
+              return {
+                first: async () => {
+                  if (/SELECT session_version FROM accounts/.test(sql)) return versions.has(args[0]) ? { session_version: versions.get(args[0]) } : null;
+                  if (/UPDATE accounts SET session_version = session_version \+ 1/.test(sql)) {
+                    if (!versions.has(args[0])) return null;
+                    versions.set(args[0], versions.get(args[0]) + 1);
+                    return { session_version: versions.get(args[0]) };
+                  }
+                  return null;
+                },
+                run: async () => ({ meta: {} })
+              };
+            }
+          };
+        }
+      }
+    };
+    const tokV0 = await createSessionToken(vEnv, "m_v");
+    assert((await verifySessionToken(vEnv, tokV0)) === "m_v", "P40-1: توكن بالنسخة الحالية يمرّ");
+    await bumpSessionVersion(vEnv, "m_v");
+    assert((await verifySessionToken(vEnv, tokV0)) === null, "P40-2: بعد الرفع (خروج/إعادة تعيين/تعطيل) التوكن القديم يموت فوراً");
+    const tokV1 = await createSessionToken(vEnv, "m_v");
+    assert((await verifySessionToken(vEnv, tokV1)) === "m_v" && tokV1.split(".")[2] === "1", "P40-3: توكن جديد يحمل النسخة ١ ويمرّ");
+    // توكن قديم الشكل (٣ أجزاء) = نسخة ٠ فقط
+    kvStore.clear(); versions.set("m_legacy", 0);
+    const legacyPayload = "m_legacy.9999999999";
+    const key = await crypto.subtle.importKey("raw", new TextEncoder().encode("test-secret-12345"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const mac = [...new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(legacyPayload)))].map((b) => b.toString(16).padStart(2, "0")).join("");
+    assert((await verifySessionToken(vEnv, `${legacyPayload}.${mac}`)) === "m_legacy", "P40-4: توكن ما قبل الهجرة (٣ أجزاء) يمرّ ما دامت النسخة ٠ — لا طرد جماعي بالنشر");
+    await bumpSessionVersion(vEnv, "m_legacy");
+    assert((await verifySessionToken(vEnv, `${legacyPayload}.${mac}`)) === null, "P40-5: أول رفع يقتل التوكنات القديمة الشكل أيضاً");
+    // تاجر بلا صف accounts (سلة Easy-Mode) = نسخة ٠
+    kvStore.clear();
+    assert((await currentSessionVersion(vEnv, "m_no_account")) === 0, "P40-6: تاجر بلا حساب نسخته ٠ (معرّفه هو اعتماده الوحيد)");
+    // فشل D1 وKV معاً = fail closed
+    const deadEnv = { SESSION_SECRET: "test-secret-12345", DB: { prepare() { throw new Error("D1 down"); } } };
+    assert((await verifySessionToken(deadEnv, tokV1)) === null, "P40-7: تعذّر تأكيد النسخة (D1 وKV) = لا جلسة — fail closed");
+    // لا توكن قديم يبقى بعد الخروج: logout يرفع النسخة فعلاً
+    const logoutSrc = read("../functions/api/auth/logout.js");
+    const resetSrc = read("../functions/api/auth/reset_password.js");
+    const accountsSrc = read("../functions/api/admin/accounts.js");
+    assert(/bumpSessionVersion\(env, merchantId\)/.test(logoutSrc) && /bumpSessionVersion\(env, owner\.merchant_id\)/.test(resetSrc) && /if \(body\.disabled\) await bumpSessionVersion/.test(accountsSrc),
+      "P40-8: الخروج وإعادة التعيين والتعطيل ترفع النسخة (الأحداث الثلاثة بالخطة)");
+
+    // P42 — CSRF: Origin غريب يُرفض، نموذج text/plain يُرفض، نفس الأصل وإطار سلة يمرّان.
+    const mk = (headers, body = '{"a":1}') => new Request("https://halah.aura.sa/api/x", { method: "POST", headers, body });
+    const throwsCode = (fn) => { try { fn(); return null; } catch (e) { return e.code; } };
+    assert(throwsCode(() => assertTrustedWrite(mk({ Origin: "https://evil.example", "Content-Type": "application/json" }), {})) === "CSRF_REJECTED", "P42-1: Origin غريب → CSRF_REJECTED");
+    assert(throwsCode(() => assertTrustedWrite(mk({ Origin: "https://halah.aura.sa", "Content-Type": "text/plain" }), {})) === "UNSUPPORTED_MEDIA_TYPE", "P42-2: نموذج enctype=text/plain → 415 حتى من نفس الأصل");
+    assert(throwsCode(() => assertTrustedWrite(mk({ Origin: "https://halah.aura.sa", "Content-Type": "application/json" }), {})) === null, "P42-3: نفس الأصل + JSON يمرّ");
+    assert(throwsCode(() => assertTrustedWrite(mk({ Origin: "https://s.salla.sa", "Content-Type": "application/json" }), {})) === null, "P42-4: إطار سلة يمرّ");
+    assert(throwsCode(() => assertTrustedWrite(mk({ Origin: "https://abc123.hala-ai-os.pages.dev", "Content-Type": "application/json" }), {})) === null, "P42-5: نشرة معاينة تمرّ");
+    assert(throwsCode(() => assertTrustedWrite(mk({ "Sec-Fetch-Site": "cross-site", "Content-Type": "application/json" }), {})) === "CSRF_REJECTED", "P42-6: Sec-Fetch-Site=cross-site بلا Origin → مرفوض");
+    assert(throwsCode(() => assertTrustedWrite(new Request("https://halah.aura.sa/api/x", { method: "POST" }), {})) === null, "P42-7: عميل غير متصفح بلا Origin ولا جسم (cron-worker/curl) يمرّ — لا كوكي ضحية معه");
+    assert(throwsCode(() => assertTrustedWrite(new Request("https://halah.aura.sa/api/x", { method: "GET", headers: { Origin: "https://evil.example" } }), {})) === null, "P42-8: GET لا يُفحص (لا تغيير حالة)");
+    assert(throwsCode(() => assertTrustedWrite(mk({ Origin: "https://evil-facebook.com", "Content-Type": "application/json" }), { TRUSTED_ORIGINS: "https://partner.example" })) === "CSRF_REJECTED", "P42-9: TRUSTED_ORIGINS لا تفتح ما لم يُدرَج حرفياً");
+    // سلوكياً عبر withApi: الرد 403 عربي بلا تنفيذ المعالج
+    let handlerRan = false;
+    const guarded = withApi(async () => { handlerRan = true; return { ok: true }; });
+    const csrfRes = await guarded({ request: mk({ Origin: "https://evil.example", "Content-Type": "application/json" }), env: {}, waitUntil() {} });
+    const csrfBody = await csrfRes.json();
+    assert(csrfRes.status === 403 && csrfBody.code === "CSRF_REJECTED" && handlerRan === false && /مصدر غير موثوق/.test(csrfBody.error), "P42-10: withApi يرفض قبل تنفيذ المعالج برسالة عربية + requestId");
+    // المعالجات الخام (signup/login/logout/me/complete_account) تستدعي الحارس
+    for (const f of ["signup", "login", "logout", "me", "complete_account"]) {
+      assert(/assertTrustedWrite\(request, env\)/.test(read(`../functions/api/auth/${f}.js`)), `P42-11: auth/${f} يمرّ بحارس CSRF (معالج خام خارج withApi)`);
+    }
+
+    // P38 طبقة ٢ — حرق رمز تحقق البريد بعد ٥ محاولات، والعدّ ذرّي قبل المقارنة.
+    const verifySrc = read("../functions/api/auth/verify_email.js");
+    assert(/UPDATE email_verifications SET attempts = attempts \+ 1/.test(verifySrc) && /RETURNING code_hash, attempts/.test(verifySrc) && /row\.attempts > MAX_ATTEMPTS/.test(verifySrc) && /DELETE FROM email_verifications/.test(verifySrc),
+      "P38-L2-1: verify_email يعدّ المحاولة ذرّياً قبل المقارنة ويحرق الرمز بعد ٥");
+    const sendSrc = read("../functions/api/auth/send_verification.js");
+    assert(/EMAIL_NOT_CONFIGURED/.test(sendSrc) && /emailConfigured\(env\)/.test(sendSrc), "P38-L2-2: بلا مزوّد بريد = 503 صريح، لا ادعاء إرسال");
+    const emailMod = await import("../functions/_lib/integrations/email.js");
+    assert(emailMod.isConfigured({}) === false && emailMod.isConfigured({ RESEND_API_KEY: "k" }) === false && emailMod.isConfigured({ RESEND_API_KEY: "k", EMAIL_FROM: "x@y" }) === true, "P38-L2-3: محوّل البريد fail-closed بلا السرّين");
+    let emailThrew = false;
+    try { await emailMod.send({}, { to: "a@b", subject: "s", text: "t" }); } catch { emailThrew = true; }
+    assert(emailThrew, "P38-L2-4: send بلا سر يرمي — لا تمرير برشاقة");
+    const mig23 = read("../migrations/0023_session_version_audit_log.sql");
+    assert(/ADD COLUMN session_version/.test(mig23) && /ADD COLUMN email_verified_at/.test(mig23) && /LIKE 'm_g_%'/.test(mig23) && /CREATE TABLE IF NOT EXISTS audit_log/.test(mig23), "P38-L2-5: هجرة 0023 — نسخة الجلسة + تحقق البريد (Google متحقَّق سلفاً) + audit_log");
+
+    // P21 — الويبهوك بحد معدل بعد التوقيع.
+    const waSrc = read("../functions/api/whatsapp/webhook.js");
+    const sigIdx = waSrc.indexOf("verifyWaSignature(");
+    const rlIdx = waSrc.indexOf('checkRateLimit(env, clientIp(request), "wa_webhook"');
+    assert(sigIdx > 0 && rlIdx > sigIdx && /WA_WEBHOOK_RATE_LIMITED/.test(waSrc), "P21: حد معدل على الويبهوك الموقّع (٦٠٠/دقيقة) بعد التحقق من التوقيع");
+
+    // P45 — تثبيت المضيف: fetch لا يُستدعى إطلاقاً لمضيف غريب (mock عالمي).
+    const { assertWaUrlAllowed, getWaMedia } = await import("../functions/_lib/integrations/whatsapp.js");
+    assert(throwsCode(() => assertWaUrlAllowed("https://evil.example/x")) !== null || (() => { try { assertWaUrlAllowed("https://evil.example/x"); return false; } catch { return true; } })(), "P45-1: مضيف غريب يُرفض قبل أي طلب");
+    assert((() => { try { assertWaUrlAllowed("http://graph.facebook.com/x"); return false; } catch { return true; } })(), "P45-2: http (بلا s) يُرفض حتى لمضيف مسموح");
+    assert(assertWaUrlAllowed("https://graph.facebook.com/v21.0/123").startsWith("https://graph.facebook.com/"), "P45-3: مضيف Graph المسموح يمرّ");
+    const realFetch = globalThis.fetch;
+    const fetchedHosts = [];
+    globalThis.fetch = async (url) => {
+      fetchedHosts.push(new URL(String(url)).hostname);
+      // meta lookup returns a media URL on a FOREIGN host — the download step must refuse before fetching it
+      return new Response(JSON.stringify({ url: "https://evil.example/media.ogg" }), { status: 200, headers: { "content-type": "application/json" } });
+    };
+    let mediaErr = null;
+    try { await getWaMedia({ WHATSAPP_TOKEN: "t", WHATSAPP_PHONE_ID: "p" }, "media123"); } catch (e) { mediaErr = e; }
+    globalThis.fetch = realFetch;
+    assert(mediaErr && fetchedHosts.length === 1 && fetchedHosts[0] === "graph.facebook.com" && !fetchedHosts.includes("evil.example"),
+      "P45-4: رابط وسائط يشير لمضيف غريب — fetch لا يُستدعى له أبداً، والتوكن لا يغادر");
+
+    // P9 — سطر تدقيق بكل نقطة أدمن.
+    const { readdirSync } = await import("node:fs");
+    const adminDir = new URL("../functions/api/admin/", import.meta.url);
+    const adminFiles = readdirSync(adminDir).filter((n) => n.endsWith(".js"));
+    const missingAudit = adminFiles.filter((n) => !/recordAdminAction\(context/.test(readFileSync(new URL(n, adminDir), "utf8")));
+    assert(adminFiles.length >= 9 && missingAudit.length === 0, `P9: كل نقاط الأدمن (${adminFiles.length}) تسجّل سطر تدقيق (الناقص: ${missingAudit.join(", ") || "لا شيء"})`);
+    const { recordAdminAction } = await import("../functions/_lib/core/auditLog.js");
+    let auditRow = null;
+    const auditCtx = { env: { DB: { prepare: (sql) => ({ bind: (...a) => ({ run: async () => { if (/INSERT INTO audit_log/.test(sql)) auditRow = a; return {}; } }) }) } }, waitUntil(p) { this._p = p; } };
+    recordAdminAction(auditCtx, { admin: { email: "admin@aura.sa" }, action: "setDisabled", path: "/api/admin/accounts", targetMerchantId: "m_x", requestId: "r1" });
+    await auditCtx._p;
+    assert(auditRow && auditRow[0] === "admin@aura.sa" && auditRow[1] === "setDisabled" && auditRow[3] === "m_x", "P9-2: السطر يحمل الأدمن والفعل والمتجر الهدف — بلا PII");
+
+    // P57 + CSP — حراس الارتداد تعمل فعلاً (لا تمرير فارغ).
+    const secSrc = read("../functions/_lib/core/security.js");
+    assert(!/'unsafe-eval'/.test(secSrc), "P56: 'unsafe-eval' أُزيل من CSP الردود");
+    assert(/audit-security\.mjs/.test(read("../package.json")), "ح٢-ح٨: تدقيق الأمن مربوط بـnpm test");
   }
 
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);

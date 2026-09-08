@@ -1,5 +1,6 @@
 // POST /api/admin/aura_whatsapp — Aura Marketing WhatsApp Agent & Feature Tester
 import { withApi } from "../../_lib/core/respond.js";
+import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
 import { askWorkersAI, TEXT_MODEL } from "../../_lib/ai/gateway.js";
 import { saveHalaFaqEntry, listHalaFaq } from "../../_lib/core/db.js";
@@ -7,9 +8,11 @@ import { HALA_WHATSAPP_SUPPORT_PROMPT } from "../../_lib/ai/persona.js";
 
 const AURA_MERCHANT_ID = "m_admin_aura";
 
-async function auraWhatsappHandler(body, env, request) {
+async function auraWhatsappHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);
   if (!admin) return { ok: false, error: "غير مصرح — يتطلب حساب الإشراف للأدمن.", code: "FORBIDDEN" };
+  // P9 — سطر تدقيق: من قرأ/عدّل ماذا ومتى (migrations/0023 audit_log).
+  recordAdminAction(context, { admin, action: String(body.action || "read"), path: new URL(request.url).pathname, targetMerchantId: "hala", requestId });
 
   const action = body.action || "get_config";
 
