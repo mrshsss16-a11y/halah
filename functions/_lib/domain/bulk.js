@@ -1,0 +1,204 @@
+// مجال العمل بالجملة: `bulk_jobs`/`bulk_job_items`، طابور سحب الكتالوج
+// (`kind = 'catalog_sync'`)، وإحياء الصفوف المؤجَّلة عن حصة الشهر.
+// نُقل من core/db.js بالمرحلة ٣ (ARCHITECTURE §٢) بلا تغيير سلوكي.
+
+// ── B3: bulk description jobs ───────────────────────────────────────────────
+export async function createBulkJob(env, { id, merchantId, tone, rows }) {
+  await env.DB.prepare(
+    "INSERT INTO bulk_jobs (id, merchant_id, tone, total) VALUES (?, ?, ?, ?)"
+  )
+    .bind(id, merchantId, tone, rows.length)
+    .run();
+
+  // D1 batch() is one round-trip instead of N — matters at up to 1000 rows.
+  const stmt = env.DB.prepare(
+    "INSERT INTO bulk_job_items (job_id, row_index, sku, name, price, category) VALUES (?, ?, ?, ?, ?, ?)"
+  );
+  const batch = rows.map((r, i) => stmt.bind(id, i, r.sku, r.name, r.price || null, r.category || null));
+  for (let i = 0; i < batch.length; i += 100) {
+    await env.DB.batch(batch.slice(i, i + 100));
+  }
+  return id;
+}
+
+export async function getBulkJob(env, jobId, merchantId) {
+  return env.DB.prepare("SELECT * FROM bulk_jobs WHERE id = ? AND merchant_id = ?")
+    .bind(jobId, merchantId)
+    .first();
+}
+
+export async function listActiveBulkJobItems(env, limit) {
+  // Oldest running job first so one big job doesn't starve one queued behind it.
+  const { results } = await env.DB.prepare(
+    `SELECT i.*, j.merchant_id AS merchant_id, j.tone AS tone FROM bulk_job_items i
+     JOIN bulk_jobs j ON j.id = i.job_id
+     WHERE j.status = 'running' AND i.status = 'pending'
+     ORDER BY j.created_at ASC, i.row_index ASC
+     LIMIT ?`
+  )
+    .bind(limit)
+    .all();
+  return results || [];
+}
+
+// tenant-audit-ok (whole function): itemId/jobId here are never attacker input —
+// the sole caller (functions/api/cron/bulk_process.js, allowlisted) reads them
+// off `item` rows already produced by listActiveBulkJobItems() above, which
+// joins bulk_jobs internally. No merchant-facing endpoint calls this directly;
+// if one ever does, it must pass through getBulkJob(jobId, merchantId) first.
+export async function completeBulkJobItem(env, { itemId, jobId, status, description, error, seoPayload = null, reviewId = null }) {
+  await env.DB.prepare(
+    "UPDATE bulk_job_items SET status = ?, description = ?, error = ?, seo_payload = ?, review_id = ?, updated_at = datetime('now') WHERE id = ?"
+  )
+    .bind(status, description || null, error || null, seoPayload === null ? null : String(seoPayload).slice(0, 20000), reviewId, itemId)
+    .run();
+
+  const succeededDelta = status === "done" ? 1 : 0;
+  const failedDelta = status === "failed" || status === "skipped" ? 1 : 0;
+  // tenant-audit-ok: jobId is trusted (see function-header note above) — this
+  // internal progress counter is not merchant-facing.
+  await env.DB.prepare(
+    `UPDATE bulk_jobs SET
+       processed = processed + 1,
+       succeeded = succeeded + ?,
+       failed = failed + ?,
+       updated_at = datetime('now')
+     WHERE id = ?`
+  )
+    .bind(succeededDelta, failedDelta, jobId)
+    .run();
+
+  // tenant-audit-ok: same trusted jobId, internal completion check.
+  const job = await env.DB.prepare("SELECT total, processed FROM bulk_jobs WHERE id = ?").bind(jobId).first();
+  if (job && job.processed >= job.total) {
+    // tenant-audit-ok: same trusted jobId, internal status flip.
+    await env.DB.prepare("UPDATE bulk_jobs SET status = 'done', updated_at = datetime('now') WHERE id = ?")
+      .bind(jobId)
+      .run();
+  }
+}
+
+// ── المرحلة ١ (docs/PLAN_BULK_SEO.md): طابور موجّه بـkind ────────────────────
+// نفس جدول bulk_jobs، وعمود `kind` يقرر أي معالج يصرّف الوظيفة بالـcron.
+// وظائف catalog_sync بلا bulk_job_items إطلاقاً: تقدّمها محفوظ بـ`cursor`
+// (رقم الصفحة التالية بسلة) لأن صفحة واحدة فقط تُسحب لكل تِك — تجاوز حد
+// ١ طلب/ثانية يوقف اتصال المتجر كاملاً لا الطلب وحده.
+
+/** وظيفة نشطة من نوع معيّن لهذا التاجر — لمنع وظيفتين متوازيتين على نفس المتجر. */
+export async function getActiveJobByKind(env, merchantId, kind) {
+  if (!env.DB || !merchantId) return null;
+  return env.DB.prepare(
+    "SELECT id, kind, status, cursor, processed, succeeded, failed, created_at FROM bulk_jobs WHERE merchant_id = ? AND kind = ? AND status = 'running' ORDER BY created_at DESC"
+  )
+    .bind(merchantId, kind)
+    .first();
+}
+
+/** ينشئ وظيفة سحب كتالوج (بلا صفوف — التقدّم بالـcursor). */
+export async function createCatalogSyncJob(env, { id, merchantId }) {
+  await env.DB.prepare(
+    "INSERT INTO bulk_jobs (id, merchant_id, kind, cursor, total) VALUES (?, ?, 'catalog_sync', '1', 0)"
+  )
+    .bind(id, merchantId)
+    .run();
+  return id;
+}
+
+// tenant-audit-ok: مسح على مستوى الخادم لطابور الـcron — بالتعريف عابر
+// للمستأجرين (مثل listActiveBulkJobItems). merchant_id يعود بالصف نفسه
+// ويُمرَّر لكل استدعاء سلة/كتالوج بعده، فالعزل يُفرض بالمستدعي.
+export async function claimNextCatalogSyncJob(env) {
+  return env.DB.prepare(
+    "SELECT id, merchant_id, cursor, processed FROM bulk_jobs WHERE kind = 'catalog_sync' AND status = 'running' ORDER BY updated_at ASC LIMIT 1"
+  ).first();
+}
+
+/** يسجّل نتيجة صفحة واحدة من السحب (عدّاد داخلي، غير مواجه للتاجر). */
+export async function advanceCatalogSyncJob(env, { jobId, imported, nextPage }) {
+  const finished = !nextPage;
+  // tenant-audit-ok: jobId مصدره claimNextCatalogSyncJob() أعلاه (صف طابور
+  // داخلي)، لا مدخل عميل. لا endpoint تاجر يستدعي هذه الدالة؛ لو استُدعيت
+  // يوماً من نقطة تاجر فلازم تمرّ بـgetBulkJob(jobId, merchantId) أولاً.
+  await env.DB.prepare(
+    `UPDATE bulk_jobs SET
+       cursor = ?,
+       total = total + ?,
+       processed = processed + ?,
+       succeeded = succeeded + ?,
+       status = CASE WHEN ? = 1 THEN 'done' ELSE status END,
+       updated_at = datetime('now')
+     WHERE id = ?`
+  )
+    .bind(
+      finished ? null : String(nextPage),
+      imported,
+      imported,
+      imported,
+      finished ? 1 : 0,
+      jobId
+    )
+    .run();
+}
+
+/** يوقف وظيفة سحب متعثّرة (خطأ سلة مثلاً) بدل تركها تدور كل تِك. */
+export async function failCatalogSyncJob(env, jobId) {
+  // tenant-audit-ok: نفس jobId الداخلي الموثوق أعلاه (طابور الـcron لا مدخل عميل).
+  await env.DB.prepare(
+    "UPDATE bulk_jobs SET status = 'cancelled', updated_at = datetime('now') WHERE id = ?"
+  )
+    .bind(jobId)
+    .run();
+}
+
+// ── المرحلة ٢: إحياء المؤجَّل شهرياً (docs/PLAN_BULK_SEO.md §٦) ─────────────
+// صفوف قُصّت عن حصة الشهر تُخزَّن بحالة skipped وسبب DEFERRED_MARKER بدل رفضها.
+// يستدعيها الـcron كل تِك: لكل متجر عنده صفوف مؤجَّلة وحصة متبقية، يُعاد
+// حتى `remaining` صفاً إلى pending ويُفتح الطابور من جديد — التاجر لا يعيد شيئاً.
+export const DEFERRED_MARKER = "مؤجّل للشهر القادم";
+
+export async function listMerchantsWithDeferredItems(env, limit = 20) {
+  // tenant-audit-ok: استعلام cron عابر للمتاجر بالتصميم — يجمع المتاجر ذات الصفوف المؤجَّلة ثم كل ما بعده معزول بـmerchant_id.
+  const { results } = await env.DB.prepare(
+    `SELECT j.merchant_id AS merchant_id, COUNT(*) AS deferred
+       FROM bulk_job_items i JOIN bulk_jobs j ON j.id = i.job_id
+      WHERE i.status = 'skipped' AND i.error = ?
+      GROUP BY j.merchant_id ORDER BY MIN(i.updated_at) ASC LIMIT ?`
+  )
+    .bind(DEFERRED_MARKER, limit)
+    .all();
+  return results || [];
+}
+
+export async function reviveDeferredItems(env, { merchantId, limit }) {
+  const cap = Math.max(0, Math.floor(Number(limit) || 0));
+  if (!cap) return 0;
+  // الصفوف المؤجَّلة لهذا المتجر فقط (عبر bulk_jobs.merchant_id)، الأقدم أولاً.
+  const { results } = await env.DB.prepare(
+    `SELECT i.id AS id, i.job_id AS job_id
+       FROM bulk_job_items i JOIN bulk_jobs j ON j.id = i.job_id
+      WHERE j.merchant_id = ? AND i.status = 'skipped' AND i.error = ?
+      ORDER BY i.updated_at ASC, i.row_index ASC LIMIT ?`
+  )
+    .bind(merchantId, DEFERRED_MARKER, cap)
+    .all();
+  const rows = results || [];
+  if (!rows.length) return 0;
+
+  const stmts = [];
+  const jobs = new Set();
+  for (const r of rows) {
+    // tenant-audit-ok: id مصدره الاستعلام المعزول أعلاه (نفس الدالة)، لا مدخل عميل.
+    stmts.push(env.DB.prepare("UPDATE bulk_job_items SET status = 'pending', error = NULL, updated_at = datetime('now') WHERE id = ?").bind(r.id));
+    jobs.add(r.job_id);
+  }
+  for (const jobId of jobs) {
+    const n = rows.filter((r) => r.job_id === jobId).length;
+    stmts.push(
+      env.DB.prepare(
+        "UPDATE bulk_jobs SET status = 'running', processed = processed - ?, failed = failed - ?, updated_at = datetime('now') WHERE id = ? AND merchant_id = ?"
+      ).bind(n, n, jobId, merchantId)
+    );
+  }
+  await env.DB.batch(stmts);
+  return rows.length;
+}

@@ -4,7 +4,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { findCatalogBySallaProductId, markPublished } from "../functions/_lib/services/catalog.js";
+import { findCatalogBySallaProductId, markPublished } from "../functions/_lib/domain/catalog.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");

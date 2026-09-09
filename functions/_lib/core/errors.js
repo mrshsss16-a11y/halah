@@ -13,6 +13,29 @@
 // المستقبِل هناك خادم Meta/سلة لا إنسان، والتعريب يضرّ التشخيص ولا ينفع أحداً.
 
 /**
+ * خطأ **مجالي** — يرميه `functions/_lib/domain/**` بدل `ApiError`.
+ *
+ * لماذا هنا لا بـ`respond.js`: قاعدة الاتجاه ق٣ (ARCHITECTURE §١) تمنع المجال
+ * من استيراد `respond.js` — المجال لا يعرف HTTP ولا `Response`. لكنه يعرف
+ * **ماذا يقول للعميل** و**بأي حالة**، فيحمل الاثنين كبيانات ويترجمها `withApi`
+ * إلى نفس شكل استجابة `ApiError` بالضبط: `{ ok:false, error, code, requestId }`
+ * بنفس الحالة — لا يتغيّر شيء على العميل.
+ *
+ * `userMessage` هو ما يصل التاجر (عربي، آمن للعرض). `internal` للسجل فقط،
+ * لا يُرسل أبداً. لا PII بأيّهما (هاتف، بريد، نص رسالة).
+ */
+export class DomainError extends Error {
+  constructor(status, userMessage, code = "ERROR", internal = null) {
+    super(userMessage);
+    this.name = "DomainError";
+    this.status = status;
+    this.code = code;
+    this.userMessage = userMessage;
+    this.internal = internal;
+  }
+}
+
+/**
  * كل مدخل: الحالة HTTP + رسالة عربية موجّهة للفعل، لا لوصف العطل.
  * `action` ليست زخرفة: هي الفرق بين رسالة تُنهي المشكلة وأخرى تُنتج تذكرة دعم.
  */

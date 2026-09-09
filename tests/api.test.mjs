@@ -1300,7 +1300,7 @@ async function runTests() {
 
   // ── النشر بعد الاعتماد (docs/INSTAGRAM_PLAN.md §٢.٢) ────────────────────
   {
-    const { publishApproved } = await import("../functions/_lib/services/publishApproved.js");
+    const { publishApproved } = await import("../functions/_lib/domain/publish.js");
 
     // DB وهمي: ig_connections تربط IG_A بالتاجر m_a فقط، وrecordPublishResult
     // يسجّل ما وصله.
@@ -1415,7 +1415,7 @@ async function runTests() {
   // ── المرحلة ١: سحب كتالوج سلة (services/catalog.js + توجيه kind) ──────────
   {
     const { syncCatalogPage, listCatalog, getCatalogItem } = await import(
-      "../functions/_lib/services/catalog.js"
+      "../functions/_lib/domain/catalog.js"
     );
 
     // DB وهمي يسجّل كل استعلام مع قيمه المربوطة.
@@ -1704,7 +1704,7 @@ async function runTests() {
       approveProfile,
       profileToPromptBlock,
       normalizeProfile
-    } = await import("../functions/_lib/services/storeProfile.js");
+    } = await import("../functions/_lib/domain/storeProfile.js");
     const { approvedProfileBlock, buildSeoSystem } = await import("../functions/api/copy.js");
 
     const SAMPLE = [
@@ -2428,14 +2428,14 @@ async function runTests() {
     );
 
     // BULK-4 — publishApproved: وصف معتمد يُكتب بالـSKU، و٤٢٩ يرفع retryAfter، و٤٢٢ يسقط للوصف وحده.
-    const pubSrc = read("../functions/_lib/services/publishApproved.js");
+    const pubSrc = read("../functions/_lib/domain/publish.js");
     assert(
       /row\?\.kind === "description"/.test(pubSrc) && /status === 429/.test(pubSrc) && /status === 422 && fallback/.test(pubSrc) && /buildSallaProductFields/.test(pubSrc) && /markPublished/.test(pubSrc),
       "BULK-4: publishApproved يعالج description بالـSKU مع ٤٢٩→retryAfter و٤٢٢→الوصف وحده ويعلّم الكتالوج"
     );
 
     // BULK-5 — approveMany: كل صف بشرط pending + merchant_id؛ فشل صف لا يوقف الباقي ولا يُخفى.
-    const { approveMany, updatePayload, countByState, listByState } = await import("../functions/_lib/services/reviewQueue.js");
+    const { approveMany, updatePayload, countByState, listByState } = await import("../functions/_lib/domain/review.js");
     const seen = [];
     const rqDb = {
       prepare(sql) {
@@ -2506,7 +2506,7 @@ async function runTests() {
     assert(badState?.status === 400, "BULK-10: حالة غير معروفة تُرفض ٤٠٠ — لا تركيب SQL من مدخل عميل");
 
     // BULK-11 — التراجع: الأصل يُكتب مرة واحدة ولا يمحوه السحب.
-    const catalogSrc = read("../functions/_lib/services/catalog.js");
+    const catalogSrc = read("../functions/_lib/domain/catalog.js");
     assert(
       /original_description = COALESCE\(store_products\.original_description, excluded\.current_description\)/.test(catalogSrc),
       "BULK-11: سحب الكتالوج يحفظ original_description مرة واحدة (COALESCE) — التراجع ممكن بعد نشر هالة"
@@ -2815,7 +2815,7 @@ async function runTests() {
     );
     // المساران يعِدان بنفس الشي — لا يتناقضان.
     assert(
-      /metadata/.test(read("../functions/_lib/services/publishApproved.js")),
+      /metadata/.test(read("../functions/_lib/domain/publish.js")),
       "SEOPUB-4: المسار الجماعي والمفرد ينشران نفس الحقول"
     );
   }
@@ -2824,7 +2824,7 @@ async function runTests() {
   {
     const { readFileSync } = await import("node:fs");
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
-    const { buildSallaProductFields, composeDescriptionHtml } = await import("../functions/_lib/services/sallaProductPayload.js");
+    const { buildSallaProductFields, composeDescriptionHtml } = await import("../functions/_lib/domain/sallaProductPayload.js");
 
     const built = buildSallaProductFields({
       description: "عباية سوداء بقصّة A.\n\nتناسب المناسبات المسائية.",
@@ -3139,7 +3139,7 @@ async function runTests() {
   {
     const { readFileSync } = await import("node:fs");
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
-    const { selectCatalogBySkus } = await import("../functions/_lib/services/catalog.js");
+    const { selectCatalogBySkus } = await import("../functions/_lib/domain/catalog.js");
     const dash = read("../dashboard.html");
     const genSrc = read("../functions/api/store/bulk/generate.js");
 

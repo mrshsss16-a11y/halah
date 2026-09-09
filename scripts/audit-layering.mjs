@@ -32,15 +32,20 @@ const ROOT = process.env.AUDIT_LAYER_ROOT ? join(process.cwd(), process.env.AUDI
 // ── قائمة السماح ────────────────────────────────────────────────────────────
 // المفتاح: "<مسار الملف>#<رقم القاعدة>" → سبب + الموضع يوم التسجيل + مرحلة الإزالة.
 const ALLOWLIST = new Map([
-  // 2026-09-09 · `integrations/salla.js` يقرأ توكن OAuth من D1 بنفسه.
-  // جدول الانتقال (§٢): «`db.js` سلة/OAuth (١٠) + `integrations/salla.js:6→db`
-  // → `domain/salla.js` (التوكن يُمرَّر للمحوّل، لا يقرأه)». الإزالة: المرحلة ٣.
-  ["functions/_lib/integrations/salla.js#ق٢", "المحوّل يقرأ توكنه من core/db.js (السطر ٦ يوم التسجيل) — يُمرَّر له بالمرحلة ٣"],
-  // 2026-09-09 · `services/*` هي `domain/*` قبل إعادة التسمية، وتستورد ApiError
-  // من respond.js. §٣ المرحلة ٣: «إزالة respond.js من domain». الإزالة: المرحلة ٣.
-  ["functions/_lib/services/catalog.js#ق٣", "ApiError من respond.js — يستبدله DomainError بالمرحلة ٣"],
-  ["functions/_lib/services/reviewQueue.js#ق٣", "ApiError من respond.js — يستبدله DomainError بالمرحلة ٣"],
-  ["functions/_lib/services/storeProfile.js#ق٣", "ApiError من respond.js — يستبدله DomainError بالمرحلة ٣"],
+  // 2026-09-09 (أُنجز بالمرحلة ٣) · اقتران المحوّل بـ`core/db.js` **زال**: التوكن
+  // والتشفير وقفل التجديد صاروا بـ`domain/salla.js`، والمحوّل HTTP خالص.
+  // ما بقي: كتلة shim بآخر الملف تحفظ توقيع `(env, merchantId, …)` لمستوردي
+  // `api/**` الأربعة (store/overview · store/publish · store/review/decide ·
+  // webhooks/salla) — تعديل `api/**` خارج نطاق المرحلة ٣ عمداً (القاعدة الذهبية:
+  // صفر تعديل على المستوردين). الكتلة تستورد `domain/salla.js` فتقع تحت ق٢.
+  // الإزالة: **المرحلة ٤** (إفراغ `api/*`) — عندها يعود الملف HTTP خالصاً تماماً.
+  ["functions/_lib/integrations/salla.js#ق٢", "shim توقيعات لمستوردي api الأربعة يستورد domain/salla.js — يُحذف بالمرحلة ٤"],
+
+  // 2026-09-09 (جديد بالمرحلة ٣) · `core/db.js` صار **shim إعادة تصدير** فقط
+  // (كان ١٣٥٠ سطراً و٨٤ تصديراً). يعيد تصدير `domain/*` حتى لا يتغيّر أي من
+  // الأربعين مستورداً بهذه المرحلة، فيستورد core من domain (خرق ق١ بالشكل، لا
+  // بالمضمون: صفر منطق). الإزالة: **المرحلة ٦** («إزالة shim db.js»).
+  ["functions/_lib/core/db.js#ق١", "shim إعادة تصدير مؤقت لـdomain/* — يُزال بالمرحلة ٦"],
 
   // 2026-09-09 · ق٤ — `.prepare(` بطبقة التنسيق. §٣ المرحلة ٤: «إفراغ api/*».
   // الموضع المسجَّل = أول `.prepare(` يوم التسجيل (توثيق، ليس جزءاً من المطابقة).
@@ -70,7 +75,7 @@ const ALLOWLIST = new Map([
   ["functions/api/copy.js#ق٥", "بناء system prompt (سطر ٢٠٧) — يُنقل لـdomain/copy.js بالمرحلة ٤"],
   ["functions/api/whatsapp/webhook.js#ق٥", "PERSONA_SYSTEM_PROMPT بقالب نصي (سطر ٢٢٩) — يُنقل لـdomain/whatsapp.js بالمرحلة ٦"],
 ]);
-const EXPECTED_ALLOWLIST = 26;
+const EXPECTED_ALLOWLIST = 24;
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "archive", ".git", "backups", "graphify-out", ".wrangler"]);
 function walk(dir, out = []) {
@@ -174,7 +179,11 @@ for (const f of apiFiles) {
 if (ALLOWLIST.size > EXPECTED_ALLOWLIST) {
   failures.push(`عدد الاستثناءات ${ALLOWLIST.size} > المسموح ${EXPECTED_ALLOWLIST} — القائمة تتقلّص ولا تكبر.`);
 }
-for (const key of ALLOWLIST.keys()) {
+// فحص «استثناء لم يعد لازماً» يخصّ الشجرة الحقيقية فقط — بشجرة اختبار وهمية
+// (AUDIT_LAYER_ROOT) الملفات مصطنعة وبلا المخالفات المسجَّلة، فكل استثناء
+// سيبدو زائداً وهذا ضجيج لا معلومة. نفس نمط audit-dead-exports.mjs (fixtureMode).
+const fixtureMode = Boolean(process.env.AUDIT_LAYER_ROOT);
+for (const key of fixtureMode ? [] : ALLOWLIST.keys()) {
   const [file] = key.split("#");
   if (!hits.has(key) && existsSync(join(ROOT, file))) {
     failures.push(`استثناء لم يعد لازماً: ${key} — المخالفة اختفت، احذفه من ALLOWLIST وأنقص EXPECTED_ALLOWLIST.`);

@@ -3,7 +3,7 @@
 // equivalent of the old Vercel withApi() wrapper.
 import { getSecurityHeaders } from "./security.js";
 import { logError } from "./errorLog.js";
-import { classifyError, messageFor, statusFor } from "./errors.js";
+import { classifyError, messageFor, statusFor, DomainError } from "./errors.js";
 import { resolveAllowedOrigin, corsHeaders, widgetAllowlist } from "./cors.js";
 import { assertTrustedWrite } from "./csrf.js";
 
@@ -101,7 +101,9 @@ export function withApi(handler, { cors = false } = {}) {
       }
       return json(result, 200, { "X-Request-Id": requestId, ...extraHeaders });
     } catch (err) {
-      if (err instanceof ApiError) {
+      // DomainError يُترجَم بنفس مسار ApiError حرفياً — نفس الحالة، نفس الجسم
+      // `{ ok, error, code, requestId }`. المجال لا يعرف HTTP، والترجمة هنا.
+      if (err instanceof ApiError || err instanceof DomainError) {
         if (err.status >= 500) {
           logError(context, { requestId, path, code: err.code, internal: err.internal || err.message });
         }

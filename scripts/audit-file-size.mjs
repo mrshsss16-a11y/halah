@@ -35,15 +35,16 @@ const CAPS = [
 
 // ── قائمة السماح المؤرَّخة ──────────────────────────────────────────────────
 // لقطة 2026-09-09 (المرحلة ١): كل ملف يتجاوز سقفه اليوم، بعدد أسطره وقتها.
-// الإزالة: `api/*` بالمرحلة ٤ · `db.js`/`reviewQueue.js`/`gateway.js` بالمرحلة ٣
-// · `dashboard.html`/`admin.html` بالمرحلة ٥ (ARCHITECTURE.md §٣).
+// الإزالة: `api/*` بالمرحلة ٤ · `dashboard.html`/`admin.html` بالمرحلة ٥.
+// أُنجز بالمرحلة ٣ (2026-09-09): `core/db.js` ١٣٥١ → ٦٢ سطراً (shim إعادة تصدير)
+// و`services/reviewQueue.js` ٤١٠ → ١٩ (shim؛ المحتوى بـ`domain/review.js` ٣٦٨
+// بعد استخراج `domain/reviewGuards.js`). كل ملف بـ`domain/**` تحت سقف ٤٠٠.
+// بقي `ai/gateway.js` (٤٠٢) خارج نطاق المرحلة ٣ — يُقسَّم بمرحلة لاحقة.
 const ALLOWLIST = new Map([
   ["dashboard.html", 1943],
-  ["functions/_lib/core/db.js", 1351],
   ["admin.html", 916],
   ["functions/api/copy.js", 567],
   ["functions/api/whatsapp/webhook.js", 479],
-  ["functions/_lib/services/reviewQueue.js", 410],
   ["functions/_lib/ai/gateway.js", 402],
   ["functions/api/cron/bulk_process.js", 272],
   ["functions/api/chat.js", 262],
@@ -68,7 +69,7 @@ const ALLOWLIST = new Map([
   ["functions/api/store/review/decide.js", 109],
   ["functions/api/store/bulk/generate.js", 107],
 ]);
-const EXPECTED_ALLOWLIST = 29;
+const EXPECTED_ALLOWLIST = 27;
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "archive", ".git", "backups", "graphify-out", ".wrangler"]);
 function walk(dir, ext, out = []) {

@@ -1,13 +1,16 @@
-// Salla Merchant API client.
+// محوّل سلة — **HTTP خالص**: صفر D1، صفر تشفير، صفر منطق تخزين.
 // Base: https://api.salla.dev/admin/v2/ with Authorization: Bearer <token>.
-// Access tokens live 14 days; refresh tokens are SINGLE-USE and parallel
-// refreshes revoke the whole authorization (forces app re-install), so the
-// refresh path is guarded by the D1 refresh_lock mutex from db.js.
-import { getTokens, saveTokens, acquireRefreshLock, releaseRefreshLock } from "../core/db.js";
+//
+// المرحلة ٣ (ARCHITECTURE §٢) فكّت اقترانه بـ`core/db.js`: كان يقرأ توكن
+// التاجر ويجدّده بنفسه. الآن **التوكن يُمرَّر إليه** — التخزين والتشفير وقفل
+// التجديد (`refresh_lock`) كلها بـ`domain/salla.js`.
+//
+// توكن الوصول يعيش ١٤ يوماً وتوكن التجديد **يُستخدم مرة واحدة**: تجديدان
+// متوازيان يُبطلان التفويض كاملاً (يفرضان إعادة تثبيت التطبيق) — لذلك
+// `refreshSallaToken` هنا **لا يحرس نفسه**؛ حراسته مسؤولية domain/salla.js.
 
 const API_BASE = "https://api.salla.dev/admin/v2";
 const TOKEN_URL = "https://accounts.salla.sa/oauth2/token";
-const REFRESH_MARGIN_S = 24 * 3600; // renew when less than a day remains
 
 // SSRF: `path` يُبنى أحياناً من قيم خارجية (معرّف منتج من D1 أو من ويبهوك سلة).
 // المضيف مثبَّت هنا لأن `API_BASE` ثابت، لكن التثبيت الصريح يمنع أي تمرير مستقبلي
@@ -31,59 +34,31 @@ function assertSallaUrlAllowed(rawUrl) {
   return parsed.toString();
 }
 
-async function refreshTokens(env, merchantId, tokens) {
-  const won = await acquireRefreshLock(env, merchantId, "salla");
-  if (!won) {
-    // Another request is refreshing — wait briefly, then re-read.
-    await new Promise((r) => setTimeout(r, 1500));
-    const fresh = await getTokens(env, merchantId, "salla");
-    if (fresh && fresh.expires_at * 1000 > Date.now()) return fresh;
-    throw new Error("token refresh in progress elsewhere; retry shortly");
+/**
+ * تبادل توكن التجديد بتوكن جديد — طلب HTTP فقط، بلا قفل وبلا حفظ.
+ * المستدعي الوحيد المسموح: `domain/salla.js` بعد الفوز بقفل التجديد.
+ */
+export async function refreshSallaToken({ refreshToken, clientId, clientSecret }) {
+  const res = await fetch(assertSallaUrlAllowed(TOKEN_URL), {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      client_id: clientId,
+      client_secret: clientSecret
+    })
+  });
+  if (!res.ok) {
+    throw new Error(`salla token refresh failed: HTTP ${res.status}`);
   }
-  try {
-    const res = await fetch(assertSallaUrlAllowed(TOKEN_URL), {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: tokens.refresh_token,
-        client_id: env.SALLA_CLIENT_ID,
-        client_secret: env.SALLA_CLIENT_SECRET
-      })
-    });
-    if (!res.ok) {
-      throw new Error(`salla token refresh failed: HTTP ${res.status}`);
-    }
-    const data = await res.json();
-    await saveTokens(env, {
-      merchantId,
-      platform: "salla",
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: Math.floor(Date.now() / 1000) + (Number(data.expires_in) || 14 * 24 * 3600)
-    });
-    return getTokens(env, merchantId, "salla");
-  } finally {
-    await releaseRefreshLock(env, merchantId, "salla").catch(() => {});
-  }
+  return res.json();
 }
 
-async function getValidToken(env, merchantId) {
-  let tokens = await getTokens(env, merchantId, "salla");
-  if (!tokens) {
-    throw new Error("المتجر غير مرتبط بسلة — ثبّت التطبيق من متجر سلة أولاً.");
-  }
-  const now = Math.floor(Date.now() / 1000);
-  if (tokens.expires_at - now < REFRESH_MARGIN_S) {
-    tokens = await refreshTokens(env, merchantId, tokens);
-  }
-  return tokens.access_token;
-}
-
-async function sallaFetch(env, merchantId, path, opts = {}) {
-  // التحقق أولاً — قبل حتى جلب/تجديد التوكن.
+/** نداء واحد على واجهة سلة بتوكن جاهز. لا يعرف من أين جاء التوكن. */
+async function sallaFetch(token, path, opts = {}) {
+  // التحقق أولاً — قبل حتى لمس التوكن.
   const url = assertSallaUrlAllowed(`${API_BASE}${path}`);
-  const token = await getValidToken(env, merchantId);
   const res = await fetch(url, {
     ...opts,
     headers: {
@@ -106,14 +81,24 @@ async function sallaFetch(env, merchantId, path, opts = {}) {
   return res.json();
 }
 
+// ── shim مؤقت — يُزال بالمرحلة ٤؛ الاستيرادات الجديدة من domain/salla.js ──────
+//
+// الأربع دوال أدناه تحفظ توقيع `(env, merchantId, …)` الذي تستدعيه `api/**`
+// اليوم (store/overview · store/publish · store/review/decide · webhooks/salla)
+// حتى لا تتغيّر طبقة التنسيق بهذه المرحلة (القاعدة الذهبية للمرحلة ٣). هي
+// **الموضع الوحيد** الذي يبقى فيه استيراد من `domain/` داخل المحوّل، ومسجَّل
+// كاستثناء ق٢ واحد بـscripts/audit-layering.mjs. بالمرحلة ٤ تنتقل استيرادات
+// `api/**` إلى `domain/salla.js` وتُحذف هذه الكتلة، فيصبح الملف HTTP خالصاً تماماً.
+import { getValidSallaToken } from "../domain/salla.js";
+
 export async function listProducts(env, merchantId, page = 1) {
   // 60 is Salla's documented max per_page — cuts full-catalog sync requests
   // to a third versus the old default of 20 (docs/ROADMAP.md B3 design notes).
-  return sallaFetch(env, merchantId, `/products?page=${page}&per_page=60`);
+  return sallaFetch(await getValidSallaToken(env, merchantId), `/products?page=${page}&per_page=60`);
 }
 
 export async function updateProduct(env, merchantId, productId, fields) {
-  return sallaFetch(env, merchantId, `/products/${productId}`, {
+  return sallaFetch(await getValidSallaToken(env, merchantId), `/products/${productId}`, {
     method: "PUT",
     body: JSON.stringify(fields)
   });
@@ -124,7 +109,7 @@ export async function updateProduct(env, merchantId, productId, fields) {
 // 1 req/sec leak bucket across all plan tiers, not the advertised per-minute
 // numbers — callers MUST space these out themselves (see cron/bulk_process.js).
 export async function updateProductBySku(env, merchantId, sku, fields) {
-  return sallaFetch(env, merchantId, `/products/sku/${encodeURIComponent(sku)}`, {
+  return sallaFetch(await getValidSallaToken(env, merchantId), `/products/sku/${encodeURIComponent(sku)}`, {
     method: "PUT",
     body: JSON.stringify(fields)
   });
@@ -134,11 +119,11 @@ export async function updateProductBySku(env, merchantId, sku, fields) {
 // لا تحمل اسم المتجر (access_token/refresh_token/expires/scope فقط)، ولذلك كان
 // store_name فارغاً لكل تاجر بالقاعدة الحية والرأس يعرض عنواناً عاماً للجميع.
 export async function getStoreInfo(env, merchantId) {
-  const res = await sallaFetch(env, merchantId, "/store/info");
+  const res = await sallaFetch(await getValidSallaToken(env, merchantId), "/store/info");
   const d = res?.data || {};
   return { name: d.name || null, domain: d.domain || null };
 }
 
 export async function listOrders(env, merchantId, page = 1) {
-  return sallaFetch(env, merchantId, `/orders?page=${page}&per_page=10`);
+  return sallaFetch(await getValidSallaToken(env, merchantId), `/orders?page=${page}&per_page=10`);
 }
