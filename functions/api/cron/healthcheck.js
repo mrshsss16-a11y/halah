@@ -9,6 +9,7 @@ import {
   claimAlertSlot, clearAlertSlot, WA_TOKEN_THROTTLE_KEY, WA_TOKEN_THROTTLE_SECONDS
 } from "../../_lib/domain/health.js";
 import { refreshExpiringIgTokens } from "../../_lib/domain/instagram.js";
+import { syncHalaFaqEmbeddings } from "../../_lib/domain/faqSync.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { recordHeartbeat } from "../../_lib/core/heartbeat.js";
 
@@ -48,8 +49,16 @@ async function healthcheckHandler(request, env, requestId, context) {
     await alert("ig_token_refresh_alert_last_sent", `⚠️ تنبيه هالة: تعذّر تجديد ${igTokens.failed} توكن إنستغرام. راجع سجل الأخطاء (IG_TOKEN_REFRESH_FAILED).`);
   }
 
+  // ذاكرة RAG لودجت الموقع تتبع جدول hala_faq: أي تعديل يُعاد تضمينه خلال تِك واحد.
+  let faqSync = { changed: false };
+  try {
+    faqSync = await syncHalaFaqEmbeddings(env);
+  } catch (err) {
+    logError(context, { requestId, path: "cron/healthcheck", code: "FAQ_EMBED_SYNC_FAILED", internal: String(err?.message || err).slice(0, 250) });
+  }
+
   await recordHeartbeat(env, { job: "healthcheck", ok: healthy, note: healthy ? null : critical.map(([k]) => k).join(",") });
-  return { ok: true, healthy, checks, waTokenCheck, sallaTokenExpiring: sallaExpiry.expiring.length, igTokens };
+  return { ok: true, healthy, checks, waTokenCheck, sallaTokenExpiring: sallaExpiry.expiring.length, igTokens, faqSync };
 }
 
 export const onRequestGet = withApi.raw(healthcheckHandler, {

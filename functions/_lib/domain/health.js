@@ -4,6 +4,7 @@
 // لماذا هنا: هذه قرارات أعمال (ما الحرِج؟ متى ننبّه؟ كم مرة؟) لا تنسيق HTTP.
 // نقطة الدخول تبقى حارس CRON_SECRET + استدعاء واحد.
 import { assertWaUrlAllowed, sendWaText, waConfigured } from "../integrations/whatsapp.js";
+import { logError } from "../core/errorLog.js";
 
 const ALERT_DEDUPE_SECONDS = 3600; // إعادة التنبيه مرة/ساعة بينما العطل قائم
 const WA_TOKEN_CHECK_THROTTLE_SECONDS = 3600; // O3: debug_token مرة/ساعة كحد أقصى
@@ -177,6 +178,12 @@ export async function publicHealthChecks(env, readHeartbeats) {
  */
 export async function sendAdminAlert(env, key, body) {
   if (!waConfigured(env) || !(await claimAlertSlot(env, key))) return;
-  const to = env.STORE_WA_PHONE || "966545149591";
+  // لا رقم افتراضي مكتوب بالكود (§7 / P49): غياب STORE_WA_PHONE = لا تنبيه، ويُسجَّل
+  // بصوت عالٍ حتى لا يبدو النظام "يراقب" وهو لا يوصل شيئاً لأحد.
+  const to = String(env.STORE_WA_PHONE || "").replace(/[^\d]/g, "");
+  if (!to) {
+    logError({ env }, { requestId: null, path: "domain/health.sendAdminAlert", code: "ADMIN_ALERT_PHONE_MISSING", internal: `STORE_WA_PHONE unset — alert "${key}" not delivered` });
+    return;
+  }
   await sendWaText(env, { to, body }).catch(() => {});
 }
