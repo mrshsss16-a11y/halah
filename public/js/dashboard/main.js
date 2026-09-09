@@ -15,10 +15,10 @@ import {
   loadCatalog, loadCatalogMore, startCatalogSync, selectAllCatalog,
   generateSelectedCatalog, useCatalogItem, setBulkGenerateEnabled
 } from "./catalog.js";
-import { generateCopy, regenerateCopy, publishToSalla, onPublishProductChange } from "./studio.js";
+import { generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, applySuggestedCategory } from "./studio.js";
 import { startBulkJob, startCatalogGenerate } from "./bulk.js";
 import {
-  loadReview, reloadReview, decideReview, toggleReviewAll, saveReviewEdit,
+  loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback
 } from "./review.js";
 import { saveAgentContext, sendChat } from "./agent.js";
@@ -41,10 +41,11 @@ Object.assign(window, {
   generateSelectedCatalog, useCatalogItem,
   // الاستوديو والنشر
   generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, copyToClipboard,
+  applySuggestedCategory,
   // الجملة
   startBulkJob, startCatalogGenerate,
   // المراجعة والتغذية الراجعة
-  loadReview, reloadReview, decideReview, toggleReviewAll, saveReviewEdit,
+  loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback,
   // الوكيل وواتساب
   saveAgentContext, sendChat, launchWhatsAppSignup,

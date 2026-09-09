@@ -1,6 +1,6 @@
 // public/js/dashboard/studio.js — استوديو وصف المنتج المفرد ووجهة النشر على سلة.
 import { S } from "./state.js";
-import { postCopy, postPublish } from "./api.js";
+import { postCopy, postPublish, postCategory } from "./api.js";
 import { renderCopy, renderPublishTarget, showPublishSuccess, showPublishError } from "./render.js";
 import { markCatalogCardPublished } from "./catalog.js";
 import { revertReview } from "./review.js";
@@ -68,6 +68,51 @@ function renderCategoryMismatch(mismatch) {
   document.getElementById("categoryMismatchText").innerText =
     `هالة تشوف المنتج ${mismatch.detected}، لكنه مصنَّف بمتجرك تحت ${mismatch.current}.`;
   box.classList.remove("hidden");
+  const btn = document.getElementById("applyCategoryBtn");
+  const btnText = document.getElementById("applyCategoryBtnText");
+  const msg = document.getElementById("applyCategoryMsg");
+  if (btn) {
+    // منتج بلا معرّف سلة لا يُطبَّق عليه شيء — الزر يختفي بدل أن يفشل بالضغط.
+    const hasTarget = Boolean(S.selectedCatalogProduct?.productId);
+    btn.classList.toggle("hidden", !hasTarget);
+    btn.disabled = false;
+    if (btnText) btnText.innerText = "طبّق التصنيف على سلة";
+  }
+  if (msg) msg.innerText = "";
+}
+
+/**
+ * تطبيق التصنيف الذي اقترحته هالة — **بضغطة التاجر لا تلقائياً**.
+ *
+ * الخادم يقرأ تصنيفات المنتج أولاً ويستبدل المتعارض وحده، فتبقى التصنيفات
+ * التسويقية («وصل حديثاً»، «تخفيضات») كما هي. لا تصنيف باسم النوع بالمتجر ⇒
+ * رسالة تطلب إنشاءه، ولا نخترع تصنيفاً.
+ */
+export async function applySuggestedCategory() {
+  const mismatch = S.lastCopy?.categoryMismatch;
+  const productId = S.selectedCatalogProduct?.productId;
+  if (!mismatch?.detected || !productId) return;
+  const btn = document.getElementById("applyCategoryBtn");
+  const btnText = document.getElementById("applyCategoryBtnText");
+  const msg = document.getElementById("applyCategoryMsg");
+  btn.disabled = true;
+  btnText.innerText = "جاري التطبيق…";
+  msg.innerText = "";
+  try {
+    const { res, data } = await postCategory({ productId, type: mismatch.detected });
+    if (!res.ok || !data?.ok) {
+      msg.innerText = data?.error || "ما قدرنا نطبّق التصنيف — جرّب مرة ثانية.";
+      btn.disabled = false;
+      btnText.innerText = "طبّق التصنيف على سلة";
+      return;
+    }
+    msg.innerText = data.message || "تم ✅";
+    btnText.innerText = "طُبّق ✅";
+  } catch (e) {
+    msg.innerText = "تعذر الاتصال. حاول مرة ثانية.";
+    btn.disabled = false;
+    btnText.innerText = "طبّق التصنيف على سلة";
+  }
 }
 
 // ── وجهة النشر ────────────────────────────────────────────────────

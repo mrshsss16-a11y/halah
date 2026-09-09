@@ -293,3 +293,80 @@ main()
       "CAT-10: التنبيه يصل الواجهة من الخادم ويُعرض"
     );
   }
+
+  // ── تطبيق التصنيف بموافقة التاجر (2026-09-10) ────────────────────────
+  {
+    const { applyProductCategory } = await import("../../functions/_lib/domain/productCategory.js");
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+
+    // بيئة وهمية: تصنيفات المتجر + منتج ينتمي لـ«التنانير» و«وصل حديثاً».
+    const calls = [];
+    const mkEnv = (cats, productCats) => ({
+      DB: { prepare: () => ({ bind: () => ({ first: async () => ({ access_token: "t", refresh_token: "r", expires_at: 9e9 }) }) }) },
+      __fetch: async (url, init) => {
+        calls.push({ url, method: init?.method || "GET", body: init?.body });
+        if (url.includes("/categories")) return { data: cats, pagination: { totalPages: 1 } };
+        if (init?.method === "PUT") return { data: { id: 1 } };
+        return { data: { id: 68358280, categories: productCats } };
+      }
+    });
+
+    const cats = [
+      { id: 11, name: "التنانير" },
+      { id: 22, name: "الفساتين" },
+      { id: 33, name: "وصل حديثاً" }
+    ];
+    globalThis.__HALA_TEST_FETCH = null;
+
+    // نحقن عبر mock على وحدة التكامل بدل الشبكة.
+    const salla = await import("../../functions/_lib/integrations/salla.js");
+    const domainSalla = await import("../../functions/_lib/domain/salla.js");
+    const origList = salla.listCategories, origGet = salla.getProduct, origUpd = salla.updateProduct;
+    const origTok = domainSalla.getValidSallaToken;
+
+    assert(
+      typeof salla.listCategories === "function" && typeof salla.getProduct === "function",
+      "APPLY-1: محوّل سلة يوفّر قراءة التصنيفات وتفاصيل المنتج"
+    );
+
+    // التحقق البنيوي (السلوك يُغطّى بمسار الوحدة أعلاه):
+    const domainSrc = read("../../functions/_lib/domain/productCategory.js");
+    assert(
+      /const product = await getProduct\(token, productId\)/.test(domainSrc) &&
+        /categories: next\.map\(Number\)/.test(domainSrc),
+      "APPLY-2: يقرأ تصنيفات المنتج قبل الكتابة — الكتابة تستبدل المصفوفة كاملة"
+    );
+    assert(
+      /if \(known\?\.type && known\.type !== type\)/.test(domainSrc),
+      "APPLY-3: يستبدل التصنيف المتعارض وحده — التصنيفات التسويقية تبقى"
+    );
+    assert(
+      /CATEGORY_NOT_FOUND/.test(domainSrc) && /أنشئه من تصنيفات سلة/.test(domainSrc),
+      "APPLY-4: لا تصنيف مطابق ⇒ يطلب إنشاءه ولا يخترع واحداً"
+    );
+
+    const apiSrc = read("../../functions/api/store/category.js");
+    assert(
+      /KNOWN_TYPES\.includes\(type\)/.test(apiSrc),
+      "APPLY-5: النوع من قائمة مغلقة — لا يُطبَّق نوع لم تقترحه هالة"
+    );
+    assert(
+      /requireCompletedAccount/.test(apiSrc) && /checkRateLimit/.test(apiSrc),
+      "APPLY-6: الكتابة على سلة خلف حساب مكتمل وحد معدل"
+    );
+    assert(
+      /SCOPE_MISSING/.test(apiSrc) && /SALLA_RATE_LIMITED/.test(apiSrc),
+      "APPLY-7: غياب الصلاحية وحد سلة لهما رسالتان عربيتان مميّزتان"
+    );
+    // لا تطبيق تلقائي: مسار التوليد لا يستدعي التطبيق إطلاقاً.
+    assert(
+      !/applyProductCategory/.test(read("../../functions/_lib/domain/copy.js")),
+      "APPLY-8: التوليد لا يطبّق تصنيفاً — الاقتراح فقط، والتنفيذ بضغطة التاجر"
+    );
+    assert(
+      /applySuggestedCategory/.test(read("../../public/js/dashboard/studio.js")) &&
+        /id="applyCategoryBtn"/.test(read("../../partials/dashboard-studio.html")),
+      "APPLY-9: زر التطبيق موجود بالواجهة ومربوط"
+    );
+  }

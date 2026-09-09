@@ -197,3 +197,40 @@ main()
     console.error(e);
     process.exit(1);
   });
+
+  // ── اعتماد/رفض لكل منتج على حدة بالمراجعة الجماعية (2026-09-10) ──────
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const rev = read("../../public/js/dashboard/review.js");
+
+    assert(
+      /export async function decideOne\(id, action\)/.test(rev) &&
+        /decideOne\(\$\{r\.id\}, 'approve'\)/.test(rev) && /decideOne\(\$\{r\.id\}, 'reject'\)/.test(rev),
+      "ONE-1: كل بطاقة فيها اعتماد ورفض مستقلان"
+    );
+    // نفس نقطة القرار — لا مسار نشر ثانٍ يتجاوز بوابة المراجعة.
+    assert(
+      /postReviewDecide\(\{ action, ids: \[id\] \}\)/.test(rev) &&
+        !/fetch\("\/api\/store\/publish"/.test(rev),
+      "ONE-2: القرار المفرد يمرّ بنفس نقطة المراجعة لا بنشر مباشر"
+    );
+    // التعديل يُحفظ قبل الاعتماد وإلا نُشر النص الأصلي بدل ما كتبه التاجر.
+    assert(
+      /action: "edit", ids: \[id\], description: ta\.value/.test(rev),
+      "ONE-3: تعديل التاجر يُحفظ قبل الاعتماد المفرد"
+    );
+    assert(
+      /buttons\.forEach\(\(b\) => \{ b\.disabled = true; \}\)/.test(rev),
+      "ONE-4: الأزرار تُقفل أثناء التنفيذ — لا نشر مزدوج بضغطتين"
+    );
+    assert(
+      /decideOne/.test(read("../../public/js/dashboard/main.js")),
+      "ONE-5: الدالة منشورة على window لسمات onclick"
+    );
+    // الأزرار الجماعية باقية.
+    assert(
+      /decideReview\('approve_all'\)/.test(read("../../partials/dashboard-review.html")),
+      "ONE-6: الاعتماد الجماعي لم يُحذف — المساران متاحان"
+    );
+  }

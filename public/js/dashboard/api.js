@@ -132,3 +132,8 @@ export function postCompleteAccount(email, password) {
 export function postSallaEmbedded(token) {
   return postStrict("/api/auth/salla_embedded", { token });
 }
+
+/** تطبيق التصنيف المقترح — تحليل متساهل: ردّ غير صالح ⇒ رسالة عامة. */
+export function postCategory(body) {
+  return postSoft("/api/store/category", body, null);
+}

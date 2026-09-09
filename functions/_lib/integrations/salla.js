@@ -122,6 +122,19 @@ export async function getStoreInfo(token) {
   return { name: d.name || null, domain: d.domain || null };
 }
 
+// GET /categories — تصنيفات المتجر بمعرّفاتها. لازمة لتطبيق تصنيف صحيح:
+// سلة تقبل `categories` كمصفوفة **معرّفات** لا أسماء، فلا بد من الجدول.
+// صلاحية `categories.read`. غيابها ⇒ ٤٠٣ يُترجَم برسالة عربية بالمستدعي.
+export async function listCategories(token, page = 1) {
+  return sallaFetch(token, `/categories?page=${page}&per_page=60`);
+}
+
+// GET /products/{id} — لازم قبل تغيير التصنيف: المنتج قد ينتمي لعدة تصنيفات،
+// والكتابة تستبدل المصفوفة كاملة. بلا قراءة أولاً نمحو تصنيفات لم نقصدها.
+export async function getProduct(token, productId) {
+  return sallaFetch(token, `/products/${encodeURIComponent(productId)}`);
+}
+
 export async function listOrders(token, page = 1) {
   return sallaFetch(token, `/orders?page=${page}&per_page=10`);
 }

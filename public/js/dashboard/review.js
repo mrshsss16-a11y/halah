@@ -54,10 +54,15 @@ export function reviewCard(r) {
     : `<div class="text-[11px] text-slate-500 font-bold">الحالي: بلا وصف</div>`;
   let body = "";
   if (S.reviewState === "pending") {
+    // اعتماد/رفض **لكل منتج على حدة**: مع عشرين وصفاً، التأشير ثم الصعود لأعلى
+    // الصفحة لكل واحد يقتل التجربة. الأزرار الجماعية أعلى الشاشة باقية كما هي.
     body = `<textarea class="review-desc w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" rows="5" data-id="${r.id}">${escHtml(r.description || "")}</textarea>
       ${publishExtras(r)}
-      <div class="flex gap-2 items-center">
+      <div class="flex gap-2 items-center flex-wrap">
+        <button onclick="decideOne(${r.id}, 'approve')" class="sleek-btn-black px-3 py-1.5 rounded-lg text-[11px]">اعتمد وانشر</button>
         <button onclick="saveReviewEdit(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">احفظ تعديلي</button>
+        <button onclick="decideOne(${r.id}, 'reject')" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px] text-rose-700">ارفض</button>
+        <span class="review-one-msg text-[11px] font-bold text-slate-600" data-msg="${r.id}"></span>
       </div>`;
   } else {
     body = `<div class="text-xs text-black whitespace-pre-wrap">${escHtml(r.description || "")}</div>`;
@@ -129,6 +134,37 @@ export async function decideReview(action) {
     setReviewCounts(data.counts);
     loadReview("pending");
   } catch (e) { showMsg("reviewFeedback", "تعذر الاتصال.", "error"); }
+}
+
+/**
+ * اعتماد أو رفض **عنصر واحد** — نفس نقطة القرار الجماعية بمعرّف واحد، فلا
+ * مسار نشر ثانٍ ولا تجاوز لبوابة المراجعة. التعديل المكتوب بالمربع يُحفظ قبل
+ * الاعتماد، وإلا نُشر النص الأصلي بدل ما كتبه التاجر.
+ */
+export async function decideOne(id, action) {
+  const msg = document.querySelector(`[data-msg="${id}"]`);
+  const card = document.querySelector(`[data-id="${id}"]`);
+  const buttons = card ? card.querySelectorAll("button") : [];
+  buttons.forEach((b) => { b.disabled = true; });
+  if (msg) msg.innerText = action === "approve" ? "جاري النشر…" : "جاري الرفض…";
+  try {
+    if (action === "approve") {
+      const ta = card?.querySelector(".review-desc");
+      if (ta) await postReviewDecide({ action: "edit", ids: [id], description: ta.value });
+    }
+    const data = await postReviewDecide({ action, ids: [id] });
+    if (!data?.ok) {
+      if (msg) msg.innerText = data?.error || "تعذر التنفيذ.";
+      buttons.forEach((b) => { b.disabled = false; });
+      return;
+    }
+    if (msg) msg.innerText = action === "approve" ? "اعتُمد ✅" : "رُفض";
+    setReviewCounts(data.counts);
+    setTimeout(() => card?.remove(), 800);
+  } catch (e) {
+    if (msg) msg.innerText = "تعذر الاتصال.";
+    buttons.forEach((b) => { b.disabled = false; });
+  }
 }
 
 export async function saveReviewEdit(id) {
