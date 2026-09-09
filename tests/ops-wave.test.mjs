@@ -197,7 +197,7 @@ async function runTests() {
 
   // ---- O3: كود healthcheck.js يحوي فحص توكن واتساب وتوكنات سلة (فحص ثابت) ----
   {
-    const src = readFileSync(join(ROOT, "functions/api/cron/healthcheck.js"), "utf8");
+    const src = readFileSync(join(ROOT, "functions/_lib/domain/health.js"), "utf8");
     assert(src.includes("debug_token"), "O3: healthcheck.js يستدعي debug_token للتحقق من توكن واتساب");
     assert(src.includes("checkSallaTokenExpiry"), "O3: healthcheck.js يفحص توكنات سلة القريبة من الانتهاء");
     assert(src.includes("WA_TOKEN_CHECK_THROTTLE_SECONDS"), "O3: فحص توكن واتساب مخنوق بمهلة KV (ساعة)");

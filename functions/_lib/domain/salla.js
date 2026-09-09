@@ -3,7 +3,9 @@
 // **المحوّل لم يعد يقرأ قاعدة البيانات** — التوكن يُجلَب هنا ويُمرَّر له.
 import { encryptSecret, decryptSecret } from "../core/crypto.js";
 import { sanitizeInput } from "../core/security.js";
-import { refreshSallaToken } from "../integrations/salla.js";
+import { refreshSallaToken, getStoreInfo } from "../integrations/salla.js";
+import { timingSafeEqualStr } from "../core/crypto.js";
+import { saveAbandonedCart } from "./platforms.js";
 
 const REFRESH_MARGIN_S = 24 * 3600; // renew when less than a day remains
 
@@ -181,4 +183,152 @@ export async function getSallaConnectionState(env, merchantId) {
     .first()
     .catch(() => null);
   return { connected: Number(row?.n || 0) > 0, disconnectedAt: row?.d || null };
+}
+
+// ── المرحلة ٤: ويبهوك سلة (نُقل من `api/webhooks/salla.js` بلا تغيير سلوكي) ──
+//
+// الأحداث المعالَجة:
+//   app.store.authorize → upsert التاجر + حفظ التوكنات (هذا **هو** تدفق OAuth
+//                         بـEasy Mode — لا رقصة callback)
+//   app.installed       → upsert التاجر
+//   app.uninstalled / app.subscription.expired / app.trial.expired
+//                       → حذف توكنات سلة + إلغاء مهام الجملة (فك ربط فوري).
+//                         الثلاثة تعني نفس الشيء أمنياً: لم يعد لنا إذن.
+//   abandoned.cart      → حفظ السلة لميزة الاسترجاع بواتساب
+//   غيرها (order.created…) → upsert فقط؛ المستهلكون يقرأون webhook_log
+
+/**
+ * HMAC-SHA256 على الجسم **الخام** بـSALLA_WEBHOOK_SECRET، مقارنة ثابتة الزمن
+ * مع `X-Salla-Signature`. fail-closed: غياب السر أو الترويسة = رفض.
+ */
+export async function verifySallaSignature(rawBody, signatureHeader, secret) {
+  if (!signatureHeader || !secret) return false;
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = await crypto.subtle.sign("HMAC", key, enc.encode(rawBody));
+  const computed = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  return timingSafeEqualStr(computed, signatureHeader);
+}
+
+/** إعادة تثبيت بعد فك ربط ⇒ الختم يُصفَّر، وإلا عرض الداشبورد "مفكوك" لمتجر مربوط. */
+async function clearDisconnectedStamp(env, merchantId) {
+  await env.DB.prepare("UPDATE merchants SET salla_disconnected_at = NULL WHERE id = ?")
+    .bind(merchantId)
+    .run()
+    .catch(() => {});
+}
+
+/**
+ * يصرّف حدث ويبهوك واحداً ويعيد `merchantId` (أو null).
+ * `onFirstSync` و`onLog` منفذا حقن من نقطة الدخول: الأول يبدأ أول سحب كتالوج
+ * والثاني يسجّل فشلاً غير قاتل — كلاهما يُبقي هذا الملف بلا اعتماد على api/**.
+ */
+export async function handleSallaEvent(env, event, payload, { onFirstSync = async () => {}, onLog = () => {} } = {}) {
+  const data = payload.data || {};
+  const sallaMerchantId = payload.merchant || data.merchant || null;
+
+  switch (event) {
+    case "app.store.authorize": {
+      // data: { access_token, refresh_token, expires (unix), scope }
+      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId, storeName: data.store_name || null });
+      await saveTokens(env, {
+        merchantId,
+        platform: "salla",
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: Number(data.expires) || Math.floor(Date.now() / 1000) + 14 * 24 * 3600
+      });
+      await clearDisconnectedStamp(env, merchantId);
+
+      // اسم المتجر: الحمولة لا تحمله، والتوكن صار بيدنا الآن. /store/info يحتاج
+      // scope `settings.read` — نتحقق من scope الحمولة قبل استهلاك طلب على سلة
+      // (حد ١ط/ث) بدل 403 يلوّث سجل الأخطاء بكل تثبيت. فشله لا يوقف شيئاً.
+      const grantedScope = String(data.scope || "");
+      if (/\bsettings\.read(_write)?\b/.test(grantedScope) || grantedScope === "") {
+        try {
+          const info = await getStoreInfo(env, merchantId);
+          if (info.name) await upsertMerchantFromSalla(env, { sallaMerchantId, storeName: info.name });
+        } catch (err) {
+          onLog("SALLA_STORE_INFO_FAILED", merchantId, String(err?.message || err).slice(0, 300));
+        }
+      }
+
+      // أول سحب فوراً — التاجر يفتح «منتجاتي» فيجد منتجاته لا شاشة فارغة.
+      await onFirstSync(merchantId);
+      return merchantId;
+    }
+    case "app.installed":
+      return upsertMerchantFromSalla(env, {
+        sallaMerchantId,
+        storeName: (data.store && data.store.name) || data.store_name || null
+      });
+    case "app.uninstalled":
+    case "app.subscription.expired":
+    case "app.trial.expired": {
+      if (!sallaMerchantId) return null;
+      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
+      await revokeSallaConnection(env, merchantId);
+      return merchantId;
+    }
+    case "abandoned.cart": {
+      if (!sallaMerchantId) return null;
+      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
+      const customer = data.customer || {};
+      await saveAbandonedCart(env, {
+        id: `salla_${data.id || crypto.randomUUID()}`,
+        merchantId,
+        customerName: [customer.first_name, customer.last_name].filter(Boolean).join(" ") || null,
+        customerPhone: customer.mobile || null,
+        items: (data.items || []).map((i) => ({ name: i.name, qty: i.quantity, price: i.price && i.price.amount })),
+        total: (data.total && data.total.amount) || 0
+      });
+      return merchantId;
+    }
+    default:
+      return sallaMerchantId ? upsertMerchantFromSalla(env, { sallaMerchantId }) : null;
+  }
+}
+
+// ── المرحلة ٤: مبادلة رمز OAuth (كانت بـ`api/auth/salla/callback.js`) ───────
+//
+// مسار Custom Mode: نبادل الرمز بأنفسنا ونقرأ هوية المتجر. أي نص خطأ من سلة
+// يُرمى **مصنَّفاً** (`token_exchange_failed:…`) لا كما هو: جسم رد المزوّد قد
+// يحمل صدى الطلب أو معرّفات داخلية لا يصح أن يعرضها متصفح التاجر.
+const SALLA_TOKEN_URL = "https://accounts.salla.sa/oauth2/token";
+const SALLA_USERINFO_URL = "https://accounts.salla.sa/oauth2/user/info";
+
+/**
+ * يبادل الرمز بتوكن، يقرأ هوية المتجر، ويحفظ الصف والتوكنات.
+ * @returns {Promise<string>} معرّف التاجر الداخلي.
+ */
+export async function exchangeSallaCode(env, { code, redirectUri, clientId, clientSecret }) {
+  const tokenResponse = await fetch(SALLA_TOKEN_URL, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, grant_type: "authorization_code", code, redirect_uri: redirectUri })
+  });
+  if (!tokenResponse.ok) {
+    throw new Error(`token_exchange_failed:${tokenResponse.status}:${(await tokenResponse.text()).slice(0, 500)}`);
+  }
+  const tokenData = await tokenResponse.json();
+
+  const userResponse = await fetch(SALLA_USERINFO_URL, { headers: { Authorization: `Bearer ${tokenData.access_token}` } });
+  if (!userResponse.ok) {
+    throw new Error(`user_info_failed:${userResponse.status}:${(await userResponse.text()).slice(0, 500)}`);
+  }
+  const userData = await userResponse.json();
+
+  // صفّ التاجر الداخلي أولاً: مفتاح oauth_tokens.merchant_id هو معرّفنا لا معرّف سلة.
+  const merchantId = await upsertMerchantFromSalla(env, {
+    sallaMerchantId: userData.data.merchant.id.toString(),
+    storeName: userData.data.merchant.name || null
+  });
+  await saveTokens(env, {
+    merchantId,
+    platform: "salla",
+    accessToken: tokenData.access_token,
+    refreshToken: tokenData.refresh_token,
+    expiresAt: Math.floor(Date.now() / 1000) + (Number(tokenData.expires_in) || 14 * 24 * 3600)
+  });
+  return merchantId;
 }

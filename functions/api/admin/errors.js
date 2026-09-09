@@ -5,6 +5,7 @@
 import { withApi } from "../../_lib/core/respond.js";
 import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
+import { listErrorLog } from "../../_lib/domain/analytics.js";
 
 const MAX_LIMIT = 200;
 const DEFAULT_LIMIT = 50;
@@ -16,21 +17,7 @@ async function errorsHandler(body, env, request, requestId, context) {
   recordAdminAction(context, { admin, action: String(body.action || "read"), path: new URL(request.url).pathname, targetMerchantId: body.merchantId || body.storeId || null, requestId });
 
   const limit = Math.min(Math.max(Number(body.limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
-
-  let query = `SELECT id, request_id, store_id, code, path, internal, created_at FROM error_log`;
-  const params = [];
-  if (body.storeId) {
-    query += ` WHERE store_id = ?`;
-    params.push(body.storeId);
-  }
-  query += ` ORDER BY created_at DESC LIMIT ?`;
-  params.push(limit);
-
-  const { results } = await env.DB.prepare(query)
-    .bind(...params)
-    .all();
-
-  return { ok: true, rows: results || [] };
+  return { ok: true, rows: await listErrorLog(env, { storeId: body.storeId || null, limit }) };
 }
 
 export const onRequestPost = withApi(errorsHandler);

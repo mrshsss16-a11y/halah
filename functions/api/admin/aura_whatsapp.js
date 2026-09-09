@@ -1,12 +1,12 @@
-// POST /api/admin/aura_whatsapp — Aura Marketing WhatsApp Agent & Feature Tester
+// POST /api/admin/aura_whatsapp — أدوات وكيل أورا الرسمي على واتساب وتجربة الميزات.
+// المرحلة ٤: تنسيق فقط — كل المنطق بـ`domain/auraAgent.js`.
 import { withApi } from "../../_lib/core/respond.js";
 import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
-import { askWorkersAI, TEXT_MODEL } from "../../_lib/ai/gateway.js";
-import { saveHalaFaqEntry, listHalaFaq } from "../../_lib/core/db.js";
-import { HALA_WHATSAPP_SUPPORT_PROMPT } from "../../_lib/ai/persona.js";
+import { saveHalaFaqEntry } from "../../_lib/domain/faq.js";
+import { auraConfig, saveAuraCredentials, testAuraReply, testAuraFeature } from "../../_lib/domain/auraAgent.js";
 
-const AURA_MERCHANT_ID = "m_admin_aura";
+const DEFAULT_TEST_MSG = "السلام عليكم، وش الخدمات اللي تقدمها أورا للتسويق؟ وكيف تحجزون لي استشارة؟";
 
 async function auraWhatsappHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);
@@ -14,128 +14,30 @@ async function auraWhatsappHandler(body, env, request, requestId, context) {
   // P9 — سطر تدقيق: من قرأ/عدّل ماذا ومتى (migrations/0023 audit_log).
   recordAdminAction(context, { admin, action: String(body.action || "read"), path: new URL(request.url).pathname, targetMerchantId: "hala", requestId });
 
-  const action = body.action || "get_config";
+  switch (body.action || "get_config") {
+    case "get_config":
+      return { ok: true, ...(await auraConfig(env)) };
 
-  if (action === "get_config") {
-    const hasToken = Boolean(env.WHATSAPP_TOKEN);
-    const phoneId = env.WHATSAPP_PHONE_ID || "لم يتم التخصيص بعد";
-    const hasVerifyToken = Boolean(env.WHATSAPP_VERIFY_TOKEN);
+    case "save_credentials":
+      await saveAuraCredentials(env, { token: body.token || "", phoneId: body.phoneId || "" });
+      return { ok: true, message: "تم حفظ وتفعيل مفاتيح واتساب أورا الرسمي بنجاح! 🚀📱" };
 
-    const faqs = await listHalaFaq(env).catch(() => []);
-
-    return {
-      ok: true,
-      whatsapp: {
-        hasToken,
-        phoneId,
-        hasVerifyToken,
-        agentName: "موظفة أورا للتسويق الرقمية (Aura Assistant)",
-        status: hasToken ? "متصل بالواتساب الرسمي" : "وضع النمذجة والتجربة التفاعلية"
-      },
-      agent: {
-        storeId: AURA_MERCHANT_ID,
-        name: "موظفة أورا للتسويق",
-        dialect: "saudi_white",
-        ragItemsCount: faqs.length,
-        prompt: HALA_WHATSAPP_SUPPORT_PROMPT
-      }
-    };
-  }
-
-  if (action === "save_credentials") {
-    const token = body.token || "";
-    const phoneId = body.phoneId || "";
-    if (token && phoneId && env?.DB) {
-      const { savePlatformConnection } = await import("../../_lib/core/db.js");
-      await savePlatformConnection(env, {
-        merchantId: AURA_MERCHANT_ID,
-        platform: "whatsapp",
-        sellerId: phoneId,
-        apiKey: token,
-        // No hardcoded fallback secret (SECURITY_AUDIT 2026-09-06, P25) — a
-        // missing verify token is stored as null, never a fake placeholder
-        // that could be mistaken for a real secret.
-        apiSecret: env.WHATSAPP_VERIFY_TOKEN || null,
-        environment: "prod",
-        storeName: "أورا للتسويق - واتساب الرسمي"
-      }).catch(() => {});
-    }
-    return { ok: true, message: "تم حفظ وتفعيل مفاتيح واتساب أورا الرسمي بنجاح! 🚀📱" };
-  }
-
-  if (action === "update_agent") {
-    const q = body.question || "";
-    const a = body.answer || "";
-    if (q && a) {
-      await saveHalaFaqEntry(env, { question: q, answer: a });
-    }
-    return { ok: true, message: "تم تحديث RAG المعرفي لأيجنت أورا بنجاح!" };
-  }
-
-  if (action === "test_agent") {
-    const userMsg = body.message || "السلام عليكم، وش الخدمات اللي تقدمها أورا للتسويق؟ وكيف تحجزون لي استشارة؟";
-    const startTime = performance.now();
-
-    const systemPrompt = HALA_WHATSAPP_SUPPORT_PROMPT;
-
-    let replyText;
-    try {
-      replyText = await askWorkersAI({
-        env,
-        system: systemPrompt,
-        messages: [{ role: "user", content: userMsg }],
-        maxTokens: 250,
-        model: TEXT_MODEL,
-        storeId: "hala" // Aura's own line, not a merchant tenant
-      });
-    } catch (e) {
-      replyText = "أهلاً بك في أورا للتسويق! 👋 نقدم خدمات التسويق الذكي واسترداد السلات المتروكة عبر الواتساب. نتشرف بحجز استشارة مخصصة لمتجرك في أي وقت!";
+    case "update_agent": {
+      const question = body.question || "";
+      const answer = body.answer || "";
+      if (question && answer) await saveHalaFaqEntry(env, { question, answer });
+      return { ok: true, message: "تم تحديث RAG المعرفي لأيجنت أورا بنجاح!" };
     }
 
-    const latency = Math.round(performance.now() - startTime);
+    case "test_agent":
+      return { ok: true, ...(await testAuraReply(env, body.message || DEFAULT_TEST_MSG)) };
 
-    return {
-      ok: true,
-      agentReply: replyText,
-      latencyMs: `${latency}ms`,
-      source: "Aura Official Agent (Workers AI)",
-      testedAt: new Date().toISOString()
-    };
+    case "test_feature":
+      return testAuraFeature(body.feature || "intent_matching", body.input || "اريد تتبع الشحنة");
+
+    default:
+      return { ok: false, error: "إجراء غير معروف." };
   }
-
-  if (action === "test_feature") {
-    const featureName = body.feature || "intent_matching";
-    const testInput = body.input || "اريد تتبع الشحنة";
-
-    if (featureName === "intent_matching") {
-      const { matchFastIntent } = await import("../../_lib/ai/intents.js");
-      const t0 = performance.now();
-      const matched = matchFastIntent(testInput, "saudi_white");
-      const duration = (performance.now() - t0).toFixed(2);
-      return {
-        ok: true,
-        feature: "Fast Intent Matching Engine (< 1ms)",
-        input: testInput,
-        matchedIntent: matched ? matched.intent : "AI Cascade Fallback",
-        latency: `${duration}ms`
-      };
-    }
-
-    // N10 — كان هذا الفرع يرجّع عميلاً وهمياً ومبلغ سلة مخترعاً و"تم الإرسال
-    // بنجاح" لرسالة لم تُرسل قط (§١١ قاعدة الصدق). الميزة غير مبنية أصلاً، فالرد
-    // الصادق هو الاعتراف بذلك بدل عرض مشهد مفبرك على شاشة أدمن.
-    if (featureName === "cart_recovery_sim") {
-      return {
-        ok: false,
-        code: "NOT_AVAILABLE",
-        error: "استرداد السلات المتروكة غير مبني حالياً — لا توجد بيانات حقيقية لعرضها."
-      };
-    }
-
-    return { ok: false, error: "الميزة المراد اختبارها غير معروفة." };
-  }
-
-  return { ok: false, error: "إجراء غير معروف." };
 }
 
 export const onRequestPost = withApi(auraWhatsappHandler);

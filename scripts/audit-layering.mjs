@@ -39,7 +39,7 @@ const ALLOWLIST = new Map([
   // webhooks/salla) — تعديل `api/**` خارج نطاق المرحلة ٣ عمداً (القاعدة الذهبية:
   // صفر تعديل على المستوردين). الكتلة تستورد `domain/salla.js` فتقع تحت ق٢.
   // الإزالة: **المرحلة ٤** (إفراغ `api/*`) — عندها يعود الملف HTTP خالصاً تماماً.
-  ["functions/_lib/integrations/salla.js#ق٢", "shim توقيعات لمستوردي api الأربعة يستورد domain/salla.js — يُحذف بالمرحلة ٤"],
+  ["functions/_lib/integrations/salla.js#ق٢", "shim توقيعات (env, merchantId, …) يستورد domain/salla.js — بعد المرحلة ٤ صار مستوردوه ملفات domain لا api (publish · storeOverview · salla نفسه)؛ إزالته تعني تمرير التوكن بكل نداء، يُحذف بالمرحلة ٦ مع shim db.js"],
 
   // 2026-09-09 (جديد بالمرحلة ٣) · `core/db.js` صار **shim إعادة تصدير** فقط
   // (كان ١٣٥٠ سطراً و٨٤ تصديراً). يعيد تصدير `domain/*` حتى لا يتغيّر أي من
@@ -47,35 +47,18 @@ const ALLOWLIST = new Map([
   // بالمضمون: صفر منطق). الإزالة: **المرحلة ٦** («إزالة shim db.js»).
   ["functions/_lib/core/db.js#ق١", "shim إعادة تصدير مؤقت لـdomain/* — يُزال بالمرحلة ٦"],
 
-  // 2026-09-09 · ق٤ — `.prepare(` بطبقة التنسيق. §٣ المرحلة ٤: «إفراغ api/*».
-  // الموضع المسجَّل = أول `.prepare(` يوم التسجيل (توثيق، ليس جزءاً من المطابقة).
-  ["functions/api/admin/errors.js#ق٤", "SQL خام (سطر ٢٩) — المرحلة ٤"],
-  ["functions/api/auth/complete_account.js#ق٤", "SQL خام (سطر ٧٢) — المرحلة ٤"],
-  ["functions/api/auth/forgot_password.js#ق٤", "SQL خام (سطر ٥١) — المرحلة ٤"],
-  ["functions/api/auth/google.js#ق٤", "SQL خام (سطر ١٦٣) — المرحلة ٤"],
-  ["functions/api/auth/login.js#ق٤", "SQL خام (سطر ٦٤) — المرحلة ٤"],
-  ["functions/api/auth/me.js#ق٤", "SQL خام (سطر ٢٣) — المرحلة ٤"],
-  ["functions/api/auth/reset_password.js#ق٤", "SQL خام (سطر ٧٦) — المرحلة ٤"],
-  ["functions/api/auth/send_verification.js#ق٤", "SQL خام (سطر ٣٧) — المرحلة ٤"],
-  ["functions/api/auth/signup.js#ق٤", "SQL خام (سطر ١١٦) — المرحلة ٤"],
-  ["functions/api/auth/verify_email.js#ق٤", "SQL خام (سطر ٢٦) — المرحلة ٤"],
-  ["functions/api/chat.js#ق٤", "SQL خام (سطر ٣٨) — المرحلة ٤"],
-  ["functions/api/cron/healthcheck.js#ق٤", "SQL خام (سطر ٤٢) — المرحلة ٤"],
-  ["functions/api/cron/reminders.js#ق٤", "SQL خام (سطر ١٠٧) — المرحلة ٤"],
-  ["functions/api/health.js#ق٤", "SQL خام (سطر ٢٩) — المرحلة ٤"],
-  ["functions/api/stats.js#ق٤", "SQL خام (سطر ١١) — المرحلة ٤"],
-  ["functions/api/store/bulk/generate.js#ق٤", "SQL خام (سطر ٧٥) — المرحلة ٤"],
-  ["functions/api/store/bulk/status.js#ق٤", "SQL خام (سطر ١٦) — المرحلة ٤"],
-  ["functions/api/store/overview.js#ق٤", "SQL خام (سطر ٨٨) — المرحلة ٤"],
-  ["functions/api/webhooks/salla.js#ق٤", "SQL خام (سطر ١٠١) — المرحلة ٤"],
+  // 2026-09-09 · ق٤ — **صفر استثناء**: أُنجز بالمرحلة ٤ (النصفان أ وب). كل
+  // `.prepare(` خرج من `api/**` إلى `domain/*` (auth · accounts · booking ·
+  // bulk · bulkTick · health · analytics · platforms · salla · catalogSync ·
+  // storeOverview · publish · persona · auraAgent)، ونقاط الدخول صارت
+  // «تنسيق فقط»: withApi/withApi.raw ← تحقق مدخل ← استدعاء domain ← json.
 
-  // 2026-09-09 · ق٥ — بناء system prompt بطبقة التنسيق. §٢: `chat.js` → domain/conversation،
-  // `copy.js` → domain/copy (المرحلة ٤) · `whatsapp/webhook.js` → domain/whatsapp (المرحلة ٦).
-  ["functions/api/chat.js#ق٥", "بناء system prompt (سطر ٥٠) — يُنقل لـdomain/conversation.js بالمرحلة ٤"],
-  ["functions/api/copy.js#ق٥", "بناء system prompt (سطر ٢٠٧) — يُنقل لـdomain/copy.js بالمرحلة ٤"],
-  ["functions/api/whatsapp/webhook.js#ق٥", "PERSONA_SYSTEM_PROMPT بقالب نصي (سطر ٢٢٩) — يُنقل لـdomain/whatsapp.js بالمرحلة ٦"],
+  // 2026-09-09 · ق٥ — **صفر استثناء**: أُنجز بالمرحلة ٤ (النصف ب). كل بناء
+  // system prompt خرج من `api/**` إلى `_lib/ai/prompts/*.js`
+  // (seo · chat · support · whatsapp · instagram)، والشخصية تبقى مصدراً واحداً
+  // بـ`ai/persona.js` تستوردها كتل البرومبت.
 ]);
-const EXPECTED_ALLOWLIST = 24;
+const EXPECTED_ALLOWLIST = 2;
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "archive", ".git", "backups", "graphify-out", ".wrangler"]);
 function walk(dir, out = []) {

@@ -10,7 +10,7 @@ import { getIgConnectionByUserId } from "./instagram.js";
 import { send as igSend } from "../integrations/instagram.js";
 import { updateProductBySku } from "../integrations/salla.js";
 import { recordPublishResult } from "./review.js";
-import { markPublished } from "./catalog.js";
+import { markPublished, getCatalogItem, markReverted } from "./catalog.js";
 import { buildSallaProductFields } from "./sallaProductPayload.js";
 
 /**
@@ -169,4 +169,37 @@ export async function publishApproved(env, row) {
     await recordPublishResult(env, { merchantId, id, error }).catch(() => {});
     return { published: false, externalId: null, error };
   }
+}
+
+// ── المرحلة ٤: التراجع (كان بـ`api/store/review/decide.js`) ─────────────────
+//
+// `revert` هو الكتابة المباشرة الوحيدة على سلة خارج مسار النشر المجدول: كتابة
+// واحدة بطلب واحد (حد المعدل يفرضه المستدعي)، لا حلقة — فهي تحت حد سلة بأمان.
+
+/**
+ * يُرجع وصف المنتج الأصلي على سلة. يعيد `{ ok:false, error, code }` للحالات
+ * المتوقعة (نفس النصوص والأكواد كما كانت) بدل الرمي.
+ */
+export async function revertProduct(env, { merchantId, sku }) {
+  const item = await getCatalogItem(env, { merchantId, sku });
+  if (!item) {
+    return { ok: false, error: "هذا المنتج غير مسحوب من سلة — التراجع متاح فقط للمنتجات المسحوبة.", code: "NOT_IN_CATALOG" };
+  }
+  if (!item.hala_published_at) {
+    return { ok: false, error: "ما نشرت هالة وصفاً على هذا المنتج — لا شيء نتراجع عنه.", code: "NOTHING_TO_REVERT" };
+  }
+
+  // الأصل قد يكون فارغاً فعلاً (منتج بلا وصف قبل هالة) — نُرجعه فارغاً بصدق،
+  // لا نخترع نصاً.
+  const original = item.original_description || "";
+  await updateProductBySku(env, merchantId, sku, { description: original });
+  await markReverted(env, { merchantId, sku });
+
+  const seoNote = "عنوان ووصف البحث اللذان أضافتهما هالة يبقيان — عدّلهما من لوحة سلة إن أردت.";
+  return {
+    ok: true,
+    sku,
+    restoredLength: original.length,
+    message: (original ? "رجّعنا الوصف الأصلي؛ " : "رجّعنا المنتج بلا وصف كما كان؛ ") + seoNote
+  };
 }

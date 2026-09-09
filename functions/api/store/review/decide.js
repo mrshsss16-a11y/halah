@@ -1,33 +1,18 @@
 // POST /api/store/review/decide — يد التاجر على بوابة المراجعة (المرحلة ٢).
 //
-// body.action:
-//   approve      { ids: [..] }            اعتماد المحدد → يُنشر بالـcron (متجر/تِك، ≥١.١ث)
-//   approve_all  {}                        اعتماد كل المعلّق (حتى ١٠٠ بالطلب)
-//   reject       { ids: [..], reason? }
-//   update       { id, description }       تحرير سطري قبل الاعتماد (pending فقط)
-//   retry        { id }                    إعادة نشر صف معتمد فشل نشره
-//   revert       { sku }                   إرجاع وصف المنتج الأصلي على سلة (التراجع)
+// body.action: approve {ids} · approve_all {} · reject {ids, reason?} ·
+//   update {id, description} · retry {id} · revert {sku}
 //
 // لماذا لا يُنشر هنا فور الاعتماد: حد سلة ١ طلب/ثانية لكل متجر، وتجاوزه يقطع
 // اتصال المتجر كاملاً. اعتماد ٥٠ عنصراً بضغطة = ٥٠ كتابة — لا تُرسل من طلب
 // HTTP واحد. الاعتماد قرار فوري، والنشر تصريف مجدول، والشاشة تعرض الفرق بصدق
-// ("معتمد بانتظار النشر" ≠ "نُشر").
-//
-// `revert` هو الاستثناء الوحيد الذي يكتب على سلة مباشرة: كتابة واحدة بطلب واحد،
-// مقيّدة بحد معدل ١٠/دقيقة/IP — أقل بكثير من حد سلة.
+// ("معتمد بانتظار النشر" ≠ "نُشر"). `revert` وحده يكتب على سلة مباشرة: كتابة
+// واحدة بطلب واحد، مقيّدة بحد ١٠/دقيقة/IP — أقل بكثير من حد سلة.
 import { withApi, ApiError } from "../../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
-import { updateProductBySku } from "../../../_lib/integrations/salla.js";
-import { getCatalogItem, markReverted } from "../../../_lib/services/catalog.js";
-import {
-  listPending,
-  approveMany,
-  rejectMany,
-  updatePayload,
-  retryPublish,
-  countByState
-} from "../../../_lib/services/reviewQueue.js";
+import { revertProduct } from "../../../_lib/domain/publish.js";
+import { listPending, approveMany, rejectMany, updatePayload, retryPublish, countByState } from "../../../_lib/domain/review.js";
 
 const MAX_IDS = 100;
 
@@ -43,24 +28,25 @@ async function decideHandler(body, env, request) {
   // reviewed_by من الجلسة لا من الجسم (§7: لا تثق بهوية يرسلها العميل).
   const reviewedBy = `merchant:${merchantId}`;
   const action = String(body.action || "");
+  const counts = () => countByState(env, { merchantId, kind: "description" });
 
   if (action === "approve") {
     const r = await approveMany(env, { merchantId, ids: idList(body.ids), reviewedBy });
-    return { ok: true, approved: r.approved.length, failed: r.failed, counts: await countByState(env, { merchantId, kind: "description" }) };
+    return { ok: true, approved: r.approved.length, failed: r.failed, counts: await counts() };
   }
 
   if (action === "approve_all") {
     const pending = await listPending(env, { merchantId, kind: "description", limit: MAX_IDS });
-    if (!pending.length) return { ok: true, approved: 0, failed: [], counts: await countByState(env, { merchantId, kind: "description" }) };
+    if (!pending.length) return { ok: true, approved: 0, failed: [], counts: await counts() };
     const r = await approveMany(env, { merchantId, ids: pending.map((p) => p.id), reviewedBy });
-    const counts = await countByState(env, { merchantId, kind: "description" });
-    return { ok: true, approved: r.approved.length, failed: r.failed, remainingPending: counts.pending, counts };
+    const c = await counts();
+    return { ok: true, approved: r.approved.length, failed: r.failed, remainingPending: c.pending, counts: c };
   }
 
   if (action === "reject") {
     const reason = body.reason ? String(body.reason).slice(0, 500) : null;
     const r = await rejectMany(env, { merchantId, ids: idList(body.ids), reviewedBy, reason });
-    return { ok: true, rejected: r.rejected.length, failed: r.failed, counts: await countByState(env, { merchantId, kind: "description" }) };
+    return { ok: true, rejected: r.rejected.length, failed: r.failed, counts: await counts() };
   }
 
   if (action === "update") {
@@ -77,29 +63,10 @@ async function decideHandler(body, env, request) {
 
   if (action === "revert") {
     const rl = await checkRateLimit(env, clientIp(request), "review_revert", 10, 60);
-    if (!rl.allowed) {
-      return { ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
-    }
+    if (!rl.allowed) return { ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
     const sku = String(body.sku || "").trim().slice(0, 100);
     if (!sku) throw new ApiError(400, "رمز المنتج (SKU) غير محدد.", "REVIEW_INVALID", "decide.revert: missing sku");
-    const item = await getCatalogItem(env, { merchantId, sku });
-    if (!item) {
-      return { ok: false, error: "هذا المنتج غير مسحوب من سلة — التراجع متاح فقط للمنتجات المسحوبة.", code: "NOT_IN_CATALOG" };
-    }
-    if (!item.hala_published_at) {
-      return { ok: false, error: "ما نشرت هالة وصفاً على هذا المنتج — لا شيء نتراجع عنه.", code: "NOTHING_TO_REVERT" };
-    }
-    // الأصل قد يكون فارغاً فعلاً (منتج بلا وصف قبل هالة) — نُرجعه فارغاً بصدق، لا نخترع نصاً.
-    const original = item.original_description || "";
-    await updateProductBySku(env, merchantId, sku, { description: original });
-    await markReverted(env, { merchantId, sku });
-    const seoNote = "عنوان ووصف البحث اللذان أضافتهما هالة يبقيان — عدّلهما من لوحة سلة إن أردت.";
-    return {
-      ok: true,
-      sku,
-      restoredLength: original.length,
-      message: (original ? "رجّعنا الوصف الأصلي؛ " : "رجّعنا المنتج بلا وصف كما كان؛ ") + seoNote
-    };
+    return revertProduct(env, { merchantId, sku });
   }
 
   throw new ApiError(400, "الإجراء غير مدعوم.", "REVIEW_INVALID", "decide: unknown action");

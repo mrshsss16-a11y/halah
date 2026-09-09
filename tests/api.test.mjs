@@ -1246,10 +1246,10 @@ async function runTests() {
       typeof wh.onRequestGet === "function" && typeof wh.onRequestPost === "function",
       "IG: webhook.js يصدّر المصافحة والاستقبال"
     );
-    const whSource = await (await import("node:fs/promises")).readFile(
-      new URL("../functions/api/instagram/webhook.js", import.meta.url),
-      "utf8"
-    );
+    const fsp = await import("node:fs/promises");
+    const whSource =
+      (await fsp.readFile(new URL("../functions/api/instagram/webhook.js", import.meta.url), "utf8")) +
+      (await fsp.readFile(new URL("../functions/_lib/domain/instagram.js", import.meta.url), "utf8"));
     assert(
       whSource.includes("enqueue(") && !/\bsend\s*\(\s*env/.test(whSource),
       "IG-T7: صفر نشر مباشر من الويبهوك — كل رد يمرّ بـreview_queue (الأخطر لو كُسر)"
@@ -1547,7 +1547,7 @@ async function runTests() {
     //     اتصال المتجر كاملاً لا الطلب وحده.
     //  ٢. hasMore=false ⇒ **لا وظيفة** تنتظر تِكاً بلا شغل.
     //  ٣. فشل الصفحة الأولى ⇒ **لا وظيفة** توهم بنجاح ولا تحجز الحارس.
-    const { syncFirstPage } = await import("../functions/api/store/catalog/sync.js");
+    const { syncFirstPage } = await import("../functions/_lib/domain/catalogSync.js");
 
     /** env وهمي يسجّل كل كتابة على bulk_jobs (إنشاء الوظيفة/تقديم الـcursor). */
     function jobEnv(jobLog) {
@@ -1705,7 +1705,8 @@ async function runTests() {
       profileToPromptBlock,
       normalizeProfile
     } = await import("../functions/_lib/domain/storeProfile.js");
-    const { approvedProfileBlock, buildSeoSystem } = await import("../functions/api/copy.js");
+    const { approvedProfileBlock } = await import("../functions/_lib/domain/copy.js");
+    const { buildSeoSystem } = await import("../functions/_lib/ai/prompts/seo.js");
 
     const SAMPLE = [
       { name: "عباية كلوش كريب", category: "عبايات", current_description: "عباية كريب ياباني بقصة كلوش." },
@@ -1831,7 +1832,8 @@ async function runTests() {
 
     // نافذة recentCopy مثبّتة على ٥ (الخطة §٥) — تُقرأ من نص copy.js نفسه.
     const { readFileSync } = await import("node:fs");
-    const copySrc = readFileSync(new URL("../functions/api/copy.js", import.meta.url), "utf8");
+    const copySrc = readFileSync(new URL("../functions/_lib/domain/copy.js", import.meta.url), "utf8")
+      + readFileSync(new URL("../functions/api/copy.js", import.meta.url), "utf8");
     assert(
       /RECENT_OPENINGS_WINDOW\s*=\s*5/.test(copySrc) &&
         /recentCopy\(env,\s*merchantId,\s*RECENT_OPENINGS_WINDOW\)/.test(copySrc),
@@ -1937,8 +1939,9 @@ async function runTests() {
   // ── تحليل الصورة: "وفق الصورة" لا اختلاق (بلاغ 2026-09-07) ────────────────
   {
     const { readFileSync } = await import("node:fs");
-    const { VISION_PROMPT, buildSeoSystem } = await import("../functions/api/copy.js");
-    const copySrc = readFileSync(new URL("../functions/api/copy.js", import.meta.url), "utf8");
+    const { VISION_PROMPT, buildSeoSystem } = await import("../functions/_lib/ai/prompts/seo.js");
+    const copySrc = readFileSync(new URL("../functions/_lib/ai/prompts/seo.js", import.meta.url), "utf8");
+    const copyDomainSrc = readFileSync(new URL("../functions/_lib/domain/copy.js", import.meta.url), "utf8");
 
     assert(
       /صف ما تراه في الصورة فقط/.test(VISION_PROMPT) &&
@@ -1966,8 +1969,8 @@ async function runTests() {
       "VIS-6: سقف موسّع للتفاصيل المرئية مع منع الحشو"
     );
     assert(
-      /askVisionAI\(\{ env, imageUrl, prompt: visionPrompt \}\)\.catch\(\(\) => null\)/.test(copySrc) &&
-        /const visionPrompt = visionPromptFromTaxonomy\(taxonomyBlock\)/.test(copySrc),
+      /askVisionAI\(\{ env, imageUrl, prompt: visionPrompt \}\)\.catch\(\(\) => null\)/.test(copyDomainSrc) &&
+        /const visionPrompt = visionPromptFromTaxonomy\(taxonomyBlock\)/.test(copyDomainSrc),
       "VIS-7: التوجيه مصدر واحد، وفشل الرؤية ما زال لا يكسر المسار"
     );
 
@@ -2108,7 +2111,7 @@ async function runTests() {
   // ── كتيب مصطلحات المنتجات (مفردات محكومة حسب الفئة) ──────────────────
   {
     const { taxonomyForCategory, COVERED_CATEGORIES } = await import("../functions/_lib/ai/productTaxonomy.js");
-    const { VISION_PROMPT, visionPromptFor, buildSeoSystem } = await import("../functions/api/copy.js");
+    const { VISION_PROMPT, visionPromptFor, buildSeoSystem } = await import("../functions/_lib/ai/prompts/seo.js");
 
     const dresses = taxonomyForCategory("فساتين");
     assert(
@@ -2271,7 +2274,7 @@ async function runTests() {
       "TAX-30: غياب الفئة والاسم يرجّع كتيباً فارغاً لا يرمي"
     );
     // مسار الرؤية يستهلك الكتيب نفسه أياً كان مصدره.
-    const { visionPromptFromTaxonomy } = await import("../functions/api/copy.js");
+    const { visionPromptFromTaxonomy } = await import("../functions/_lib/ai/prompts/seo.js");
     assert(
       visionPromptFromTaxonomy("") === VISION_PROMPT &&
         visionPromptFromTaxonomy(dresses) === visionPromptFor("فساتين"),
@@ -2376,19 +2379,26 @@ async function runTests() {
     assert(timingSafeEqualStr("abc", "abc") === true && timingSafeEqualStr("abc", "abd") === false
       && timingSafeEqualStr("abc", "abcd") === false && timingSafeEqualStr(undefined, "") === true,
       "P26-1: timingSafeEqualStr يطابق/يرفض صح ويتحمل undefined");
+    // المرحلة ٤: بوابة CRON_SECRET صارت موحّدة بـwithApi.raw({cron:true}) بدل
+    // نسخة بكل ملف — المقارنة الثابتة الزمن تُفحص بمصدرها، والوظائف تُفحص أنها
+    // تمر بالبوابة فعلاً (اختبارات السلوك بـtests/api-thin.test.mjs).
+    const respondSrc = read("../functions/_lib/core/respond.js");
+    assert(!respondSrc.includes("provided !== env.CRON_SECRET") && respondSrc.includes("timingSafeEqualStr(provided, env.CRON_SECRET)"),
+      "P26-2: بوابة الـcron تقارن CRON_SECRET بمقارنة ثابتة الزمن");
     for (const f of ["bulk_process", "healthcheck", "reminders"]) {
       const src = read(`../functions/api/cron/${f}.js`);
-      assert(!src.includes("provided !== env.CRON_SECRET") && src.includes("timingSafeEqualStr(provided, env.CRON_SECRET)"),
-        `P26-2: cron/${f} يقارن CRON_SECRET بمقارنة ثابتة الزمن`);
+      assert(/withApi\.raw\(/.test(src) && /cron: true/.test(src) && !/CRON_SECRET/.test(src),
+        `P26-2: cron/${f} يمرّ ببوابة CRON_SECRET الموحّدة (بلا نسخة محلية)`);
     }
 
-    const rem = read("../functions/api/cron/reminders.js");
+    const rem = read("../functions/_lib/domain/booking.js");
     assert(/SELECT id, ticket_code,/.test(rem) && rem.includes("booking.ticket_code ||"),
       "P18-1: التذكير يقرأ عمود ticket_code (المصدر الوحيد) بدل إعادة حسابه");
-    assert(!rem.includes("966500000000") && rem.includes("if (employeePhone)"),
+    const remEndpoint = read("../functions/api/cron/reminders.js");
+    assert(!rem.includes("966500000000") && !remEndpoint.includes("966500000000") && remEndpoint.includes("if (employeePhone)"),
       "P49/P18-2: لا رقم موظف مفبرك — يُتخطى التذكير عند غياب الرقم");
 
-    const chat = read("../functions/api/chat.js");
+    const chat = read("../functions/api/chat.js") + read("../functions/_lib/domain/conversation.js");
     assert(!chat.includes("body.debug"), "P23: علم debug لا يُقرأ من جسم الطلب — من البيئة فقط");
 
     // كل console.error خام هاجر إلى logError (errorLog.js هو السنك الوحيد المسموح).
@@ -2413,10 +2423,12 @@ async function runTests() {
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
 
     // BULK-1 — الفصل: مسار التوليد لا يستورد سلة إطلاقاً، وينشر حصراً عبر publishApproved.
-    const cron = read("../functions/api/cron/bulk_process.js");
+    // المرحلة ٤: نقطة الدخول حارس + استدعاء واحد؛ المراحل الثلاث بـdomain/bulk.js.
+    const cron = read("../functions/_lib/domain/bulkTick.js");
     assert(
-      !/integrations\/salla\.js/.test(cron) && !/updateProductBySku/.test(cron),
-      "BULK-1: cron/bulk_process لا يستورد سلة ولا updateProductBySku — التوليد صفر كتابة على سلة"
+      !/integrations\/salla\.js/.test(cron) && !/updateProductBySku/.test(cron)
+        && !/integrations\/salla\.js/.test(read("../functions/api/cron/bulk_process.js")),
+      "BULK-1: مسار الجملة لا يستورد سلة ولا updateProductBySku — التوليد صفر كتابة على سلة"
     );
     assert(
       /enqueue\(env, \{ merchantId: item\.merchant_id, kind: "description"/.test(cron) && /publishApproved\(env, row\)/.test(cron),
@@ -2516,8 +2528,9 @@ async function runTests() {
 
     // BULK-13 — التراجع يرفض ما لم تنشره هالة، ويُرجع الأصل حتى لو كان فارغاً (بلا اختراع نص).
     const decideSrc = read("../functions/api/store/review/decide.js");
+    const revertSrc = read("../functions/_lib/domain/publish.js"); // المرحلة ٤: revert بالمجال
     assert(
-      /NOTHING_TO_REVERT/.test(decideSrc) && /NOT_IN_CATALOG/.test(decideSrc) && /item\.original_description \|\| ""/.test(decideSrc) && /markReverted/.test(decideSrc),
+      /NOTHING_TO_REVERT/.test(revertSrc) && /NOT_IN_CATALOG/.test(revertSrc) && /item\.original_description \|\| ""/.test(revertSrc) && /markReverted/.test(revertSrc),
       "BULK-13: revert مقيّد بما نشرته هالة، ويُرجع الأصل كما هو (حتى الفارغ)"
     );
     assert(
@@ -2528,7 +2541,8 @@ async function runTests() {
     // BULK-15 — الحصة الصادقة: أولوية + تأجيل بدل رفض + إحياء شهري.
     const genSrc = read("../functions/api/store/bulk/generate.js");
     assert(
-      /listPriorityCatalog/.test(genSrc) && /DEFERRED_MARKER/.test(genSrc) && /باقتك تغطي/.test(genSrc),
+      /listPriorityCatalog/.test(genSrc) && /markDeferredItems/.test(genSrc) && /باقتك تغطي/.test(genSrc)
+        && /DEFERRED_MARKER/.test(read("../functions/_lib/domain/bulk.js")),
       "BULK-15: التوليد من الكتالوج بأولوية SEO، وما فوق الحصة مؤجَّل بنص صادق"
     );
     assert(/tickReviveDeferred/.test(cron) && /reviveDeferredItems/.test(cron), "BULK-16: الـcron يُحيي المؤجَّل عند تجدّد الحصة بلا فعل من التاجر");
@@ -2604,7 +2618,7 @@ async function runTests() {
     const logoutSrc = read("../functions/api/auth/logout.js");
     const resetSrc = read("../functions/api/auth/reset_password.js");
     const accountsSrc = read("../functions/api/admin/accounts.js");
-    assert(/bumpSessionVersion\(env, merchantId\)/.test(logoutSrc) && /bumpSessionVersion\(env, owner\.merchant_id\)/.test(resetSrc) && /if \(body\.disabled\) await bumpSessionVersion/.test(accountsSrc),
+    assert(/bumpSessionVersion\(env, merchantId\)/.test(logoutSrc) && /bumpSessionVersion\(env, owner\)/.test(resetSrc) && /if \(body\.disabled\) await bumpSessionVersion/.test(accountsSrc),
       "P40-8: الخروج وإعادة التعيين والتعطيل ترفع النسخة (الأحداث الثلاثة بالخطة)");
 
     // P42 — CSRF: Origin غريب يُرفض، نموذج text/plain يُرفض، نفس الأصل وإطار سلة يمرّان.
@@ -2625,14 +2639,18 @@ async function runTests() {
     const csrfRes = await guarded({ request: mk({ Origin: "https://evil.example", "Content-Type": "application/json" }), env: {}, waitUntil() {} });
     const csrfBody = await csrfRes.json();
     assert(csrfRes.status === 403 && csrfBody.code === "CSRF_REJECTED" && handlerRan === false && /مصدر غير موثوق/.test(csrfBody.error), "P42-10: withApi يرفض قبل تنفيذ المعالج برسالة عربية + requestId");
-    // المعالجات الخام (signup/login/logout/me/complete_account) تستدعي الحارس
+    // المرحلة ٤: signup/login/logout/me/complete_account صارت withApi، فالبوابة
+    // تُطبَّق مرة واحدة داخل الغلاف بدل استدعاء يدوي بكل ملف (نفس الرد ٤٠٣).
     for (const f of ["signup", "login", "logout", "me", "complete_account"]) {
-      assert(/assertTrustedWrite\(request, env\)/.test(read(`../functions/api/auth/${f}.js`)), `P42-11: auth/${f} يمرّ بحارس CSRF (معالج خام خارج withApi)`);
+      const src = read(`../functions/api/auth/${f}.js`);
+      assert(/export const onRequestPost = withApi\(/.test(src) && !/assertTrustedWrite/.test(src), `P42-11: auth/${f} يمرّ بحارس CSRF عبر withApi (بلا استدعاء يدوي)`);
     }
 
     // P38 طبقة ٢ — حرق رمز تحقق البريد بعد ٥ محاولات، والعدّ ذرّي قبل المقارنة.
+    // المرحلة ٤: الـSQL انتقل لـdomain/auth.js، والقرار (الحرق بعد ٥) بقي بنقطة الدخول.
     const verifySrc = read("../functions/api/auth/verify_email.js");
-    assert(/UPDATE email_verifications SET attempts = attempts \+ 1/.test(verifySrc) && /RETURNING code_hash, attempts/.test(verifySrc) && /row\.attempts > MAX_ATTEMPTS/.test(verifySrc) && /DELETE FROM email_verifications/.test(verifySrc),
+    const verifyDomainSrc = read("../functions/_lib/domain/auth.js");
+    assert(/UPDATE email_verifications SET attempts = attempts \+ 1/.test(verifyDomainSrc) && /RETURNING code_hash, attempts/.test(verifyDomainSrc) && /row\.attempts > MAX_ATTEMPTS/.test(verifySrc) && /DELETE FROM email_verifications/.test(verifyDomainSrc),
       "P38-L2-1: verify_email يعدّ المحاولة ذرّياً قبل المقارنة ويحرق الرمز بعد ٥");
     const sendSrc = read("../functions/api/auth/send_verification.js");
     assert(/EMAIL_NOT_CONFIGURED/.test(sendSrc) && /emailConfigured\(env\)/.test(sendSrc), "P38-L2-2: بلا مزوّد بريد = 503 صريح، لا ادعاء إرسال");
@@ -2742,7 +2760,7 @@ async function runTests() {
     const { SUPPORT_PLAYBOOK, supportPlaybookBlock } = await import("../functions/_lib/ai/supportPlaybook.js");
     const { readFileSync } = await import("node:fs");
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
-    const chatSrc = read("../functions/api/chat.js");
+    const chatSrc = read("../functions/_lib/ai/prompts/chat.js") + read("../functions/_lib/domain/conversation.js");
 
     assert(
       ["أكيد يناسبك", "آخر قطعة", "يوصل بكرة", "أصلي ١٠٠٪", "نضمن لك النتيجة"].every((p) => SUPPORT_PLAYBOOK.includes(p)),
@@ -2778,7 +2796,7 @@ async function runTests() {
       "KB-7: التعطيل يرجّع \"\" — نفس تعاقد كتيب المصطلحات"
     );
     assert(
-      /import \{ SUPPORT_PLAYBOOK \} from "\.\.\/_lib\/ai\/supportPlaybook\.js"/.test(chatSrc) &&
+      /import \{ SUPPORT_PLAYBOOK \} from "\.\.\/supportPlaybook\.js"/.test(chatSrc) &&
         /\$\{SUPPORT_PLAYBOOK\}/.test(chatSrc) && /\$\{PERSONA_SYSTEM_PROMPT\}/.test(chatSrc),
       "KB-8: الكتيب يُحقن فوق الشخصية بلا استبدالها"
     );
@@ -2851,7 +2869,7 @@ async function runTests() {
     assert(noSeo.hasSeo === false && Object.keys(noSeo.fields).join() === "description", "SALLA-7: بلا سيو = حقل الوصف فقط، لا حقول فارغة تمسح ما عند التاجر");
 
     // الصدق: لا قيم افتراضية مخترعة بمحرك الوصف.
-    const copySrc = read("../functions/api/copy.js");
+    const copySrc = read("../functions/_lib/domain/copyParse.js") + read("../functions/_lib/ai/prompts/seo.js");
     assert(
       !/ضمان سنتين/.test(copySrc) && !/2-5 أيام/.test(copySrc) && !/جودة عالية مضمونة/.test(copySrc) && !/أفضل جودة وسعر/.test(copySrc) && !/InStock/.test(copySrc) && !/price \|\| "0"/.test(copySrc),
       "SALLA-8: صفر ضمان/توصيل/توفر/سعر مخترع بسقوط parseSeoResponse (§11)"
@@ -2868,7 +2886,7 @@ async function runTests() {
     const { readFileSync } = await import("node:fs");
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
     const { revokeSallaConnection, getSallaConnectionState } = await import("../functions/_lib/core/db.js");
-    const hookSrc = read("../functions/api/webhooks/salla.js");
+    const hookSrc = read("../functions/_lib/domain/salla.js"); // المرحلة ٤: تصريف الأحداث بالمجال
     const dash = read("../dashboard.html");
 
     assert(
@@ -2955,27 +2973,31 @@ async function runTests() {
   {
     const { readFileSync } = await import("node:fs");
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    // المرحلة ٤: نقطة الدخول تنسيق فقط — الحدث بـdomain/salla.js وأول سحب بـdomain/catalogSync.js.
     const hookSrc = read("../functions/api/webhooks/salla.js");
+    const eventSrc = read("../functions/_lib/domain/salla.js");
+    const syncSrc = read("../functions/_lib/domain/catalogSync.js");
     assert(
-      /import \{ syncFirstPage \} from "\.\.\/store\/catalog\/sync\.js"/.test(hookSrc) &&
-        /await kickoffFirstSync\(env, merchantId, context\)/.test(hookSrc),
+      /import \{ kickoffFirstSync \} from "\.\.\/\.\.\/_lib\/domain\/catalogSync\.js"/.test(hookSrc) &&
+        /onFirstSync: \(id\) => kickoffFirstSync\(env, id,/.test(hookSrc) &&
+        /await onFirstSync\(merchantId\)/.test(eventSrc),
       "FIRSTSYNC-1: app.store.authorize يطلق أول سحب بلا انتظار ضغطة زر"
     );
     assert(
-      /getActiveJobByKind\(env, merchantId, "catalog_sync"\)/.test(hookSrc) && /if \(active\) return;/.test(hookSrc),
+      /getActiveJobByKind\(env, merchantId, "catalog_sync"\)/.test(syncSrc),
       "FIRSTSYNC-2: سحب شغّال أصلاً ⇒ لا سحب ثانٍ (حد سلة ١ طلب/ثانية)"
     );
     assert(
-      /SALLA_FIRST_SYNC_FAILED/.test(hookSrc) && /catch \(err\)/.test(hookSrc),
+      /SALLA_FIRST_SYNC_FAILED/.test(syncSrc) && /catch \(err\)/.test(syncSrc),
       "FIRSTSYNC-3: فشل السحب الأول يُسجَّل ولا يُفشل الويبهوك — التوكن يبقى محفوظاً"
     );
     assert(
-      /UPDATE merchants SET salla_disconnected_at = NULL WHERE id = \?/.test(hookSrc),
+      /UPDATE merchants SET salla_disconnected_at = NULL WHERE id = \?/.test(eventSrc),
       "FIRSTSYNC-4: إعادة التثبيت تصفّر ختم فك الربط — لا يُعرض متجر مربوط كمفكوك"
     );
-    // الاستيراد لا يخلق حلقة: sync.js لا يعرف الويبهوك.
+    // الاستيراد لا يخلق حلقة: مسار السحب لا يعرف الويبهوك.
     assert(
-      !/webhooks\/salla/.test(read("../functions/api/store/catalog/sync.js")),
+      !/webhooks\/salla/.test(syncSrc),
       "FIRSTSYNC-5: لا استيراد دائري بين الويبهوك ومسار السحب"
     );
   }
@@ -3064,9 +3086,10 @@ async function runTests() {
       /pageshow/.test(dash) && /e\.persisted\) location\.reload\(\)/.test(dash),
       "UX-12: رجوع المتصفح لا يعرض DOM حساب سابق"
     );
-    // اسم المتجر يُجلب من Store Info (الحمولة لا تحمله).
+    // اسم المتجر يُجلب من Store Info (الحمولة لا تحمله). المرحلة ٤: بالمجال.
+    const eventSrc2 = read("../functions/_lib/domain/salla.js");
     assert(
-      /getStoreInfo\(env, merchantId\)/.test(hookSrc) && /SALLA_STORE_INFO_FAILED/.test(hookSrc) &&
+      /getStoreInfo\(env, merchantId\)/.test(eventSrc2) && /SALLA_STORE_INFO_FAILED/.test(eventSrc2) &&
         /export async function getStoreInfo/.test(read("../functions/_lib/integrations/salla.js")),
       "UX-13: store_name يُجلب من /store/info بعد التوكن، وفشله لا يوقف الويبهوك"
     );
@@ -3130,7 +3153,7 @@ async function runTests() {
       "REV-5: غياب اسم المتجر لا يدّعي ربطاً بسلة"
     );
     assert(
-      /settings\\\.read/.test(read("../functions/api/webhooks/salla.js")),
+      /settings\\\.read/.test(read("../functions/_lib/domain/salla.js")),
       "REV-6: /store/info يُستدعى فقط إن مُنح settings.read"
     );
   }

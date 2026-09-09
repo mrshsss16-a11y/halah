@@ -4,6 +4,8 @@
 //
 // ملاحظة تسمية: `ai/persona.js` هو **نص** شخصية هالة نفسها (المصدر الوحيد،
 // AGENT.md §٨)؛ هذا الملف تخزين إعدادات التاجر لوكيله. لا تخلط بينهما.
+import { DomainError } from "../core/errors.js";
+import { sanitizeInput } from "../core/security.js";
 
 // ── شخصية الوكيل لكل تاجر (agent_profiles، هجرة 0021) ────────────────────────
 //
@@ -101,4 +103,78 @@ export async function saveStoreLogo(env, merchantId, logoDataUrl) {
   )
     .bind(merchantId, logoDataUrl)
     .run();
+}
+
+// ── المرحلة ٤: تحقق حقول إعدادات الوكيل (كان بـ`api/store/persona.js`) ──────
+//
+// القيم المسموحة — أي قيمة خارجها تُرفض بدل أن تُخزَّن وتكسر بناء البرومبت لاحقاً.
+const DIALECTS = ["saudi_najdi", "saudi_hijazi", "fusha_friendly"];
+const TONES = ["friendly", "formal", "concise"];
+const LENGTHS = ["short", "medium", "detailed"];
+
+// حدود الطول: `custom_instructions` تدخل نص البرومبت مباشرة، فبلا سقف يقدر
+// حقل واحد يبتلع نافذة السياق ويزيح قواعد السياسات الإلزامية.
+const TEXT_LIMITS = {
+  agent_name: 40, business_name: 80, business_type: 40, city: 40, about: 600,
+  custom_instructions: 1500, forbidden_topics: 600, unknown_answer_policy: 300,
+  escalation_number: 20, working_hours: 120, after_hours_reply: 300
+};
+
+const invalid = (msg) => new DomainError(400, msg, "INVALID_FIELD");
+
+function pickEnum(body, field, allowed) {
+  const raw = body[field];
+  if (raw === undefined || raw === null) return undefined;
+  const value = String(raw);
+  if (!allowed.includes(value)) throw invalid(`قيمة غير مقبولة للحقل ${field}.`);
+  return value;
+}
+
+function pickJson(body, field) {
+  const raw = body[field];
+  if (raw === undefined || raw === null) return undefined;
+  // نقبل كائناً أو نصاً JSON، ونخزّن نصاً دائماً.
+  const value = typeof raw === "string" ? raw : JSON.stringify(raw);
+  if (value.length > 2000) throw invalid(`حقل ${field} أطول من المسموح.`);
+  try {
+    JSON.parse(value);
+  } catch {
+    throw invalid(`حقل ${field} لازم يكون JSON صالح.`);
+  }
+  return value;
+}
+
+/**
+ * يبني patch الحفظ الجزئي من جسم الطلب (الحقول المرسلة فقط).
+ * يرمي DomainError(400) بنفس الرسائل والأكواد التي كانت بنقطة الدخول.
+ */
+export function personaPatchFrom(body) {
+  const patch = {};
+  for (const field of Object.keys(TEXT_LIMITS)) {
+    const raw = body[field];
+    if (raw === undefined || raw === null) continue;
+    patch[field] = sanitizeInput(String(raw), TEXT_LIMITS[field] || 200);
+  }
+
+  const dialect = pickEnum(body, "dialect", DIALECTS);
+  if (dialect !== undefined) patch.dialect = dialect;
+  const tone = pickEnum(body, "tone", TONES);
+  if (tone !== undefined) patch.tone = tone;
+  const replyLength = pickEnum(body, "reply_length", LENGTHS);
+  if (replyLength !== undefined) patch.reply_length = replyLength;
+
+  if (body.emoji_level !== undefined) {
+    const level = Number(body.emoji_level);
+    if (![0, 1, 2].includes(level)) throw invalid("مستوى الإيموجي لازم يكون 0 أو 1 أو 2.");
+    patch.emoji_level = level;
+  }
+  if (body.allow_prices !== undefined) patch.allow_prices = body.allow_prices ? 1 : 0;
+
+  const links = pickJson(body, "knowledge_links");
+  if (links !== undefined) patch.knowledge_links = links;
+  const appearance = pickJson(body, "appearance");
+  if (appearance !== undefined) patch.appearance = appearance;
+
+  if (!Object.keys(patch).length) throw new DomainError(400, "ما فيه أي حقل صالح للحفظ.", "NOTHING_TO_SAVE");
+  return patch;
 }

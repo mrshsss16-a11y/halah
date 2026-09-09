@@ -12,16 +12,16 @@ import {
   UNTRUSTED_DATA_NOTICE
 } from "../functions/_lib/ai/guards.js";
 import { buildAgentPrompt } from "../functions/_lib/ai/persona.js";
-import { buildChatSystem } from "../functions/api/chat.js";
+import { buildChatSystem } from "../functions/_lib/ai/prompts/chat.js";
 import {
-  seedKeywords,
-  extractBalancedJson,
   parseSeoResponse,
   buildMetaDescription,
   fallbackSlug,
   acceptArabicVisionNotes,
   CopyParseError
-} from "../functions/api/copy.js";
+} from "../functions/_lib/domain/copyParse.js";
+import { seedKeywords } from "../functions/_lib/domain/copy.js";
+import { extractBalancedJson } from "../functions/_lib/ai/parseModelJson.js";
 import { askWorkersAI, TTL_KINDS } from "../functions/_lib/ai/gateway.js";
 import { buildPersonaFiles, PERSONA_EXPORTS } from "../scripts/export-persona.mjs";
 
@@ -76,11 +76,11 @@ async function runTests() {
     assert(clean.stripped === false && clean.text === "حياك الله، أبشر.", "A1-11: بلا مخالفة ⇒ نص كما هو وعلم false");
 
     // التطبيق على القنوات الثلاث + تسجيل بلا نص الرسالة.
-    const supportSrc = read("../functions/api/support.js");
-    const waSrc = read("../functions/api/whatsapp/webhook.js");
-    const igSrc = read("../functions/api/instagram/webhook.js");
+    const supportSrc = read("../functions/_lib/domain/support.js");
+    const waSrc = read("../functions/_lib/domain/whatsappAutoReply.js");
+    const igSrc = read("../functions/_lib/domain/instagram.js");
     assert(
-      /from "\.\.\/_lib\/ai\/guards\.js"/.test(supportSrc) && !/const FABRICATED_PRICE/.test(supportSrc),
+      /from "\.\.\/ai\/guards\.js"/.test(supportSrc) && !/const FABRICATED_PRICE/.test(supportSrc),
       "A1-12: support.js يستخدم الحارس المشترك ولا نسخة محلية"
     );
     assert(
@@ -153,21 +153,21 @@ async function runTests() {
     assert(sys.includes("<<<بيانات تعليمات المتجر"), "A2-17: تعليمات المتجر بـchat.js مسوّرة");
     assert(sys.includes(UNTRUSTED_DATA_NOTICE), "A2-18: سطر القاعدة محقون ببرومبت chat.js");
 
-    const waSrc = read("../functions/api/whatsapp/webhook.js");
+    const waSrc = read("../functions/_lib/domain/whatsappAutoReply.js");
     assert(
       /fenceUntrusted\(\s*\n?\s*"ذاكرة العميل من شات الموقع"/.test(waSrc) || /"ذاكرة العميل من شات الموقع",/.test(waSrc),
       "A2-19: chat_summary (نص زائر مجهول) مسوّر قبل حقنه ببرومبت واتساب"
     );
     assert(/fenceUntrusted\(\s*\n?\s*"معرفة مسترجعة"/.test(waSrc), "A2-20: مقتطفات RAG بواتساب مسوّرة");
-    const supportSrc = read("../functions/api/support.js");
+    const supportSrc = read("../functions/_lib/ai/prompts/support.js");
     assert(/fenceUntrusted\("معرفة مسترجعة"/.test(supportSrc), "A2-21: مقتطفات RAG بـsupport.js مسوّرة");
-    const copySrc = read("../functions/api/copy.js");
+    const copySrc = read("../functions/_lib/ai/prompts/seo.js");
     assert(/fenceUntrusted\("الوصف الحالي للمنتج"/.test(copySrc), "A2-22: existingDescription بـcopy.js مسوّر");
   }
 
   // ── A3 · لا حقول مفبركة بـchat.js ─────────────────────────────────────────
   {
-    const src = read("../functions/api/chat.js");
+    const src = read("../functions/_lib/domain/conversation.js") + read("../functions/api/chat.js");
     assert(!/score:\s*9/.test(src), "A3-1: الحقل score: 9 المكتوب بالكود محذوف (§١١)");
     assert(!/refined:\s*(true|false)/.test(src) && !/guarded:\s*(true|false)/.test(src), "A3-2: refined/guarded المفبركان محذوفان");
     assert(!/memorized:\s*(true|false)/.test(src), "A3-3: memorized المفبرك محذوف");
@@ -218,7 +218,7 @@ async function runTests() {
       threw instanceof CopyParseError && threw.code === "COPY_PARSE_FAILED",
       "A4-5: فشل التحليل يرمي خطأً مصنَّفاً — لا يُرجّع مخرج النموذج الخام كوصف منتج"
     );
-    const plainSrc = read("../functions/api/copy.js");
+    const plainSrc = read("../functions/_lib/domain/copyParse.js") + read("../functions/_lib/domain/copy.js");
     assert(
       !/const plain = source\.trim\(\)/.test(plainSrc) && /CopyParseError\("model output is not parseable/.test(plainSrc),
       "A4-6: مسار «استخدم النص الخام كوصف» محذوف من الكود"
@@ -265,7 +265,7 @@ async function runTests() {
       "A5-2: مخرج النموذج الاحتياطي الإنجليزي يُهمل كلياً"
     );
     assert(acceptArabicVisionNotes("") === null && acceptArabicVisionNotes(null) === null, "A5-3: فراغ ⇒ null");
-    const src = read("../functions/api/copy.js");
+    const src = read("../functions/_lib/domain/copy.js") + read("../functions/_lib/ai/prompts/seo.js");
     assert(/code: "VISION_FALLBACK_DISCARDED"/.test(src), "A5-4: الإهمال مسجَّل بكود VISION_FALLBACK_DISCARDED");
     assert(
       /const visionOutputRule = visionNotes/.test(src),
@@ -310,11 +310,11 @@ async function runTests() {
     assert(copySeen.ttl === 60 * 60 * 24, "A9-4: توليد الوصف يُكاش ٢٤ ساعة بطلب صريح من المستدعي");
 
     for (const [label, rel, re] of [
-      ["support", "../functions/api/support.js", /ttlKind: "chat"/],
-      ["whatsapp", "../functions/api/whatsapp/webhook.js", /ttlKind: "chat"/],
-      ["instagram", "../functions/api/instagram/webhook.js", /ttlKind: "chat"/],
-      ["chat", "../functions/api/chat.js", /ttlKind: "chat"/],
-      ["copy", "../functions/api/copy.js", /ttlKind: "copy"/]
+      ["support", "../functions/_lib/domain/support.js", /ttlKind: "chat"/],
+      ["whatsapp", "../functions/_lib/domain/whatsappAutoReply.js", /ttlKind: "chat"/],
+      ["instagram", "../functions/_lib/domain/instagram.js", /ttlKind: "chat"/],
+      ["chat", "../functions/_lib/domain/conversation.js", /ttlKind: "chat"/],
+      ["copy", "../functions/_lib/domain/copy.js", /ttlKind: "copy"/]
     ]) {
       assert(re.test(read(rel)), `A9-5/${label}: المستدعي يمرّر نوع الـTTL صراحةً`);
     }

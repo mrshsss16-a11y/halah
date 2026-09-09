@@ -177,3 +177,82 @@ export async function trialSeatUsage(env, email, adminEmails = []) {
 
   return { count, duplicate };
 }
+
+// ── المرحلة ٤ (docs/ARCHITECTURE.md §٢): SQL كان بـ`functions/api/auth/*` ──
+// كل دالة هنا نقل حرفي للاستعلام كما كان بنقطة الدخول — نفس الجداول، نفس
+// الشروط، نفس معالجة الأخطاء (الرمي يبقى رمياً، والابتلاع يبقى بالمستدعي).
+
+/** صف الحساب كاملاً بالبريد — هوية ما قبل المصادقة. */
+export async function findAccountByEmail(env, email) {
+  // tenant-audit-ok: identity resolution pre-auth — email IS the lookup key,
+  // there is no merchant_id to scope by until this query resolves one.
+  return env.DB.prepare("SELECT * FROM accounts WHERE email = ?").bind(email).first();
+}
+
+/** معرّف التاجر المالك لهذا البريد (أو null) — بعد إثبات الملكية بالرمز. */
+export async function findMerchantIdByEmail(env, email) {
+  // tenant-audit-ok: email هو الهوية المُثبَتة بالرمز (OTP) — لا merchant_id قبلها.
+  const row = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?").bind(email).first();
+  return row?.merchant_id || null;
+}
+
+/** هل يوجد صف `merchants` بهذا المعرّف — يُفشل مغلقاً بدل إنشاء حساب يتيم. */
+export async function merchantExists(env, merchantId) {
+  const row = await env.DB.prepare("SELECT id FROM merchants WHERE id = ?").bind(merchantId).first();
+  return Boolean(row);
+}
+
+/** اسم المتجر فقط (لوحة الدخول وme). */
+export async function getStoreName(env, merchantId) {
+  const row = await env.DB.prepare("SELECT store_name FROM merchants WHERE id = ?").bind(merchantId).first();
+  return row?.store_name ?? null;
+}
+
+/** هل لهذا التاجر حساب مكتمل مسبقاً (بريد + كلمة مرور)؟ */
+export async function accountEmailFor(env, merchantId) {
+  return env.DB.prepare("SELECT email FROM accounts WHERE merchant_id = ?").bind(merchantId).first();
+}
+
+/** هل البريد مأخوذ بأي متجر؟ */
+export async function emailTaken(env, email) {
+  // tenant-audit-ok: uniqueness check on the global email column — an email may
+  // belong to at most one merchant, so this lookup is deliberately not scoped.
+  const row = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?").bind(email).first();
+  return Boolean(row);
+}
+
+/** تسجيل جديد: صف متجر + صف حساب بدفعة واحدة (نفس batch الأصلي). */
+export async function createAccountWithMerchant(env, { merchantId, storeName, email, hash, salt }) {
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO merchants (id, store_name) VALUES (?, ?)").bind(merchantId, storeName),
+    env.DB.prepare(
+      "INSERT INTO accounts (merchant_id, email, password_hash, password_salt) VALUES (?, ?, ?, ?)"
+    ).bind(merchantId, email, hash, salt)
+  ]);
+}
+
+/** إكمال حساب متجر سلة قائم (المتجر موجود، الحساب لا). */
+export async function completeAccount(env, { merchantId, email, hash, salt }) {
+  await env.DB.prepare(
+    "INSERT INTO accounts (merchant_id, email, password_hash, password_salt) VALUES (?, ?, ?, ?)"
+  )
+    .bind(merchantId, email, hash, salt)
+    .run();
+}
+
+/**
+ * أول دخول بجوجل: متجر + حساب بـ`INSERT OR IGNORE`. ابتلاع الخطأ مقصود ومنقول
+ * كما هو من `api/auth/google.js` — سباق نافذتين متوازيتين ينتهي بصف واحد.
+ */
+export async function provisionGoogleAccount(env, { merchantId, name, email, hash, salt }) {
+  await env.DB.prepare("INSERT OR IGNORE INTO merchants (id, store_name) VALUES (?, ?)")
+    .bind(merchantId, name)
+    .run()
+    .catch(() => {});
+  await env.DB.prepare(
+    "INSERT OR IGNORE INTO accounts (merchant_id, email, password_hash, password_salt) VALUES (?, ?, ?, ?)"
+  )
+    .bind(merchantId, email, hash, salt)
+    .run()
+    .catch(() => {});
+}

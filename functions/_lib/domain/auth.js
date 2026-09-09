@@ -160,3 +160,142 @@ export async function recordResetOtpFailure(env, email) {
 export async function clearResetOtpAttempts(env, email) {
   await resetGuard.clear(env, email);
 }
+
+// ── المرحلة ٤ (docs/ARCHITECTURE.md §٢): SQL كان بـ`functions/api/auth/*` ──
+// نقل حرفي: نفس الجداول والشروط والنوافذ. لا رسالة عميل ولا حالة تتغيّر —
+// الترجمة لـHTTP تبقى بنقطة الدخول، والمجال يعيد بيانات أو يرمي.
+
+/**
+ * يسجّل (أو يستبدل) رمز استعادة كلمة المرور المُجزّأ بنافذة ١٥ دقيقة.
+ * ابتلاع الخطأ مقصود ومنقول كما كان: الرد للعميل موحّد بأي حال (منع التعداد).
+ */
+export async function issuePasswordReset(env, { email, otpHash }) {
+  await env.DB.prepare(
+    `INSERT INTO password_resets (email, otp_code, reset_token, expires_at)
+     VALUES (?, ?, ?, datetime('now', '+15 minutes'))
+     ON CONFLICT (email) DO UPDATE SET
+       otp_code = excluded.otp_code,
+       reset_token = excluded.reset_token,
+       expires_at = excluded.expires_at`
+  )
+    .bind(email, otpHash, "")
+    .run()
+    .catch(() => {});
+}
+
+/** تجزئة الرمز السارية لهذا البريد (أو null: لا طلب/منتهٍ/عطل D1). */
+export async function pendingResetOtpHash(env, email) {
+  const row = await env.DB.prepare(
+    "SELECT otp_code FROM password_resets WHERE email = ? AND expires_at > datetime('now')"
+  )
+    .bind(email)
+    .first()
+    .catch(() => null);
+  return row?.otp_code || null;
+}
+
+/**
+ * قناة تسليم الرمز: آخر رقم واتساب تواصل مع هذا التاجر. لا مزوّد بريد مضبوط
+ * لاستعادة كلمة المرور، ولا رقم مفبرك — غيابه يعني «لم يُسلَّم» (§١١ الصدق).
+ */
+export async function resetDeliveryPhone(env, merchantId) {
+  const row = await env.DB.prepare(
+    "SELECT phone FROM whatsapp_contacts WHERE merchant_id = ? ORDER BY last_inbound_at DESC LIMIT 1"
+  )
+    .bind(merchantId)
+    .first()
+    .catch(() => null);
+  return row?.phone || null;
+}
+
+/**
+ * يكتب كلمة المرور الجديدة. يعيد false لو فشلت الكتابة (المستدعي يرد ٥٠٠).
+ * tenant-audit-ok: الرمز المتحقَّق منه هو ما يثبت الملكية، لا شرط merchant_id.
+ */
+export async function setPasswordForEmail(env, { email, hash, salt }) {
+  // tenant-audit-ok: إعادة تعيين كلمة المرور مفتاحها البريد المتحقَّق برمز OTP —
+  // فحص الرمز (timingSafeEqual) هو ما يثبت الملكية، لا شرط merchant_id.
+  const update = await env.DB.prepare(
+    "UPDATE accounts SET password_hash = ?, password_salt = ? WHERE email = ?"
+  )
+    .bind(hash, salt, email)
+    .run()
+    .catch(() => null);
+  return Boolean(update);
+}
+
+/** يحرق رمز الاستعادة (استخدام واحد). يرمي عند الفشل ليُسجَّل بالمستدعي. */
+export async function consumePasswordReset(env, email) {
+  await env.DB.prepare("DELETE FROM password_resets WHERE email = ?").bind(email).run();
+}
+
+// ── تحقق ملكية البريد (`email_verifications`) ───────────────────────────────
+
+/** بريد الحساب وحالة تحقّقه — الأساس لكل من إرسال الرمز والتحقق منه. */
+export async function accountVerificationState(env, merchantId) {
+  return env.DB.prepare("SELECT email, email_verified_at FROM accounts WHERE merchant_id = ?")
+    .bind(merchantId)
+    .first();
+}
+
+/** يخزّن رمز تحقق جديد مُجزّأ (١٥ دقيقة، العدّاد يعود صفراً). */
+export async function createEmailVerification(env, { email, codeHash }) {
+  await env.DB.prepare(
+    `INSERT INTO email_verifications (email, code_hash, attempts, expires_at)
+     VALUES (?, ?, 0, datetime('now', '+15 minutes'))
+     ON CONFLICT (email) DO UPDATE SET code_hash = excluded.code_hash, attempts = 0, expires_at = excluded.expires_at, created_at = datetime('now')`
+  )
+    .bind(email, codeHash)
+    .run();
+}
+
+/**
+ * يعدّ المحاولة **قبل** القراءة بنفس الصف (UPDATE … RETURNING) — لا سباق بين
+ * طلبين متوازيين. يعيد null لو لا صف/منتهٍ (يُعامَل كرمز خاطئ بلا تمييز).
+ * tenant-audit-ok: `email` هو بريد حساب الجلسة (قُرئ بشرط merchant_id).
+ */
+export async function consumeEmailVerification(env, email) {
+  return env.DB.prepare(
+    `UPDATE email_verifications SET attempts = attempts + 1
+      WHERE email = ? AND expires_at > datetime('now')
+      RETURNING code_hash, attempts`
+  )
+    .bind(email)
+    .first();
+}
+
+/** يحرق رمز التحقق (تجاوز المحاولات). الابتلاع منقول كما كان. */
+export async function burnEmailVerification(env, email) {
+  await env.DB.prepare("DELETE FROM email_verifications WHERE email = ?").bind(email).run().catch(() => {});
+}
+
+/** يختم البريد متحقَّقاً ويحذف الرمز بدفعة واحدة. */
+export async function markEmailVerified(env, { merchantId, email }) {
+  await env.DB.batch([
+    env.DB.prepare("UPDATE accounts SET email_verified_at = datetime('now') WHERE merchant_id = ?").bind(merchantId),
+    env.DB.prepare("DELETE FROM email_verifications WHERE email = ?").bind(email)
+  ]);
+}
+
+/** تجزئة رمز تحقق البريد (SHA-256 مع البريد) — مصدر واحد للإرسال والتحقق. */
+export async function hashVerificationCode(email, code) {
+  const data = new TextEncoder().encode(`verify:${email}:${code}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ── تحقق هوية Google Sign-In ────────────────────────────────────────────────
+// الهوية تُؤخذ من رد جوجل وحده. الجمهور (`aud`) مثبَّت على GOOGLE_CLIENT_ID
+// فتوكن صُكّ لتطبيق آخر لا يُعاد لعبه هنا، والبريد غير المتحقَّق مرفوض.
+const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token=";
+
+/** @returns {Promise<{email:string,name:string,sub:string}|null>} */
+export async function verifyGoogleIdToken(env, credential) {
+  const res = await fetch(`${GOOGLE_TOKENINFO_URL}${encodeURIComponent(credential)}`);
+  if (!res.ok) return null;
+  const info = await res.json().catch(() => null);
+  if (!info?.email) return null;
+  if (!env?.GOOGLE_CLIENT_ID || info.aud !== env.GOOGLE_CLIENT_ID) return null;
+  if (info.email_verified !== "true" && info.email_verified !== true) return null;
+  return { email: String(info.email).toLowerCase(), name: info.name || "", sub: String(info.sub || "") };
+}

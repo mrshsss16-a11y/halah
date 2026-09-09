@@ -70,7 +70,7 @@ async function runTests() {
 
   // ── N1: support.js لا يثق بـstoreId من الجسم ──────────────────────────────
   {
-    const support = read("functions/api/support.js");
+    const support = read("functions/_lib/domain/support.js");
     assert(
       !/^\s*const merchantId = \(body\.storeId \|\| "hala"\)/m.test(support),
       'N1-1: اختفى `body.storeId || "hala"` بلا تحقق'
@@ -104,7 +104,7 @@ async function runTests() {
 
   // ── U6: لا رقم واتساب افتراضي بالكود ──────────────────────────────────────
   {
-    const support = read("functions/api/support.js");
+    const support = read("functions/_lib/domain/support.js");
     assert(!/966545149591/.test(support), "U6-1: الرقم الافتراضي 966545149591 محذوف");
     assert(
       /env\.STORE_WA_PHONE[\s\S]{0,60}\|\| null/.test(support),
@@ -179,7 +179,8 @@ async function runTests() {
     assert(!called, "N2-17: عنوان داخلي لا يصل لمرحلة fetch إطلاقاً");
     globalThis.fetch = realFetch;
 
-    const gateway = read("functions/_lib/ai/gateway.js");
+    // مسار الرؤية استُخرج إلى `ai/vision.js` بالمرحلة ٤ — نفس البوابة، مكان جديد.
+    const gateway = read("functions/_lib/ai/vision.js");
     assert(
       /fetchExternalImage\(imageUrl\)/.test(gateway) && !/const res = await fetch\(imageUrl\)/.test(gateway),
       "N2-18: askVisionAI يستخدم البوابة بدل fetch الخام"
@@ -296,7 +297,7 @@ async function runTests() {
       /if \(turnstileRequired\(env\) \|\| body\.turnstileToken\)/.test(login),
       "N7-4: login.js — الشرط لم يعد بيد العميل"
     );
-    const support = read("functions/api/support.js");
+    const support = read("functions/_lib/domain/support.js");
     assert(
       /if \(turnstileRequired\(env\) \|\| body\.turnstileToken\)/.test(support),
       "N7-5: support.js — سطر الشرط فقط، بلا مساس بالباقي"
@@ -331,7 +332,7 @@ async function runTests() {
 
   // ── N10: لا بيانات مفبركة ─────────────────────────────────────────────────
   {
-    const aura = read("functions/api/admin/aura_whatsapp.js");
+    const aura = read("functions/_lib/domain/auraAgent.js");
     assert(!/أحمد العتيبي/.test(aura), "N10-1: العميل الوهمي محذوف");
     assert(!/cartAmountSar/.test(aura), "N10-2: مبلغ السلة المخترع محذوف");
     assert(!/تم إرسال رسالة الاسترداد بنجاح/.test(aura), "N10-3: ادعاء الإرسال الناجح محذوف");
@@ -422,7 +423,7 @@ async function runTests() {
       "Q2-7: توقيع سلة المرفوض يُسجَّل بكود WEBHOOK_SIGNATURE_REJECTED"
     );
     assert(
-      /code: "WEBHOOK_SIGNATURE_REJECTED"[\s\S]{0,200}internal: `event=/.test(salla),
+      /"WEBHOOK_SIGNATURE_REJECTED"[\s\S]{0,200}`event=/.test(salla),
       "Q2-8: السجل يحمل اسم الحدث فقط — لا جسم الطلب"
     );
     assert(

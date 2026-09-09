@@ -48,3 +48,66 @@ export async function setBookingStatus(env, id, status) {
     .bind(status, id)
     .run();
 }
+
+// ── تذكيرات الاستشارة (المرحلة ٤: نُقل من api/cron/reminders.js) ────────────
+// الوظيفة كاملة هنا لأنها منطق أعمال خالص: أي فتحة يقابلها الوقت بعد ٣٠ دقيقة،
+// من يستحق تذكيراً، ونص التذكير. نقطة الدخول تبقى حارساً + استدعاء واحد.
+
+/**
+ * تسمية الفتحة بعد ٣٠ دقيقة بتوقيت الرياض، بنفس صيغة `WEEKLY_SLOTS`
+ * (persona.js): «الأحد ١٠ص». الجمعة/السبت خارج الفتحات ⇒ null.
+ */
+export function targetSlotLabel(now = Date.now()) {
+  const parts = new Intl.DateTimeFormat("ar-SA", {
+    timeZone: "Asia/Riyadh", weekday: "long", hour: "numeric", hour12: true
+  }).formatToParts(new Date(now + 30 * 60000));
+
+  let weekday = "", hour = "", dayPeriod = "";
+  for (const part of parts) {
+    if (part.type === "weekday") weekday = part.value;
+    if (part.type === "hour") hour = part.value;
+    if (part.type === "dayPeriod") dayPeriod = part.value;
+  }
+
+  const DAYS = new Set(["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس"]);
+  if (!DAYS.has(weekday)) return null;
+
+  // ar-SA قد تُخرج "ص"/"صباحًا" — نطبّعها لحرف واحد كما بالفتحات.
+  const period = dayPeriod.startsWith("ص") ? "ص" : "م";
+  let arHour = hour;
+  if (hour === "10" || hour === "١٠") arHour = "١٠";
+  if (hour === "12" || hour === "١٢") arHour = "١٢";
+  return `${weekday} ${arHour}${period}`;
+}
+
+/**
+ * الحجوزات المستحقة للتذكير بهذه الفتحة. `reminder_sent_at` يمنع التكرار —
+ * تسمية الفتحة بدقة الساعة، فبدونه يتكرر التذكير كل تِك لقرابة ساعة.
+ * tenant-audit-ok: طابور cron عابر للمتاجر بالتصميم (حجوزات أورا نفسها).
+ */
+export async function dueReminders(env, slotLabel, limit = 20) {
+  const { results } = await env.DB.prepare(
+    `SELECT id, ticket_code, name, phone, preferred_slot_label
+       FROM consultation_bookings
+      WHERE (status = 'pending' OR status IS NULL)
+        AND preferred_slot_label = ?
+        AND reminder_sent_at IS NULL
+      LIMIT ?`
+  )
+    .bind(slotLabel, limit)
+    .all();
+  return results || [];
+}
+
+/** يختم الحجز مُذكَّراً. الابتلاع منقول كما كان: فشل الختم لا يوقف الدفعة. */
+export async function markReminderSent(env, id) {
+  await env.DB.prepare("UPDATE consultation_bookings SET reminder_sent_at = datetime('now') WHERE id = ?")
+    .bind(id)
+    .run()
+    .catch(() => {});
+}
+
+/** رقم تذكرة الحجز. P18: العمود هو المصدر الوحيد؛ الاشتقاق احتياطي لصفوف ما قبل 0009. */
+export function ticketOf(booking) {
+  return booking.ticket_code || `AURA-${String(booking.id).padStart(5, "0")}`;
+}

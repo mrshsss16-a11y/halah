@@ -56,11 +56,13 @@ async function runTests() {
 
   // ---- U1: auth/salla/callback.js يُنشئ جلسة ويحوّل 302 لا JSON خام ----
   {
+    // المرحلة ٤: النقطة تنسيق فقط — المبادلة وحفظ التوكن بـdomain/salla.js.
     const src = readSrc("functions/api/auth/salla/callback.js");
+    const domainSrc = readSrc("functions/_lib/domain/salla.js");
     assert(src.includes("createSessionToken") && src.includes("sessionCookieHeader"), "U1: callback.js يستدعي createSessionToken/sessionCookieHeader");
     assert(src.includes("status: 302") && src.includes("/dashboard?connected=1"), "U1: callback.js يحوّل 302 إلى /dashboard?connected=1 عند النجاح");
-    assert(src.includes("upsertMerchantFromSalla"), "U1: callback.js يستخدم upsertMerchantFromSalla بدل معرّف سلة الخام كـmerchantId داخلي");
-    assert(/error:\s*"تعذر إكمال الربط/.test(src), "U1: رسائل الخطأ تبقى JSON عربياً كما كانت");
+    assert(domainSrc.includes("upsertMerchantFromSalla"), "U1: مسار الربط يستخدم upsertMerchantFromSalla بدل معرّف سلة الخام كـmerchantId داخلي");
+    assert(src.includes('"تعذر إكمال الربط') && src.includes('"content-type": "application/json"'), "U1: رسائل الخطأ تبقى JSON عربياً كما كانت");
   }
   {
     const src = readSrc("dashboard.html");
@@ -123,7 +125,7 @@ async function runTests() {
 
   // ---- U7: decide.js رسالة التراجع تذكر بقاء حقول السيو بصدق ----
   {
-    const src = readSrc("functions/api/store/review/decide.js");
+    const src = readSrc("functions/_lib/domain/publish.js");
     assert(src.includes("عنوان ووصف البحث اللذان أضافتهما هالة يبقيان"), "U7: رسالة التراجع تقول إن حقول السيو تبقى");
     assert(src.includes("عدّلهما من لوحة سلة"), "U7: رسالة التراجع توجّه التاجر لتعديلها من سلة");
   }

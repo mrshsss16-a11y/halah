@@ -1,20 +1,20 @@
 // POST /api/auth/forgot_password — request a password-reset OTP.
 //
 // SECURITY:
-//  - The OTP is NEVER returned in the response. Returning it would let anyone
-//    take over any account by simply asking for a reset.
-//  - The OTP is stored hashed, so a DB read alone doesn't grant account access.
+//  - The OTP is NEVER returned in the response (that would be a free takeover).
+//  - It is stored hashed, so a DB read alone doesn't grant account access.
 //  - The response is identical whether or not the account exists (no user
 //    enumeration).
-//  - Delivery is out-of-band. Until a delivery channel is wired up, the request
-//    is recorded and the endpoint reports that delivery is unavailable rather
-//    than pretending a message was sent.
+//  - Delivery is out-of-band; when no channel is available we record that fact
+//    rather than pretending a message was sent (§١١ الصدق).
 import { withApi, json } from "../../_lib/core/respond.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
 // Q3 — تجزئة الرمز من مصدر واحد (core/auth.js) بدل نسخة بكل ملف.
 import { hashOtp } from "../../_lib/core/auth.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
+import { findMerchantIdByEmail } from "../../_lib/domain/accounts.js";
+import { issuePasswordReset, resetDeliveryPhone } from "../../_lib/domain/auth.js";
 import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
 
 function generateOtp() {
@@ -26,65 +26,32 @@ function generateOtp() {
 }
 
 async function forgotPasswordHandler(body, env, request) {
-  const ip = clientIp(request);
-  const rateCheck = await checkRateLimit(env, ip, "forgot_password", 5, 60, { failClosed: true });
-  if (!rateCheck.allowed) {
-    return json(
-      { ok: false, error: `محاولات كثيرة جداً لاستعادة كلمة المرور. حاول بعد ${rateCheck.resetInSeconds} ثانية.` },
-      429
-    );
-  }
+  const rl = await checkRateLimit(env, clientIp(request), "forgot_password", 5, 60, { failClosed: true });
+  if (!rl.allowed) return json({ ok: false, error: `محاولات كثيرة جداً لاستعادة كلمة المرور. حاول بعد ${rl.resetInSeconds} ثانية.` }, 429);
 
   const email = sanitizeInput((body?.email || "").toString().trim().toLowerCase(), 200);
-  if (!email || !email.includes("@")) {
-    return json({ ok: false, error: "يرجى إدخال بريد إلكتروني صحيح." }, 400);
-  }
+  if (!email || !email.includes("@")) return json({ ok: false, error: "يرجى إدخال بريد إلكتروني صحيح." }, 400);
 
   // Uniform response regardless of account existence (anti-enumeration).
   const genericResponse = {
     ok: true,
     message: "إذا كان البريد مسجلاً لدينا، بنرسل لك رمز التحقق. الرمز صالح ١٥ دقيقة."
   };
-
   if (!env?.DB) return json(genericResponse);
 
-  const account = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?")
-    .bind(email)
-    .first()
-    .catch(() => null);
-
-  // No account: stop here, but return the same message and timing shape.
-  if (!account) return json(genericResponse);
+  const merchantId = await findMerchantIdByEmail(env, email).catch(() => null);
+  if (!merchantId) return json(genericResponse);
 
   const otpCode = generateOtp();
-  const otpHash = await hashOtp(email, otpCode);
+  await issuePasswordReset(env, { email, otpHash: await hashOtp(email, otpCode) });
 
-  await env.DB.prepare(
-    `INSERT INTO password_resets (email, otp_code, reset_token, expires_at)
-     VALUES (?, ?, ?, datetime('now', '+15 minutes'))
-     ON CONFLICT (email) DO UPDATE SET
-       otp_code = excluded.otp_code,
-       reset_token = excluded.reset_token,
-       expires_at = excluded.expires_at`
-  )
-    .bind(email, otpHash, "")
-    .run()
-    .catch(() => {});
-
-  // Out-of-band delivery. WhatsApp is the only channel wired up today; if the
-  // merchant has a phone on file we use it. No email provider is configured, so
-  // we do not claim an email was sent.
+  // Out-of-band delivery. WhatsApp is the only channel wired up today.
   let delivered = false;
   if (waConfigured(env)) {
-    const contact = await env.DB.prepare(
-      "SELECT phone FROM whatsapp_contacts WHERE merchant_id = ? ORDER BY last_inbound_at DESC LIMIT 1"
-    )
-      .bind(account.merchant_id)
-      .first()
-      .catch(() => null);
-    if (contact?.phone) {
+    const phone = await resetDeliveryPhone(env, merchantId);
+    if (phone) {
       delivered = await sendWaText(env, {
-        to: contact.phone,
+        to: phone,
         body: `رمز استعادة كلمة المرور: ${otpCode}\nصالح ١٥ دقيقة. لا تشاركه مع أحد.`
       })
         .then(() => true)
@@ -93,8 +60,7 @@ async function forgotPasswordHandler(body, env, request) {
   }
 
   if (!delivered) {
-    // N8 — كان console.warn يطبع البريد الحقيقي بمجرى سجلات Cloudflare (PII).
-    // التسجيل المهيكل يوثّق أن قناة التسليم غائبة بلا ذكر أي بريد أو رمز.
+    // N8 — التسجيل المهيكل يوثّق غياب قناة التسليم بلا ذكر أي بريد أو رمز (PII).
     logError({ env }, {
       requestId: null,
       path: "/api/auth/forgot_password",

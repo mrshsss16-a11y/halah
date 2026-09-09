@@ -39,37 +39,25 @@ const CAPS = [
 // أُنجز بالمرحلة ٣ (2026-09-09): `core/db.js` ١٣٥١ → ٦٢ سطراً (shim إعادة تصدير)
 // و`services/reviewQueue.js` ٤١٠ → ١٩ (shim؛ المحتوى بـ`domain/review.js` ٣٦٨
 // بعد استخراج `domain/reviewGuards.js`). كل ملف بـ`domain/**` تحت سقف ٤٠٠.
-// بقي `ai/gateway.js` (٤٠٢) خارج نطاق المرحلة ٣ — يُقسَّم بمرحلة لاحقة.
+// أُنجز بالمرحلة ٤ — النصف ب (2026-09-09): نقاط الدخول الذكية صارت «تنسيق فقط»
+// وسقطت ستة استثناءات: `api/copy.js` ٥٦٧→٧٢ · `api/whatsapp/webhook.js` ٤٧٩→٦٧ ·
+// `api/chat.js` ٢٦٢→٥٤ · `api/support.js` ٢٢٩→٢١ · `api/instagram/webhook.js`
+// ٢١٣→٦٩ · `api/whatsapp/connect.js` ١٥٤→٤٩. المنطق انتقل لـ`domain/*` و
+// `ai/prompts/*` وكلها تحت سقف ٤٠٠. و`ai/gateway.js` ٤٠٢→٣٠١ بعد استخراج
+// `ai/vision.js` (١٠٨) — يعيد تصدير الواجهة فلا يتغيّر أي مستورد.
+// أُنجز بالمرحلة ٤ — النصف أ (2026-09-09): نقاط دخول المصادقة والـcron والمتجر
+// والأدمن صارت «تنسيق فقط» وسقطت استثناءاتها: `api/cron/bulk_process.js` ٢٧٢→٤١ ·
+// `api/webhooks/salla.js` ٢٥٧→٨٠ · `api/auth/google.js` ١٨٧→٧٦ ·
+// `api/cron/reminders.js` ١٧٢→٦٩ · `api/cron/healthcheck.js` ١٧١→٥٦ ·
+// `api/health.js` ١٤٦→٤٩ · `api/admin/aura_whatsapp.js` ١٤٢→٤١ … المنطق انتقل
+// إلى `domain/{auth,accounts,booking,bulk,bulkTick,health,analytics,platforms,
+// salla,catalogSync,storeOverview,publish,persona,auraAgent}.js` وكلها تحت ٤٠٠.
 const ALLOWLIST = new Map([
   ["dashboard.html", 1943],
   ["admin.html", 916],
-  ["functions/api/copy.js", 567],
-  ["functions/api/whatsapp/webhook.js", 479],
-  ["functions/_lib/ai/gateway.js", 402],
-  ["functions/api/cron/bulk_process.js", 272],
-  ["functions/api/chat.js", 262],
   ["functions/api/webhooks/salla.js", 257],
-  ["functions/api/support.js", 229],
-  ["functions/api/instagram/webhook.js", 213],
-  ["functions/api/auth/google.js", 187],
-  ["functions/api/cron/reminders.js", 172],
-  ["functions/api/cron/healthcheck.js", 171],
-  ["functions/api/whatsapp/connect.js", 154],
-  ["functions/api/health.js", 146],
-  ["functions/api/admin/aura_whatsapp.js", 142],
-  ["functions/api/auth/reset_password.js", 140],
-  ["functions/api/auth/signup.js", 129],
-  ["functions/api/store/catalog/sync.js", 129],
-  ["functions/api/store/overview.js", 123],
-  ["functions/api/store/persona.js", 118],
-  ["functions/api/auth/complete_account.js", 115],
-  ["functions/api/auth/salla/callback.js", 115],
-  ["functions/api/auth/login.js", 111],
-  ["functions/api/auth/forgot_password.js", 110],
-  ["functions/api/store/review/decide.js", 109],
-  ["functions/api/store/bulk/generate.js", 107],
 ]);
-const EXPECTED_ALLOWLIST = 27;
+const EXPECTED_ALLOWLIST = 3;
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "archive", ".git", "backups", "graphify-out", ".wrangler"]);
 function walk(dir, ext, out = []) {

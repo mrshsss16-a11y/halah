@@ -6,6 +6,7 @@ import { logError } from "./errorLog.js";
 import { classifyError, messageFor, statusFor, DomainError } from "./errors.js";
 import { resolveAllowedOrigin, corsHeaders, widgetAllowlist } from "./cors.js";
 import { assertTrustedWrite } from "./csrf.js";
+import { timingSafeEqualStr } from "./crypto.js";
 
 // Short, URL-safe, no external dep — collision odds irrelevant here (it's a
 // correlation id for logs/support, not a security token).
@@ -56,6 +57,36 @@ export class ApiError extends Error {
  * file exporting `onRequestPost` must also export `onRequestOptions` from
  * cors.js's `corsPreflight` for the browser's preflight request.
  */
+/**
+ * ترجمة موحّدة لخطأ خارج من معالج — نفس مسار `withApi` حرفياً (ApiError
+ * وDomainError بنفس الحالة والجسم، وغير المصنَّف يمرّ بـclassifyError).
+ * مستخرَجة ليشترك فيها `withApi` و`withApi.raw` بلا نسختين قابلتين للانحراف.
+ */
+function errorResponse(context, err, { requestId, path, extraHeaders }) {
+  if (err instanceof ApiError || err instanceof DomainError) {
+    if (err.status >= 500) {
+      logError(context, { requestId, path, code: err.code, internal: err.internal || err.message });
+    }
+    return json(
+      { ok: false, error: err.message, code: err.code, requestId },
+      err.status,
+      { "X-Request-Id": requestId, ...extraHeaders }
+    );
+  }
+  const code = classifyError(err);
+  logError(context, {
+    requestId,
+    path,
+    code: `UNHANDLED:${code}`,
+    internal: String((err && err.stack) || err)
+  });
+  return json(
+    { ok: false, error: messageFor(code), code, requestId },
+    statusFor(code),
+    { "X-Request-Id": requestId, ...extraHeaders }
+  );
+}
+
 export function withApi(handler, { cors = false } = {}) {
   return async function onRequest(context) {
     const { request, env } = context;
@@ -103,32 +134,80 @@ export function withApi(handler, { cors = false } = {}) {
     } catch (err) {
       // DomainError يُترجَم بنفس مسار ApiError حرفياً — نفس الحالة، نفس الجسم
       // `{ ok, error, code, requestId }`. المجال لا يعرف HTTP، والترجمة هنا.
-      if (err instanceof ApiError || err instanceof DomainError) {
-        if (err.status >= 500) {
-          logError(context, { requestId, path, code: err.code, internal: err.internal || err.message });
-        }
-        return json(
-          { ok: false, error: err.message, code: err.code, requestId },
-          err.status,
-          { "X-Request-Id": requestId, ...extraHeaders }
-        );
-      }
-      // D4: خطأ غير مُصنَّف يُترجَم لأقرب كود معروف بدل رسالة عامة واحدة
-      // للجميع. الفرق عملي: "الخدمة مزحومة، جرّب بعد دقيقة" تُنهي الموقف،
-      // بينما "صار خلل مؤقت" تُنتج اتصالاً بالدعم. الكود الأصلي كامل يبقى
-      // بالسجل تحت requestId — التاجر يعطينا الرقم ونشوف التفصيل.
-      const code = classifyError(err);
-      logError(context, {
-        requestId,
-        path,
-        code: `UNHANDLED:${code}`,
-        internal: String((err && err.stack) || err)
-      });
-      return json(
-        { ok: false, error: messageFor(code), code, requestId },
-        statusFor(code),
-        { "X-Request-Id": requestId, ...extraHeaders }
-      );
+      // D4: غير المصنَّف يُترجَم لأقرب كود معروف بدل رسالة عامة للجميع.
+      return errorResponse(context, err, { requestId, path, extraHeaders });
     }
   };
 }
+
+/**
+ * نسخة `withApi` **بلا قراءة الجسم**: تمرّر `request` الخام للمعالج.
+ *
+ * لمن: الويبهوكات (التوقيع يُحسب على الجسم الخام — قراءته هنا تستهلك المجرى)
+ * والـcron (GET بترويسة `Authorization: Bearer`). ما عداها يستخدم `withApi`.
+ *
+ * تحصل على نفس ما يحصل عليه `withApi`: `requestId`، ترجمة ApiError/DomainError
+ * وغير المصنَّف، ورأس `X-Request-Id` على كل مسار.
+ *
+ * الخيارات:
+ *   `{ csrf: false }`  يلغي بوابة CSRF — للويبهوكات والـcron، حارسها التوقيع
+ *                      أو السر المشترك لا الأصل (وهي لا تحمل كوكي ضحية أصلاً).
+ *   `{ cron: true }`   يفحص `CRON_SECRET` بمقارنة ثابتة الزمن قبل المعالج:
+ *                      غياب السر ⇒ ٥٠٠ `CRON_NOT_CONFIGURED` (fail closed، لا
+ *                      تشغيل بلا حماية)، سر خاطئ ⇒ ٤٠١ `UNAUTHORIZED`.
+ *   `{ cronMessage }`  نص الرسالة العربية لحالة ٥٠٠ (تختلف بكل وظيفة).
+ *   `{ requireDb }`    مع cron: غياب `env.DB` يُعامَل كـ"غير مفعّلة" لا كنجاح.
+ *   `{ logPath }`      مسار السجل (افتراضه pathname) — لتثبيت أكواد السجل.
+ */
+withApi.raw = function raw(
+  handler,
+  { cors = false, csrf = true, cron = false, cronMessage = "هذه الوظيفة غير مفعّلة حالياً على الخادم.", requireDb = false, logPath = null } = {}
+) {
+  return async function onRequest(context) {
+    const { request, env } = context;
+    const requestId = generateRequestId();
+    const extraHeaders = cors ? corsHeaders(resolveAllowedOrigin(request, env)) : {};
+    const path = logPath || new URL(request.url).pathname;
+
+    const fail = (status, error, code) =>
+      json({ ok: false, error, code, requestId }, status, { "X-Request-Id": requestId, ...extraHeaders });
+
+    try {
+      if (csrf) assertTrustedWrite(request, env, { allowedOrigins: cors ? widgetAllowlist(env) : [] });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        logError(context, { requestId, path, code: err.code, internal: err.internal || err.message });
+        return fail(err.status, err.message, err.code);
+      }
+      throw err;
+    }
+
+    if (cron) {
+      if (!env?.CRON_SECRET) {
+        logError(context, { requestId, path, code: "CRON_SECRET_MISSING", internal: "CRON_SECRET not configured" });
+        return fail(500, cronMessage, "CRON_NOT_CONFIGURED");
+      }
+      const authHeader = request.headers.get("Authorization") || "";
+      const provided = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+      if (!timingSafeEqualStr(provided, env.CRON_SECRET)) {
+        return fail(401, "غير مصرّح بهذا الطلب.", "UNAUTHORIZED");
+      }
+      if (requireDb && !env.DB) {
+        logError(context, { requestId, path, code: "DB_BINDING_MISSING", internal: "env.DB binding absent" });
+        return fail(500, cronMessage, "CRON_NOT_CONFIGURED");
+      }
+    }
+
+    try {
+      const result = await handler(request, env, requestId, context);
+      if (result instanceof Response) {
+        result.headers.set("X-Request-Id", requestId);
+        for (const [k, v] of Object.entries(extraHeaders)) result.headers.set(k, v);
+        return result;
+      }
+      return json(result, 200, { "X-Request-Id": requestId, ...extraHeaders });
+    } catch (err) {
+      return errorResponse(context, err, { requestId, path, extraHeaders });
+    }
+  };
+};

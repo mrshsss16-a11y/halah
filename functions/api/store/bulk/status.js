@@ -2,7 +2,7 @@
 // Progress poll for a B3 bulk job while cron/bulk_process.js drains it.
 import { withApi } from "../../../_lib/core/respond.js";
 import { resolveStoreId } from "../../../_lib/core/session.js";
-import { getBulkJob } from "../../../_lib/core/db.js";
+import { getBulkJob, failedBulkItems } from "../../../_lib/domain/bulk.js";
 
 async function bulkStatusHandler(body, env, request) {
   // store-gate-ok: تقدّم الوظيفة قراءة فقط، والوظيفة نفسها مقيّدة بـmerchant_id عبر getBulkJob
@@ -13,11 +13,7 @@ async function bulkStatusHandler(body, env, request) {
   const job = await getBulkJob(env, jobId, merchantId);
   if (!job) return { ok: false, error: "لم يوجد." };
 
-  const items = await env.DB.prepare(
-    "SELECT row_index, sku, name, status, error FROM bulk_job_items WHERE job_id = ? AND status IN ('failed','skipped') ORDER BY row_index ASC LIMIT 50"
-  )
-    .bind(jobId)
-    .all();
+  const failedItems = await failedBulkItems(env, jobId);
 
   return {
     ok: true,
@@ -27,7 +23,7 @@ async function bulkStatusHandler(body, env, request) {
     processed: job.processed,
     succeeded: job.succeeded,
     failed: job.failed,
-    failedItems: items.results || []
+    failedItems
   };
 }
 

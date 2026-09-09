@@ -1,0 +1,108 @@
+// نماذج الرؤية ومسارها — استُخرجت من `ai/gateway.js` بالمرحلة ٤ (النصف ب) بلا
+// تغيير سلوكي، لينزل الملفان تحت سقف ٤٠٠ سطر (ARCHITECTURE §٤).
+// `gateway.js` يعيد تصدير الواجهة نفسها، فلا يتغيّر أي مستورد.
+import { fetchExternalImage } from "../core/security.js";
+
+// ── Vision AI ────────────────────────────────────────────────────────────────
+//
+// اختيار النموذج (بحث 2026-09-08 — سبب تقني موثّق، لا تفضيل):
+//
+// النموذج السابق `@cf/meta/llama-3.2-11b-vision-instruct` **لا يدعم العربية
+// رسمياً مع الصور**. بطاقة النموذج من ميتا حرفياً:
+//   "Note for image+text applications, English is the only language supported."
+// (github.com/meta-llama/llama-models · models/llama3_2/MODEL_CARD_VISION.md)
+// الدعم متعدد اللغات فيه للنص فقط، والعربية أصلاً ليست ضمن لغاته الثماني.
+// فكل وصف عربي أنتجه كان خارج نطاق تدريبه المعلن — وهذا التفسير الجذري لضعف
+// الأوصاف الذي رصده صاحب المشروع، لا نقص بالتوجيه ولا بالكتيب.
+//
+// البديل `@cf/meta/llama-4-scout-17b-16e-instruct`:
+//   - **العربية مدعومة رسمياً** (١٢ لغة: عربي · إنجليزي · فرنسي … )
+//   - متعدد الوسائط أصلاً (native multimodal) لا محوّل رؤية ملصق
+//   - متاح ضمن الحصة المجانية (ليس من السبعة التي تشترط خطة مدفوعة)
+//   - ١٣١ ألف رمز سياق · $0.27/$0.85 لكل مليون رمز
+//
+// نماذج أقوى مستبعدة بسبب: `glm-5.3-flash` و`kimi-k2.6` و`deepseek-v4-*`
+// **تشترط خطة مدفوعة** (بوابة تشغيلية)، و`qwen3.8-27b` مخرجاته أغلى ٣.٧×
+// ($3.20 مقابل $0.85 لكل مليون رمز مُخرَج) والحمل هنا مخرجات لا مدخلات.
+export const VISION_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
+// السابق يبقى **احتياطياً حياً**: صيغة إدخال الصور تختلف بين العائلتين، ولم
+// أتحقق من صيغة سكاوت على الإنتاج بعد. الفشل يسقط للسابق بدل أن يُسقط الميزة.
+export const VISION_FALLBACK_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
+
+function bytesToBase64(bytes) {
+  let binary = "";
+  const chunk = 0x8000; // تفادي تجاوز حجم مكدس الوسائط بالصور الكبيرة
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+export function readVisionText(response) {
+  const raw = response?.response ?? response?.result?.response;
+  if (typeof raw === "string") return raw.trim();
+  // صيغة متوافقة مع OpenAI ترجع choices[].message.content
+  const choice = response?.choices?.[0]?.message?.content;
+  if (typeof choice === "string") return choice.trim();
+  return raw ? JSON.stringify(raw).trim() : "";
+}
+
+/**
+ * Ask the Vision AI model using Cloudflare Workers AI.
+ *
+ * @param {object} opts
+ * @param {any}    opts.env        - Pages Functions env
+ * @param {string} [opts.imageUrl] - Public URL of the image
+ * @param {ArrayBuffer} [opts.imageBuffer] - Raw image buffer (useful for private WhatsApp media)
+ * @param {string} opts.prompt     - The prompt to ask about the image
+ * @param {string} [opts.mimeType] - Image mime type for the data URI (default image/jpeg)
+ */
+export async function askVisionAI({ env, imageUrl, imageBuffer, prompt, mimeType = "image/jpeg" }) {
+  if (!env.AI) throw new Error("AI binding is missing.");
+
+  let buffer = imageBuffer;
+  if (!buffer && imageUrl) {
+    // N2 — العنوان يأتي من مدخل خارجي (كتالوج سلة، جسم طلب): بلا فحص كان
+    // الـWorker وكيل SSRF يقرأ عناوين داخلية، وبلا حد حجم يُستنزف بملف ضخم.
+    // fetchExternalImage يفرض https + مضيف عام + ≤8MB + content-type صورة.
+    const fetched = await fetchExternalImage(imageUrl);
+    buffer = fetched.buffer;
+    if (fetched.contentType) mimeType = fetched.contentType.split(";")[0].trim();
+  }
+
+  if (!buffer) throw new Error("No image provided");
+
+  const bytes = new Uint8Array(buffer);
+  const question = prompt || "صف هذه الصورة بدقة.";
+
+  // المسار الأساسي: صيغة رسائل متعددة الأجزاء (سكاوت متعدد الوسائط أصلاً).
+  try {
+    const response = await env.AI.run(VISION_MODEL, {
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: question },
+            {
+              type: "image_url",
+              image_url: { url: `data:${mimeType};base64,${bytesToBase64(bytes)}` }
+            }
+          ]
+        }
+      ],
+      max_tokens: 700
+    });
+    const text = readVisionText(response);
+    if (text) return text;
+    throw new Error("vision model returned empty text");
+  } catch (err) {
+    // لا نُسقط الميزة على تغيّر صيغة أو نموذج غير متاح — نسقط للسابق ونسجّل.
+    console.warn(`[hala-vision] ${VISION_MODEL} failed, falling back: ${err?.message || err}`);
+  }
+
+  const response = await env.AI.run(VISION_FALLBACK_MODEL, {
+    prompt: question,
+    image: [...bytes]
+  });
+  return readVisionText(response);
+}

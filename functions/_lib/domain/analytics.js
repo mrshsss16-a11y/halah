@@ -136,3 +136,58 @@ export async function launchStats(env) {
     feedbackAvg30d: feedbackAgg?.avg === null || feedbackAgg?.avg === undefined ? null : Math.round(Number(feedbackAgg.avg) * 10) / 10
   };
 }
+
+// ── المرحلة ٤: SQL كان بـ`api/stats.js` و`api/admin/errors.js` ──────────────
+
+/**
+ * أرقام صفحة الهبوط العلنية — حقيقية فقط (§١١ الصدق: لا دليل اجتماعي مفبرك).
+ * جدول ناقص أو عمود مُعاد تسميته يجب ألا يُسقط النقطة كلها: ننزل إلى صفر
+ * ونسجّل، لأن هذه عدّادات علنية لا مسار حرج.
+ * tenant-audit-ok: تجميع عابر لكل المتاجر بالتصميم — المخرج رقم واحد مُجمَّع،
+ * ولا سياق متجر بهذا المسار أصلاً (نقطة عامة بلا جلسة).
+ */
+export async function publicStats(env, onQueryError = () => {}) {
+  const scalar = async (sql, key, fallback = 0) => {
+    if (!env?.DB) return fallback;
+    const row = await env.DB.prepare(sql)
+      .first()
+      .catch((err) => {
+        onQueryError(key, err);
+        return null;
+      });
+    return row?.[key] ?? fallback;
+  };
+
+  // ملاحظة: `abandoned_carts` تخزّن قيمة السلة بعمود `total` لا `amount`
+  // (migrations/0002_copy_and_whatsapp.sql).
+  const [recoveredSalesSAR, consultationTickets, cacheSavingRate] = await Promise.all([
+    scalar("SELECT SUM(total) AS v FROM abandoned_carts WHERE status = 'recovered'", "v"),
+    scalar("SELECT COUNT(*) AS v FROM consultation_bookings", "v"),
+    scalar(
+      "SELECT (CAST(SUM(CASE WHEN response_time_ms < 5 THEN 1 ELSE 0 END) AS REAL) / COUNT(*)) * 100 AS v FROM hala_cache",
+      "v"
+    )
+  ]);
+
+  return { recoveredSalesSAR, consultationTickets, halaCacheSavingRate: cacheSavingRate };
+}
+
+/**
+ * آخر صفوف `error_log` (D3). عابر لكل المتاجر عمداً — شاشة أدمن، لا شاشة تاجر
+ * (`requireAdmin` بنقطة الدخول هو الحارس، مثل accounts.js وbookings.js).
+ * tenant-audit-ok: سجل أخطاء إداري عابر للمستأجرين؛ `storeId` مرشّح اختياري
+ * يمرّره الأدمن، لا شرط عزل.
+ */
+export async function listErrorLog(env, { storeId = null, limit = 50 } = {}) {
+  let query = "SELECT id, request_id, store_id, code, path, internal, created_at FROM error_log";
+  const params = [];
+  if (storeId) {
+    query += " WHERE store_id = ?";
+    params.push(storeId);
+  }
+  query += " ORDER BY created_at DESC LIMIT ?";
+  params.push(limit);
+
+  const { results } = await env.DB.prepare(query).bind(...params).all();
+  return results || [];
+}

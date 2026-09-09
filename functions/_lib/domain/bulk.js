@@ -202,3 +202,38 @@ export async function reviveDeferredItems(env, { merchantId, limit }) {
   await env.DB.batch(stmts);
   return rows.length;
 }
+
+// ── المرحلة ٤: SQL كان بـ`api/store/bulk/{status,generate}.js` ──────────────
+
+/** الصفوف الفاشلة/المتخطّاة بوظيفة — للعرض بشاشة التقدّم. */
+export async function failedBulkItems(env, jobId, limit = 50) {
+  // tenant-audit-ok: jobId تحقّق منه المستدعي بـgetBulkJob(jobId, merchantId)
+  // قبل هذا النداء — الوظيفة نفسها هي حدّ العزل.
+  const { results } = await env.DB.prepare(
+    "SELECT row_index, sku, name, status, error FROM bulk_job_items WHERE job_id = ? AND status IN ('failed','skipped') ORDER BY row_index ASC LIMIT ?"
+  )
+    .bind(jobId, limit)
+    .all();
+  return results || [];
+}
+
+/**
+ * يعلّم ما فوق حصة الشهر **مؤجَّلاً** فوراً بدل تركه يفشل صفاً صفاً بالـcron،
+ * ويعكس ذلك على عدّادات الوظيفة (يُحيا لاحقاً بـreviveDeferredItems).
+ */
+export async function markDeferredItems(env, { jobId, merchantId, fromIndex, count }) {
+  if (!count) return;
+  // tenant-audit-ok: job_id أُنشئ للتو لهذا التاجر بـcreateBulkJob — لا مدخل عميل.
+  await env.DB.prepare(
+    `UPDATE bulk_job_items SET status = 'skipped', error = ?, updated_at = datetime('now')
+      WHERE job_id = ? AND row_index >= ?`
+  )
+    .bind(DEFERRED_MARKER, jobId, fromIndex)
+    .run();
+  // tenant-audit-ok: نفس job_id الموثوق؛ العدّادات تعكس المؤجَّل كمعالَج/فاشل حتى يُحيا.
+  await env.DB.prepare(
+    "UPDATE bulk_jobs SET processed = processed + ?, failed = failed + ?, updated_at = datetime('now') WHERE id = ? AND merchant_id = ?"
+  )
+    .bind(count, count, jobId, merchantId)
+    .run();
+}

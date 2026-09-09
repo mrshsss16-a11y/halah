@@ -1,48 +1,15 @@
-// POST /api/stats — real, honest numbers only (no fabricated social proof —
-// same rule enforced on the marketer persona itself in functions/_lib/persona.js).
-import { json } from "../_lib/core/respond.js";
-import { assertTrustedWrite } from "../_lib/core/csrf.js";
+// POST /api/stats — أرقام حقيقية فقط (لا دليل اجتماعي مفبرك — نفس القاعدة
+// المفروضة على الشخصية نفسها بـ`_lib/ai/persona.js`).
+//
+// المرحلة ٤: تنسيق فقط — بوابة CSRF من withApi، والاستعلامات بـ`domain/analytics.js`.
+import { withApi } from "../_lib/core/respond.js";
+import { publicStats } from "../_lib/domain/analytics.js";
 import { logError } from "../_lib/core/errorLog.js";
 
-// A missing table or a renamed column must not take the whole endpoint down —
-// this feeds public-facing counters, so degrade to 0 rather than 500.
-async function scalar(env, sql, key, fallback = 0) {
-  if (!env?.DB) return fallback;
-  const row = await env.DB.prepare(sql)
-    .first()
-    .catch((err) => {
-      logError({ env }, { requestId: null, path: "stats", code: "STATS_QUERY_FAILED", internal: `${key}: ${err?.message || err}` });
-      return null;
-    });
-  return row?.[key] ?? fallback;
+async function statsHandler(body, env) {
+  return publicStats(env, (key, err) =>
+    logError({ env }, { requestId: null, path: "stats", code: "STATS_QUERY_FAILED", internal: `${key}: ${err?.message || err}` })
+  );
 }
 
-export async function onRequestPost(context) {
-  const env = context?.env;
-  try {
-    assertTrustedWrite(context.request, env);
-  } catch (err) {
-    return json({ ok: false, error: err.message, code: err.code || "CSRF_REJECTED" }, err.status || 403);
-  }
-
-  // NOTE: abandoned_carts stores the cart value in `total` (see
-  // migrations/0002_copy_and_whatsapp.sql) — not `amount`.
-  const [recoveredSalesSAR, consultationTickets, cacheSavingRate] = await Promise.all([
-    // tenant-audit-ok: عدّاد عام لكل المنصة على صفحة الهبوط — التجميع عبر كل
-    // المتاجر هو المقصود بالتصميم، والمخرج رقم مُجمَّع واحد لا صفوف متجر بعينه.
-    // لا سياق متجر في هذا المسار أصلاً (نقطة عامة بلا جلسة).
-    scalar(env, "SELECT SUM(total) AS v FROM abandoned_carts WHERE status = 'recovered'", "v"),
-    scalar(env, "SELECT COUNT(*) AS v FROM consultation_bookings", "v"),
-    scalar(
-      env,
-      "SELECT (CAST(SUM(CASE WHEN response_time_ms < 5 THEN 1 ELSE 0 END) AS REAL) / COUNT(*)) * 100 AS v FROM hala_cache",
-      "v"
-    )
-  ]);
-
-  return json({
-    recoveredSalesSAR,
-    consultationTickets,
-    halaCacheSavingRate: cacheSavingRate
-  });
-}
+export const onRequestPost = withApi(statsHandler);
