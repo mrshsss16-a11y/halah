@@ -7,6 +7,10 @@ import { createSessionToken, verifySessionToken } from "../functions/_lib/core/s
 // mirror answers "0" for everyone so token tests never need a D1 mock — and so
 // tests that assert "must not reach the DB" keep meaning exactly that.
 const sessionVersionKv = { get: async () => "0", put: async () => {}, delete: async () => {} };
+// N3 (2026-09-09) — checkRateLimit صار fail-closed على مسارات المصادقة: بلا
+// ربط KV يُرفض الطلب بـ429. بالإنتاج HALA_CACHE مربوط دائماً، فبيئات الاختبار
+// التي تستدعي معالجات المصادقة تأخذ عدّاداً بالذاكرة بدل غياب الربط.
+const rlKv = (() => { const m = new Map(); return { get: async (k) => m.get(k) ?? null, put: async (k, v) => { m.set(k, v); }, delete: async (k) => { m.delete(k); } }; })();
 const env = {
   SESSION_SECRET: "test-secret-12345",
   HALA_CACHE: sessionVersionKv
@@ -154,7 +158,7 @@ async function runTests() {
       };
     }
   };
-  const gateEnv = { SESSION_SECRET: "test-secret-12345", DB: gateDb };
+  const gateEnv = { SESSION_SECRET: "test-secret-12345", HALA_CACHE: rlKv, DB: gateDb };
   const sessionReq = async (url, mid, bodyObj) => {
     const tok = await createSessionToken(gateEnv, mid);
     return new Request(url, {
@@ -727,7 +731,7 @@ async function runTests() {
           };
         }
       };
-      return { state, env: { DB: db, SESSION_SECRET: env.SESSION_SECRET } };
+      return { state, env: { DB: db, SESSION_SECRET: env.SESSION_SECRET, HALA_CACHE: rlKv } };
     }
 
     function resetReq(otpCode) {
@@ -793,6 +797,7 @@ async function runTests() {
       const state = { accounts: { ...accounts }, insertedAccounts: [], insertedMerchants: [] };
       const env = {
         SESSION_SECRET: "test-secret-12345",
+        HALA_CACHE: rlKv,
         GOOGLE_CLIENT_ID,
         ADMIN_EMAILS: "admin@aura.sa",
         DB: {
@@ -999,6 +1004,7 @@ async function runTests() {
     let signupInserted = 0;
     const signupEnv = (emails) => ({
       SESSION_SECRET: "test-secret-12345",
+      HALA_CACHE: rlKv,
       ADMIN_EMAILS: "admin@aura.sa",
       DB: {
         prepare: () => ({
@@ -1050,6 +1056,9 @@ async function runTests() {
       request: signupJson({ email: "x@aura.sa", password: "longenoughpw" }),
       env: {
         SESSION_SECRET: "test-secret-12345",
+        // عدّاد مستقل: حد signup ٣/ساعة لكل IP، والحالات السابقة استهلكت
+        // نصيب الـIP المشترك — الاختبار هنا يقيس فشل D1 لا حد المعدل.
+        HALA_CACHE: (() => { const m = new Map(); return { get: async (k) => m.get(k) ?? null, put: async (k, v) => { m.set(k, v); }, delete: async () => {} }; })(),
         ADMIN_EMAILS: "admin@aura.sa",
         DB: {
           prepare: () => ({
@@ -1084,6 +1093,7 @@ async function runTests() {
       const capState = { inserts: 0, accounts: Array.from({ length: 20 }, (_, i) => `m${i}@aura.sa`) };
       const capEnv = {
         SESSION_SECRET: "test-secret-12345",
+        HALA_CACHE: rlKv,
         GOOGLE_CLIENT_ID: "cap-client-id",
         ADMIN_EMAILS: "admin@aura.sa",
         DB: {
@@ -1914,7 +1924,7 @@ async function runTests() {
         // المسموح بلا escHtml: قِطَع HTML مبنيّة داخلياً (img/badge) وأعلام
         // ثابتة لا تحمل نصاً من سلة. أي شيء غير ذلك لازم يمرّ بـescHtml.
         interpolations.every((s) =>
-          /escHtml\(/.test(s) || /^\$\{(img|badge|it\.imageUrl \? 'hidden' : '')\}$/.test(s)
+          /escHtml\(/.test(s) || /^\$\{(img|badge|skuBadge|it\.imageUrl \? 'hidden' : '')\}$/.test(s)
         ),
       "CATUI-12: كل محتوى سلة داخل بطاقة المنتج يمرّ بـescHtml — ثغرة XSS لا تُعاد"
     );

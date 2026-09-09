@@ -215,6 +215,25 @@ export async function getCatalogItem(env, { merchantId, sku } = {}) {
     .first();
 }
 
+/**
+ * صف الكتالوج المطابق لمعرّف منتج سلة — يستعمله النشر الفردي (store/publish.js)
+ * لمعرفة إن كان لهذا المنتج صف كتالوج (وبالتالي وصف أصلي محفوظ يسمح بالتراجع)
+ * قبل أن يدّعي للتاجر أن التراجع متاح.
+ */
+export async function findCatalogBySallaProductId(env, { merchantId, sallaProductId } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const key = text(sallaProductId, 100);
+  if (!key) return null;
+  return db
+    .prepare(
+      `SELECT sku, salla_product_id, original_description FROM store_products
+        WHERE merchant_id = ? AND salla_product_id = ?`
+    )
+    .bind(mid, key)
+    .first();
+}
+
 /** عدّاد الكتالوج — يستعمله endpoint السحب لعرض حجم المتجر بصدق. */
 export async function countCatalog(env, { merchantId } = {}) {
   const mid = requireMerchantId(merchantId);

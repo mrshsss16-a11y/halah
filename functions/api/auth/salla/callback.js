@@ -1,6 +1,7 @@
 import { verifyOAuthState, oauthStateCookieHeader } from "../../../_lib/core/oauthState.js";
 import { generateRequestId } from "../../../_lib/core/respond.js";
 import { logError } from "../../../_lib/core/errorLog.js";
+import { createSessionToken, sessionCookieHeader } from "../../../_lib/core/session.js";
 
 export async function onRequestGet(context) {
     const { request, env } = context;
@@ -75,11 +76,14 @@ export async function onRequestGet(context) {
         }
 
         const userData = await userResponse.json();
-        const merchantId = userData.data.merchant.id.toString();
+        const sallaMerchantId = userData.data.merchant.id.toString();
+        const storeName = userData.data.merchant.name || null;
 
-        // 3. Save tokens in D1 using existing saveTokens
-        const { saveTokens } = await import("../../../_lib/core/db.js");
-        
+        // 3. Save tokens in D1 — upsert our internal merchant row first (the
+        // FK oauth_tokens.merchant_id expects our id, not Salla's raw id).
+        const { saveTokens, upsertMerchantFromSalla } = await import("../../../_lib/core/db.js");
+        const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId, storeName });
+
         await saveTokens(env, {
             merchantId,
             platform: "salla",
@@ -88,14 +92,14 @@ export async function onRequestGet(context) {
             expiresAt: Math.floor(Date.now() / 1000) + (Number(tokenData.expires_in) || 14 * 24 * 3600)
         });
 
-        // 4. Return success JSON, burning the state cookie (single use)
-        return new Response(JSON.stringify({ ok: true, merchantId, status: "connected" }), {
-            status: 200,
-            headers: {
-                'content-type': 'application/json',
-                'Set-Cookie': oauthStateCookieHeader("", { clear: true })
-            }
-        });
+        // 4. Establish our own session (same pattern as auth/salla_embedded.js)
+        // and redirect the merchant straight into the dashboard, instead of
+        // dumping raw JSON on the browser after a successful link.
+        const sessionToken = await createSessionToken(env, merchantId);
+        const headers = new Headers({ 'Location': '/dashboard?connected=1', 'content-type': 'text/plain' });
+        headers.append('Set-Cookie', sessionCookieHeader(sessionToken));
+        headers.append('Set-Cookie', oauthStateCookieHeader("", { clear: true }));
+        return new Response(null, { status: 302, headers });
 
     } catch (error) {
         // error.message here is our own classified string ("token_exchange_failed:…")

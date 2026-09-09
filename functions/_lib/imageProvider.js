@@ -15,6 +15,9 @@
 // without it. Free monthly credit is tiny (~$0.10 ≈ 3-4 images), so this is
 // a rare bonus attempt, not a real capacity extension — never advertised to
 // merchants as "extra daily images".
+// N2 — تنزيل صورة المزوّد الاحتياطي يمر ببوابة SSRF/الحجم نفسها.
+import { fetchExternalImage } from "./core/security.js";
+
 const KLEIN_MODEL = "@cf/black-forest-labs/flux-2-klein-4b";
 const HF_ENDPOINT = "https://router.huggingface.co/fal-ai/fal-ai/flux-kontext/dev";
 
@@ -116,10 +119,11 @@ async function tryHuggingFace({ env, imageBase64, mime, prompt }) {
   const url = data && data.images && data.images[0] && data.images[0].url;
   if (!url) throw new Error("hf-kontext returned no image url");
 
-  const imgRes = await fetch(url);
-  if (!imgRes.ok) throw new Error(`hf-kontext image download HTTP ${imgRes.status}`);
-  const buf = new Uint8Array(await imgRes.arrayBuffer());
-  return { imageBase64: bytesToBase64(buf), mime: imgRes.headers.get("content-type") || "image/jpeg", provider: "huggingface" };
+  // العنوان يأتي من رد مزوّد خارجي — يُعامَل كمدخل غير موثوق: https فقط، بلا
+  // مضيف داخلي أو IP حرفي، وبحد ٨ ميجابايت ونوع صورة فعلي.
+  const { buffer, contentType } = await fetchExternalImage(url);
+  const buf = new Uint8Array(buffer);
+  return { imageBase64: bytesToBase64(buf), mime: (contentType || "image/jpeg").split(";")[0].trim(), provider: "huggingface" };
 }
 
 /**

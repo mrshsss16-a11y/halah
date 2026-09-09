@@ -21,6 +21,7 @@ import {
   INSTAGRAM_PUBLIC_COMMENT_RULES,
   INSTAGRAM_DM_RULES
 } from "../../_lib/ai/persona.js";
+import { stripFabricatedPricing } from "../../_lib/ai/guards.js";
 
 // نوافذ Meta الزمنية — تُخزَّن مع كل عنصر بالطابور ليعرف المراجع كم بقي له.
 // Private Reply: ٧ أيام من التعليق، ومرة واحدة فقط لكل معلّق.
@@ -57,7 +58,7 @@ export async function onRequestGet(context) {
  * توليد مسودة رد. لا ترسل شيئاً — تعيد النص فقط.
  * [SKIP] من النموذج = سبام/إعلان منافس ⇒ لا يدخل الطابور إطلاقاً.
  */
-async function draftReply(env, { kind, text, merchantId }) {
+async function draftReply(env, { kind, text, merchantId, context, rid }) {
   const channelRules = kind === "comment" ? INSTAGRAM_PUBLIC_COMMENT_RULES : INSTAGRAM_DM_RULES;
   const system = `${HALA_WHATSAPP_SUPPORT_PROMPT}\n\n${channelRules}`;
 
@@ -73,12 +74,27 @@ async function draftReply(env, { kind, text, merchantId }) {
     system,
     messages: [{ role: "user", content: clean }],
     storeId: merchantId,
-    maxTokens: 300
+    maxTokens: 300,
+    ttlKind: "chat"
   });
 
   const out = String(reply || "").trim();
   if (!out || out.includes("[SKIP]")) return null;
-  return out;
+
+  // A1 — حارس الأسعار على إنستغرام. الخطر هنا **مضاعف**: التعليق العلني يبقى
+  // تحت المنشور ويُقتبس بلقطة شاشة. شخصية أورا ممنوعة من أي رقم سعر (§٨)،
+  // والمراجعة البشرية لاحقة — فالحارس آلي قبل الطابور لا بعده.
+  const guard = stripFabricatedPricing(out);
+  if (guard.stripped) {
+    logError(context, {
+      requestId: rid,
+      path: "instagram/webhook:draft",
+      code: "PRICE_STRIPPED",
+      internal: `kind=${kind} — fabricated price removed from draft`,
+      storeId: merchantId
+    });
+  }
+  return guard.text.trim() || null;
 }
 
 export async function onRequestPost(context) {
@@ -157,7 +173,9 @@ async function processEvents(context, events, rid) {
       const draft = await draftReply(env, {
         kind: event.kind,
         text: event.text,
-        merchantId
+        merchantId,
+        context,
+        rid
       });
       if (!draft) continue; // [SKIP] أو نص فارغ
 

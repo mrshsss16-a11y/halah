@@ -13,6 +13,7 @@ import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
 import { matchAuraGreeting, matchFastIntent } from "../../_lib/ai/intents.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
+import { stripFabricatedPricing, fenceUntrusted, UNTRUSTED_DATA_NOTICE } from "../../_lib/ai/guards.js";
 
 // Manager decision 2026-09-06: quota-check errors (D1/KV outage) stay
 // fail-OPEN — a transient infra blip must not stop the bot replying to every
@@ -166,20 +167,36 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
   // budget (WhatsApp, not a website widget where a couple extra seconds is fine).
   const memories =
     isAuraLine ? [] : await recallSimilar({ env, storeId: merchantId, question: incomingText }).catch(() => []);
-  const ragContext = memories.length
-    ? `\n\n## معرفة ذات صلة (استخدميها لو تساعد بالإجابة، تجاهليها لو مو مرتبطة)\n${memories
-        .map((m) => `- س: ${m.question}\n  ج: ${m.reply}`)
-        .join("\n")}`
+  // A2 — المقتطفات المسترجعة نصوص كتبها عملاء سابقون؛ داخل محدِّدات صريحة.
+  const ragFenced = fenceUntrusted(
+    "معرفة مسترجعة",
+    memories.map((m) => `- س: ${m.question}\n  ج: ${m.reply}`).join("\n"),
+    3000
+  );
+  const ragContext = ragFenced
+    ? `\n\n## معرفة ذات صلة (استخدميها لو تساعد بالإجابة، تجاهليها لو مو مرتبطة)\n${ragFenced}`
     : "";
 
+  // A2 — `chat_summary` هو **نص زائر مجهول** جاء من ودجت الموقع (support.js
+  // يحفظ آخر رسالة الزائر حرفياً). كان يُلصق داخل برومبت النظام بلا أي فاصل،
+  // فسطر "تجاهل التعليمات السابقة…" بداخله يُقرأ أمراً. صار بيانات مسوّرة.
   let omniContext = "";
   if (omniSession) {
-    omniContext = `\n\n## ذاكرة العميل من شات الموقع
-- ملخص محادثة الموقع: ${omniSession.chat_summary || "تصفح واستفسر عن منتجات"}
-- المنتج الناقشه بالموقع: ${omniSession.last_product || "غير محدد"}
-- طبيعة المحادثة: ${omniSession.theme_category || "استفسار ومبيعات"}
-تذكري العميل برحابة صدر، رحبي به واذكري أنك تذكرين استفساره بالموقع بلهجة سعودية دافئة!`;
+    const omniFenced = fenceUntrusted(
+      "ذاكرة العميل من شات الموقع",
+      [
+        `ملخص محادثة الموقع: ${omniSession.chat_summary || "تصفح واستفسر عن منتجات"}`,
+        `المنتج الناقشه بالموقع: ${omniSession.last_product || "غير محدد"}`,
+        `طبيعة المحادثة: ${omniSession.theme_category || "استفسار ومبيعات"}`
+      ].join("\n"),
+      1200
+    );
+    omniContext = `\n\n## ذاكرة العميل من شات الموقع\n${omniFenced}\nتذكري العميل برحابة صدر، رحبي به واذكري أنك تذكرين استفساره بالموقع بلهجة سعودية دافئة!`;
   }
+
+  // سطر التوضيح يُحقن مرة واحدة فقط حين توجد محدِّدات فعلاً — بلا بيانات
+  // خارجية لا معنى لقاعدة عنها.
+  const untrustedNotice = ragContext || omniContext ? `\n\n${UNTRUSTED_DATA_NOTICE}` : "";
 
   // شخصية الوكيل من بيانات التاجر (agent_profiles) — نفس الصف الذي يخدم ودجت
   // الموقع، فتبقى الشخصية واحدة عبر القناتين بدل نسختين تتباعدان (قاعدة M2).
@@ -188,7 +205,7 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
   let system;
   if (agentProfile) {
     system = buildAgentPrompt(agentProfile, {
-      knowledgeContext: `${ragContext}${omniContext}`,
+      knowledgeContext: `${untrustedNotice}${ragContext}${omniContext}`,
       channelRules: `\n## قناة واتساب\nهذي محادثة واتساب حقيقية — ردي بإيجاز.\n\n${ESCALATION_INSTRUCTIONS}${isAuraLine ? `\n\n${BOOKING_INSTRUCTIONS}` : ""}`
     });
   } else if (isAuraLine) {
@@ -200,19 +217,25 @@ async function autoReply(env, { merchantId, isAuraLine, phone, incomingText, con
 
 ${BOOKING_INSTRUCTIONS}
 
-${ESCALATION_INSTRUCTIONS}${omniContext}`;
+${ESCALATION_INSTRUCTIONS}${untrustedNotice}${omniContext}`;
   } else {
     const ctx = env.DB ? await getMarketingContext(env, merchantId).catch(() => null) : null;
     const dialect = (ctx && ctx.dialect) || "saudi_najdi";
-    const instructions = (ctx && ctx.instructions) || "لا توجد تعليمات إضافية.";
+    // تعليمات التاجر بيانات يكتبها بشر خارج الكود — تُسوَّر مثل غيرها.
+    const instructions =
+      fenceUntrusted("تعليمات المتجر", (ctx && ctx.instructions) || "", 2000) ||
+      "لا توجد تعليمات إضافية.";
 
     system = `${PERSONA_SYSTEM_PROMPT}
 
 ---
 
+${UNTRUSTED_DATA_NOTICE}
+
 ## سياق واتساب
 اللهجة: ${dialectLabel(dialect)} (${dialect})
-تعليمات المتجر: ${instructions}
+تعليمات المتجر:
+${instructions}
 هذي محادثة واتساب حقيقية مع عميل — ردي بإيجاز (سطر أو سطرين)، مباشرة، بدون طلب بيانات دفع.${ragContext}${omniContext}`;
   }
 
@@ -227,8 +250,28 @@ ${ESCALATION_INSTRUCTIONS}${omniContext}`;
     messages: turns,
     maxTokens: isAuraLine ? 180 : 250,
     model: TEXT_MODEL,
-    storeId: merchantId // without this the reply lands in a cache bucket shared by every merchant
+    storeId: merchantId, // without this the reply lands in a cache bucket shared by every merchant
+    ttlKind: "chat" // A9 — محادثة حية: ١٥ دقيقة، لا ٢٤ ساعة
   });
+
+  // A1 — حارس الأسعار على واتساب. كان غائباً تماماً هنا رغم أن §٨ تمنع خط
+  // أورا من ذكر أي رقم سعر منعاً باتاً، والتاجر الذي ضبط `allow_prices=0`
+  // اختار الشيء نفسه لوكيله. الحارس يحذف الجملة المخالفة وحدها ويسجّل الحدث
+  // بلا نص الرسالة (قاعدة errorLog.js).
+  const blockPrices = agentProfile ? Number(agentProfile.allow_prices) === 0 : isAuraLine;
+  if (blockPrices) {
+    const guard = stripFabricatedPricing(reply);
+    if (guard.stripped) {
+      logError(context, {
+        requestId,
+        path: "whatsapp/webhook:price_guard",
+        code: "PRICE_STRIPPED",
+        internal: "fabricated price removed from model reply",
+        storeId: merchantId
+      });
+    }
+    reply = guard.text;
+  }
 
   if (isAuraLine && ESCALATE_RE.test(reply)) {
     return { text: ESCALATION_MESSAGE, offerSlots: false, escalate: true };

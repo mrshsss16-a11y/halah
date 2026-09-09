@@ -44,7 +44,7 @@ async function verifyGoogleIdToken(env, credential) {
 
 async function googleAuthHandler(body, env, request, requestId, context) {
   const ip = clientIp(request);
-  const rateCheck = await checkRateLimit(env, ip, "google_auth", 10, 60);
+  const rateCheck = await checkRateLimit(env, ip, "google_auth", 10, 60, { failClosed: true });
   if (!rateCheck.allowed) {
     return json({ ok: false, error: `محاولات كثيرة جداً. حاول بعد ${rateCheck.resetInSeconds} ثانية.` }, 429);
   }

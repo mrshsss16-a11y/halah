@@ -1,4 +1,7 @@
+# N9 — HSTS على كل المسارات: بلا هذا الرأس تبقى أول زيارة على http قابلة
+# للاعتراض والتحويل قبل أن يتدخل تحويل Cloudflare. سنة + كل النطاقات الفرعية.
 /*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

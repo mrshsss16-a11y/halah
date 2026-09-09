@@ -11,6 +11,8 @@
 //
 // Token shape: `${nonce}.${expiryUnix}.${hmacHex}`
 import { ApiError } from "./respond.js";
+// Q1 — نسخة واحدة للمقارنة الثابتة الزمن بدل تكرارها بكل ملف يوقّع.
+import { timingSafeEqualStr } from "./crypto.js";
 
 const STATE_COOKIE = "hala_oauth_state";
 const STATE_TTL_SECONDS = 10 * 60; // an OAuth consent round trip is short
@@ -34,13 +36,6 @@ async function hmacHex(secret, message) {
   );
   const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
   return [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function timingSafeEqual(a, b) {
-  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
 }
 
 /** Mint a signed state token for an outgoing OAuth redirect. */
@@ -84,7 +79,7 @@ export async function verifyOAuthState(env, request, stateFromQuery) {
   if (!stateFromQuery) return false;
 
   const cookieState = readStateCookie(request);
-  if (!cookieState || !timingSafeEqual(cookieState, stateFromQuery)) return false;
+  if (!cookieState || !timingSafeEqualStr(cookieState, stateFromQuery)) return false;
 
   const parts = stateFromQuery.split(".");
   if (parts.length !== 3) return false;
@@ -93,7 +88,7 @@ export async function verifyOAuthState(env, request, stateFromQuery) {
   if (!nonce || !Number.isFinite(expiry) || expiry < Math.floor(Date.now() / 1000)) return false;
 
   const expected = await hmacHex(getSecret(env), `${nonce}.${expiryStr}`);
-  return timingSafeEqual(mac, expected);
+  return timingSafeEqualStr(mac, expected);
 }
 
 export { STATE_COOKIE, STATE_TTL_SECONDS };

@@ -6,12 +6,12 @@ import { assertTrustedWrite } from "../../_lib/core/csrf.js";
 import { hashPassword } from "../../_lib/core/auth.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
-import { sanitizeInput } from "../../_lib/core/security.js";
+import { sanitizeInput, EMAIL_RE } from "../../_lib/core/security.js";
 import { adminEmailList, isAdminEmail } from "../../_lib/core/adminEmails.js";
 import { trialSeatUsage } from "../../_lib/core/db.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Q3 — الصيغة موحّدة بـcore/security.js (كانت نسختين قابلتين للانحراف).
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -24,7 +24,7 @@ export async function onRequestPost(context) {
 
   // Cap signups per IP — the 20-seat trial cap otherwise doubles as a lockout
   // DoS (20 scripted POSTs fill every seat) (SECURITY_AUDIT C2/H10).
-  const rl = await checkRateLimit(env, clientIp(request), "signup", 3, 3600);
+  const rl = await checkRateLimit(env, clientIp(request), "signup", 3, 3600, { failClosed: true });
   if (!rl.allowed) {
     return json({ ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" }, 429);
   }

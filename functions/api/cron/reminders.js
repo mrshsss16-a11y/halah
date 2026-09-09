@@ -4,6 +4,7 @@ import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
 import { timingSafeEqualStr } from "../../_lib/core/crypto.js";
 import { generateRequestId } from "../../_lib/core/respond.js";
 import { logError } from "../../_lib/core/errorLog.js";
+import { recordHeartbeat } from "../../_lib/core/heartbeat.js";
 
 function getTargetSlotLabel() {
   // Saudi Arabia is UTC+3
@@ -151,6 +152,7 @@ export async function onRequestGet(context) {
       }
     }
 
+    await recordHeartbeat(env, { job: "reminders", ok: true, note: `sent=${sent}` });
     return new Response(JSON.stringify({ ok: true, targetSlot, remindersChecked: results ? results.length : 0, remindersSent: sent }), {
       status: 200,
       headers: { "content-type": "application/json" }
@@ -160,6 +162,7 @@ export async function onRequestGet(context) {
     // Raw err.message can carry D1 SQL text or WhatsApp API bodies (customer
     // phone numbers). Detail to the log only; the response stays generic.
     logError(context, { requestId, path: "cron/reminders", code: "CRON_REMINDERS_FAILED", internal: String((err && err.stack) || err) });
+    await recordHeartbeat(env, { job: "reminders", ok: false, note: "CRON_REMINDERS_FAILED" });
     return new Response(JSON.stringify({ ok: false, error: "تعذّر تنفيذ التذكيرات. حاول مرة ثانية بعد شوي.", code: "CRON_REMINDERS_FAILED", requestId }), {
       status: 500,
       headers: { "content-type": "application/json" }

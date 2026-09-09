@@ -127,13 +127,23 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ## 6. قاعدة البيانات — D1 `halah-tr-db`
 
-- Migrations في `migrations/` (0001..0024 — كلها مطبَّقة على البعيد، تحقق 2026-09-08). طبّق بـ:
-  `npx wrangler d1 migrations apply halah-tr-db --remote`
+- Migrations في `migrations/` (0001..0026 مطبَّقة على البعيد، تحقق 2026-09-08؛ **0027
+  `cron_heartbeat` مكتوبة 2026-09-09 وبانتظار التطبيق اليدوي من المالك — لم تُطبَّق بعد،
+  انظر §13 O2). طبّق بـ: `npx wrangler d1 migrations apply halah-tr-db --remote`
 - 0003 placeholder (للحفاظ على تسلسل الأرقام). 0010 أنشأ الجداول الناقصة سابقاً.
 - جداول قديمة (legacy) لا تزال موجودة من بناء سابق: `users`, `faqs`, `store_connections`,
   `synced_products`, `merchant_marketing_contexts`, `store_documents`. الجداول الجديدة حلّت محلها.
 - **قبل أي ادعاء أن جدولاً موجود، تحقق فعلياً:**
   `npx wrangler d1 execute halah-tr-db --remote --command "SELECT name FROM sqlite_master WHERE type='table'"`
+
+### النسخ الاحتياطي (`scripts/backup-db.mjs`)
+
+- `npm run backup` يصدّر D1 كاملة (مخطط + بيانات) إلى `backups/` (مستثنى من git)، ويتحقق بعد
+  التصدير أن الملف يحوي `CREATE TABLE accounts` وأن عدد أسطره > ١٠٠ — وإلا `exit 1` ولا يُعتمَد
+  على الملف (O5، 2026-09-09).
+- **النسخ يدوي ومحلي فقط.** لا رفع تلقائي لأي تخزين خارجي (R2 أو غيره) — القرار بيد مالك
+  المشروع، وهذا السكربت لا يتخذه نيابة عنه. يبقى `backups/` على جهاز المشغّل حتى يُنقَل يدوياً.
+- لا اختبار استعادة آلي بعد (مذكور كدَين منخفض بـ`docs/EVALUATION_2026-09-09.md`).
 
 ---
 
@@ -187,12 +197,43 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ---
 
-## 10. الأسرار (wrangler secrets — ممنوع بالكود)
+## 10. الأسرار والمتغيرات (محدَّثة 2026-09-09 — `grep -rhoE 'env\.[A-Z_]+|env\?\.[A-Z_]+' functions cron-worker`)
 
-`SESSION_SECRET`, `ENCRYPTION_KEY`, `ADMIN_EMAILS`, `SALLA_*` (APP_ID/CLIENT_ID/CLIENT_SECRET/WEBHOOK_SECRET),
-`WHATSAPP_*` (TOKEN/PHONE_ID/VERIFY_TOKEN/APP_SECRET), `HF_TOKEN` (اختياري), وللمزودين الاختياريين:
-`GROQ_API_KEY`, `OPENROUTER_API_KEY`, `DEEPSEEK_API_KEY`, `TURNSTILE_SECRET_KEY`.
-إضافة: `npx wrangler pages secret put NAME --project-name hala-ai-os`.
+إضافة أي سر: `npx wrangler pages secret put NAME --project-name hala-ai-os`.
+
+### أسرار إلزامية (غيابها = رمي خطأ، لا قيمة افتراضية)
+- `SESSION_SECRET` — توقيع كوكي الجلسة (HMAC). بدونه `core/session.js`/`core/csrf.js` يرميان خطأ.
+- `ENCRYPTION_KEY` — تشفير `oauth_tokens.access_token/refresh_token` بالراحة (`core/crypto.js`).
+- `ADMIN_EMAILS` — قائمة إيميلات مفصولة بفواصل يقارنها `requireAdmin`/`adminEmails.js` — لا عمود `is_admin`.
+- `SALLA_APP_ID`, `SALLA_CLIENT_ID`, `SALLA_CLIENT_SECRET` — تدفق OAuth Easy Mode لسلة.
+- `SALLA_WEBHOOK_SECRET` — تحقق `X-Salla-Signature` بـ`webhooks/salla.js` (401 عند الفشل).
+- `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID` — إرسال رسائل واتساب (Cloud API، خط أورا).
+- `WHATSAPP_VERIFY_TOKEN` — تحقق GET webhook عند إعداده بميتا.
+- `WHATSAPP_APP_SECRET` — تحقق `X-Hub-Signature-256` (`verifyWaSignature`، fail-closed).
+- `CRON_SECRET` — يحرس `Authorization: Bearer` على `api/cron/*` كلها؛ بدونه الوظائف ترفض 500 (`CRON_NOT_CONFIGURED`) بدل تشغيل بلا حماية.
+
+### اختيارية بمزوّد (fallback يُعطَّل بلا كسر التشغيل، أو تحسين اختياري)
+- `GROQ_API_KEY` — الطبقة الثانية بتعاقب AI Gateway.
+- `OPENROUTER_API_KEY` — الطبقة الثالثة (نماذج مجانية).
+- `DEEPSEEK_API_KEY` — الطبقة الرابعة والأخيرة.
+- `HF_TOKEN` — احتياطي `imageProvider.js` (Hugging Face) خلف klein الأساسي.
+- `TURNSTILE_SECRET_KEY` — تحقق كابتشا Turnstile؛ غيابه يمرّر الطلبات (N7، دَين موثّق).
+- `RESEND_API_KEY` — إرسال بريد (استعادة كلمة مرور، تحقق إيميل) عبر `integrations/email.js`؛ fail-closed بلا مفتاح.
+- `EMAIL_FROM` — عنوان المرسل لنفس مزوّد البريد.
+- `GOOGLE_CLIENT_ID` — تحقق توكن Google Sign-In بـ`auth/google.js`.
+- `META_APP_ID`, `META_APP_SECRET` — تطبيق ميتا لإنستغرام/واتساب Embedded Signup.
+- `INSTAGRAM_APP_SECRET`, `INSTAGRAM_VERIFY_TOKEN` — ويبهوك إنستغرام (مبني، غير مفعَّل بعد).
+- `WA_SIGNUP_CONFIG_ID` — Embedded Signup لواتساب من لوحة التاجر؛ غيابه يعطّل تبويب الربط بصدق (لا وهم اتصال).
+
+### إعدادات بيئة غير سرية
+- `STORE_WA_PHONE` — رقم واتساب الموظف/الأدمن لتذكيرات الاستشارة وتنبيهات الصحة؛ غيابه = تخطي تذكير الموظف مع تسجيل، لا رقم مفبرك (P49).
+- `MERCHANT_WA_PHONE` — بديل تسمية لنفس الغرض بمسارات أقدم.
+- `WHATSAPP_MERCHANT_ID` — معرّف WABA لبعض عمليات Coexistence.
+- `WIDGET_ALLOWED_ORIGINS` — قائمة سماح CORS لودجت `/api/support`.
+- `HALA_DEBUG_AI` — تفعيل تسجيل تشخيصي إضافي لمسار AI (تطوير فقط).
+
+### Bindings (ليست أسراراً — `wrangler.toml`)
+`AI` (Workers AI), `VECTORIZE_INDEX`, `DB` (D1)، `HALA_CACHE` (KV).
 
 ---
 

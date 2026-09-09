@@ -32,6 +32,7 @@ import { publishApproved } from "../../_lib/services/publishApproved.js";
 import { checkAndConsumeMonthly, getMonthlyUsage } from "../../_lib/core/meter.js";
 import { generateRequestId } from "../../_lib/core/respond.js";
 import { logError } from "../../_lib/core/errorLog.js";
+import { recordHeartbeat } from "../../_lib/core/heartbeat.js";
 
 const GENERATE_BATCH = 20; // نداءات AI فقط — لا فاصل سلة بينها
 const PUBLISH_BATCH = 20; // ~22s عند ١.١ث/كتابة — داخل استدعاء Worker واحد
@@ -246,6 +247,12 @@ export async function onRequestGet(context) {
   const revived = await tickReviveDeferred(context, env, requestId);
   const generate = await tickGenerate(context, env, requestId);
   const publish = await tickPublish(context, env, requestId);
+
+  await recordHeartbeat(env, {
+    job: "bulk_process",
+    ok: true,
+    note: `gen=${generate.queuedForReview}/${generate.failed} pub=${publish?.published ?? 0}`
+  });
 
   return new Response(
     JSON.stringify({

@@ -22,13 +22,22 @@ export function logError(context, { requestId, path, code, internal, storeId = n
   const db = context?.env?.DB;
   if (!db) return;
 
-  const write = db
-    .prepare(
-      `INSERT INTO error_log (request_id, store_id, code, path, internal) VALUES (?, ?, ?, ?, ?)`
-    )
-    .bind(requestId, storeId, code, path, truncatedInternal)
-    .run()
-    .catch((e) => console.error("[hala-error-log-write-failed]", e?.message));
+  // الملف نفسه يقول: فشل التسجيل يجب ألا يكسر الرد. لكن `prepare(...)` كان
+  // يُستدعى خارج أي حماية، فأي عطل متزامن بالـbinding يرمي من داخل logError
+  // ويُسقط المعالج الذي كان يحاول الإبلاغ عن خطأ أصلاً — أسوأ لحظة ممكنة.
+  let write;
+  try {
+    write = db
+      .prepare(
+        `INSERT INTO error_log (request_id, store_id, code, path, internal) VALUES (?, ?, ?, ?, ?)`
+      )
+      .bind(requestId, storeId, code, path, truncatedInternal)
+      .run()
+      .catch((e) => console.error("[hala-error-log-write-failed]", e?.message));
+  } catch (e) {
+    console.error("[hala-error-log-write-failed]", e?.message);
+    return;
+  }
 
   if (context?.waitUntil) {
     context.waitUntil(write);

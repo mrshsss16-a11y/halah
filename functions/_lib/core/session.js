@@ -1,11 +1,14 @@
 import { getAccountEmail, getMerchant } from "./db.js";
 import { ApiError } from "./respond.js";
+// Q1 — نسخة واحدة للمقارنة الثابتة الزمن (كانت مكرّرة هنا وبـoauthState.js وreset_password.js).
+import { timingSafeEqualStr } from "./crypto.js";
+import { logError } from "./errorLog.js";
 
 // Ids an anonymous caller must never be able to claim through a request body.
 // "hala" is Aura's own line and is UNMETERED in meter.js — letting a stranger
 // name it (or any reserved id) would run AI with no quota at that tenant's
 // expense (SECURITY_AUDIT C2/H7).
-const RESERVED_STORE_IDS = new Set(["hala"]);
+export const RESERVED_STORE_IDS = new Set(["hala"]);
 
 // Signed session cookie. Token shape (P40, migrations/0023):
 // `${merchantId}.${expiryUnix}.${sessionVersion}.${hmacHex}`,
@@ -38,13 +41,6 @@ async function hmacHex(secret, message) {
   return [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function timingSafeEqual(a, b) {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
 function getSessionSecret(env) {
   if (env?.SESSION_SECRET) {
     return env.SESSION_SECRET;
@@ -62,7 +58,11 @@ function getSessionSecret(env) {
 export async function currentSessionVersion(env, merchantId) {
   const kv = env?.HALA_CACHE;
   if (kv) {
-    const cached = await kv.get(versionKey(merchantId)).catch(() => null);
+    // Q2 — فشل KV هنا يسقط للـD1 (سلوك مقصود)، لكنه يُسجَّل بدل الابتلاع الصامت.
+    const cached = await kv.get(versionKey(merchantId)).catch((err) => {
+      logError({ env }, { requestId: null, path: "core/session.currentSessionVersion", code: "SESSION_VERSION_KV_READ_FAILED", storeId: merchantId, internal: err?.message || String(err) });
+      return null;
+    });
     if (cached !== null && cached !== undefined && cached !== "") {
       const n = Number(cached);
       if (Number.isInteger(n) && n >= 0) return n;
@@ -72,7 +72,10 @@ export async function currentSessionVersion(env, merchantId) {
   let row;
   try {
     row = await env.DB.prepare("SELECT session_version FROM accounts WHERE merchant_id = ?").bind(merchantId).first();
-  } catch {
+  } catch (err) {
+    // Q2 — فشل قراءة نسخة الجلسة يعني رفض كل الجلسات (fail closed). كان يمر
+    // بصمت فيبدو الأمر «انتهاء صلاحية» عشوائياً بلا أي أثر للتشخيص.
+    logError({ env }, { requestId: null, path: "core/session.currentSessionVersion", code: "SESSION_VERSION_READ_FAILED", storeId: merchantId, internal: err?.message || String(err) });
     return null;
   }
   const version = row ? Number(row.session_version) || 0 : 0;
@@ -94,7 +97,12 @@ export async function bumpSessionVersion(env, merchantId) {
     .first();
   const version = row ? Number(row.session_version) : null;
   if (version !== null && env?.HALA_CACHE) {
-    await env.HALA_CACHE.put(versionKey(merchantId), String(version), { expirationTtl: VERSION_TTL_SECONDS }).catch(() => {});
+    // Q2 — فشل تحديث مرآة KV يعني أن الجلسات القديمة تبقى صالحة حتى انتهاء
+    // الـTTL (ساعة) رغم أن السبب كان تسجيل خروج/إعادة تعيين كلمة مرور. لا
+    // يُبتلع بصمت: يُسجَّل بلا PII حتى يظهر بصفحة أخطاء الأدمن.
+    await env.HALA_CACHE.put(versionKey(merchantId), String(version), { expirationTtl: VERSION_TTL_SECONDS }).catch((err) =>
+      logError({ env }, { requestId: null, path: "core/session.bumpSessionVersion", code: "SESSION_VERSION_KV_WRITE_FAILED", storeId: merchantId, internal: err?.message || String(err) })
+    );
   }
   return version;
 }
@@ -125,7 +133,7 @@ export async function verifySessionToken(env, token) {
   if (!merchantId || !Number.isFinite(expiry) || expiry < Math.floor(Date.now() / 1000)) return null;
   const signed = versionStr === null ? `${merchantId}.${expiryStr}` : `${merchantId}.${expiryStr}.${versionStr}`;
   const expectedMac = await hmacHex(secret, signed);
-  if (!timingSafeEqual(mac, expectedMac)) return null;
+  if (!timingSafeEqualStr(mac, expectedMac)) return null;
 
   const tokenVersion = versionStr === null ? 0 : Number(versionStr);
   if (!Number.isInteger(tokenVersion) || tokenVersion < 0) return null;

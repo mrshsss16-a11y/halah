@@ -4,7 +4,9 @@
 // expiry-checked, single-use). The previous version accepted any OTP string and
 // rewrote the password — a complete account-takeover path.
 import { withApi, json } from "../../_lib/core/respond.js";
-import { hashPassword } from "../../_lib/core/auth.js";
+// Q1/Q3 — تجزئة الرمز والمقارنة الثابتة الزمن من مصدر واحد بدل نسختين محليتين.
+import { hashPassword, hashOtp } from "../../_lib/core/auth.js";
+import { timingSafeEqualStr } from "../../_lib/core/crypto.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { logError } from "../../_lib/core/errorLog.js";
@@ -14,19 +16,6 @@ import {
   recordResetOtpFailure,
   clearResetOtpAttempts
 } from "../../_lib/core/db.js";
-
-async function hashOtp(email, otp) {
-  const data = new TextEncoder().encode(`${email}:${otp}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-function timingSafeEqual(a, b) {
-  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
 
 // Records one failed OTP entry. A DB error here is logged but not surfaced —
 // the caller is already returning the generic `invalid` response either way.
@@ -45,7 +34,7 @@ async function countResetFailure(env, email, request) {
 
 async function resetPasswordHandler(body, env, request) {
   const ip = clientIp(request);
-  const rateCheck = await checkRateLimit(env, ip, "reset_password", 10, 60);
+  const rateCheck = await checkRateLimit(env, ip, "reset_password", 10, 60, { failClosed: true });
   if (!rateCheck.allowed) {
     return json({ ok: false, error: `محاولات كثيرة جداً. حاول بعد ${rateCheck.resetInSeconds} ثانية.` }, 429);
   }
@@ -99,7 +88,7 @@ async function resetPasswordHandler(body, env, request) {
   }
 
   const providedHash = await hashOtp(email, otpCode);
-  if (!timingSafeEqual(providedHash, row.otp_code)) {
+  if (!timingSafeEqualStr(providedHash, row.otp_code)) {
     // On the 5th failure this burns the OTP row outright, so even the correct
     // code is dead afterwards and a new one must be requested.
     await countResetFailure(env, email, request);
@@ -131,12 +120,18 @@ async function resetPasswordHandler(body, env, request) {
     );
   }
 
+  // Q2 — التنظيف بعد نجاح إعادة التعيين كان يبتلع كل خطأ بصمت. فشل حذف صف
+  // الرمز يعني رمزاً قابلاً لإعادة الاستخدام، وفشل مسح العدّادات يترك الحساب
+  // مقفلاً بعد إعادة تعيين ناجحة — كلاهما يستحق أثراً (بلا بريد بالسجل).
+  const logCleanupFailure = (code) => (err) =>
+    logError({ env }, { requestId: null, path: "/api/auth/reset_password", code, internal: err?.message || String(err) });
+
   // Single use: burn the OTP so it can't be replayed.
-  await env.DB.prepare("DELETE FROM password_resets WHERE email = ?").bind(email).run().catch(() => {});
+  await env.DB.prepare("DELETE FROM password_resets WHERE email = ?").bind(email).run().catch(logCleanupFailure("RESET_OTP_DELETE_FAILED"));
   // Clear any lockout from failed logins before the reset.
-  await env.DB.prepare("DELETE FROM login_attempts WHERE email = ?").bind(email).run().catch(() => {});
+  await env.DB.prepare("DELETE FROM login_attempts WHERE email = ?").bind(email).run().catch(logCleanupFailure("RESET_LOGIN_ATTEMPTS_CLEAR_FAILED"));
   // …and the per-email OTP guess counter (namespaced key, separate row).
-  await clearResetOtpAttempts(env, email).catch(() => {});
+  await clearResetOtpAttempts(env, email).catch(logCleanupFailure("RESET_OTP_ATTEMPTS_CLEAR_FAILED"));
 
   return json({ ok: true, message: "تم تحديث كلمة المرور بنجاح. تقدر تسجل دخولك الآن." });
 }

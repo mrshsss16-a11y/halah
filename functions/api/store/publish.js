@@ -7,10 +7,20 @@ import { updateProduct } from "../../_lib/integrations/salla.js";
 import { requireCompletedAccount } from "../../_lib/core/session.js";
 import { buildSallaProductFields } from "../../_lib/services/sallaProductPayload.js";
 import { logError } from "../../_lib/core/errorLog.js";
+// N6 — P48 كان نصف مغلق: النشر يكتب على كتالوج سلة الحي بلا أي حد معدل.
+import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
+import { findCatalogBySallaProductId, markPublished } from "../../_lib/services/catalog.js";
 
 async function publishHandler(body, env, request, requestId, context) {
   // Writing onto the merchant's live Salla catalogue is a "real operation":
   // session required, and a completed account on top (403 ACCOUNT_REQUIRED).
+  // N6 — ٣٠ عملية نشر بالدقيقة لكل IP: يمنع حلقة نشر مندفعة من إغراق سلة
+  // (وجرّ حظر ٤٢٩ على التاجر) قبل أن يصل الطلب لواجهتهم أصلاً.
+  const publishRate = await checkRateLimit(env, clientIp(request), "publish", 30, 60);
+  if (!publishRate.allowed) {
+    throw new ApiError(429, "طلبات نشر كثيرة جداً — انتظر دقيقة وكرر المحاولة.", "RATE_LIMIT_EXCEEDED");
+  }
+
   const merchantId = await requireCompletedAccount(request, env, body.storeId);
   const productId = (body.productId || "").toString().slice(0, 40);
   const description = (body.description || "").toString().slice(0, 5000).trim();
@@ -41,7 +51,22 @@ async function publishHandler(body, env, request, requestId, context) {
       throw err;
     }
   }
-  return { ok: true, productId, seoApplied };
+
+  // إن كان لهذا المنتج صف كتالوج (مسحوب من سلة، له وصف أصلي محفوظ) نُعلم
+  // هالة أنه نُشر عليه — هذا وحده يجعل التراجع (decide.js action=revert) ممكناً؛
+  // منتج بلا صف كتالوج (رفع يدوي CSV) لا نملك أصله فلا تراجع صادق له.
+  let revertAvailable = false;
+  try {
+    const catalogRow = await findCatalogBySallaProductId(env, { merchantId, sallaProductId: productId });
+    if (catalogRow?.sku) {
+      await markPublished(env, { merchantId, sku: catalogRow.sku, description });
+      revertAvailable = true;
+    }
+  } catch (err) {
+    logError(context, { requestId, path: "store/publish", code: "PUBLISH_MARK_FAILED", storeId: merchantId, internal: String(err?.message || err).slice(0, 250) });
+  }
+
+  return { ok: true, productId, seoApplied, revertAvailable };
 }
 
 export const onRequestPost = withApi(publishHandler);

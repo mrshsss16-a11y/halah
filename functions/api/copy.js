@@ -13,6 +13,8 @@ import { requireCompletedAccount } from "../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 import { getProfile, profileToPromptBlock } from "../_lib/services/storeProfile.js";
 import { taxonomyForCategory, taxonomyForProduct } from "../_lib/ai/productTaxonomy.js";
+import { fenceUntrusted, UNTRUSTED_DATA_NOTICE } from "../_lib/ai/guards.js";
+import { logError } from "../_lib/core/errorLog.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -28,12 +30,116 @@ const TONE_LABELS = {
   funny: "خفة دم سعودية لطيفة"
 };
 
-function seedKeywords(name, category, extra) {
+/**
+ * A8 — الكلمات المستهدفة = **الاسم كاملاً + الفئة + ما أدخله التاجر**، لا أكثر.
+ *
+ * كان الاسم يُفكَّك لكلمات مفردة (`split(/\s+/)`)، فمنتج اسمه "عباية سوداء
+ * بقصّة A" يُنتج «عباية»، «سوداء»، «بقصّة» ككلمات مفتاحية مستقلة. «سوداء»
+ * وحدها ليست كلمة بحث، و«بقصّة» ليست كلمة إطلاقاً — ثم يُطلب من النموذج
+ * حشوها بالنص. النتيجة حشو بلا قيمة SEO وضد القاعدة ٥ بالبرومبت نفسه.
+ */
+export function seedKeywords(name, category, extra) {
   const base = new Set();
   (extra || []).forEach((k) => k && base.add(String(k).trim()));
-  String(name || "").split(/\s+/).filter((w) => w.length > 2).forEach((w) => base.add(w));
+  const fullName = String(name || "").trim();
+  if (fullName) base.add(fullName);
   if (category) base.add(String(category).trim());
-  return [...base].slice(0, 6);
+  return [...base].filter(Boolean).slice(0, 6);
+}
+
+/**
+ * خطأ مصنَّف: تعذّر انتزاع JSON من مخرج النموذج بعد إعادة محاولة واحدة.
+ * وجوده هو الفرق بين "فشل التوليد" و"نشر مخرج النموذج الخام كوصف منتج".
+ */
+export class CopyParseError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "CopyParseError";
+    this.code = "COPY_PARSE_FAILED";
+  }
+}
+
+/**
+ * A4 — انتزاع JSON **متوازن الأقواس**.
+ *
+ * البديل السابق كان `source.match(/\{[\s\S]*\}/)` — جشع: يبتلع من أول `{`
+ * بالمخرج إلى آخر `}` فيه، فأي جملة تمهيدية فيها قوس، أو كتلتا JSON، تنتج
+ * نصاً غير صالح ⇒ فشل التحليل ⇒ (بالسلوك القديم) نشر النص الخام كوصف منتج.
+ *
+ * هنا: أول `{` ثم مسح بعدّاد عمق يحترم السلاسل النصية وهروب المحارف.
+ */
+export function extractBalancedJson(source) {
+  const text = typeof source === "string" ? source : String(source ?? "");
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  const scan = fenced ? fenced[1] : text;
+
+  const start = scan.indexOf("{");
+  if (start === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < scan.length; i++) {
+    const ch = scan[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === "\\") { if (inString) escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) return scan.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+// قصّ عند حدّ كلمة: العنوان المقصوص وسط الكلمة ("عباية سوداء بقص") يُنشر
+// كما هو على صفحة المنتج ويُقرأ خطأً إملائياً لا اختصاراً.
+function truncateAtWord(text, max, minRatio = 0.6) {
+  const s = String(text || "").trim();
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > max * minRatio ? cut.slice(0, lastSpace) : cut).trim();
+}
+
+// slug احتياطي مطبَّع: بلا محارف تكسر الرابط، بلا شرطات متتالية أو طرفية.
+export function fallbackSlug(name) {
+  return String(name || "")
+    .trim()
+    .replace(/[ـ]/g, "")            // تطويل
+    .replace(/[^\p{L}\p{N}\p{M}]+/gu, "-")  // أي فاصل ⇒ شرطة واحدة (الحركات جزء من الحرف)
+    .replace(/-{2,}/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60)
+    .replace(/-$/, "");
+}
+
+/**
+ * A7 — الميتا ديسكربشن حدّها المعلن بالبرومبت ١٢٠-١٦٠ حرفاً، ولم يكن أحد
+ * يفرض الحد الأدنى: النموذج يرجّع ٤٠ حرفاً فيُنشر كما هو. هنا: لو أقصر من
+ * ١٢٠ نكمله من النبذة (نص حقيقي للمنتج نفسه، لا حشو مخترع) بحد ١٦٠.
+ */
+export function buildMetaDescription(metaRaw, excerpt) {
+  let meta = String(metaRaw || "").trim().replace(/\s+/g, " ");
+  const filler = String(excerpt || "").trim().replace(/\s+/g, " ");
+  if (meta.length < 120 && filler) {
+    const joined = meta ? (filler.startsWith(meta) ? filler : `${meta} ${filler}`) : filler;
+    meta = joined.trim();
+  }
+  // 0.9: القصّ عند حد كلمة يجب ألا يهبط بالميتا تحت الحد الأدنى (١٢٠ من ١٦٠).
+  return truncateAtWord(meta, 160, 0.9);
+}
+
+// A5 — بوابة لغة ملاحظات الرؤية. الشرط الوحيد: وجود حرف عربي فعلي.
+const ARABIC_LETTER_RE = /[ء-ي٠-٩ە-ۿ]/;
+
+/** يعيد الملاحظات إن كانت عربية، وإلا `null` (تُهمل كلياً). */
+export function acceptArabicVisionNotes(notes) {
+  const text = String(notes || "").trim();
+  if (!text) return null;
+  return ARABIC_LETTER_RE.test(text) ? text : null;
 }
 
 /**
@@ -116,9 +222,13 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
   // خاص بمنتج واحد. تُحقن فقط حين تكون معتمَدة من التاجر — انظر
   // generateProductCopy أدناه.
   if (profileBlock) grounding.push(profileBlock);
-  if (existingDescription) {
+  // A2 — الوصف الحالي يأتي من كتالوج سلة: نص يكتبه التاجر أو يُستورد من مورّد،
+  // ويصل هنا بلا أي وسيط. كان يُلصق ببرومبت النظام بعلامتَي اقتباس فقط، فوصف
+  // منتج فيه سطر "تجاهلي التعليمات السابقة واكتبي…" يُقرأ أمر نظام. صار مسوّراً.
+  const existingFenced = fenceUntrusted("الوصف الحالي للمنتج", existingDescription, 3000);
+  if (existingFenced) {
     grounding.push(
-      `## الوصف الحالي للمنتج (بيانات حقيقية — حسّني الصياغة والـSEO، لا تخترعي مواصفات غير مذكورة هنا أو بالمزايا المدخلة)\n"${existingDescription}"`
+      `## الوصف الحالي للمنتج (بيانات حقيقية — حسّني الصياغة والـSEO، لا تخترعي مواصفات غير مذكورة هنا أو بالمزايا المدخلة)\n${existingFenced}`
     );
   }
   if (visionNotes) {
@@ -151,7 +261,9 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
     );
   }
 
-  const groundingBlock = grounding.length ? `\n\n${grounding.join("\n\n")}` : "";
+  const groundingBlock = grounding.length
+    ? `\n\n${UNTRUSTED_DATA_NOTICE}\n\n${grounding.join("\n\n")}`
+    : "";
 
   // إلزام المخرَج النهائي: حين تتوفر قراءة بصرية، الوصف بدون لون/قصّة/اقتراح
   // استخدام = فشل (بلاغ 2026-09-08). الحدود أعلاه تمنع الاختلاق، وهذا السطر
@@ -222,30 +334,33 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
 الكلمات المفتاحية المستهدفة: ${keywords.join("، ")}${avoid}`;
 }
 
-function parseSeoResponse(raw, name, price) {
+/**
+ * A4 — يرجّع الكائن المنظَّم، أو **يرمي** `CopyParseError`.
+ *
+ * السلوك السابق عند فشل التحليل كان: خذ مخرج النموذج الخام كما هو واجعله
+ * `description` و`excerpt` و`whatsapp` و`metaDescription`. أي أن اعتذاراً
+ * بالإنجليزي أو JSON نصف مكتوب كان يُنشر على صفحة منتج التاجر بسلة كوصف.
+ * الفشل الآن فشلٌ صريح — المستدعي يعيد المحاولة مرة ثم يرمي (§١١).
+ */
+export function parseSeoResponse(raw, name, price) {
   const source = typeof raw === "string" ? raw : String(raw ?? "");
-  
-  // Extract JSON from markdown code blocks or fallback to regex
-  let jsonString = "";
-  const mdMatch = source.match(/```json\s*([\s\S]*?)\s*```/);
-  if (mdMatch) {
-    jsonString = mdMatch[1];
-  } else {
-    const m = source.match(/\{[\s\S]*\}/);
-    if (m) jsonString = m[0];
-  }
+  const jsonString = extractBalancedJson(source);
 
   if (jsonString) {
+    // "تنظيف الاقتباسات" السابق (`replace(/:\s*"([^"]*)"/g, …)`) كان مدمِّراً:
+    // يعيد تهريب علامات **مهرَّبة أصلاً** فيحوّل `\"` إلى `\\"` ويكسر JSON
+    // صالحاً. أُزيل بالكامل — JSON.parse وحده هو الحَكَم.
+    let p = null;
     try {
-      // Clean up numbers and common schema errors if needed
-      jsonString = jsonString.replace(/:\s*"([^"]*)"/g, (match, p1) => {
-        return `: "${p1.replace(/"/g, '\\"')}"`; // escape unescaped quotes
-      });
-      
-      const p = JSON.parse(jsonString);
+      p = JSON.parse(jsonString);
+    } catch {
+      p = null;
+    }
+    if (p) {
       if (p.copywriting && (p.copywriting.description || p.copywriting.excerpt)) {
-        const title = String(p.seo?.title || name).slice(0, 60);
-        const metaDesc = String(p.seo?.metaDescription || p.copywriting.excerpt || p.copywriting.description).slice(0, 160);
+        const title = truncateAtWord(p.seo?.title || name, 60);
+        const excerptRaw = String(p.copywriting.excerpt || p.copywriting.description || "");
+        const metaDesc = buildMetaDescription(p.seo?.metaDescription, excerptRaw);
 
         // Schema.org JSON-LD — مرجعي للتاجر فقط (سلة تولّد بنيتها بنفسها على صفحة
         // المنتج). السعر يظهر فقط إن أُدخل، ولا ادعاء توفر: لا نعرف المخزون.
@@ -260,8 +375,8 @@ function parseSeoResponse(raw, name, price) {
         return {
           seo: {
             title,
-            seoTitle: String(p.seo?.seoTitle || `${title} | اشتري الآن`).slice(0, 65),
-            slug: String(p.seo?.slug || name.replace(/\s+/g, "-")).slice(0, 60),
+            seoTitle: truncateAtWord(p.seo?.seoTitle || `${title} | اشتري الآن`, 65),
+            slug: (String(p.seo?.slug || "").trim() && fallbackSlug(p.seo.slug)) || fallbackSlug(name),
             metaDescription: metaDesc,
             focusKeyword: String(p.seo?.focusKeyword || name),
             lsiKeywords: Array.isArray(p.seo?.lsiKeywords) ? p.seo.lsiKeywords.map(String) : [],
@@ -282,44 +397,12 @@ function parseSeoResponse(raw, name, price) {
           tags: Array.isArray(p.tags) ? p.tags.map((t) => String(t).replace(/^#/, "").trim()) : []
         };
       }
-    } catch {
-      // fallback
     }
   }
 
-  // سقوط بلا اختلاق: لو رجّع النموذج نصاً غير JSON نستخدم النص كما هو، ولو لم
-  // يرجّع شيئاً فالوصف فارغ (المستدعي يعامل الفراغ كفشل توليد، لا كوصف).
-  // لا وعود جودة ولا ضمان ولا مدة توصيل — ادعاءات لم يقلها أحد (§11).
-  const plain = source.trim();
-  return {
-    seo: {
-      title: name.slice(0, 60),
-      seoTitle: name.slice(0, 65),
-      slug: name.replace(/\s+/g, "-").slice(0, 60),
-      metaDescription: plain.slice(0, 160),
-      focusKeyword: name,
-      lsiKeywords: [],
-      jsonLdSchema: {
-        "@context": "https://schema.org/",
-        "@type": "Product",
-        "name": name,
-        ...(plain ? { "description": plain.slice(0, 150) } : {}),
-        ...(price ? { "offers": { "@type": "Offer", "priceCurrency": "SAR", "price": String(price) } } : {})
-      }
-    },
-    copywriting: {
-      excerpt: plain.slice(0, 250),
-      description: plain,
-      highlights: [],
-      objectionKiller: "",
-      whatsapp: plain,
-      callToAction: ""
-    },
-    specsTable: [],
-    faqs: [],
-    imageAlt: name,
-    tags: []
-  };
+  // لا سقوط لنص خام: مخرج غير قابل للتحليل ليس وصف منتج. الرمي هو الطريقة
+  // الوحيدة التي تمنع نشره على صفحة التاجر بسلة (A4 · §١١).
+  throw new CopyParseError("model output is not parseable product-copy JSON");
 }
 
 // Core generation, no HTTP/quota concerns — used by the interactive endpoint
@@ -345,9 +428,25 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // خاطئة (رُصد "فستان" مصنَّفاً تحت "البلايز" — فسقط الكتيب كله بصمت).
   const taxonomyBlock = taxonomyForProduct({ category, name });
   const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock);
-  const visionNotes = imageUrl
+  const rawVisionNotes = imageUrl
     ? await askVisionAI({ env, imageUrl, prompt: visionPrompt }).catch(() => null)
     : null;
+
+  // A5 — النموذج الاحتياطي للرؤية (`llama-3.2-11b-vision`) **إنجليزي فقط مع
+  // الصور** ببطاقة ميتا نفسها. حين يُستخدم تعود الملاحظات بالإنجليزية، ثم كان
+  // البرومبت يُلزم الوصف العربي بـ"ذكر كل تفصيل ورد بهذي الملاحظات صراحةً" —
+  // فيقحم النموذج مصطلحات إنجليزية بوصف منتج عربي، أو يترجمها تخميناً. مخرج
+  // بلا حرف عربي واحد يُهمل بالكامل ويُسجَّل، ويُبنى الوصف من النص وحده.
+  const visionNotes = acceptArabicVisionNotes(rawVisionNotes);
+  if (rawVisionNotes && !visionNotes) {
+    logError({ env }, {
+      requestId: null,
+      path: "api/copy:vision",
+      code: "VISION_FALLBACK_DISCARDED",
+      internal: "vision notes contained no Arabic script — English fallback model output discarded",
+      storeId: merchantId
+    });
+  }
 
   const styleExamples = category
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
@@ -357,16 +456,36 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
   const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
 
-  const rawAiOutput = await askWorkersAI({
-    env,
-    system,
-    messages: [{ role: "user", content: userMsg }],
-    maxTokens: 1200,
-    model: COPY_MODEL,
-    storeId: merchantId // scopes the KV cache — two merchants selling the same product name must not share copy
-  });
+  const ask = (extraSystem, skipCache) =>
+    askWorkersAI({
+      env,
+      system: `${system}${extraSystem}`,
+      messages: [{ role: "user", content: userMsg }],
+      maxTokens: 1200,
+      model: COPY_MODEL,
+      storeId: merchantId, // scopes the KV cache — two merchants selling the same product name must not share copy
+      ttlKind: "copy",
+      skipCache
+    });
 
-  const parsed = parseSeoResponse(rawAiOutput, name, price);
+  let parsed;
+  try {
+    parsed = parseSeoResponse(await ask("", false), name, price);
+  } catch (err) {
+    if (!(err instanceof CopyParseError)) throw err;
+    // A4 — إعادة محاولة **واحدة** بتعليمة صارمة، وبتجاوز الكاش (وإلا أعاد
+    // الطبقةُ نفسَ المخرج التالف). فشلها ⇒ خطأ مصنَّف، لا وصف خام يُنشر.
+    logError({ env }, {
+      requestId: null,
+      path: "api/copy:parse",
+      code: "COPY_PARSE_RETRY",
+      internal: "first model output unparseable — retrying with JSON-only instruction",
+      storeId: merchantId
+    });
+    const strict =
+      "\n\n## تنبيه إخراج صارم\nأرجعي **JSON صالحاً فقط** يبدأ بـ{ وينتهي بـ}. بلا أي نص قبله أو بعده، بلا شرح، بلا أسوار كود (```)، بلا اعتذار.";
+    parsed = parseSeoResponse(await ask(strict, true), name, price);
+  }
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
   parsed.usedImage = Boolean(visionNotes);
   return parsed;
@@ -404,9 +523,26 @@ async function copyHandler(body, env, request) {
     };
   }
 
-  const parsed = await generateProductCopy({
-    env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, keywordsExtra: body.keywords
-  });
+  let parsed;
+  try {
+    parsed = await generateProductCopy({
+      env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, keywordsExtra: body.keywords
+    });
+  } catch (err) {
+    if (!(err instanceof CopyParseError)) throw err;
+    // فشل صريح بدل وصف خام: التاجر يعيد المحاولة، ولا يُنشر مخرج نموذج تالف.
+    logError({ env }, {
+      requestId: null,
+      path: "api/copy",
+      code: "COPY_PARSE_FAILED",
+      internal: "unparseable model output after one retry",
+      storeId: merchantId
+    });
+    return {
+      error: "تعذّر توليد وصف صالح لهذا المنتج. جرّب مرة ثانية أو أضف مزايا أوضح.",
+      code: "COPY_PARSE_FAILED"
+    };
+  }
 
   return {
     ok: true,

@@ -11,15 +11,11 @@
 //    than pretending a message was sent.
 import { withApi, json } from "../../_lib/core/respond.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
+// Q3 — تجزئة الرمز من مصدر واحد (core/auth.js) بدل نسخة بكل ملف.
+import { hashOtp } from "../../_lib/core/auth.js";
+import { logError } from "../../_lib/core/errorLog.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
-
-/** SHA-256 hex of `${email}:${otp}` — salted by email so codes aren't interchangeable. */
-async function hashOtp(email, otp) {
-  const data = new TextEncoder().encode(`${email}:${otp}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
 
 function generateOtp() {
   // Cryptographically random 6-digit code (Math.random is not acceptable for
@@ -31,7 +27,7 @@ function generateOtp() {
 
 async function forgotPasswordHandler(body, env, request) {
   const ip = clientIp(request);
-  const rateCheck = await checkRateLimit(env, ip, "forgot_password", 5, 60);
+  const rateCheck = await checkRateLimit(env, ip, "forgot_password", 5, 60, { failClosed: true });
   if (!rateCheck.allowed) {
     return json(
       { ok: false, error: `محاولات كثيرة جداً لاستعادة كلمة المرور. حاول بعد ${rateCheck.resetInSeconds} ثانية.` },
@@ -97,7 +93,14 @@ async function forgotPasswordHandler(body, env, request) {
   }
 
   if (!delivered) {
-    console.warn("[forgot_password] no delivery channel available for", email);
+    // N8 — كان console.warn يطبع البريد الحقيقي بمجرى سجلات Cloudflare (PII).
+    // التسجيل المهيكل يوثّق أن قناة التسليم غائبة بلا ذكر أي بريد أو رمز.
+    logError({ env }, {
+      requestId: null,
+      path: "/api/auth/forgot_password",
+      code: "RESET_OTP_NOT_DELIVERED",
+      internal: "no delivery channel available for a reset request"
+    });
   }
 
   return json(genericResponse);

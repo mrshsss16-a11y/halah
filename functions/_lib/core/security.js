@@ -51,6 +51,99 @@ export async function verifyTurnstileToken(env, token, clientIp = "") {
 }
 
 /**
+ * N7 — هل التحقق من Turnstile إلزامي؟
+ * لماذا: كان `if (body.turnstileToken)` يترك القرار بيد العميل — أي بوت يحذف
+ * الحقل فيتخطى الطبقة كلها. القاعدة الآن: وجود السر = التوكن إلزامي (غيابه 400)،
+ * وغياب السر = السلوك القديم (طبقة معطّلة بوضوح، لا كسر للبيئات بلا مفتاح).
+ */
+export function turnstileRequired(env) {
+  return Boolean(env?.TURNSTILE_SECRET_KEY);
+}
+
+// Q3 — مصدر واحد لصيغة البريد (كانت مكرّرة بـsignup.js وcomplete_account.js).
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// N2 — حدود جلب الصور من مصدر خارجي (SSRF + استنزاف ذاكرة).
+export const MAX_REMOTE_IMAGE_BYTES = 8 * 1024 * 1024;
+
+// مضيفات ممنوعة صراحةً: الشبكة الداخلية وخدمات الميتاداتا السحابية.
+const BLOCKED_HOST_SUFFIXES = [".local", ".internal", ".localhost"];
+const BLOCKED_HOSTS = new Set(["localhost", "metadata.google.internal", "[::1]", "::1"]);
+// IPv4 حرفي أو IPv6 بين قوسين — أي عنوان رقمي يلتف على أي قائمة سماح بالأسماء.
+const IPV4_RE = /^\d{1,3}(\.\d{1,3}){3}$/;
+
+/**
+ * N2 — بوابة إلزامية قبل أي `fetch` لعنوان يأتي من مدخل خارجي (جسم طلب، رد
+ * مزوّد، كتالوج تاجر). لماذا: `askVisionAI` و`imageProvider` كانا يجلبان أي URL
+ * كما هو، فيصير الـWorker وكيل SSRF — يقرأ عناوين داخلية أو يُستنزف بملف ضخم.
+ * fail-closed: أي شك = رمي خطأ، لا "تمرير برشاقة".
+ */
+export function assertPublicHttpsUrl(rawUrl) {
+  let url;
+  try {
+    url = new URL(String(rawUrl));
+  } catch {
+    throw new Error("عنوان الصورة غير صالح.");
+  }
+
+  // https فقط: http يسمح باعتراض/تحويل، وdata:/file:/blob: تلتف على الفحص كله.
+  if (url.protocol !== "https:") {
+    throw new Error("عنوان الصورة يجب أن يكون https.");
+  }
+
+  // بيانات اعتماد بالـURL تُسرَّب لمزوّد خارجي وتُستخدم لتجاوز محلّلات المضيف.
+  if (url.username || url.password) {
+    throw new Error("عنوان الصورة يحتوي بيانات اعتماد — مرفوض.");
+  }
+
+  const host = url.hostname.toLowerCase();
+  if (!host) throw new Error("عنوان الصورة بلا مضيف.");
+  if (BLOCKED_HOSTS.has(host)) {
+    throw new Error("عنوان الصورة يشير لمضيف داخلي — مرفوض.");
+  }
+  if (BLOCKED_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix))) {
+    throw new Error("عنوان الصورة يشير لمضيف داخلي — مرفوض.");
+  }
+  // IP حرفي (v4 أو v6): لا سبب مشروع لجلب صورة منتج من رقم مباشر، وهو المسار
+  // الأقصر لـ169.254.169.254 و10.x وrfc1918 كلها.
+  if (IPV4_RE.test(host) || host.includes(":") || url.hostname.startsWith("[")) {
+    throw new Error("عنوان الصورة يشير لعنوان IP مباشر — مرفوض.");
+  }
+
+  return url.toString();
+}
+
+/**
+ * N2 — الجلب الآمن الوحيد للصور الخارجية: يتحقق من العنوان قبل الطلب، ثم من
+ * الحجم والنوع بعد الرد. Content-Length المعلن يُرفض فوراً، والحجم الفعلي
+ * يُعاد فحصه بعد القراءة (رد بلا Content-Length لا يُعفى من الحد).
+ */
+export async function fetchExternalImage(rawUrl, { maxBytes = MAX_REMOTE_IMAGE_BYTES } = {}) {
+  const safeUrl = assertPublicHttpsUrl(rawUrl);
+  // redirect: "error" — تحويل ٣٠٢ لعنوان داخلي يلتف على الفحص أعلاه.
+  const res = await fetch(safeUrl, { redirect: "error" });
+  if (!res.ok) {
+    throw new Error(`تعذر جلب الصورة: HTTP ${res.status}`);
+  }
+
+  const declared = Number(res.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new Error("حجم الصورة أكبر من الحد المسموح (8 ميجابايت).");
+  }
+
+  const contentType = (res.headers.get("content-type") || "").toLowerCase();
+  if (!contentType.startsWith("image/")) {
+    throw new Error("المحتوى المجلوب ليس صورة.");
+  }
+
+  const buffer = await res.arrayBuffer();
+  if (buffer.byteLength > maxBytes) {
+    throw new Error("حجم الصورة أكبر من الحد المسموح (8 ميجابايت).");
+  }
+  return { buffer, contentType };
+}
+
+/**
  * Sanitizes input values to prevent XSS, HTML/Script injection, and oversized payloads.
  */
 export function sanitizeInput(input, maxLength = 2000) {

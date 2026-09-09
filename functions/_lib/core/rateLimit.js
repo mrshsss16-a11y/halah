@@ -8,8 +8,17 @@ export function clientIp(request) {
   return request.headers.get("cf-connecting-ip") || "unknown";
 }
 
-export async function checkRateLimit(env, clientIp, actionKey = "global", limit = 30, windowSeconds = 60) {
-  if (!env.HALA_CACHE) {
+// N3 — الافتراضي fail-open (قرار مدير P28: عطل KV ما يوقف كل التجار).
+// الاستثناء: مسارات المصادقة تُمرَّر `{ failClosed: true }` — هناك fail-open
+// يعني نافذة تخمين كلمات مرور/رموز OTP بلا حد، وهذا أخطر من رفض مؤقت.
+export async function checkRateLimit(env, clientIp, actionKey = "global", limit = 30, windowSeconds = 60, { failClosed = false } = {}) {
+  const denied = { allowed: false, remaining: 0, resetInSeconds: windowSeconds, degraded: true };
+
+  if (!env?.HALA_CACHE) {
+    if (failClosed) {
+      logError({ env }, { requestId: null, path: "core/rateLimit", code: "RATE_LIMIT_KV_MISSING", internal: `${actionKey}: no KV binding — failing closed` });
+      return denied;
+    }
     return { allowed: true, remaining: limit, resetInSeconds: 0 };
   }
 
@@ -48,7 +57,8 @@ export async function checkRateLimit(env, clientIp, actionKey = "global", limit 
       resetInSeconds: ttl
     };
   } catch (error) {
-    logError({ env }, { requestId: null, path: "core/rateLimit", code: "RATE_LIMIT_CHECK_FAILED", internal: `${actionKey}: ${error?.message || error} — failing open` });
+    logError({ env }, { requestId: null, path: "core/rateLimit", code: "RATE_LIMIT_CHECK_FAILED", internal: `${actionKey}: ${error?.message || error} — ${failClosed ? "failing closed" : "failing open"}` });
+    if (failClosed) return denied;
     return { allowed: true, remaining: limit, resetInSeconds: 0 };
   }
 }

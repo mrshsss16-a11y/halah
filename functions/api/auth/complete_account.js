@@ -17,8 +17,9 @@ import { hashPassword } from "../../_lib/core/auth.js";
 import { getSessionMerchantId } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { isAdminEmail } from "../../_lib/core/adminEmails.js";
+import { EMAIL_RE } from "../../_lib/core/security.js";
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Q3 — الصيغة موحّدة بـcore/security.js (كانت نسختين قابلتين للانحراف).
 
 export async function onRequestPost(context) {
   const { request, env } = context;
@@ -29,7 +30,7 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: err.message, code: err.code || "CSRF_REJECTED" }, err.status || 403);
   }
 
-  const rl = await checkRateLimit(env, clientIp(request), "complete_account", 5, 3600);
+  const rl = await checkRateLimit(env, clientIp(request), "complete_account", 5, 3600, { failClosed: true });
   if (!rl.allowed) {
     return json(
       { ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" },

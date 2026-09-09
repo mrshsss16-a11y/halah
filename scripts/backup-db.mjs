@@ -15,7 +15,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, statSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const DB_NAME = 'halah-tr-db';
@@ -61,8 +61,22 @@ if (size < 1024) {
   process.exit(1);
 }
 
+// O5: تحقق بسيط من محتوى النسخة — ملف موجود وبحجم معقول لا يعني أنه تصدير
+// SQL صالح (مثلاً خطأ مصادقة قد يكتب رسالة قصيرة نسبياً). نتحقق من وجود
+// جدول أساسي معروف وعدد أسطر معقول قبل الوثوق بالنسخة.
+const content = readFileSync(outFile, 'utf8');
+const lineCount = content.split('\n').length;
+if (!content.includes('CREATE TABLE accounts')) {
+  console.error('✖ النسخة لا تحوي "CREATE TABLE accounts" — يُرجَّح أنها فاشلة أو مبتورة. لا تعتمد عليها.');
+  process.exit(1);
+}
+if (lineCount <= 100) {
+  console.error(`✖ النسخة قصيرة بشكل مريب (${lineCount} سطر) — يُرجَّح أنها فاشلة أو مبتورة. لا تعتمد عليها.`);
+  process.exit(1);
+}
+
 const mb = (size / 1024 / 1024).toFixed(2);
-console.log(`✔ النسخة جاهزة: ${outFile} (${mb} م.ب)`);
+console.log(`✔ النسخة جاهزة: ${outFile} (${mb} م.ب، ${lineCount} سطر، تحوي accounts)`);
 
 // حذف النسخ الأقدم من آخر KEEP
 const files = readdirSync(BACKUP_DIR)

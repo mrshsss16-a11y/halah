@@ -121,14 +121,14 @@ async function auraWhatsappHandler(body, env, request, requestId, context) {
       };
     }
 
+    // N10 — كان هذا الفرع يرجّع عميلاً وهمياً ومبلغ سلة مخترعاً و"تم الإرسال
+    // بنجاح" لرسالة لم تُرسل قط (§١١ قاعدة الصدق). الميزة غير مبنية أصلاً، فالرد
+    // الصادق هو الاعتراف بذلك بدل عرض مشهد مفبرك على شاشة أدمن.
     if (featureName === "cart_recovery_sim") {
       return {
-        ok: true,
-        feature: "Salla / Zid Cart Recovery WhatsApp Trigger",
-        simulatedCustomer: "أحمد العتيبي (+966500000000)",
-        cartAmountSar: 450,
-        abandonedItems: ["عطر أورا الملكي 100ml"],
-        whatsappStatus: "تم إرسال رسالة الاسترداد بنجاح عبر الواتساب (Aura WhatsApp Agent)"
+        ok: false,
+        code: "NOT_AVAILABLE",
+        error: "استرداد السلات المتروكة غير مبني حالياً — لا توجد بيانات حقيقية لعرضها."
       };
     }
 

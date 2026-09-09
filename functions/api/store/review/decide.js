@@ -93,7 +93,13 @@ async function decideHandler(body, env, request) {
     const original = item.original_description || "";
     await updateProductBySku(env, merchantId, sku, { description: original });
     await markReverted(env, { merchantId, sku });
-    return { ok: true, sku, restoredLength: original.length, message: original ? "رجّعنا الوصف الأصلي على سلة." : "رجّعنا المنتج بلا وصف كما كان." };
+    const seoNote = "عنوان ووصف البحث اللذان أضافتهما هالة يبقيان — عدّلهما من لوحة سلة إن أردت.";
+    return {
+      ok: true,
+      sku,
+      restoredLength: original.length,
+      message: (original ? "رجّعنا الوصف الأصلي؛ " : "رجّعنا المنتج بلا وصف كما كان؛ ") + seoNote
+    };
   }
 
   throw new ApiError(400, "الإجراء غير مدعوم.", "REVIEW_INVALID", "decide: unknown action");

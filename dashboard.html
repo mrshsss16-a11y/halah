@@ -52,13 +52,17 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between relative bg-white text-black selection:bg-black selection:text-white">
 
+  <!-- شريط إشعار عام داخل الصفحة (U10) — بديل نافذة alert المتصفح التي توقف
+       كل شيء ولا تناسب سياق sandboxed iframe (متجر سلة). -->
+  <div id="globalToast" class="hidden fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-md w-[92vw] p-3.5 rounded-xl text-xs font-bold border shadow-lg flex items-start gap-2"></div>
+
   <!-- Navigation -->
   <div class="fixed top-6 left-6 right-6 z-40 flex items-center justify-between pointer-events-none">
-    <a href="/" class="pointer-events-auto flex items-center gap-2.5 bg-white border border-black px-4 py-2 rounded-full shadow-sm">
-      <div class="flex items-center justify-center w-7 h-7 rounded-full bg-black text-white font-black text-xs">أ</div>
-      <div class="flex flex-col leading-tight">
-        <span id="navStoreTitle" class="font-black text-black text-xs tracking-tight">لوحة تحكم المتجر — هالة AI OS</span>
-        <span id="navIdentityLine" class="text-[10px] text-slate-500 font-medium"></span>
+    <a href="/" class="pointer-events-auto flex items-center gap-2.5 bg-white border border-black px-4 py-2 rounded-full shadow-sm max-w-[65vw] sm:max-w-none">
+      <div class="flex items-center justify-center w-7 h-7 rounded-full bg-black text-white font-black text-xs shrink-0">أ</div>
+      <div class="flex flex-col leading-tight min-w-0">
+        <span id="navStoreTitle" class="font-black text-black text-xs tracking-tight truncate">لوحة تحكم المتجر — هالة AI OS</span>
+        <span id="navIdentityLine" class="text-[10px] text-slate-500 font-medium truncate"></span>
       </div>
     </a>
 
@@ -73,13 +77,21 @@
 
   <main class="flex-1 max-w-6xl w-full mx-auto p-6 space-y-6 pt-28">
 
+    <!-- شريط ترحيب بعد ربط سلة الناجح (U1) — لا يظهر إلا إذا جاءت الصفحة
+         مباشرة من تحويل auth/salla/callback.js (?connected=1)، ولا يبقى
+         بعد إعادة تحميل الصفحة كي لا يكذب بترحيب متكرر. -->
+    <div id="connectedBanner" class="hidden p-3.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-2">
+      <span class="material-symbols-outlined text-base">check_circle</span>
+      <span>تم ربط متجرك بسلة بنجاح — جاهزين نبدأ بوصف منتجاتك.</span>
+    </div>
+
     <!-- Header + store status -->
     <div class="sleek-card-darkborder rounded-3xl p-7 bg-white flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-sm">
       <div class="space-y-2">
         <h1 id="merchantHeroHeader" class="text-2xl md:text-3xl font-black text-black leading-tight">لوحة تحكم متجرك</h1>
         <p id="merchantHeroSub" class="text-xs text-slate-600 font-medium">وصف منتجات بالسيو · وكيل خدمة عملاء سعودي · ربط سلة</p>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex flex-wrap items-center gap-3">
         <div class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
           <span class="block text-[11px] text-slate-600 font-bold">أوصاف الشهر</span>
           <span id="kpiUsageDesc" class="skel text-lg font-black text-black">٠٠/٠٠</span>
@@ -97,16 +109,16 @@
 
     <!-- Tabs -->
     <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-      <button id="navTabStudio" onclick="switchTab('studio')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
+      <button id="navTabStudio" onclick="switchTab('studio')" class="tab-off text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
         <span class="material-symbols-outlined text-base">edit_note</span><span>وصف المنتجات</span>
       </button>
-      <button id="navTabCatalog" onclick="switchTab('catalog')" class="tab-on text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+      <button id="navTabCatalog" onclick="switchTab('catalog')" class="tab-on text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
         <span class="material-symbols-outlined text-base">inventory_2</span><span>منتجاتي</span>
       </button>
-      <button id="navTabAgent" onclick="switchTab('agent')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
+      <button id="navTabAgent" onclick="switchTab('agent')" class="tab-off text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
         <span class="material-symbols-outlined text-base">support_agent</span><span>وكيل خدمة العملاء</span>
       </button>
-      <button id="navTabStore" onclick="switchTab('store')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
+      <button id="navTabStore" onclick="switchTab('store')" class="tab-off text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
         <span class="material-symbols-outlined text-base">storefront</span><span>متجري</span>
       </button>
     </div>
@@ -402,6 +414,27 @@
         <div id="waConnError" class="hidden text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 rounded-2xl p-3"></div>
       </div>
 
+      <!-- تركيب المساعد بموقعك — يعمل فعلاً (widget.js يقرأ data-store-id) -->
+      <div class="sleek-card rounded-3xl p-6 space-y-3 shadow-sm">
+        <div class="space-y-1 border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-black text-black flex items-center gap-2">
+            <span class="material-symbols-outlined text-xl text-slate-700">widgets</span>
+            <span>تركيب المساعد بموقعك</span>
+          </h2>
+          <p class="text-xs text-slate-600 font-medium">
+            انسخ السطر التالي وألصقه قبل إغلاق <span dir="ltr">&lt;/body&gt;</span> بموقعك — يظهر ودجت
+            المحادثة فوراً لزوار موقعك.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <code id="widgetSnippet" dir="ltr" class="flex-1 block bg-slate-900 text-emerald-300 text-[11px] p-3 rounded-xl overflow-x-auto whitespace-nowrap"></code>
+          <button onclick="copyToClipboard('widgetSnippet')" class="sleek-btn-white px-3 py-2 rounded-xl text-[11px] shrink-0">نسخ</button>
+        </div>
+        <p class="text-[11px] text-slate-500 font-medium">
+          ربط واتساب التاجر بضغطة واحدة وتركيب الودجت آلياً داخل متجر سلة قريباً — يحتاجان اعتماد ميتا وتطوير إضافي.
+        </p>
+      </div>
+
       <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
         <div class="space-y-1 border-b border-slate-200 pb-4">
           <h2 class="text-lg font-black text-black">وكيل خدمة عملاء متجرك</h2>
@@ -604,7 +637,7 @@
         closeAccountModal();
         // لا نعيد المحاولة آلياً: الطلب الأصلي قد يكون رفعاً بالجملة أو نشراً،
         // وإعادته بصمت قد تُنفّذ عملية لم يقصدها التاجر الآن.
-        alert('تم إنشاء حسابك ✅ — اضغط «اكتب الوصف الآن» لتوليد الوصف.');
+        showToast('تم إنشاء حسابك ✅ — اضغط «اكتب الوصف الآن» لتوليد الوصف.', 'success');
         const gb = document.getElementById('genBtn');
         if (gb) { switchTab('studio'); gb.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
       } catch (e) {
@@ -626,7 +659,7 @@
       tabs.forEach(t => {
         const btn = document.getElementById('navTab' + t.charAt(0).toUpperCase() + t.slice(1));
         const sec = document.getElementById('section' + t.charAt(0).toUpperCase() + t.slice(1));
-        if (btn) btn.className = (t === tab ? 'tab-on' : 'tab-off') + ' text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2' + (t === tab ? ' shadow-sm' : '');
+        if (btn) btn.className = (t === tab ? 'tab-on' : 'tab-off') + ' text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2' + (t === tab ? ' shadow-sm' : '');
         if (sec) sec.classList.toggle('hidden', t !== tab);
       });
       if (tab === 'agent') { loadAgentContext(); loadWaStatus(); }
@@ -691,7 +724,7 @@
         loading.classList.add('hidden');
 
         if (!res.ok || data?.error) {
-          showMsg('catalogFeedback', data?.error || 'تعذر تحميل منتجاتك. حاول مرة ثانية.');
+          showMsg('catalogFeedback', data?.error || 'تعذر تحميل منتجاتك. حاول مرة ثانية.', 'error');
           return;
         }
 
@@ -747,7 +780,7 @@
           : 'اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.';
       } catch (err) {
         loading.classList.add('hidden');
-        showMsg('catalogFeedback', 'تعذر الاتصال. حاول مرة ثانية.');
+        showMsg('catalogFeedback', 'تعذر الاتصال. حاول مرة ثانية.', 'error');
       }
     }
 
@@ -775,6 +808,11 @@
       const badge = it.hasDescription
         ? ''
         : '<span class="absolute top-2 left-2 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-full">بلا وصف</span>';
+      // بلا SKU = خارج التوليد الجماعي فعلياً (الوظيفة تعرّف صفوفها بالـSKU) —
+      // بطاقة صادقة تقول ذلك بدل مربع اختيار غائب بلا تفسير.
+      const skuBadge = it.sku
+        ? ''
+        : '<span class="absolute top-2 right-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">بلا SKU — لا يدخل التوليد الجماعي</span>';
 
       card.innerHTML =
         `<div class="relative">
@@ -783,6 +821,7 @@
              <span class="material-symbols-outlined text-3xl text-slate-400">image_not_supported</span>
            </div>
            ${badge}
+           ${skuBadge}
          </div>
          <div class="p-2.5 space-y-1">
            <div class="text-xs font-bold text-black leading-snug truncate" title="${escHtml(it.name)}">${escHtml(it.name)}</div>
@@ -858,9 +897,9 @@
         });
         const data = await res.json().catch(() => null);
         if (!res.ok || !data?.ok) {
-          showMsg('catalogFeedback', data?.error || 'تعذر بدء التوليد. حاول مرة ثانية.');
+          showMsg('catalogFeedback', data?.error || 'تعذر بدء التوليد. حاول مرة ثانية.', 'error');
         } else {
-          showMsg('catalogFeedback', data.message || `بدأ توليد ${skus.length} وصفاً — راجعها بتبويب «وصف المنتجات» قبل النشر.`);
+          showMsg('catalogFeedback', (data.message || `بدأ توليد ${skus.length} وصفاً`) + ' — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة)، وراجعها بتبويب «وصف المنتجات» قبل النشر.', 'success');
           selectedSkus.clear();
           selectAllCatalog(false);
           renderCatalogSelection();
@@ -868,7 +907,7 @@
           switchTab('studio');
         }
       } catch (e) {
-        showMsg('catalogFeedback', 'ما قدرنا نتصل — تأكد من الإنترنت وجرّب مرة ثانية.');
+        showMsg('catalogFeedback', 'ما قدرنا نتصل — تأكد من الإنترنت وجرّب مرة ثانية.', 'error');
       }
       txt.innerText = 'ولّد أوصاف المحدد';
       renderCatalogSelection();
@@ -913,11 +952,11 @@
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data?.error) {
-          showMsg('catalogFeedback', data?.error || 'تعذر بدء السحب. حاول مرة ثانية.');
+          showMsg('catalogFeedback', data?.error || 'تعذر بدء السحب. حاول مرة ثانية.', 'error');
         } else {
           // الرسالة تجي من الخادم بناءً على نتيجة الصفحة الأولى الحقيقية
           // (عدد مسحوب فعلاً + هل بقي شيء) — لا وعد بما لم يحصل.
-          showMsg('catalogFeedback', data.message || 'تم سحب منتجات متجرك.');
+          showMsg('catalogFeedback', data.message || 'تم سحب منتجات متجرك.', 'success');
           await loadCatalog(0);
           // نجح ⇒ الزر يصير «تحديث» ويهدأ ٦٠ ثانية: الضغط المتكرر كان يصطدم
           // بحد المعدل (٣ محاولات/٥ دقائق) فيُعاقَب التاجر على فعل بدا مسموحاً.
@@ -927,7 +966,7 @@
           return;
         }
       } catch (err) {
-        showMsg('catalogFeedback', 'تعذر الاتصال. حاول مرة ثانية.');
+        showMsg('catalogFeedback', 'تعذر الاتصال. حاول مرة ثانية.', 'error');
       }
       btn.disabled = false;
       txt.innerText = 'اسحب منتجاتي من سلة';
@@ -1081,24 +1120,48 @@
       }
     }
 
-    function showMsg(id, text) {
+    let globalToastTimer = null;
+    function showToast(text, type) {
+      const el = document.getElementById('globalToast');
+      if (!el) return;
+      const base = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-md w-[92vw] p-3.5 rounded-xl text-xs font-bold border shadow-lg flex items-start gap-2';
+      const styles = {
+        error: base + ' bg-rose-50 text-rose-800 border-rose-300',
+        success: base + ' bg-emerald-50 text-emerald-800 border-emerald-300',
+        info: base + ' bg-slate-100 text-black border-black'
+      };
+      el.className = styles[type] || styles.info;
+      el.innerText = text;
+      el.classList.remove('hidden');
+      clearTimeout(globalToastTimer);
+      globalToastTimer = setTimeout(() => el.classList.add('hidden'), 6000);
+    }
+
+    function showMsg(id, text, type) {
       const el = document.getElementById(id);
       if (!el) return;
       el.classList.remove('hidden');
       el.innerText = text;
+      const base = 'p-3.5 rounded-xl text-xs font-bold border';
+      const styles = {
+        error: base + ' bg-rose-50 text-rose-800 border-rose-300',
+        success: base + ' bg-emerald-50 text-emerald-800 border-emerald-300',
+        info: base + ' bg-slate-100 text-black border-black'
+      };
+      el.className = styles[type] || styles.info;
     }
 
     async function copyToClipboard(id) {
       const el = document.getElementById(id);
       if (!el) return;
       const text = 'value' in el ? el.value : el.innerText;
-      try { await navigator.clipboard.writeText(text); showMsg('copyFeedback', 'تم النسخ ✅'); } catch (e) {}
+      try { await navigator.clipboard.writeText(text); showMsg('copyFeedback', 'تم النسخ ✅', 'success'); } catch (e) {}
     }
 
     // ── Product copy ──────────────────────────────────────────
     async function generateCopy() {
       const name = document.getElementById('pName').value.trim();
-      if (!name) { showMsg('copyFeedback', 'اكتب اسم المنتج أولاً.'); return; }
+      if (!name) { showMsg('copyFeedback', 'اكتب اسم المنتج أولاً.', 'error'); return; }
 
       const btn = document.getElementById('genBtn');
       const btnText = document.getElementById('genBtnText');
@@ -1125,7 +1188,7 @@
         // خطأ خادم بلا حقل error كان يمرّ كنجاح فيعرض مربعات فارغة بصمت.
         const emptyResult = !data || (!data.copywriting && !data.result);
         if (!res.ok || data?.error || emptyResult) {
-          showMsg('copyFeedback', data?.error || 'ما قدرنا نولّد الوصف هالمرة — جرّب تضغط «اكتب الوصف الآن» مرة ثانية.');
+          showMsg('copyFeedback', data?.error || 'ما قدرنا نولّد الوصف هالمرة — جرّب تضغط «اكتب الوصف الآن» مرة ثانية.', 'error');
         } else {
           lastCopy = data;
           renderCopy(data);
@@ -1136,7 +1199,7 @@
           loadUsage();
         }
       } catch (err) {
-        showMsg('copyFeedback', 'تعذر الاتصال. حاول مرة ثانية.');
+        showMsg('copyFeedback', 'تعذر الاتصال. حاول مرة ثانية.', 'error');
       }
 
       btn.disabled = false;
@@ -1272,7 +1335,11 @@
           })
         });
         const data = await res.json();
-        if (data?.ok) showPublishSuccess();
+        if (data?.ok) {
+          const publishedItem = Object.values(catalogItems).find(p => String(p.productId) === String(productId));
+          showPublishSuccess(data.revertAvailable, publishedItem?.sku || '');
+          markCatalogCardPublished(productId);
+        }
         else showPublishError(data?.error, data?.code);
       } catch (e) {
         showPublishError('ما قدرنا نتصل بسلة — تأكد من الإنترنت وجرّب مرة ثانية.');
@@ -1285,15 +1352,38 @@
     }
 
     /** نجاح صريح بالأخضر. لا رابط منتج: سلة لا تعطينا دومين المتجر ولا رابط
-        المنتج بأي رد نستعمله هنا — فلا نخترع رابطاً (قاعدة الصدق). */
-    function showPublishSuccess() {
+        المنتج بأي رد نستعمله هنا — فلا نخترع رابطاً (قاعدة الصدق).
+        رابط «تراجع» يظهر فقط إذا الخادم أكد revertAvailable — منتج بلا صف
+        كتالوج (رفع يدوي) لا وصف أصلياً محفوظاً له فلا نعد بتراجع لا يعمل. */
+    function showPublishSuccess(revertAvailable, sku) {
       const fb = document.getElementById('publishFeedback');
-      fb.className = 'p-3 rounded-xl text-xs font-bold bg-green-50 text-green-900 border border-green-600';
+      fb.className = 'p-3 rounded-xl text-xs font-bold bg-green-50 text-green-900 border border-green-600 space-y-1.5';
       const t = selectedCatalogProduct;
       // اسم المنتج من سلة ⇒ escHtml إلزامي (ثغرة XSS أُغلقت بهذا الملف).
       fb.innerHTML = 'تم النشر على سلة ✅' +
-        (t && t.name ? '<span class="block font-medium mt-1">حُدِّث وصف: ' + escHtml(t.name) + '</span>' : '');
+        (t && t.name ? '<span class="block font-medium">حُدِّث وصف: ' + escHtml(t.name) + '</span>' : '');
+      if (revertAvailable && sku) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'block text-[11px] font-bold text-rose-700 underline';
+        btn.innerText = 'تراجع — رجّع الأصل';
+        btn.dataset.revertSku = sku;
+        btn.onclick = () => revertReview(btn.dataset.revertSku);
+        fb.appendChild(btn);
+      }
       fb.classList.remove('hidden');
+    }
+
+    /** بعد نشر مفرد ناجح: البطاقة بـ«منتجاتي» تعكس أن للمنتج وصفاً الآن —
+        بلا انتظار إعادة تحميل الكتالوج كاملاً. */
+    function markCatalogCardPublished(productId) {
+      const it = Object.values(catalogItems).find(p => String(p.productId) === String(productId));
+      if (!it) return;
+      it.hasDescription = true;
+      const key = it.sku || ('pid_' + it.productId);
+      const card = document.querySelector('#catalogGrid [data-sku="' + CSS.escape(key) + '"]');
+      const badge = card && card.querySelector('.absolute.top-2.left-2');
+      if (badge) badge.remove();
     }
 
     // رسالة الفشل يجب أن تُقرأ كخطأ (لا كإشعار محايد)، وتقول الخطوة التالية،
@@ -1332,7 +1422,7 @@
 
     async function startBulkJob() {
       const rows = parseBulkRows(document.getElementById('bulkRows').value);
-      if (!rows.length) { showMsg('bulkFeedback', 'أدخل صف واحد على الأقل بصيغة اسم,سعر,فئة,SKU.'); return; }
+      if (!rows.length) { showMsg('bulkFeedback', 'أدخل صف واحد على الأقل بصيغة اسم,سعر,فئة,SKU.', 'error'); return; }
 
       const btn = document.getElementById('bulkBtn');
       btn.disabled = true;
@@ -1346,15 +1436,15 @@
         });
         const data = await res.json();
         if (!data?.ok) {
-          showMsg('bulkFeedback', data?.error || 'تعذر بدء المعالجة.');
+          showMsg('bulkFeedback', data?.error || 'تعذر بدء المعالجة.', 'error');
           btn.disabled = false;
           return;
         }
-        showMsg('bulkFeedback', `تم استلام ${data.queued} منتج — تقدير الوقت ${data.etaMinutes} دقيقة.`);
+        showMsg('bulkFeedback', `تم استلام ${data.queued} منتج — تقدير الوقت ${data.etaMinutes} دقيقة.`, 'success');
         document.getElementById('bulkProgress').classList.remove('hidden');
         pollBulkJob(data.jobId);
       } catch (e) {
-        showMsg('bulkFeedback', 'تعذر الاتصال.');
+        showMsg('bulkFeedback', 'تعذر الاتصال.', 'error');
         btn.disabled = false;
       }
     }
@@ -1414,11 +1504,11 @@
           body: JSON.stringify({ tone: document.getElementById('bulkTone').value })
         });
         const data = await res.json();
-        if (!data?.ok) { showMsg('bulkFeedback', data?.error || 'تعذر بدء التوليد.'); btn.disabled = false; return; }
-        showMsg('bulkFeedback', data.message + (data.upgradeHint ? ' ' + data.upgradeHint : '') + ` (تقدير: ~${data.etaMinutes} دقيقة)`);
+        if (!data?.ok) { showMsg('bulkFeedback', data?.error || 'تعذر بدء التوليد.', 'error'); btn.disabled = false; return; }
+        showMsg('bulkFeedback', data.message + (data.upgradeHint ? ' ' + data.upgradeHint : '') + ` — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة، تقدير الإكمال: ~${data.etaMinutes} دقيقة).`, 'info');
         document.getElementById('bulkProgress').classList.remove('hidden');
         pollBulkJob(data.jobId);
-      } catch (e) { showMsg('bulkFeedback', 'تعذر الاتصال.'); }
+      } catch (e) { showMsg('bulkFeedback', 'تعذر الاتصال.', 'error'); }
       btn.disabled = false;
     }
 
@@ -1488,7 +1578,7 @@
         }
         if (reviewState === 'published') {
           body += `<div class="flex gap-2 items-center"><span class="text-[11px] text-slate-500">نُشر ${escHtml((r.publishedAt || '').slice(0, 16))}</span>
-            <button onclick="revertReview('${escHtml(r.sku || '')}')" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px] text-rose-700">تراجع — رجّع الأصل</button></div>`;
+            <button data-revert-sku="${escHtml(r.sku || '')}" onclick="revertReview(this.dataset.revertSku)" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px] text-rose-700">تراجع — رجّع الأصل</button></div>`;
         }
         if (reviewState === 'rejected' && r.reviewNote) body += `<div class="text-[11px] text-slate-500">السبب: ${escHtml(r.reviewNote)}</div>`;
       }
@@ -1515,12 +1605,12 @@
         });
         const data = await res.json();
         loading.classList.add('hidden');
-        if (!data?.ok) { showMsg('reviewFeedback', data?.error || 'تعذر التحميل.'); return; }
+        if (!data?.ok) { showMsg('reviewFeedback', data?.error || 'تعذر التحميل.', 'error'); return; }
         setReviewCounts(data.counts);
         reviewRows = data.rows || [];
         if (!reviewRows.length) { empty.classList.remove('hidden'); return; }
         reviewRows.forEach(r => list.appendChild(reviewCard(r)));
-      } catch (e) { loading.classList.add('hidden'); showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+      } catch (e) { loading.classList.add('hidden'); showMsg('reviewFeedback', 'تعذر الاتصال.', 'error'); }
     }
 
     function selectedReviewIds() {
@@ -1539,20 +1629,20 @@
       const payload = { action };
       if (action !== 'approve_all') {
         payload.ids = selectedReviewIds();
-        if (!payload.ids.length) { showMsg('reviewFeedback', 'حدّد عنصراً واحداً على الأقل.'); return; }
+        if (!payload.ids.length) { showMsg('reviewFeedback', 'حدّد عنصراً واحداً على الأقل.', 'error'); return; }
       }
       try {
         const data = await postDecide(payload);
-        if (!data?.ok) { showMsg('reviewFeedback', data?.error || 'تعذر التنفيذ.'); return; }
+        if (!data?.ok) { showMsg('reviewFeedback', data?.error || 'تعذر التنفيذ.', 'error'); return; }
         const n = data.approved ?? data.rejected ?? 0;
         const failedNote = (data.failed || []).length ? ` (${data.failed.length} ما انطبق عليه)` : '';
         showMsg('reviewFeedback', action === 'reject'
           ? `رُفض ${n}${failedNote}.`
-          : `اعتُمد ${n}${failedNote} — يُنشر على سلة تدريجياً خلال دقائق، تابع تبويب «معتمد بانتظار النشر».`);
+          : `اعتُمد ${n}${failedNote} — يُنشر على سلة تدريجياً خلال دقائق، تابع تبويب «معتمد بانتظار النشر».`, 'success');
         if (action !== 'reject') maybeShowFeedback();
         setReviewCounts(data.counts);
         loadReview('pending');
-      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.', 'error'); }
     }
 
     async function saveReviewEdit(id) {
@@ -1560,25 +1650,25 @@
       if (!ta) return;
       try {
         const data = await postDecide({ action: 'update', id, description: ta.value });
-        showMsg('reviewFeedback', data?.ok ? 'حُفظ تعديلك — اللي يُنشر هو النص المكتوب هنا بالضبط.' : (data?.error || 'تعذر الحفظ.'));
-      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+        showMsg('reviewFeedback', data?.ok ? 'حُفظ تعديلك — اللي يُنشر هو النص المكتوب هنا بالضبط.' : (data?.error || 'تعذر الحفظ.'), data?.ok ? 'success' : 'error');
+      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.', 'error'); }
     }
 
     async function retryReview(id) {
       try {
         const data = await postDecide({ action: 'retry', id });
-        showMsg('reviewFeedback', data?.ok ? data.message : (data?.error || 'تعذر.'));
+        showMsg('reviewFeedback', data?.ok ? data.message : (data?.error || 'تعذر.'), data?.ok ? 'success' : 'error');
         loadReview('publish_failed');
-      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.', 'error'); }
     }
 
     async function revertReview(sku) {
       if (!confirm('نرجّع الوصف الأصلي لهذا المنتج على سلة؟')) return;
       try {
         const data = await postDecide({ action: 'revert', sku });
-        showMsg('reviewFeedback', data?.ok ? data.message : (data?.error || 'تعذر التراجع.'));
+        showMsg('reviewFeedback', data?.ok ? data.message : (data?.error || 'تعذر التراجع.'), 'error');
         loadReview('published');
-      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.'); }
+      } catch (e) { showMsg('reviewFeedback', 'تعذر الاتصال.', 'error'); }
     }
 
     // ── تغذية راجعة (المرحلة ٤) ────────────────────────────────
@@ -1624,11 +1714,11 @@
       try {
         const res = await fetch('/api/store/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json().catch(() => null);
-        if (!res.ok) { showMsg('agentFeedback', 'ما قدرنا نجيب إعداداتك المحفوظة — لا تحفظ شي الحين لين يرجع الاتصال، عشان ما تكتب فوق تعليماتك الأصلية.'); return; }
+        if (!res.ok) { showMsg('agentFeedback', 'ما قدرنا نجيب إعداداتك المحفوظة — لا تحفظ شي الحين لين يرجع الاتصال، عشان ما تكتب فوق تعليماتك الأصلية.', 'error'); return; }
         if (data?.dialect) document.getElementById('agentDialect').value = data.dialect;
         if (data?.instructions) document.getElementById('agentInstructions').value = data.instructions;
       } catch (e) {
-        showMsg('agentFeedback', 'ما قدرنا نجيب إعداداتك المحفوظة — لا تحفظ شي الحين لين يرجع الاتصال، عشان ما تكتب فوق تعليماتك الأصلية.');
+        showMsg('agentFeedback', 'ما قدرنا نجيب إعداداتك المحفوظة — لا تحفظ شي الحين لين يرجع الاتصال، عشان ما تكتب فوق تعليماتك الأصلية.', 'error');
       }
     }
 
@@ -1645,12 +1735,12 @@
         const data = await res.json().catch(() => null);
         // خطأ خادم بلا حقل error كان يُعرض "تم الحفظ ✅" — نجاح كاذب.
         if (!res.ok || data?.error) {
-          showMsg('agentFeedback', data?.error || 'ما قدرنا نحفظ التعليمات — تأكد من الإنترنت وحاول مرة ثانية. تعليماتك القديمة لسه فعّالة.');
+          showMsg('agentFeedback', data?.error || 'ما قدرنا نحفظ التعليمات — تأكد من الإنترنت وحاول مرة ثانية. تعليماتك القديمة لسه فعّالة.', 'error');
         } else {
-          showMsg('agentFeedback', 'تم الحفظ والتطبيق ✅');
+          showMsg('agentFeedback', 'تم الحفظ والتطبيق ✅', 'success');
         }
       } catch (e) {
-        showMsg('agentFeedback', 'ما قدرنا نحفظ التعليمات — تأكد من الإنترنت وحاول مرة ثانية. تعليماتك القديمة لسه فعّالة.');
+        showMsg('agentFeedback', 'ما قدرنا نحفظ التعليمات — تأكد من الإنترنت وحاول مرة ثانية. تعليماتك القديمة لسه فعّالة.', 'error');
       }
     }
 
@@ -1838,7 +1928,7 @@
           // login.html refuses to be framed by design. Exit the embedded view
           // instead of leaving the merchant on a stuck loading screen —
           // لكن بكلمة أولاً: إغلاق صامت = "التطبيق خرب" في نظر التاجر.
-          alert('ما قدرنا نفتح لوحتك من داخل سلة. أعد تحميل الصفحة، وإذا تكرر افتحها مباشرة من hala-ai-os.pages.dev');
+          showToast('ما قدرنا نفتح لوحتك من داخل سلة. أعد تحميل الصفحة، وإذا تكرر افتحها مباشرة من hala-ai-os.pages.dev', 'error');
           window.salla?.embedded?.destroy?.();
           return;
         }
@@ -1859,8 +1949,21 @@
         document.getElementById('merchantHeroHeader').innerText = storeLabel;
         window.__accountEmail = data?.email || '';
         renderIdentityLine();
+        const snippetEl = document.getElementById('widgetSnippet');
+        if (snippetEl && data?.storeId) {
+          snippetEl.innerText = '<script src="https://hala-ai-os.pages.dev/widget.js" data-store-id="' + data.storeId + '"><' + '/script>';
+        }
         if (data?.isAdmin) document.getElementById('adminPortalBtn').classList.remove('hidden');
       } catch (e) {}
+
+      // U1: تحويل نظيف بعد نجاح الربط من auth/salla/callback.js — شريط ترحيب
+      // صادق (متجرك مربوط فعلاً وقتها لأن الجلسة نفسها أُنشئت بعد نجاح
+      // saveTokens بالخادم)، ونزيل ?connected=1 من الرابط كي لا يبقى الشريط
+      // ظاهراً بعد أي تحديث لاحق للصفحة.
+      if (new URLSearchParams(location.search).get('connected') === '1') {
+        document.getElementById('connectedBanner')?.classList.remove('hidden');
+        history.replaceState(null, '', location.pathname);
+      }
       loadUsage();
       loadStore();
       // «منتجاتي» هو التبويب الافتراضي — بلا تحميل هنا يفتح قسماً فاضياً بلا

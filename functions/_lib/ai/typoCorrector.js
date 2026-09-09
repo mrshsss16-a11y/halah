@@ -27,13 +27,19 @@ const SAUDI_COMMERCE_TYPOS = new Map([
   ["واتسس", "واتساب"]
 ]);
 
-const OUTPUT_TYPO_FIXES = new Map([
-  ["لاعدك", "لأساعدك"],
-  ["لاساعدك", "لأساعدك"],
-  ["لخدمدك", "لخدمتك"],
-  ["لاختيارر", "لاختيار"],
-  ["تحتاجين", "تحتاج"]
-]);
+// A3 — `cleanOutputReply` حُذفت، والقرار موثّق هنا لأنه قرار "احذف" لا "أصلح":
+//
+//   ١. **ميتة**: صفر مستدعين بالمستودع كله؛ لا رد عميل مرّ عليها يوماً.
+//   ٢. **لا تعمل أصلاً**: كانت تبني `new RegExp("\\b" + كلمة عربية + "\\b")`،
+//      و`\b` بجافاسكربت مبني على `\w` = [A-Za-z0-9_]. الحرف العربي ليس منها،
+//      فالنمط لا يطابق شيئاً. `/\bلاعدك\b/.test("انا لاعدك")` ⇒ false.
+//   ٣. **ضارة لو فُعّلت**: أحد مدخلاتها كان "تحتاجين" ⇒ "تحتاج" — أي تحويل
+//      مخاطبة عميلة إلى مذكر بكل رد.
+//
+// إحياؤها كان يعني كتابة تطبيع عربي جديد بالكامل ثم تشغيله على ردود عملاء
+// حقيقية بلا دليل على وجود المشكلة التي يعالجها. البديل المعتمد: قواعد
+// الإملاء داخل `WHITE_DIALECT_RULES` بـpersona.js (تعمل على مستوى البرومبت).
+// مسار **المدخلات** (`cleanInputMessage`) حي ومستخدَم بـintents.js ويبقى.
 
 /**
  * Removes character flooding/repetition (e.g. "سلاااام" -> "سلام", "بكممم" -> "بكم")
@@ -65,18 +71,6 @@ export function correctSaudiCommerceTypos(text) {
   const words = text.split(" ");
   const correctedWords = words.map((w) => SAUDI_COMMERCE_TYPOS.get(w) || w);
   return correctedWords.join(" ");
-}
-
-/**
- * Auto-corrects common LLM output typos (< 1ms post-processor).
- */
-export function cleanOutputReply(replyText) {
-  if (!replyText || typeof replyText !== "string") return "";
-  let cleaned = replyText;
-  OUTPUT_TYPO_FIXES.forEach((correctWord, typoWord) => {
-    cleaned = cleaned.replace(new RegExp(`\\b${typoWord}\\b`, "g"), correctWord);
-  });
-  return cleaned;
 }
 
 /**

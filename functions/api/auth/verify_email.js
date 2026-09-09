@@ -11,7 +11,7 @@ import { hashVerificationCode } from "./send_verification.js";
 const MAX_ATTEMPTS = 5;
 
 async function verifyEmailHandler(body, env, request) {
-  const rl = await checkRateLimit(env, clientIp(request), "verify_email", 10, 60);
+  const rl = await checkRateLimit(env, clientIp(request), "verify_email", 10, 60, { failClosed: true });
   if (!rl.allowed) {
     return json({ ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" }, 429);
   }

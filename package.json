@@ -8,7 +8,7 @@
     "stage": "node scripts/stage.mjs",
     "build": "node scripts/stage.mjs",
     "dev": "node scripts/stage.mjs && wrangler pages dev dist",
-    "test": "node tests/api.test.mjs && node scripts/audit-isolation.mjs && node scripts/audit-security.mjs",
+    "test": "node tests/api.test.mjs && node scripts/audit-isolation.mjs && node scripts/audit-security.mjs && node tests/ops-wave.test.mjs && node tests/security-wave.test.mjs && node tests/ux-wave.test.mjs && node tests/ai-wave.test.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
     "backup": "node scripts/backup-db.mjs",
     "smoke": "node scripts/smoke-test.mjs",

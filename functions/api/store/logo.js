@@ -3,14 +3,19 @@
 // returns the current saved logo (so a save-then-load round trip is one call).
 import { withApi } from "../../_lib/core/respond.js";
 import { getStoreLogo, saveStoreLogo } from "../../_lib/core/db.js";
-import { resolveStoreId } from "../../_lib/core/session.js";
+import { resolveStoreId, requireCompletedAccount } from "../../_lib/core/session.js";
 
 const MAX_LOGO_BYTES = 500_000; // data URL length cap — small watermark, not a full asset
 
 async function logoHandler(body, env, request) {
-  // store-gate-ok: الشعار قراءة عامة لودجت المتجر — بلا كتابة ولا AI
-  const merchantId = await resolveStoreId(request, env, body.storeId);
+  // N5 — التعليق القديم قال "بلا كتابة" بينما الدالة تحفظ فعلاً: أي معرّف m_
+  // مسرّب كان يكفي لاستبدال شعار متجر (يظهر على صور منتجاته). الكتابة الآن
+  // خلف حساب مكتمل، والقراءة تبقى على نفس البوابة القديمة.
   const incoming = (body.logoDataUrl || "").toString();
+  const merchantId = incoming
+    ? await requireCompletedAccount(request, env, body.storeId)
+    // store-gate-ok: قراءة الشعار فقط لودجت المتجر — بلا كتابة ولا AI
+    : await resolveStoreId(request, env, body.storeId);
 
   if (incoming) {
     if (!/^data:image\/(png|webp|jpeg);base64,/.test(incoming)) {

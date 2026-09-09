@@ -213,6 +213,15 @@ export async function onRequestPost(context) {
   const event = payload.event || "unknown";
 
   if (!signatureOk) {
+    // Q2 — توقيع مرفوض كان يمر بلا أي أثر بسجل الأخطاء: سر ويبهوك خاطئ بعد
+    // تدوير، أو محاولة تزوير، يبدوان متطابقين ولا يظهران بصفحة أخطاء الأدمن.
+    // الجسم لا يُسجَّل إطلاقاً (قد يحمل بيانات عميل) — اسم الحدث فقط.
+    logError(context, {
+      requestId: null,
+      path: "webhooks/salla",
+      code: "WEBHOOK_SIGNATURE_REJECTED",
+      internal: `event=${String(event).slice(0, 60)}`
+    });
     context.waitUntil(
       logWebhook(env, { platform: "salla", event, merchantId: null, payload: { rejected: true }, signatureOk: false }).catch(() => {})
     );

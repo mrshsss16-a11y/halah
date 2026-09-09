@@ -25,7 +25,7 @@ function generateCode() {
 }
 
 async function sendVerificationHandler(body, env, request, requestId, context) {
-  const rl = await checkRateLimit(env, clientIp(request), "send_verification", 3, 600);
+  const rl = await checkRateLimit(env, clientIp(request), "send_verification", 3, 600, { failClosed: true });
   if (!rl.allowed) {
     return json({ ok: false, error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" }, 429);
   }
