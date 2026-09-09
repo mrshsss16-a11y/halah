@@ -120,8 +120,17 @@ export function assertPublicHttpsUrl(rawUrl) {
  */
 export async function fetchExternalImage(rawUrl, { maxBytes = MAX_REMOTE_IMAGE_BYTES } = {}) {
   const safeUrl = assertPublicHttpsUrl(rawUrl);
-  // redirect: "error" — تحويل ٣٠٢ لعنوان داخلي يلتف على الفحص أعلاه.
-  const res = await fetch(safeUrl, { redirect: "error" });
+  // تحويل ٣٠٢ لعنوان داخلي يلتف على الفحص أعلاه، فالتحويل يُرفض — لكن
+  // **لا يُطلب بـ`redirect: "error"`**: Cloudflare Workers لا تنفّذه إطلاقاً
+  // وترمي فوراً قبل أي طلب شبكة ("won't be implemented since it does not make
+  // sense at the edge; use manual and check the response status code").
+  // النتيجة أن كل جلب صورة كان يفشل ١٠٠٪ من المرات منذ أُضيف الحارس، فما
+  // اشتغل تحليل الصور ولا مرة، والنموذج كتب أوصافاً بلا أن يرى المنتج
+  // (رُصد على متجر حي 2026-09-09). "manual" + رفض 3xx صريح يحقق نفس الحماية.
+  const res = await fetch(safeUrl, { redirect: "manual" });
+  if (res.status >= 300 && res.status < 400) {
+    throw new Error("عنوان الصورة يعيد التوجيه — مرفوض (قد يلتف على فحص المضيف).");
+  }
   if (!res.ok) {
     throw new Error(`تعذر جلب الصورة: HTTP ${res.status}`);
   }

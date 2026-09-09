@@ -189,3 +189,36 @@ main()
     console.error(e);
     process.exit(1);
   });
+
+  // ── N2-fix — جلب الصورة كان يفشل ١٠٠٪ بلا أن يراه أحد (2026-09-09) ──
+  {
+    const { fetchExternalImage } = await import("../../functions/_lib/core/security.js");
+    const realFetch = globalThis.fetch;
+    const seen = [];
+    try {
+      // Workers لا تنفّذ redirect:"error" وترمي قبل أي طلب — فلا يُطلب أبداً.
+      globalThis.fetch = async (u, init) => {
+        seen.push(init?.redirect);
+        if (init?.redirect === "error") throw new Error("Invalid redirect value, must be one of \"follow\" or \"manual\"");
+        return new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { "content-type": "image/jpeg" } });
+      };
+      const out = await fetchExternalImage("https://cdn.example.com/a.jpg");
+      assert(
+        seen[0] === "manual" && out.buffer.byteLength === 3,
+        `N2-1: الجلب يستخدم redirect:"manual" لا "error" (المستخدم: ${seen[0]})`
+      );
+
+      // الحماية الأصلية باقية: تحويل ٣xx يُرفض صراحةً.
+      globalThis.fetch = async () => new Response("", { status: 302, headers: { location: "http://169.254.169.254/" } });
+      let blocked = false;
+      try { await fetchExternalImage("https://cdn.example.com/b.jpg"); } catch { blocked = true; }
+      assert(blocked, "N2-2: التحويل ٣xx ما زال مرفوضاً — لا التفاف على فحص المضيف");
+
+      // ومضيف داخلي يبقى مرفوضاً قبل أي طلب.
+      let host = false;
+      try { await fetchExternalImage("https://169.254.169.254/x.jpg"); } catch { host = true; }
+      assert(host, "N2-3: IP مباشر مرفوض قبل الطلب");
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
