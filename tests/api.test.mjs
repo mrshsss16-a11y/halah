@@ -2910,7 +2910,7 @@ async function runTests() {
       "UNLINK-8: هجرة 0025 تضيف salla_disconnected_at"
     );
     assert(
-      /فك الربط وحذف البيانات/.test(dash) && /\/data-deletion\.html/.test(dash) && /\/privacy\.html/.test(dash),
+      /فك الربط وحذف البيانات/.test(dash) && /href="\/data-deletion"/.test(dash) && /href="\/privacy"/.test(dash),
       "UNLINK-9: الداشبورد يعرض فك الربط وحذف البيانات وسياسة الخصوصية"
     );
 
