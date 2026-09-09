@@ -11,7 +11,8 @@
 // وlistCatalog تشترط merchant_id بكل استعلام. لا نثق بأي معرّف مرسَل.
 import { withApi } from "../../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../../_lib/core/session.js";
-import { listCatalog, countCatalog } from "../../../_lib/services/catalog.js";
+import { getActiveJobByKind } from "../../../_lib/core/db.js";
+import { listCatalog, countCatalog, getCatalogSyncState } from "../../../_lib/services/catalog.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
 
 const PAGE_LIMIT = 24;
@@ -25,6 +26,15 @@ async function catalogListHandler(body, env, request) {
   }
 
   const merchantId = await requireCompletedAccount(request, env, body.storeId);
+
+  // الواجهة تحتاج تفرّق بين ثلاث حالات فارغة، كلها كانت نصاً واحداً:
+  //   syncing ⇒ سحب شغّال (تلقائي عند الربط أو من الزر) — "انتظر" لا "اضغط".
+  //   synced  ⇒ سُحب فعلاً ولم يُحفظ شيء — "متجرك بلا منتجات/SKU" لا "لم تضغط".
+  // مصدرهما الحقيقي: وظيفة سحب جارية، وختم آخر سحب على التاجر.
+  const [activeSync, syncState] = await Promise.all([
+    getActiveJobByKind(env, merchantId, "catalog_sync").catch(() => null),
+    getCatalogSyncState(env, { merchantId })
+  ]);
 
   const limit = Math.min(MAX_LIMIT, Math.max(1, Math.floor(Number(body.limit) || PAGE_LIMIT)));
   const offset = Math.max(0, Math.floor(Number(body.offset) || 0));
@@ -55,7 +65,9 @@ async function catalogListHandler(body, env, request) {
     hasMore,
     nextOffset: hasMore ? offset + limit : null,
     // العدد الكلي للكتالوج (بلا فلترة فئة) — تُظهره الواجهة بصدق.
-    total: await countCatalog(env, { merchantId })
+    total: await countCatalog(env, { merchantId }),
+    syncing: Boolean(activeSync),
+    synced: Boolean(syncState.syncedAt)
   };
 }
 

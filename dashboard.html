@@ -56,7 +56,10 @@
   <div class="fixed top-6 left-6 right-6 z-40 flex items-center justify-between pointer-events-none">
     <a href="/" class="pointer-events-auto flex items-center gap-2.5 bg-white border border-black px-4 py-2 rounded-full shadow-sm">
       <div class="flex items-center justify-center w-7 h-7 rounded-full bg-black text-white font-black text-xs">أ</div>
-      <span id="navStoreTitle" class="font-black text-black text-xs tracking-tight">لوحة تحكم المتجر — هالة AI OS</span>
+      <div class="flex flex-col leading-tight">
+        <span id="navStoreTitle" class="font-black text-black text-xs tracking-tight">لوحة تحكم المتجر — هالة AI OS</span>
+        <span id="navIdentityLine" class="text-[10px] text-slate-500 font-medium"></span>
+      </div>
     </a>
 
     <div class="pointer-events-auto flex items-center gap-2">
@@ -94,10 +97,10 @@
 
     <!-- Tabs -->
     <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
-      <button id="navTabStudio" onclick="switchTab('studio')" class="tab-on text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+      <button id="navTabStudio" onclick="switchTab('studio')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
         <span class="material-symbols-outlined text-base">edit_note</span><span>وصف المنتجات</span>
       </button>
-      <button id="navTabCatalog" onclick="switchTab('catalog')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
+      <button id="navTabCatalog" onclick="switchTab('catalog')" class="tab-on text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
         <span class="material-symbols-outlined text-base">inventory_2</span><span>منتجاتي</span>
       </button>
       <button id="navTabAgent" onclick="switchTab('agent')" class="tab-off text-xs font-bold px-4.5 py-2.5 rounded-xl transition flex items-center gap-2">
@@ -111,7 +114,7 @@
     <!-- ── 0. My products (Salla catalog) ──────────────────────
          جوهر المنتج: التاجر يشوف منتجاته الحقيقية ويضغط واحداً، فتتعبّى حقول
          الاستوديو من سلة ويبدأ التوليد فوراً — صفر كتابة أو لصق يدوي. -->
-    <section id="sectionCatalog" class="hidden space-y-5">
+    <section id="sectionCatalog" class="space-y-5">
       <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
           <div class="space-y-1">
@@ -129,9 +132,9 @@
         <div id="catalogLoading" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري تحميل منتجاتك…</div>
 
         <div id="catalogEmpty" class="hidden text-center py-10 space-y-2">
-          <span class="material-symbols-outlined text-4xl text-slate-300">inventory_2</span>
-          <p class="text-xs text-slate-600 font-bold">ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"</p>
-          <p class="text-[11px] text-slate-500">تظهر أول دفعة منتجات فوراً، وإن كان متجرك كبير يوصل الباقي خلال دقائق.</p>
+          <span id="catalogEmptyIcon" class="material-symbols-outlined text-4xl text-slate-300">inventory_2</span>
+          <p id="catalogEmptyTitle" class="text-xs text-slate-600 font-bold">ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"</p>
+          <p id="catalogEmptyHint" class="text-[11px] text-slate-500">تظهر أول دفعة منتجات فوراً، وإن كان متجرك كبير يوصل الباقي خلال دقائق.</p>
         </div>
 
         <div id="catalogGrid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
@@ -141,7 +144,7 @@
     </section>
 
     <!-- ── 1. Product copy studio ─────────────────────────────── -->
-    <section id="sectionStudio" class="space-y-5">
+    <section id="sectionStudio" class="hidden space-y-5">
       <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
         <div class="space-y-1 border-b border-slate-200 pb-4">
           <h2 class="text-lg font-black text-black">وصف منتج مثالي — سيو السوق السعودي</h2>
@@ -193,6 +196,7 @@
         <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
           <div class="flex items-center justify-between border-b border-slate-200 pb-3">
             <h3 class="text-sm font-black text-black">راجع الوصف — عدّله إن حبيت، ثم اعتمد</h3>
+            <span id="copyNoImageNote" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">بلا صورة — الوصف مبني على الاسم والوصف الحالي فقط</span>
             <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
           </div>
           <div class="space-y-1.5">
@@ -587,7 +591,9 @@
         closeAccountModal();
         // لا نعيد المحاولة آلياً: الطلب الأصلي قد يكون رفعاً بالجملة أو نشراً،
         // وإعادته بصمت قد تُنفّذ عملية لم يقصدها التاجر الآن.
-        alert('تم إنشاء حسابك. أعد الضغط على الزر اللي كنت تحاول تستخدمه.');
+        alert('تم إنشاء حسابك ✅ — اضغط «اكتب الوصف الآن» لتوليد الوصف.');
+        const gb = document.getElementById('genBtn');
+        if (gb) { switchTab('studio'); gb.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
       } catch (e) {
         err.innerText = 'تعذر الاتصال. حاول مرة ثانية.';
         err.classList.remove('hidden');
@@ -627,6 +633,27 @@
     let selectedCatalogProduct = null;
     let catalogNextOffset = 0;
     let catalogLoadedOnce = false;
+    let lastCatalogTotal = 0;
+    let catalogRefreshTimer = null;
+
+    // تحديث ذاتي أثناء سحب بالخلفية: كل ٢٠ ثانية، ويتوقف لما يخلص السحب.
+    function scheduleCatalogRefresh() {
+      if (catalogRefreshTimer) return;
+      catalogRefreshTimer = setTimeout(async () => {
+        catalogRefreshTimer = null;
+        await loadCatalog(0);
+      }, 20000);
+    }
+
+    // زر الجملة بلا منتجات مسحوبة = وعد يفشل بأول ضغطة.
+    function setBulkGenerateEnabled(on) {
+      const b = document.getElementById('bulkGenerateBtn');
+      if (!b) return;
+      b.disabled = !on;
+      b.title = on ? '' : 'اسحب منتجاتك من سلة أولاً';
+      b.classList.toggle('opacity-50', !on);
+      b.classList.toggle('cursor-not-allowed', !on);
+    }
 
     async function loadCatalog(offset = 0) {
       const grid = document.getElementById('catalogGrid');
@@ -652,13 +679,44 @@
 
         catalogLoadedOnce = true;
         const items = data.items || [];
-        items.forEach(it => { catalogItems[it.sku] = it; grid.appendChild(catalogCard(it)); });
+        // مفتاح البطاقة: SKU وإلا معرّف سلة — صفّان بلا SKU كانا يدهس أحدهما الآخر.
+        items.forEach(it => { catalogItems[it.sku || ('pid_' + it.productId)] = it; grid.appendChild(catalogCard(it)); });
 
         const count = Object.keys(catalogItems).length;
         grid.classList.toggle('hidden', count === 0);
-        empty.classList.toggle('hidden', count !== 0);
         catalogNextOffset = data.nextOffset || 0;
         moreBtn.classList.toggle('hidden', !data.hasMore);
+        lastCatalogTotal = Number(data.total || 0);
+        setBulkGenerateEnabled(lastCatalogTotal > 0);
+        renderIdentityLine();
+
+        // الحالة الفارغة تقول الحقيقة بدل نص واحد لثلاث حالات مختلفة:
+        //   syncing  ⇒ سحب شغّال بالخلفية (تلقائي عند الربط أو من الزر)
+        //   synced   ⇒ سُحب ولم يُعثر على شيء (أو كل المنتجات بلا SKU)
+        //   غير ذلك ⇒ لم يبدأ سحب بعد
+        if (count === 0) {
+          const title = document.getElementById('catalogEmptyTitle');
+          const hint = document.getElementById('catalogEmptyHint');
+          const icon = document.getElementById('catalogEmptyIcon');
+          if (data.syncing) {
+            icon.innerText = 'sync';
+            title.innerText = 'جاري سحب منتجاتك من سلة…';
+            hint.innerText = 'أول دفعة توصل خلال ثوانٍ. الصفحة تتحدّث لحالها.';
+            scheduleCatalogRefresh();
+          } else if (data.synced) {
+            icon.innerText = 'inventory_2';
+            title.innerText = 'متجرك مربوط، لكن ما لقينا منتجات نقدر نحفظها.';
+            hint.innerText = 'تأكد أن منتجاتك منشورة بسلة ولها رموز SKU، ثم اضغط «اسحب منتجاتي».';
+          } else {
+            icon.innerText = 'inventory_2';
+            title.innerText = 'ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"';
+            hint.innerText = 'تظهر أول دفعة منتجات فوراً، وإن كان متجرك كبير يوصل الباقي خلال دقائق.';
+          }
+        }
+        empty.classList.toggle('hidden', count !== 0);
+
+        // بقية الصفحات تصل بالخلفية — العدّاد يتحدّث بدل رقم جامد "خلال دقائق".
+        if (data.syncing && count > 0) scheduleCatalogRefresh();
 
         document.getElementById('catalogCountLine').innerText = count
           ? `${count} من ${data.total} منتج — اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.`
@@ -748,7 +806,12 @@
           // الرسالة تجي من الخادم بناءً على نتيجة الصفحة الأولى الحقيقية
           // (عدد مسحوب فعلاً + هل بقي شيء) — لا وعد بما لم يحصل.
           showMsg('catalogFeedback', data.message || 'تم سحب منتجات متجرك.');
-          loadCatalog(0);
+          await loadCatalog(0);
+          // نجح ⇒ الزر يصير «تحديث» ويهدأ ٦٠ ثانية: الضغط المتكرر كان يصطدم
+          // بحد المعدل (٣ محاولات/٥ دقائق) فيُعاقَب التاجر على فعل بدا مسموحاً.
+          txt.innerText = 'تحديث المنتجات';
+          setTimeout(() => { btn.disabled = false; }, 60000);
+          return;
         }
       } catch (err) {
         showMsg('catalogFeedback', 'تعذر الاتصال. حاول مرة ثانية.');
@@ -944,14 +1007,19 @@
             imageUrl: document.getElementById('pImageUrl').value.trim()
           })
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
 
-        if (data?.error) {
-          showMsg('copyFeedback', data.error);
+        // خطأ خادم بلا حقل error كان يمرّ كنجاح فيعرض مربعات فارغة بصمت.
+        const emptyResult = !data || (!data.copywriting && !data.result);
+        if (!res.ok || data?.error || emptyResult) {
+          showMsg('copyFeedback', data?.error || 'ما قدرنا نولّد الوصف هالمرة — جرّب تضغط «اكتب الوصف الآن» مرة ثانية.');
         } else {
           lastCopy = data;
           renderCopy(data);
           document.getElementById('copyResult').classList.remove('hidden');
+          // بلا صورة الوصف مبني على الاسم والنص فقط — يُقال صراحةً لا يُخفى.
+          const noImg = document.getElementById('copyNoImageNote');
+          if (noImg) noImg.classList.toggle('hidden', !!data.usedImage);
           loadUsage();
         }
       } catch (err) {
@@ -989,8 +1057,17 @@
     function setPublishTarget(productId, name) {
       const sel = document.getElementById('publishProduct');
       const id = productId == null ? '' : String(productId);
-      // صف كتالوج قديم بلا معرّف سلة: لا نترك وجهة سابقة معلّقة تضلّل التاجر.
-      if (!sel || !id) { selectedCatalogProduct = null; onPublishProductChange(); return; }
+      // صف كتالوج قديم بلا معرّف سلة: لا نترك وجهة سابقة معلّقة تضلّل التاجر —
+      // لكن الصندوق يبقى ظاهراً مع سبب صريح، لا يختفي بصمت فيظن أن النشر ميزة مدفوعة.
+      if (!sel || !id) {
+        selectedCatalogProduct = null;
+        onPublishProductChange();
+        const box = document.getElementById('publishBox');
+        if (box) box.classList.remove('hidden');
+        const line = document.getElementById('publishTargetLine');
+        if (line) line.innerText = 'هذا المنتج بلا معرّف سلة — اضغط «اسحب منتجاتي» مرة ثانية لتحديثه، ثم اختره من جديد.';
+        return;
+      }
 
       // المنتج قد لا يكون ضمن الخيارات المحمّلة من حالة المتجر — نضيفه.
       let opt = Array.prototype.find.call(sel.options, o => o.value === id);
@@ -1168,6 +1245,7 @@
 
     async function pollBulkJob(jobId) {
       if (bulkPollTimer) clearInterval(bulkPollTimer);
+      let pollFailures = 0;
       const tick = async () => {
         try {
           const res = await fetch('/api/store/bulk/status', {
@@ -1175,8 +1253,9 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ jobId })
           });
-          const data = await res.json();
-          if (!data?.ok) return;
+          const data = await res.json().catch(() => null);
+          if (!res.ok || !data?.ok) throw new Error('status failed');
+          pollFailures = 0;
 
           const pct = data.total ? Math.round((data.processed / data.total) * 100) : 0;
           document.getElementById('bulkProgressBar').style.width = pct + '%';
@@ -1196,7 +1275,13 @@
           } else if (data.succeeded > 0 && (data.processed % 20 === 0)) {
             loadReview(reviewState);
           }
-        } catch (e) { /* keep polling */ }
+        } catch (e) {
+          // الشريط كان يتجمّد بصمت للأبد — بعد ٣ فشل متتالٍ نقول ما يصير.
+          pollFailures += 1;
+          if (pollFailures >= 3) {
+            document.getElementById('bulkProgressLabel').innerText = 'توقّف تتبّع التقدّم مؤقتاً بسبب مشكلة اتصال — عملك لسه شغّال بالخلفية، اضغط «تحديث» بتبويب المراجعة لمتابعته.';
+          }
+        }
       };
       tick();
       bulkPollTimer = setInterval(tick, 15000);
@@ -1422,10 +1507,13 @@
     async function loadAgentContext() {
       try {
         const res = await fetch('/api/store/context', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
+        if (!res.ok) { showMsg('agentFeedback', 'ما قدرنا نجيب إعداداتك المحفوظة — لا تحفظ شي الحين لين يرجع الاتصال، عشان ما تكتب فوق تعليماتك الأصلية.'); return; }
         if (data?.dialect) document.getElementById('agentDialect').value = data.dialect;
         if (data?.instructions) document.getElementById('agentInstructions').value = data.instructions;
-      } catch (e) {}
+      } catch (e) {
+        showMsg('agentFeedback', 'ما قدرنا نجيب إعداداتك المحفوظة — لا تحفظ شي الحين لين يرجع الاتصال، عشان ما تكتب فوق تعليماتك الأصلية.');
+      }
     }
 
     async function saveAgentContext() {
@@ -1438,10 +1526,15 @@
             instructions: document.getElementById('agentInstructions').value
           })
         });
-        const data = await res.json();
-        showMsg('agentFeedback', data?.error ? data.error : 'تم الحفظ والتطبيق ✅');
+        const data = await res.json().catch(() => null);
+        // خطأ خادم بلا حقل error كان يُعرض "تم الحفظ ✅" — نجاح كاذب.
+        if (!res.ok || data?.error) {
+          showMsg('agentFeedback', data?.error || 'ما قدرنا نحفظ التعليمات — تأكد من الإنترنت وحاول مرة ثانية. تعليماتك القديمة لسه فعّالة.');
+        } else {
+          showMsg('agentFeedback', 'تم الحفظ والتطبيق ✅');
+        }
       } catch (e) {
-        showMsg('agentFeedback', 'تعذر الحفظ.');
+        showMsg('agentFeedback', 'ما قدرنا نحفظ التعليمات — تأكد من الإنترنت وحاول مرة ثانية. تعليماتك القديمة لسه فعّالة.');
       }
     }
 
@@ -1481,10 +1574,24 @@
     }
 
     // ── Store ─────────────────────────────────────────────────
+    function renderIdentityLine() {
+      const el = document.getElementById('navIdentityLine');
+      if (!el) return;
+      const parts = [];
+      if (window.__accountEmail) parts.push(window.__accountEmail);
+      if (typeof lastCatalogTotal === 'number' && catalogLoadedOnce) parts.push(`${lastCatalogTotal} منتج مسحوب`);
+      el.innerText = parts.join(' · ');
+    }
+
     async function loadStore() {
       try {
         const res = await fetch('/api/store/overview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
+        // خطأ خادم (401/500) كان يُعرض "متجرك غير مرتبط" + زر ربط — تفسير خاطئ لعطل مؤقت.
+        if (!res.ok) {
+          document.getElementById('storeLinkState').innerText = 'تعذّر جلب حالة متجرك الآن — هذا لا يعني أن الربط انقطع، حدّث الصفحة بعد قليل.';
+          return;
+        }
 
         const linked = data?.linked && data?.platforms?.salla;
         document.getElementById('storeConnected').classList.toggle('hidden', !linked);
@@ -1603,6 +1710,9 @@
       }
     }
 
+    // رجوع بالمتصفح قد يعرض DOM حساب سابق لحظياً قبل إعادة الجلب — أعد التحميل.
+    window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
+
     document.addEventListener('DOMContentLoaded', async () => {
       let sallaSessionOk = true;
       if (inSallaFrame) {
@@ -1610,7 +1720,9 @@
         if (!sallaSessionOk) {
           // Redirecting to /login here would just get silently blocked —
           // login.html refuses to be framed by design. Exit the embedded view
-          // instead of leaving the merchant on a stuck loading screen.
+          // instead of leaving the merchant on a stuck loading screen —
+          // لكن بكلمة أولاً: إغلاق صامت = "التطبيق خرب" في نظر التاجر.
+          alert('ما قدرنا نفتح لوحتك من داخل سلة. أعد تحميل الصفحة، وإذا تكرر افتحها مباشرة من hala-ai-os.pages.dev');
           window.salla?.embedded?.destroy?.();
           return;
         }
@@ -1624,10 +1736,13 @@
           window.location.href = '/login';
           return;
         }
-        if (data?.storeName) {
-          document.getElementById('navStoreTitle').innerText = data.storeName;
-          document.getElementById('merchantHeroHeader').innerText = data.storeName;
-        }
+        // الهوية دائماً ظاهرة: أي متجر وأي حساب — رُصد تاجر بثلاثة حسابات لا
+        // يعرف أيها مفتوح. بالذاكرة فقط، لا تخزين محلي (جهاز مشترك = تسريب).
+        const storeLabel = data?.storeName || 'متجرك على سلة';
+        document.getElementById('navStoreTitle').innerText = storeLabel;
+        document.getElementById('merchantHeroHeader').innerText = storeLabel;
+        window.__accountEmail = data?.email || '';
+        renderIdentityLine();
         if (data?.isAdmin) document.getElementById('adminPortalBtn').classList.remove('hidden');
       } catch (e) {}
       loadUsage();

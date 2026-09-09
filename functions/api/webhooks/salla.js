@@ -22,6 +22,7 @@ import {
 } from "../../_lib/core/db.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { syncFirstPage } from "../store/catalog/sync.js";
+import { getStoreInfo } from "../../_lib/integrations/salla.js";
 
 /**
  * أول سحب للمنتجات **فور الربط** — بلا انتظار ضغطة زر.
@@ -101,6 +102,13 @@ async function handleEvent(env, event, payload, context) {
         .bind(merchantId)
         .run()
         .catch(() => {});
+      // اسم المتجر: الحمولة لا تحمله، والتوكن صار بيدنا الآن. فشله لا يوقف شيئاً.
+      try {
+        const info = await getStoreInfo(env, merchantId);
+        if (info.name) await upsertMerchantFromSalla(env, { sallaMerchantId, storeName: info.name });
+      } catch (err) {
+        logError(context, { requestId: null, path: "webhooks/salla", code: "SALLA_STORE_INFO_FAILED", storeId: merchantId, internal: String(err?.message || err).slice(0, 300) });
+      }
       // أول سحب فوراً — التاجر يفتح «منتجاتي» فيجد منتجاته لا شاشة فارغة.
       await kickoffFirstSync(env, merchantId, context);
       return merchantId;

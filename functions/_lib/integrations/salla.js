@@ -130,6 +130,15 @@ export async function updateProductBySku(env, merchantId, sku, fields) {
   });
 }
 
+// GET /store/info — يُستدعى مرة عقب app.store.authorize: حمولة الويبهوك نفسها
+// لا تحمل اسم المتجر (access_token/refresh_token/expires/scope فقط)، ولذلك كان
+// store_name فارغاً لكل تاجر بالقاعدة الحية والرأس يعرض عنواناً عاماً للجميع.
+export async function getStoreInfo(env, merchantId) {
+  const res = await sallaFetch(env, merchantId, "/store/info");
+  const d = res?.data || {};
+  return { name: d.name || null, domain: d.domain || null };
+}
+
 export async function listOrders(env, merchantId, page = 1) {
   return sallaFetch(env, merchantId, `/orders?page=${page}&per_page=10`);
 }

@@ -368,6 +368,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
 
   const parsed = parseSeoResponse(rawAiOutput, name, price);
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
+  parsed.usedImage = Boolean(visionNotes);
   return parsed;
 }
 
@@ -409,6 +410,8 @@ async function copyHandler(body, env, request) {
 
   return {
     ok: true,
+    // صادق مع التاجر: بلا صورة (أو فشل تحليلها) الوصف مبني على النص فقط.
+    usedImage: Boolean(parsed.usedImage),
     result: parsed.copywriting.description,
     whatsapp: parsed.copywriting.whatsapp,
     seo: parsed.seo,

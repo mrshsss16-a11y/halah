@@ -155,6 +155,9 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = l
   }
 
   const more = hasMorePages(payload, pageNum, products.length);
+  // ختم "سُحب مرة على الأقل" — به تفرّق الواجهة بين "لم يبدأ" و"سُحب ولم يجد".
+  await env.DB.prepare("UPDATE merchants SET catalog_synced_at = datetime('now') WHERE id = ?")
+    .bind(merchantId).run().catch(() => {});
   return {
     page: pageNum,
     received: products.length,
@@ -280,4 +283,14 @@ export async function markReverted(env, { merchantId, sku } = {}) {
     )
     .bind(mid, key)
     .run();
+}
+
+/** هل سُحب كتالوج هذا التاجر مرة على الأقل؟ (migrations/0026) — لا يرمي أبداً. */
+export async function getCatalogSyncState(env, { merchantId }) {
+  if (!env?.DB || !merchantId) return { syncedAt: null };
+  const row = await env.DB.prepare("SELECT catalog_synced_at AS t FROM merchants WHERE id = ?")
+    .bind(merchantId)
+    .first()
+    .catch(() => null);
+  return { syncedAt: row?.t || null };
 }
