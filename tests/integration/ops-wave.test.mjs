@@ -1,13 +1,13 @@
 // اختبارات دفعة د (التشغيل والوثائق) — O1..O5، D1. أسلوب tests/api.test.mjs:
 // دوال fake بدل موك خارجي، assert بسيط، طباعة PASS/FAIL. لا يلمس api.test.mjs.
-import { onRequest as healthHandler } from "../functions/api/health.js";
-import { recordHeartbeat, readHeartbeats } from "../functions/_lib/core/heartbeat.js";
+import { onRequest as healthHandler } from "../../functions/api/health.js";
+import { recordHeartbeat, readHeartbeats } from "../../functions/_lib/core/heartbeat.js";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, "..");
+const ROOT = join(__dirname, "..", "..");
 
 async function runTests() {
   let passed = 0;

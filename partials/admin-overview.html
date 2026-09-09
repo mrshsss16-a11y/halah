@@ -1,0 +1,40 @@
+    <!-- ── 1. KPI Overview ──────────────────────────────────────── -->
+    <section id="sectionOverview" class="space-y-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="sleek-white-card rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">إجمالي المتاجر المسجلة</span>
+            <span class="material-symbols-outlined text-black">store</span>
+          </div>
+          <div id="kpiMerchants" class="text-3xl font-black text-black">--</div>
+          <p class="text-[11px] text-slate-500 font-mono">حسابات نشطة في D1</p>
+        </div>
+
+        <div class="sleek-white-card rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">متاجر نشطة آخر ٧ أيام</span>
+            <span class="material-symbols-outlined text-black">bolt</span>
+          </div>
+          <div id="kpiActive7d" class="text-3xl font-black text-black">--</div>
+          <p class="text-[11px] text-slate-500 font-mono">من last_active_at الحقيقي (لا تقدير)</p>
+        </div>
+
+        <div class="sleek-white-card rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">استهلاك الذكاء اليوم</span>
+            <span class="material-symbols-outlined text-black">equalizer</span>
+          </div>
+          <div id="kpiTotalUsageToday" class="text-3xl font-black text-black">-- رصيد</div>
+          <p class="text-[11px] text-slate-500 font-mono">استهلاك المتاجر اليوم (KV Fast-Path)</p>
+        </div>
+
+        <div class="sleek-white-card rounded-2xl p-6 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600">تذاكر الاستشارات AURA</span>
+            <span class="material-symbols-outlined text-black">confirmation_number</span>
+          </div>
+          <div id="kpiBookings" class="text-3xl font-black text-black">--</div>
+          <p class="text-[11px] text-slate-500 font-mono">طلبات الاستشارات المسجلة</p>
+        </div>
+      </div>
+    </section>

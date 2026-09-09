@@ -10,20 +10,20 @@ import {
   stripFabricatedPricing,
   fenceUntrusted,
   UNTRUSTED_DATA_NOTICE
-} from "../functions/_lib/ai/guards.js";
-import { buildAgentPrompt } from "../functions/_lib/ai/persona.js";
-import { buildChatSystem } from "../functions/_lib/ai/prompts/chat.js";
+} from "../../functions/_lib/ai/guards.js";
+import { buildAgentPrompt } from "../../functions/_lib/ai/persona.js";
+import { buildChatSystem } from "../../functions/_lib/ai/prompts/chat.js";
 import {
   parseSeoResponse,
   buildMetaDescription,
   fallbackSlug,
   acceptArabicVisionNotes,
   CopyParseError
-} from "../functions/_lib/domain/copyParse.js";
-import { seedKeywords } from "../functions/_lib/domain/copy.js";
-import { extractBalancedJson } from "../functions/_lib/ai/parseModelJson.js";
-import { askWorkersAI, TTL_KINDS } from "../functions/_lib/ai/gateway.js";
-import { buildPersonaFiles, PERSONA_EXPORTS } from "../scripts/export-persona.mjs";
+} from "../../functions/_lib/domain/copyParse.js";
+import { seedKeywords } from "../../functions/_lib/domain/copy.js";
+import { extractBalancedJson } from "../../functions/_lib/ai/parseModelJson.js";
+import { askWorkersAI, TTL_KINDS } from "../../functions/_lib/ai/gateway.js";
+import { buildPersonaFiles, PERSONA_EXPORTS } from "../../scripts/export-persona.mjs";
 
 const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
 
@@ -76,9 +76,9 @@ async function runTests() {
     assert(clean.stripped === false && clean.text === "حياك الله، أبشر.", "A1-11: بلا مخالفة ⇒ نص كما هو وعلم false");
 
     // التطبيق على القنوات الثلاث + تسجيل بلا نص الرسالة.
-    const supportSrc = read("../functions/_lib/domain/support.js");
-    const waSrc = read("../functions/_lib/domain/whatsappAutoReply.js");
-    const igSrc = read("../functions/_lib/domain/instagram.js");
+    const supportSrc = read("../../functions/_lib/domain/support.js");
+    const waSrc = read("../../functions/_lib/domain/whatsappAutoReply.js");
+    const igSrc = read("../../functions/_lib/domain/instagram.js");
     assert(
       /from "\.\.\/ai\/guards\.js"/.test(supportSrc) && !/const FABRICATED_PRICE/.test(supportSrc),
       "A1-12: support.js يستخدم الحارس المشترك ولا نسخة محلية"
@@ -153,21 +153,21 @@ async function runTests() {
     assert(sys.includes("<<<بيانات تعليمات المتجر"), "A2-17: تعليمات المتجر بـchat.js مسوّرة");
     assert(sys.includes(UNTRUSTED_DATA_NOTICE), "A2-18: سطر القاعدة محقون ببرومبت chat.js");
 
-    const waSrc = read("../functions/_lib/domain/whatsappAutoReply.js");
+    const waSrc = read("../../functions/_lib/domain/whatsappAutoReply.js");
     assert(
       /fenceUntrusted\(\s*\n?\s*"ذاكرة العميل من شات الموقع"/.test(waSrc) || /"ذاكرة العميل من شات الموقع",/.test(waSrc),
       "A2-19: chat_summary (نص زائر مجهول) مسوّر قبل حقنه ببرومبت واتساب"
     );
     assert(/fenceUntrusted\(\s*\n?\s*"معرفة مسترجعة"/.test(waSrc), "A2-20: مقتطفات RAG بواتساب مسوّرة");
-    const supportSrc = read("../functions/_lib/ai/prompts/support.js");
+    const supportSrc = read("../../functions/_lib/ai/prompts/support.js");
     assert(/fenceUntrusted\("معرفة مسترجعة"/.test(supportSrc), "A2-21: مقتطفات RAG بـsupport.js مسوّرة");
-    const copySrc = read("../functions/_lib/ai/prompts/seo.js");
+    const copySrc = read("../../functions/_lib/ai/prompts/seo.js");
     assert(/fenceUntrusted\("الوصف الحالي للمنتج"/.test(copySrc), "A2-22: existingDescription بـcopy.js مسوّر");
   }
 
   // ── A3 · لا حقول مفبركة بـchat.js ─────────────────────────────────────────
   {
-    const src = read("../functions/_lib/domain/conversation.js") + read("../functions/api/chat.js");
+    const src = read("../../functions/_lib/domain/conversation.js") + read("../../functions/api/chat.js");
     assert(!/score:\s*9/.test(src), "A3-1: الحقل score: 9 المكتوب بالكود محذوف (§١١)");
     assert(!/refined:\s*(true|false)/.test(src) && !/guarded:\s*(true|false)/.test(src), "A3-2: refined/guarded المفبركان محذوفان");
     assert(!/memorized:\s*(true|false)/.test(src), "A3-3: memorized المفبرك محذوف");
@@ -178,7 +178,7 @@ async function runTests() {
       /المسار الفعلي \(تمريرة نموذج واحدة/.test(src) && !/critique \(Workers AI,/.test(src),
       "A3-6: ترويسة الملف تصف تمريرة واحدة فعلية بدل حلقة نقد وتحسين لا وجود لها"
     );
-    const typo = read("../functions/_lib/ai/typoCorrector.js");
+    const typo = read("../../functions/_lib/ai/typoCorrector.js");
     assert(
       !/export function cleanOutputReply/.test(typo) && /cleanOutputReply` حُذفت/.test(typo),
       "A3-7: cleanOutputReply حُذفت (ميتة + `\\b` لا يطابق العربية) والقرار موثّق"
@@ -218,7 +218,7 @@ async function runTests() {
       threw instanceof CopyParseError && threw.code === "COPY_PARSE_FAILED",
       "A4-5: فشل التحليل يرمي خطأً مصنَّفاً — لا يُرجّع مخرج النموذج الخام كوصف منتج"
     );
-    const plainSrc = read("../functions/_lib/domain/copyParse.js") + read("../functions/_lib/domain/copy.js");
+    const plainSrc = read("../../functions/_lib/domain/copyParse.js") + read("../../functions/_lib/domain/copy.js");
     assert(
       !/const plain = source\.trim\(\)/.test(plainSrc) && /CopyParseError\("model output is not parseable/.test(plainSrc),
       "A4-6: مسار «استخدم النص الخام كوصف» محذوف من الكود"
@@ -265,7 +265,7 @@ async function runTests() {
       "A5-2: مخرج النموذج الاحتياطي الإنجليزي يُهمل كلياً"
     );
     assert(acceptArabicVisionNotes("") === null && acceptArabicVisionNotes(null) === null, "A5-3: فراغ ⇒ null");
-    const src = read("../functions/_lib/domain/copy.js") + read("../functions/_lib/ai/prompts/seo.js");
+    const src = read("../../functions/_lib/domain/copy.js") + read("../../functions/_lib/ai/prompts/seo.js");
     assert(/code: "VISION_FALLBACK_DISCARDED"/.test(src), "A5-4: الإهمال مسجَّل بكود VISION_FALLBACK_DISCARDED");
     assert(
       /const visionOutputRule = visionNotes/.test(src),
@@ -275,7 +275,7 @@ async function runTests() {
 
   // ── A9 · عمر الكاش معامل صريح ──────────────────────────────────────────────
   {
-    const gwSrc = read("../functions/_lib/ai/gateway.js");
+    const gwSrc = read("../../functions/_lib/ai/gateway.js");
     assert(!/وصف\|منتج\|copy/.test(gwSrc), "A9-1: اختيار الـTTL لم يعد يخمّن من كلمات البرومبت");
     assert(TTL_KINDS.copy === 60 * 60 * 24 && TTL_KINDS.chat === 60 * 15, "A9-2: خريطة TTL صريحة (copy=٢٤س · chat=١٥د)");
 
@@ -310,11 +310,11 @@ async function runTests() {
     assert(copySeen.ttl === 60 * 60 * 24, "A9-4: توليد الوصف يُكاش ٢٤ ساعة بطلب صريح من المستدعي");
 
     for (const [label, rel, re] of [
-      ["support", "../functions/_lib/domain/support.js", /ttlKind: "chat"/],
-      ["whatsapp", "../functions/_lib/domain/whatsappAutoReply.js", /ttlKind: "chat"/],
-      ["instagram", "../functions/_lib/domain/instagram.js", /ttlKind: "chat"/],
-      ["chat", "../functions/_lib/domain/conversation.js", /ttlKind: "chat"/],
-      ["copy", "../functions/_lib/domain/copy.js", /ttlKind: "copy"/]
+      ["support", "../../functions/_lib/domain/support.js", /ttlKind: "chat"/],
+      ["whatsapp", "../../functions/_lib/domain/whatsappAutoReply.js", /ttlKind: "chat"/],
+      ["instagram", "../../functions/_lib/domain/instagram.js", /ttlKind: "chat"/],
+      ["chat", "../../functions/_lib/domain/conversation.js", /ttlKind: "chat"/],
+      ["copy", "../../functions/_lib/domain/copy.js", /ttlKind: "copy"/]
     ]) {
       assert(re.test(read(rel)), `A9-5/${label}: المستدعي يمرّر نوع الـTTL صراحةً`);
     }
@@ -328,7 +328,7 @@ async function runTests() {
     for (const [name, content] of expected) {
       let onDisk = null;
       try {
-        onDisk = readFileSync(new URL(`../persona/${name}`, import.meta.url), "utf8");
+        onDisk = readFileSync(new URL(`../../persona/${name}`, import.meta.url), "utf8");
       } catch {
         onDisk = null;
       }
@@ -339,13 +339,13 @@ async function runTests() {
       `PERSONA-GEN: persona/ مطابق لـpersona.js حرفياً — شغّل node scripts/export-persona.mjs${drifted.length ? ` (منحرف: ${drifted.join(", ")})` : ""}`
     );
     assert(PERSONA_EXPORTS.length >= 8, "A6-1: كل ثوابت الشخصية مصدَّرة لمجلد المرجع (بما فيها شخصية واتساب وإنستغرام)");
-    const marketer = readFileSync(new URL("../persona/hala-marketer-system-prompt.md", import.meta.url), "utf8");
+    const marketer = readFileSync(new URL("../../persona/hala-marketer-system-prompt.md", import.meta.url), "utf8");
     assert(/مولَّد آلياً — لا تحرّر/.test(marketer), "A6-2: كل ملف مولَّد يحمل عنوان «مولَّد آلياً — لا تحرّر»");
     assert(
       !/functions\/_lib\/persona\.js/.test(marketer),
       "A6-3: لا إحالة للمسار الخاطئ القديم (functions/_lib/persona.js بلا ai/)"
     );
-    const waRef = readFileSync(new URL("../persona/hala-whatsapp-support.md", import.meta.url), "utf8");
+    const waRef = readFileSync(new URL("../../persona/hala-whatsapp-support.md", import.meta.url), "utf8");
     assert(
       /ممنوع تمنعاً باتاً تذكرين أي رقم سعر/.test(waRef),
       "A6-4: قاعدة منع السعر حاضرة بالمرجع (كانت ساقطة من النسخة اليدوية)"

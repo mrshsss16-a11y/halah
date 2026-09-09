@@ -41,7 +41,10 @@ const jsFiles = [
 // نجمع كل تعريف دالة top-level (function name(...) أو const/let/var name = function|=>)
 // من كل ملف *.html بالجذر (ضمن <script> غير src) وكل ملف JS مملوك بالواجهة، ونقارن
 // المحتوى الحرفي بين الملفات المختلفة لنفس الاسم.
-const FN_DEF_RE = /(?:^|\n)\s*function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/g;
+// المرحلة ٥: منطق الصفحتين صار وحدات ES بـpublic/js/{dashboard,admin}/**،
+// وتعريفاتها `export function` و`export async function` — بلا هذه البادئات
+// الاختيارية كان الفحص يعمى عن كل دالة انتقلت من <script> المضمّن.
+const FN_DEF_RE = /(?:^|\n)\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\([^)]*\)\s*\{/g;
 
 function extractInlineScripts(html) {
   const out = [];
@@ -172,17 +175,27 @@ function isTailwindLike(clsRaw) {
 // بالنص المطابق) بلا أي تنسيق بصري مقصود منها — نمط شائع ومقصود بهذا المشروع
 // (dashboard.html: .review-tab/.fb-star، agent-studio.html: .tab/.panel). لا تُعتبر
 // "غير معرّفة": الفحص عن أصناف تحتاج تنسيقاً غائباً، لا عن أصناف علّامة فقط.
+// المرحلة ٥: العلامة صارت بـpartials/** والـquerySelectorAll الذي يستعملها صار
+// بـpublic/js/** — البحث داخل نفس الملف فقط كان سيفشل على .review-tab/.fb-star
+// بعد التقسيم. النطاق الآن كل JS الواجهة + الصفحة نفسها.
+const jsCorpus = jsFiles.map((f) => readFileSync(f, "utf8")).join("\n");
 function isJsHookClass(cls, html) {
   const escaped = cls.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp("querySelector(?:All)?\\(\\s*[`'\"]\\." + escaped + "(['\"\\s.[]|`)", "");
-  return re.test(html);
+  return re.test(html) || re.test(jsCorpus);
 }
 
+// المرحلة ٥: <style> الصفحة يعيش الآن بـpartials/*-head.html بينما العلامة التي
+// يُنسّقها موزّعة على partials أخرى تُدمَج معه بنفس الصفحة وقت البناء. الفحص
+// «هل لهذا الصنف تنسيق؟» يجب أن يرى كل <style> بالواجهة، لا <style> ملف واحد.
 const CLASS_RE = /class="([^"]+)"/g;
+const STYLE_RE = /<style[^>]*>([\s\S]*?)<\/style>/g;
+const allInlineStyles = [...rootHtmlFiles, ...partialFiles]
+  .map((f) => [...readFileSync(f, "utf8").matchAll(STYLE_RE)].map((m) => m[1]).join("\n"))
+  .join("\n");
+const definedInline = new Set([...allInlineStyles.matchAll(/\.([A-Za-z][\w-]*)/g)].map((m) => m[1]));
 for (const f of [...rootHtmlFiles, ...partialFiles]) {
   const html = readFileSync(f, "utf8");
-  const inlineStyle = [...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join("\n");
-  const definedInline = new Set([...inlineStyle.matchAll(/\.([A-Za-z][\w-]*)/g)].map((m) => m[1]));
   let m;
   const re = new RegExp(CLASS_RE);
   while ((m = re.exec(html))) {
@@ -202,10 +215,10 @@ for (const f of [...rootHtmlFiles, ...partialFiles]) {
 // ── (د) حجم صفحات الجذر ──────────────────────────────────────────────────
 // قائمة سماح مؤرَّخة (المرحلة ٢، ٢٠٢٦-٠٩-٠٩) — عدد الأسطر الفعلي وقت الكتابة.
 // يفشل الفحص لو زاد العدد الحالي عن المكتوب هنا (لا يفشل لو قلّ).
-const SIZE_ALLOWLIST = {
-  "dashboard.html": 1942,
-  "admin.html": 915
-};
+// أُفرغت بالمرحلة ٥ — النصف أ (2026-09-09): dashboard.html ١٩٤٢→٤٣ سطراً
+// وadmin.html ٩١٥→٤٢ بعد نقل العلامة إلى partials/ والـJS إلى public/js/**.
+// كلتاهما تحت الحد ٨٠٠ بلا استثناء.
+const SIZE_ALLOWLIST = {};
 const MAX_LINES = 800;
 function countLines(text) {
   const lines = text.split("\n");

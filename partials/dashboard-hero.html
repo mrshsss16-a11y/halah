@@ -1,0 +1,45 @@
+    <!-- شريط ترحيب بعد ربط سلة الناجح (U1) — لا يظهر إلا إذا جاءت الصفحة
+         مباشرة من تحويل auth/salla/callback.js (?connected=1)، ولا يبقى
+         بعد إعادة تحميل الصفحة كي لا يكذب بترحيب متكرر. -->
+    <div id="connectedBanner" class="hidden p-3.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 flex items-center gap-2">
+      <span class="material-symbols-outlined text-base">check_circle</span>
+      <span>تم ربط متجرك بسلة بنجاح — جاهزين نبدأ بوصف منتجاتك.</span>
+    </div>
+
+    <!-- Header + store status -->
+    <div class="sleek-card-darkborder rounded-3xl p-7 bg-white flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-sm">
+      <div class="space-y-2">
+        <h1 id="merchantHeroHeader" class="text-2xl md:text-3xl font-black text-black leading-tight">لوحة تحكم متجرك</h1>
+        <p id="merchantHeroSub" class="text-xs text-slate-600 font-medium">وصف منتجات بالسيو · وكيل خدمة عملاء سعودي · ربط سلة</p>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
+          <span class="block text-[11px] text-slate-600 font-bold">أوصاف الشهر</span>
+          <span id="kpiUsageDesc" class="skel text-lg font-black text-black">٠٠/٠٠</span>
+        </div>
+        <div class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
+          <span class="block text-[11px] text-slate-600 font-bold">رسائل الشهر</span>
+          <span id="kpiUsageMsg" class="skel text-lg font-black text-black">٠٠٠/٠٠٠</span>
+        </div>
+        <div id="storeLinkBadge" class="text-center px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200">
+          <span class="block text-[11px] text-slate-600 font-bold">حالة المتجر</span>
+          <span id="storeLinkState" class="skel text-xs font-black text-black">جاري الفحص…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+      <button id="navTabStudio" onclick="switchTab('studio')" class="tab-off text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">edit_note</span><span>وصف المنتجات</span>
+      </button>
+      <button id="navTabCatalog" onclick="switchTab('catalog')" class="tab-on text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+        <span class="material-symbols-outlined text-base">inventory_2</span><span>منتجاتي</span>
+      </button>
+      <button id="navTabAgent" onclick="switchTab('agent')" class="tab-off text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">support_agent</span><span>وكيل خدمة العملاء</span>
+      </button>
+      <button id="navTabStore" onclick="switchTab('store')" class="tab-off text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">storefront</span><span>متجري</span>
+      </button>
+    </div>

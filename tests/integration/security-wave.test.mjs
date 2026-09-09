@@ -12,13 +12,13 @@ import {
   turnstileRequired,
   EMAIL_RE,
   MAX_REMOTE_IMAGE_BYTES
-} from "../functions/_lib/core/security.js";
-import { checkRateLimit } from "../functions/_lib/core/rateLimit.js";
-import { timingSafeEqualStr } from "../functions/_lib/core/crypto.js";
-import { hashOtp } from "../functions/_lib/core/auth.js";
-import { bumpSessionVersion, RESERVED_STORE_IDS } from "../functions/_lib/core/session.js";
+} from "../../functions/_lib/core/security.js";
+import { checkRateLimit } from "../../functions/_lib/core/rateLimit.js";
+import { timingSafeEqualStr } from "../../functions/_lib/core/crypto.js";
+import { hashOtp } from "../../functions/_lib/core/auth.js";
+import { bumpSessionVersion, RESERVED_STORE_IDS } from "../../functions/_lib/core/session.js";
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const read = (rel) => readFileSync(join(ROOT, rel), "utf8");
 
 // ── محاكيات ────────────────────────────────────────────────────────────────
@@ -303,7 +303,7 @@ async function runTests() {
       "N7-5: support.js — سطر الشرط فقط، بلا مساس بالباقي"
     );
     // مع مفتاح مضبوط وبلا توكن ⇒ verifyTurnstileToken يفشل ⇒ ٤٠٠
-    const { verifyTurnstileToken } = await import("../functions/_lib/core/security.js");
+    const { verifyTurnstileToken } = await import("../../functions/_lib/core/security.js");
     const res = await verifyTurnstileToken({ TURNSTILE_SECRET_KEY: "k" }, "", "1.1.1.1");
     assert(res.success === false, "N7-6: مفتاح مضبوط + توكن غائب = فشل تحقق (⇒ 400)");
   }
@@ -358,7 +358,7 @@ async function runTests() {
       assert(/timingSafeEqualStr/.test(src), `Q1-5/${f}: يستورد النسخة الموحّدة من core/crypto.js`);
     }
     // الجلسة ما زالت تعمل بعد التوحيد (حراسة انحدار)
-    const { createSessionToken, verifySessionToken } = await import("../functions/_lib/core/session.js");
+    const { createSessionToken, verifySessionToken } = await import("../../functions/_lib/core/session.js");
     const env = { SESSION_SECRET: "s3cr3t", HALA_CACHE: { get: async () => "0", put: async () => {} } };
     const token = await createSessionToken(env, "m_abc");
     assert((await verifySessionToken(env, token)) === "m_abc", "Q1-6: توقيع الجلسة سليم بعد التوحيد");

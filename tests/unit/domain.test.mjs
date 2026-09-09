@@ -72,7 +72,7 @@ async function runTests() {
   // ── ١. attemptGuard: قفل بعد ٥ محاولات فاشلة ─────────────────────────────
   {
     const { attemptGuard, isLoginLocked, recordLoginFailure, recordResetOtpFailure } =
-      await import("../functions/_lib/domain/auth.js");
+      await import("../../functions/_lib/domain/auth.js");
 
     // سياسة "lockout" (تسجيل الدخول): أربع محاولات لا تقفل، والخامسة تختم locked_until.
     let count = 0;
@@ -132,7 +132,7 @@ async function runTests() {
 
   // ── ٢. قفل تجديد توكن سلة ────────────────────────────────────────────────
   {
-    const { getValidSallaToken, acquireRefreshLock } = await import("../functions/_lib/domain/salla.js");
+    const { getValidSallaToken, acquireRefreshLock } = await import("../../functions/_lib/domain/salla.js");
     const expired = Math.floor(Date.now() / 1000) - 10;
 
     // القفل ذرّي: UPDATE مشروط بـrefresh_lock = 0 أو قفل بائت (>٦٠ث).
@@ -200,7 +200,7 @@ async function runTests() {
 
   // ── ٣. نافذة واتساب ٢٤ ساعة ──────────────────────────────────────────────
   {
-    const { isWaWindowOpen, recordWaInbound } = await import("../functions/_lib/domain/whatsapp.js");
+    const { isWaWindowOpen, recordWaInbound } = await import("../../functions/_lib/domain/whatsapp.js");
     const stamp = (msAgo) => new Date(Date.now() - msAgo).toISOString().replace("T", " ").slice(0, 19);
 
     const open = { DB: fakeDb([[/SELECT last_inbound_at/, { last_inbound_at: stamp(23 * 3600 * 1000) }]]) };
@@ -230,7 +230,7 @@ async function runTests() {
   // ── ٤. إحياء الصفوف المؤجَّلة (bulk) ─────────────────────────────────────
   {
     const { reviveDeferredItems, DEFERRED_MARKER, listMerchantsWithDeferredItems } =
-      await import("../functions/_lib/domain/bulk.js");
+      await import("../../functions/_lib/domain/bulk.js");
 
     const rows = [
       { id: 1, job_id: "j1" },
@@ -273,8 +273,8 @@ async function runTests() {
 
   // ── ٥. DomainError يُترجَم بـwithApi كما يُترجَم ApiError ─────────────────
   {
-    const { DomainError } = await import("../functions/_lib/core/errors.js");
-    const { withApi, ApiError } = await import("../functions/_lib/core/respond.js");
+    const { DomainError } = await import("../../functions/_lib/core/errors.js");
+    const { withApi, ApiError } = await import("../../functions/_lib/core/respond.js");
 
     const env = { SESSION_SECRET: "x".repeat(40) };
     const req = () =>

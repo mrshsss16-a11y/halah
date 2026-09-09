@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
+const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 const FIXTURE = ".tmp-guard-fixture";
 const FIXTURE_ABS = join(ROOT, FIXTURE);
 

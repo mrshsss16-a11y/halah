@@ -1,0 +1,143 @@
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="space-y-1 border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-black text-black">وصف منتج مثالي — سيو السوق السعودي</h2>
+          <p class="text-xs text-slate-600 font-medium">عنوان، ميتا، نقاط بيع، أسئلة شائعة، وسوم، وسكيما — بلهجة سعودية بيضاء</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input id="pName" type="text" placeholder="اسم المنتج (مثال: عطر عود ملكي 100مل)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <input id="pPrice" type="number" placeholder="السعر (ر.س)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <input id="pCategory" type="text" placeholder="الفئة (عطور، عبايات، تمور…)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <select id="pTone" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
+            <option value="white">لهجة بيضاء تسويقية ودودة</option>
+            <option value="formal">فصحى رسمية راقية</option>
+            <option value="luxury">فخامة وحصرية</option>
+            <option value="deals">حماس عروض</option>
+            <option value="funny">خفة دم سعودية</option>
+          </select>
+        </div>
+        <textarea id="pFeatures" rows="2" placeholder="مزايا المنتج (اختياري) — افصل بينها بفاصلة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+
+        <!-- المسار الأساسي: هذين الحقلين يُعبّآن آلياً من بطاقة "منتجاتي".
+             يبقيان ظاهرين وقابلين للتعديل للمسار اليدوي (منتج مو بسلة بعد). -->
+        <div id="studioSourceBanner" class="hidden p-3 rounded-xl bg-slate-50 border border-slate-300 text-[11px] font-bold text-black flex items-center gap-2">
+          <span class="material-symbols-outlined text-base">inventory_2</span>
+          <span id="studioSourceText"></span>
+        </div>
+
+        <div class="space-y-2.5">
+          <label for="pImageUrl" class="block text-[11px] font-bold text-slate-600">صورة المنتج — يحلّلها فعلياً (لون، خامة، شكل) قبل الكتابة</label>
+          <input id="pImageUrl" type="text" placeholder="تُعبَّأ تلقائياً لما تختار منتجاً من «منتجاتي» — أو الصق رابط صورة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" dir="ltr"/>
+        </div>
+
+        <details class="text-xs">
+          <summary class="cursor-pointer font-bold text-slate-600 select-none">الوصف الحالي للمنتج (اختياري — يُعبَّأ تلقائياً من سلة)</summary>
+          <div class="space-y-2.5 pt-2.5">
+            <textarea id="pExistingDescription" rows="3" placeholder="وصف المنتج الحالي بمتجرك — الذكاء الاصطناعي يحسّن صياغته وSEO بدل ما يخترع وصفاً عاماً من الاسم بس" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+          </div>
+        </details>
+
+        <button id="genBtn" onclick="generateCopy()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-base">auto_awesome</span>
+          <span id="genBtnText">اكتب الوصف الآن</span>
+        </button>
+
+        <div id="copyFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+      </div>
+
+      <div id="copyResult" class="hidden space-y-4">
+        <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 class="text-sm font-black text-black">راجع الوصف — عدّله إن حبيت، ثم اعتمد</h3>
+            <span id="copyNoImageNote" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">بلا صورة — الوصف مبني على الاسم والوصف الحالي فقط</span>
+            <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
+          </div>
+          <div class="space-y-1.5">
+            <label for="outDescription" class="flex items-center gap-1.5 text-[11px] font-bold text-black">
+              <span class="material-symbols-outlined text-sm">edit</span>
+              تقدر تعدّل هنا
+            </label>
+            <textarea id="outDescription" rows="7" class="w-full text-xs leading-relaxed text-black whitespace-pre-wrap bg-white border-2 border-slate-400 rounded-xl p-3 focus:outline-none focus:border-black"></textarea>
+          </div>
+          <p class="text-[11px] text-slate-500">هذا مسودة — اللي يُنشر بسلة هو النص المكتوب هنا بالضبط وقت الضغط على «اعتمد وانشر».</p>
+
+          <div class="pt-3 border-t border-slate-200 space-y-2">
+            <span class="text-[11px] font-bold text-slate-600">نقاط البيع</span>
+            <ul id="outHighlights" class="text-xs text-black space-y-1 list-disc pr-5"></ul>
+          </div>
+        </div>
+
+        <div class="sleek-card rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black border-b border-slate-200 pb-3">حقول السيو (SEO)</h3>
+          <div class="grid grid-cols-1 gap-2.5 text-xs">
+            <div><span class="font-bold text-slate-600">العنوان:</span> <span id="outTitle" class="text-black"></span></div>
+            <div><span class="font-bold text-slate-600">عنوان البحث:</span> <span id="outSeoTitle" class="text-black"></span></div>
+            <div><span class="font-bold text-slate-600">الرابط:</span> <span id="outSlug" dir="auto" class="text-black font-mono"></span></div>
+            <div><span class="font-bold text-slate-600">وصف الميتا:</span> <span id="outMeta" class="text-black"></span></div>
+            <div><span class="font-bold text-slate-600">الكلمة المفتاحية:</span> <span id="outFocusKw" class="text-black"></span></div>
+            <div><span class="font-bold text-slate-600">الوسوم:</span> <span id="outTags" class="text-black"></span></div>
+          </div>
+        </div>
+
+        <div class="sleek-card rounded-3xl p-6 space-y-3 shadow-sm">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 class="text-sm font-black text-black">نسخة واتساب</h3>
+            <button onclick="copyToClipboard('outWhatsapp')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
+          </div>
+          <div id="outWhatsapp" class="text-xs leading-relaxed text-black whitespace-pre-wrap"></div>
+        </div>
+
+        <div id="publishBox" class="hidden sleek-card-darkborder rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black">اعتمد وانشر مباشرة على سلة</h3>
+          <p class="text-xs text-slate-600 font-medium">اختر المنتج من متجرك لتحديث وصفه بالوصف اللي راجعته أعلاه.</p>
+          <select id="publishProduct" onchange="onPublishProductChange()" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></select>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="publishBtn" onclick="publishToSalla()" class="sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-base">check_circle</span>
+              <span id="publishBtnText">اعتمد وانشر على سلة</span>
+            </button>
+            <button id="regenBtn" onclick="regenerateCopy()" class="sleek-btn-white py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-base">refresh</span>
+              <span>أعد التوليد</span>
+            </button>
+          </div>
+          <div id="publishTargetLine" class="hidden text-[11px] font-bold text-black bg-slate-100 border border-slate-300 rounded-xl px-3 py-2"></div>
+          <div id="publishFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+        </div>
+      </div>
+
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="space-y-1 border-b border-slate-200 pb-4">
+          <h2 class="text-lg font-black text-black">وصف منتجاتك بالجملة</h2>
+          <p class="text-xs text-slate-600 font-medium">
+            أسهل طريق: <b>توليد من منتجاتك المسحوبة</b> — يبدأ بالأعلى أثراً (بلا وصف، ثم القصير)، وما فوق حصة الشهر يُكمَل تلقائياً أول الشهر الجاي.
+            أو الصق قائمة يدوياً (سطر لكل منتج): <span dir="auto" class="font-mono">اسم,سعر,فئة,<bdi>SKU</bdi></span>.
+            <b>لا يُنشر شيء على سلة قبل ما تراجعه وتعتمده</b> بالقسم اللي تحت.
+          </p>
+        </div>
+        <button id="bulkGenerateBtn" onclick="startCatalogGenerate()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-base">auto_awesome</span><span>ولّد أوصاف منتجاتي المسحوبة</span>
+        </button>
+        <div class="text-[11px] text-slate-500 font-bold text-center">— أو —</div>
+        <textarea id="bulkRows" rows="5" placeholder="عباية سوداء مطرزة,350,عبايات,SKU-001&#10;عطر عود ملكي 100مل,220,عطور,SKU-002" dir="auto" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono focus:outline-none focus:border-black"></textarea>
+        <select id="bulkTone" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black">
+          <option value="white">لهجة بيضاء تسويقية ودودة</option>
+          <option value="formal">فصحى رسمية راقية</option>
+          <option value="luxury">فخامة وحصرية</option>
+          <option value="deals">حماس عروض</option>
+          <option value="funny">خفة دم سعودية</option>
+        </select>
+        <button id="bulkBtn" onclick="startBulkJob()" class="w-full sleek-btn-white py-3.5 rounded-xl text-xs transition">ابدأ التوليد من القائمة الملصوقة</button>
+        <div id="bulkFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+
+        <div id="bulkProgress" class="hidden space-y-2 pt-2">
+          <div class="flex justify-between text-[11px] font-bold text-slate-600">
+            <span id="bulkProgressLabel">جاري المعالجة…</span>
+            <span id="bulkProgressCount">0 / 0</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div id="bulkProgressBar" class="bg-black h-2 rounded-full transition-all" style="width:0%"></div>
+          </div>
+          <div id="bulkFailedList" class="text-[11px] text-rose-700 space-y-0.5"></div>
+        </div>
+      </div>

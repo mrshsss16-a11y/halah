@@ -1,0 +1,27 @@
+    <!-- ── Product image generation — closed beta, admin only ───── -->
+    <section id="sectionLaunch" class="hidden space-y-6">
+      <div class="sleek-white-card rounded-3xl p-6 space-y-5 shadow-sm">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+          <div>
+            <h2 class="text-lg font-black text-black">متابعة الإطلاق المحدود</h2>
+            <p class="text-xs text-slate-600 font-medium">أرقام حقيقية من D1 — معايير الخروج: ٢٠ محادثة بلا تدخل · ٥ حجوزات · صفر عطل صامت أسبوعاً · ٣ تجار ربطوا · ١٠ أوصاف منشورة</p>
+          </div>
+          <button onclick="loadLaunch()" class="sleek-btn-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"><span class="material-symbols-outlined text-base">sync</span><span>تحديث</span></button>
+        </div>
+        <div id="launchKpis" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center"></div>
+        <div id="launchErrors" class="text-xs text-slate-700"></div>
+      </div>
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="sleek-white-card rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black">نشاط التجار</h3>
+          <div class="overflow-x-auto"><table class="w-full text-right text-[11px]">
+            <thead><tr class="bg-slate-100 font-bold"><th class="p-2 rounded-r-lg">المتجر</th><th class="p-2">آخر نشاط</th><th class="p-2">كتالوج</th><th class="p-2">منشور</th><th class="p-2 rounded-l-lg">واتساب ٧ي</th></tr></thead>
+            <tbody id="launchActivity" class="divide-y divide-slate-200 text-black"></tbody>
+          </table></div>
+        </div>
+        <div class="sleek-white-card rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black">تغذية راجعة من التجار</h3>
+          <div id="launchFeedback" class="space-y-2 text-xs text-black"></div>
+        </div>
+      </div>
+    </section>

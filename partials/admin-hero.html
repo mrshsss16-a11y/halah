@@ -1,0 +1,52 @@
+    <!-- Admin Welcome Hero Banner (Sleek White & Black) -->
+    <section class="sleek-white-card-darkborder rounded-3xl p-7 bg-white shadow-lg relative overflow-hidden">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+        <div class="space-y-2 max-w-2xl">
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3.5 py-1 rounded-full">
+            <span>🛡️ الإشراف العام والهندسة المعمارية | ADMIN CONTROL CENTER</span>
+          </div>
+          <h1 class="text-2xl md:text-3xl font-black tracking-tight text-black">
+            لوحة إشراف <span class="underline decoration-2">أورا للتسويق</span> — هالة AI OS
+          </h1>
+          <p class="text-slate-700 text-xs md:text-sm font-medium leading-relaxed">
+            تصميم سليك أبيض ناصع بخطوط سوداء داكنة للإشراف على البوتات، وتدريب أيجنت واتساب أورا، ومتابعة الاستهلاك والتذاكر ومختبر الميزات.
+          </p>
+        </div>
+
+        <button onclick="loadAdminData()" class="sleek-btn-black px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-2 transition shrink-0 shadow-md">
+          <span class="material-symbols-outlined text-base">refresh</span>
+          <span>تحديث البيانات الحية</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Admin Section Tabs (Sleek White & Black Buttons) -->
+    <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+      <button id="navTabOverview" onclick="switchAdminTab('overview')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl bg-black text-white transition flex items-center gap-2 shadow-sm">
+        <span class="material-symbols-outlined text-base">analytics</span>
+        <span>المؤشرات العامة</span>
+      </button>
+      <button id="navTabAuraWa" onclick="switchAdminTab('auraWa')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">chat</span>
+        <span>أيجنت واتساب أورا</span>
+      </button>
+      <button id="navTabAccounts" onclick="switchAdminTab('accounts')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">storefront</span>
+        <span>إدارة المتاجر والاستهلاك</span>
+      </button>
+      <button id="navTabBookings" onclick="switchAdminTab('bookings')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">confirmation_number</span>
+        <span>تذاكر الاستشارات AURA</span>
+      </button>
+      <button id="navTabTester" onclick="switchAdminTab('tester')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">science</span>
+        <span>مختبر الميزات الجديدة</span>
+      </button>
+      <button id="navTabLaunch" onclick="switchAdminTab('launch')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">rocket_launch</span><span>الإطلاق</span>
+      </button>
+      <button id="navTabImages" onclick="switchAdminTab('images')" class="text-xs font-bold px-4.5 py-2.5 rounded-xl text-slate-700 hover:text-black hover:bg-slate-100 transition flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">imagesmode</span>
+        <span>صور المنتجات (بيتا)</span>
+      </button>
+    </div>

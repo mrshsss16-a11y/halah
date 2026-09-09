@@ -1,0 +1,48 @@
+    <!-- ── 6. Interactive Feature Testing Lab ────────────────────── -->
+    <section id="sectionTester" class="hidden space-y-6">
+      <div class="sleek-white-card rounded-3xl p-7 space-y-6 shadow-sm">
+        <div class="space-y-1">
+          <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-md">
+            <span class="material-symbols-outlined text-base">science</span>
+            <span>مختبر تجربة الميزات الجديدة (Feature Sandbox & Telemetry)</span>
+          </div>
+          <h2 class="text-xl font-black text-black">اختبر أي ميزة جديدة في المنصة مباشرة بالذكاء الاصطناعي</h2>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">bolt</span>
+              <span>1. اختبار محرك النوايا السريع (&lt; 1ms Intent Matcher)</span>
+            </h3>
+            <div class="space-y-2">
+              <input id="intentTestInput" type="text" value="اريد تتبع الشحنة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none font-medium"/>
+              <button onclick="runFeatureTest('intent_matching')" class="w-full sleek-btn-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                <span>تشغيل الفحص اللحظي</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-3">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">shopping_bag</span>
+              <span>2. محاكاة استرداد سلة متروكة (Salla / Zid WhatsApp Cart)</span>
+            </h3>
+            <div class="space-y-2">
+              <p class="text-xs text-slate-600 font-medium">إرسال إشعار استرداد افتراضي لـ سلة بقيمة 450 ر.س مع رابط الدفع الذكي.</p>
+              <button onclick="runFeatureTest('cart_recovery_sim')" class="w-full sleek-btn-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                <span>إرسال إشعار الاسترداد المباشر</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-slate-50 text-black rounded-2xl p-5 font-mono text-xs space-y-2 border border-slate-300">
+          <div class="flex items-center justify-between text-slate-700 border-b border-slate-300 pb-2 font-sans">
+            <span class="font-bold">مُخرجات المختبر (Lab Output Logs)</span>
+            <span class="text-[10px] text-black font-bold font-mono">100% TELEMETRY</span>
+          </div>
+          <pre id="testerConsole" class="whitespace-pre-wrap overflow-x-auto text-black font-mono">انقر على أي خيار أعلاه لبدء الفحص والاختبار المباشر...</pre>
+        </div>
+      </div>
+    </section>

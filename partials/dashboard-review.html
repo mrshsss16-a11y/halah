@@ -1,0 +1,55 @@
+      <!-- ── تغذية راجعة (المرحلة ٤): سؤال واحد، مرة واحدة ── -->
+      <div id="feedbackCard" class="hidden sleek-card rounded-3xl p-5 space-y-3 shadow-sm border border-black">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-black text-black">كيف تجربتك مع هالة لين الآن؟</h3>
+            <p class="text-[11px] text-slate-600 font-medium">تقييمك يوصلنا مباشرة — سؤال واحد بس.</p>
+          </div>
+          <button onclick="dismissFeedback()" class="text-slate-400 hover:text-black" title="لاحقاً"><span class="material-symbols-outlined text-base">close</span></button>
+        </div>
+        <div class="flex gap-2" id="feedbackStars">
+          <button onclick="pickFeedbackScore(1)" data-score="1" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">١</button>
+          <button onclick="pickFeedbackScore(2)" data-score="2" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">٢</button>
+          <button onclick="pickFeedbackScore(3)" data-score="3" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">٣</button>
+          <button onclick="pickFeedbackScore(4)" data-score="4" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">٤</button>
+          <button onclick="pickFeedbackScore(5)" data-score="5" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">٥</button>
+        </div>
+        <textarea id="feedbackComment" rows="2" placeholder="شي حبّيته أو شي عطّلك؟ (اختياري)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+        <div class="flex items-center gap-2">
+          <button id="feedbackSendBtn" onclick="sendFeedback()" class="sleek-btn-black px-4 py-2 rounded-xl text-xs" disabled>أرسل</button>
+          <span id="feedbackMsg" class="text-[11px] font-bold text-slate-600"></span>
+        </div>
+      </div>
+
+      <!-- ── المراجعة الجماعية (المرحلة ٢): الـAI يقترح، التاجر يقرر ── -->
+      <div id="reviewCard" class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4 flex-wrap">
+          <div class="space-y-1">
+            <h2 class="text-lg font-black text-black">راجع واعتمد — قبل أي نشر</h2>
+            <p id="reviewCountsLine" class="text-xs text-slate-600 font-medium">كل وصف مولَّد بالجملة يمرّ من هنا. ما يُنشر على سلة إلا ما تعتمده.</p>
+          </div>
+          <button onclick="reloadReview()" class="sleek-btn-white px-3 py-2 rounded-xl text-xs transition flex items-center gap-1">
+            <span class="material-symbols-outlined text-base">refresh</span><span>تحديث</span>
+          </button>
+        </div>
+
+        <div class="flex gap-2 flex-wrap text-[11px] font-bold">
+          <button data-state="pending" onclick="loadReview('pending')" class="review-tab tab-on px-3 py-1.5 rounded-lg">بانتظار مراجعتك <span id="rvPending">0</span></button>
+          <button data-state="awaiting_publish" onclick="loadReview('awaiting_publish')" class="review-tab tab-off px-3 py-1.5 rounded-lg">معتمد بانتظار النشر <span id="rvAwaiting">0</span></button>
+          <button data-state="published" onclick="loadReview('published')" class="review-tab tab-off px-3 py-1.5 rounded-lg">نُشر على سلة <span id="rvPublished">0</span></button>
+          <button data-state="publish_failed" onclick="loadReview('publish_failed')" class="review-tab tab-off px-3 py-1.5 rounded-lg">فشل نشره <span id="rvFailed">0</span></button>
+          <button data-state="rejected" onclick="loadReview('rejected')" class="review-tab tab-off px-3 py-1.5 rounded-lg">مرفوض <span id="rvRejected">0</span></button>
+        </div>
+
+        <div id="reviewActions" class="hidden flex gap-2 flex-wrap">
+          <button onclick="decideReview('approve_all')" class="sleek-btn-black px-4 py-2.5 rounded-xl text-xs transition">اعتمد الكل</button>
+          <button onclick="decideReview('approve')" class="sleek-btn-white px-4 py-2.5 rounded-xl text-xs transition">اعتمد المحدد</button>
+          <button onclick="decideReview('reject')" class="sleek-btn-white px-4 py-2.5 rounded-xl text-xs transition text-rose-700">ارفض المحدد</button>
+          <label class="text-[11px] font-bold text-slate-600 flex items-center gap-1 mr-auto"><input type="checkbox" id="reviewSelectAll" onchange="toggleReviewAll(this.checked)"> تحديد الكل</label>
+        </div>
+
+        <div id="reviewFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+        <div id="reviewLoading" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري التحميل…</div>
+        <div id="reviewEmpty" class="hidden text-xs text-slate-500 font-medium py-6 text-center">لا شيء هنا الآن.</div>
+        <div id="reviewList" class="space-y-3"></div>
+      </div>

@@ -83,7 +83,20 @@ for (const f of fnFiles) {
 
 // ── ح٧ ──────────────────────────────────────────────────────────────────────
 const htmlFiles = readdirSync(ROOT).filter((n) => n.endsWith(".html")).map((n) => join(ROOT, n));
-for (const f of htmlFiles) {
+// بعد تقسيم dashboard.html/admin.html (docs/ARCHITECTURE.md، 2026-09-09)، كل
+// innerHTML انتقل من *.html بالجذر إلى partials/**/*.html وpublic/js/**/*.js —
+// النطاق القديم (جذر فقط) صار يفحص قوالب فارغة ويُفوّت الثغرة الحقيقية.
+const partialsDir = join(ROOT, "partials");
+const publicJsDir = join(ROOT, "public", "js");
+const ch7Files = [
+  ...htmlFiles,
+  ...(existsSyncSafe(partialsDir) ? walk(partialsDir, ".html") : []),
+  ...(existsSyncSafe(publicJsDir) ? walk(publicJsDir, ".js") : [])
+];
+function existsSyncSafe(p) {
+  try { statSync(p); return true; } catch { return false; }
+}
+for (const f of ch7Files) {
   const lines = readFileSync(f, "utf8").split("\n");
   lines.forEach((line, i) => {
     if (!/innerHTML\s*(\+=|=)/.test(line)) return;
@@ -100,7 +113,8 @@ for (const f of htmlFiles) {
 }
 
 // ── ح٨ ──────────────────────────────────────────────────────────────────────
-for (const f of [...htmlFiles, join(ROOT, "widget.js")]) {
+// ح٨ يشمل الوحدات الجديدة أيضاً — مستمع postMessage انتقل إلى public/js/dashboard/whatsapp.js.
+for (const f of [...ch7Files, join(ROOT, "widget.js")]) {
   try {
     const lines = readFileSync(f, "utf8").split("\n");
     lines.forEach((line, i) => {

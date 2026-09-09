@@ -52,12 +52,14 @@ const CAPS = [
 // `api/health.js` ١٤٦→٤٩ · `api/admin/aura_whatsapp.js` ١٤٢→٤١ … المنطق انتقل
 // إلى `domain/{auth,accounts,booking,bulk,bulkTick,health,analytics,platforms,
 // salla,catalogSync,storeOverview,publish,persona,auraAgent}.js` وكلها تحت ٤٠٠.
+// أُنجز بالمرحلة ٥ — النصف أ (2026-09-09): `dashboard.html` ١٩٤٣ → ٤٣ سطراً
+// و`admin.html` ٩١٦ → ٤٢، بنقل العلامات إلى `partials/{dashboard,admin}-*.html`
+// (تُحَل بـ#include وقت البناء) والـJS إلى وحدات ES بـ`public/js/{dashboard,
+// admin}/*.js`. لا ملف من الوحدات الجديدة يتجاوز ٤٠٠ سطر. سقط الاستثناءان.
 const ALLOWLIST = new Map([
-  ["dashboard.html", 1943],
-  ["admin.html", 916],
   ["functions/api/webhooks/salla.js", 257],
 ]);
-const EXPECTED_ALLOWLIST = 3;
+const EXPECTED_ALLOWLIST = 1;
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "archive", ".git", "backups", "graphify-out", ".wrangler"]);
 function walk(dir, ext, out = []) {

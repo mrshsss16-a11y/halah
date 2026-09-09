@@ -1,0 +1,105 @@
+    <!-- ── 3. Aura WhatsApp Agent Builder & Manager ─────────────── -->
+    <section id="sectionAuraWa" class="hidden space-y-8">
+      <div class="sleek-white-card rounded-3xl p-7 space-y-6 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+          <div class="space-y-1">
+            <div class="inline-flex items-center gap-2 text-xs font-bold text-black bg-slate-100 border border-slate-300 px-3 py-1 rounded-md">
+              <span class="material-symbols-outlined text-base">chat</span>
+              <span>ربط وأيجنت واتساب أورا للتسويق (Aura WhatsApp Agent)</span>
+            </div>
+            <h2 class="text-xl font-black text-black">إدارة وتدريب الموظفة الرقمية الرسمية لأورا</h2>
+          </div>
+          <div id="waStatusBadge" class="bg-black text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+            <span>متصل ومهيأ بالكامل</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">settings_phone</span>
+              <span>بيانات الربط مع Meta WhatsApp Cloud API</span>
+            </h3>
+            <div class="space-y-2 text-xs font-mono">
+              <div class="flex justify-between p-2.5 bg-white rounded-xl border border-slate-200">
+                <span class="text-slate-600 font-sans font-bold">Phone ID:</span>
+                <span id="waPhoneId" class="font-bold text-black">--</span>
+              </div>
+              <div class="flex justify-between p-2.5 bg-white rounded-xl border border-slate-200">
+                <span class="text-slate-600 font-sans font-bold">Token Status:</span>
+                <span id="waTokenStatus" class="font-bold text-black font-sans">مفتاح مشفر ومفعّل ✅</span>
+              </div>
+              <div class="flex justify-between p-2.5 bg-white rounded-xl border border-slate-200">
+                <span class="text-slate-600 font-sans font-bold">Verify Token:</span>
+                <span id="waVerifyToken" class="text-black">hala-verify-secret</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Direct Key Input Form -->
+          <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">key</span>
+              <span>ربط وتغذية مفاتيح WhatsApp Cloud API</span>
+            </h3>
+            <form onsubmit="handleSaveWaCredentials(event)" class="space-y-3">
+              <div>
+                <input id="inputWaToken" type="password" placeholder="أدخل التوكن الدائم (WHATSAPP_TOKEN)" required class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-mono"/>
+              </div>
+              <div>
+                <input id="inputWaPhoneId" type="text" placeholder="أدخل مُعرّف رقم الهاتف (WHATSAPP_PHONE_ID)" required class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-mono"/>
+              </div>
+              <button type="submit" class="w-full sleek-btn-black py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+                <span class="material-symbols-outlined text-base">link</span>
+                <span>ربط وتفعيل الواتساب الآن</span>
+              </button>
+            </form>
+          </div>
+
+          <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200">
+            <h3 class="font-black text-sm text-black flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-lg">psychology</span>
+              <span>تدريب RAG المعرفي لأيجنت أورا</span>
+            </h3>
+            <form onsubmit="handleTrainAuraAgent(event)" class="space-y-3">
+              <div>
+                <input id="trainQuestion" type="text" placeholder="السؤال المتوقع (مثال: كم أسعار استشارات أورا؟)" required class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-medium"/>
+              </div>
+              <div>
+                <textarea id="trainAnswer" rows="2" placeholder="الرد المعتمد بلهجة سعودية بيضاء محببة..." required class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-medium"></textarea>
+              </div>
+              <button type="submit" class="w-full sleek-btn-black py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition">
+                <span class="material-symbols-outlined text-base">add_circle</span>
+                <span>حفظ التدريب في ذاكرة الأيجنت</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Live WhatsApp Simulator Sandbox -->
+        <div class="bg-white text-black rounded-2xl p-6 space-y-4 border border-black">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-black text-xl">smart_toy</span>
+              <h3 class="font-black text-sm">مُحاكي ردود أيجنت واتساب أورا الحي (Live Simulator)</h3>
+            </div>
+            <span class="text-[11px] text-black font-mono font-bold bg-slate-100 px-3 py-1 rounded-full border border-slate-300">Saudi Dialect Engine</span>
+          </div>
+
+          <div id="waChatStream" class="h-44 overflow-y-auto space-y-3 bg-slate-50 p-4 rounded-xl text-xs border border-slate-200">
+            <div class="bg-white border border-slate-300 text-black p-3 rounded-xl max-w-[85%] font-medium shadow-sm">
+              أهلاً بك! 👋 أنا الموظفة الرقمية لأورا للتسويق.. اكتب أي سؤال واختبر الرد السريع الآن!
+            </div>
+          </div>
+
+          <form onsubmit="handleTestAuraAgentMsg(event)" class="flex items-center gap-2">
+            <input id="waTestInput" type="text" placeholder="اكتب سؤالك لاختبار الموظفة (مثال: حجز استشارة أورا)..." class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-medium"/>
+            <button type="submit" class="sleek-btn-black px-6 py-3 rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 transition">
+              <span>اختبر الآن</span>
+              <span class="material-symbols-outlined text-base">send</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>

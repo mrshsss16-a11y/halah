@@ -1,0 +1,44 @@
+    <!-- ── 0. My products (Salla catalog) ──────────────────────
+         جوهر المنتج: التاجر يشوف منتجاته الحقيقية ويضغط واحداً، فتتعبّى حقول
+         الاستوديو من سلة ويبدأ التوليد فوراً — صفر كتابة أو لصق يدوي. -->
+    <section id="sectionCatalog" class="space-y-5">
+      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
+          <div class="space-y-1">
+            <h2 class="text-lg font-black text-black">منتجاتي</h2>
+            <p id="catalogCountLine" class="text-xs text-slate-600 font-medium">اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.</p>
+          </div>
+          <button id="catalogSyncBtn" onclick="startCatalogSync()" class="sleek-btn-black px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 whitespace-nowrap">
+            <span class="material-symbols-outlined text-base">sync</span>
+            <span id="catalogSyncBtnText">اسحب منتجاتي من سلة</span>
+          </button>
+        </div>
+
+        <div id="catalogFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+
+        <div id="catalogLoading" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري تحميل منتجاتك…</div>
+
+        <!-- ── اختيار متعدد: التاجر يشوف الصور ويحدد أي منتجات تُوصف ── -->
+        <div id="catalogSelectBar" class="hidden flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+          <span id="catalogSelectCount" class="text-xs font-black text-black">محدد: ٠</span>
+          <button onclick="selectAllCatalog(true)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">تحديد كل المعروض</button>
+          <button onclick="selectAllCatalog(false)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">إلغاء التحديد</button>
+          <button id="catalogSelectedGenBtn" onclick="generateSelectedCatalog()" disabled
+                  class="sleek-btn-black px-4 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 opacity-50 cursor-not-allowed">
+            <span class="material-symbols-outlined text-sm">auto_awesome</span>
+            <span id="catalogSelectedGenText">ولّد أوصاف المحدد</span>
+          </button>
+          <span class="text-[11px] text-slate-500 font-medium">كل وصف يمرّ على مراجعتك قبل النشر.</span>
+        </div>
+
+        <div id="catalogEmpty" class="hidden text-center py-10 space-y-2">
+          <span id="catalogEmptyIcon" class="material-symbols-outlined text-4xl text-slate-300">inventory_2</span>
+          <p id="catalogEmptyTitle" class="text-xs text-slate-600 font-bold">ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"</p>
+          <p id="catalogEmptyHint" class="text-[11px] text-slate-500">تظهر أول دفعة منتجات فوراً، وإن كان متجرك كبير يوصل الباقي خلال دقائق.</p>
+        </div>
+
+        <div id="catalogGrid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
+
+        <button id="catalogMoreBtn" onclick="loadCatalogMore()" class="hidden w-full sleek-btn-white py-3 rounded-xl text-xs transition">عرض المزيد</button>
+      </div>
+    </section>

@@ -4,12 +4,22 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { findCatalogBySallaProductId, markPublished } from "../functions/_lib/domain/catalog.js";
+import { findCatalogBySallaProductId, markPublished } from "../../functions/_lib/domain/catalog.js";
+import { readComposedPage } from "../_helpers.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, "..");
+const ROOT = join(__dirname, "..", "..");
 
-function readSrc(rel) {
+// dashboard.html/admin.html صارا قالبين فارغين بعد التقسيم إلى partials/ +
+// public/js/** (docs/ARCHITECTURE.md، تقسيم 2026-09-09) — أي فحص "شكل الكود"
+// عليهما يحتاج الصفحة المركَّبة (dist + partials) لا الجذر وحده.
+let __composedCache = {};
+async function readSrc(rel) {
+  if (rel === "dashboard.html" || rel === "admin.html") {
+    const name = rel.replace(".html", "");
+    if (!__composedCache[name]) __composedCache[name] = await readComposedPage(name);
+    return __composedCache[name];
+  }
   return readFileSync(join(ROOT, rel), "utf8");
 }
 
@@ -57,22 +67,24 @@ async function runTests() {
   // ---- U1: auth/salla/callback.js يُنشئ جلسة ويحوّل 302 لا JSON خام ----
   {
     // المرحلة ٤: النقطة تنسيق فقط — المبادلة وحفظ التوكن بـdomain/salla.js.
-    const src = readSrc("functions/api/auth/salla/callback.js");
-    const domainSrc = readSrc("functions/_lib/domain/salla.js");
+    const src = await readSrc("functions/api/auth/salla/callback.js");
+    const domainSrc = await readSrc("functions/_lib/domain/salla.js");
     assert(src.includes("createSessionToken") && src.includes("sessionCookieHeader"), "U1: callback.js يستدعي createSessionToken/sessionCookieHeader");
     assert(src.includes("status: 302") && src.includes("/dashboard?connected=1"), "U1: callback.js يحوّل 302 إلى /dashboard?connected=1 عند النجاح");
     assert(domainSrc.includes("upsertMerchantFromSalla"), "U1: مسار الربط يستخدم upsertMerchantFromSalla بدل معرّف سلة الخام كـmerchantId داخلي");
     assert(src.includes('"تعذر إكمال الربط') && src.includes('"content-type": "application/json"'), "U1: رسائل الخطأ تبقى JSON عربياً كما كانت");
   }
   {
-    const src = readSrc("dashboard.html");
+    const src = await readSrc("dashboard.html");
     assert(src.includes("connectedBanner"), "U1: dashboard.html فيه شريط ترحيب connectedBanner");
-    assert(src.includes("get('connected') === '1'"), "U1: dashboard.html يقرأ ?connected=1 من الرابط");
+    // بعد التقسيم public/js/dashboard/main.js يستخدم اقتباساً مزدوجاً
+    // (get("connected") === "1") — نفس المعنى، تحوّل أسلوب فقط أثناء نقل الكود لوحدة.
+    assert(/get\((['"])connected\1\)\s*===\s*(['"])1\2/.test(src), "U1: dashboard.html يقرأ ?connected=1 من الرابط");
   }
 
   // ---- U2/U3: login.html ----
   {
-    const src = readSrc("login.html");
+    const src = await readSrc("login.html");
     assert(!src.includes("data.otpCode"), "U2: login.html لا يعرض data.otpCode أبداً");
     assert(src.includes("إن كان البريد مسجلاً وصلك الرمز على واتساب"), "U2: رسالة نجاح صادقة بدل عرض الرمز");
     assert(!/sleek-btn-black/.test(src), "U3: login.html لا يستخدم صنف sleek-btn-black غير المعرَّف");
@@ -81,7 +93,7 @@ async function runTests() {
 
   // ---- U3: index.html ادعاءات صادقة ----
   {
-    const src = readSrc("index.html");
+    const src = await readSrc("index.html");
     assert(!/سلات؟ متروكة/.test(src) || !/استرداد/.test(src), "U3: index.html لا يعد باسترداد السلات المتروكة (مؤرشفة)");
     assert(!/70%|٧٠٪/.test(src), "U3: index.html لا يدّعي 70% بلا مصدر");
     assert(!/AES-256/.test(src), "U3: index.html لا يدّعي AES-256");
@@ -92,7 +104,7 @@ async function runTests() {
 
   // ---- U4: publish.js — revertAvailable صادق + catalog.findCatalogBySallaProductId ----
   {
-    const src = readSrc("functions/api/store/publish.js");
+    const src = await readSrc("functions/api/store/publish.js");
     assert(src.includes("findCatalogBySallaProductId"), "U4: publish.js يستدعي findCatalogBySallaProductId");
     assert(src.includes("markPublished"), "U4: publish.js يستدعي markPublished بعد نجاح النشر");
     assert(src.includes("revertAvailable"), "U4: publish.js يعيد revertAvailable بالاستجابة");
@@ -118,22 +130,22 @@ async function runTests() {
 
   // ---- dashboard.html: بطاقة المنتج + رابط تراجع مشروط بـrevertAvailable ----
   {
-    const src = readSrc("dashboard.html");
+    const src = await readSrc("dashboard.html");
     assert(src.includes("markCatalogCardPublished"), "U4/U8: dashboard.html يحدّث بطاقة «منتجاتي» بعد النشر المفرد");
     assert(/revertAvailable\s*&&\s*sku/.test(src), "U4: زر التراجع لا يظهر إلا إن أكد الخادم revertAvailable");
   }
 
   // ---- U7: decide.js رسالة التراجع تذكر بقاء حقول السيو بصدق ----
   {
-    const src = readSrc("functions/_lib/domain/publish.js");
+    const src = await readSrc("functions/_lib/domain/publish.js");
     assert(src.includes("عنوان ووصف البحث اللذان أضافتهما هالة يبقيان"), "U7: رسالة التراجع تقول إن حقول السيو تبقى");
     assert(src.includes("عدّلهما من لوحة سلة"), "U7: رسالة التراجع توجّه التاجر لتعديلها من سلة");
   }
 
   // ---- U5: تبويب الوكيل — صدق الحالة + بطاقة تركيب الودجت الفعلية ----
   {
-    const dash = readSrc("dashboard.html");
-    const widget = readSrc("widget.js");
+    const dash = await readSrc("dashboard.html");
+    const widget = await readSrc("widget.js");
     assert(widget.includes('getAttribute("data-store-id")'), "U5: widget.js يقرأ data-store-id فعلاً (شرط عرض سطر التركيب)");
     assert(dash.includes("widgetSnippet"), "U5: dashboard.html فيه بطاقة كود تركيب الودجت (widgetSnippet)");
     assert(dash.includes('data-store-id="'), "U5: سطر التركيب المعروض يستخدم data-store-id الحقيقي لا data-store الوهمي");
@@ -142,31 +154,32 @@ async function runTests() {
 
   // ---- U9: شريط الجملة يذكر مدة بدء المعالجة ----
   {
-    const src = readSrc("dashboard.html");
+    const src = await readSrc("dashboard.html");
     assert(src.includes("تبدأ المعالجة خلال ~١٠ دقائق"), "U9: شريط الجملة يعرض 'تبدأ المعالجة خلال ~١٠ دقائق'");
     assert(src.includes("كل ١٠ دقائق دفعة"), "U9: شريط الجملة يوضح أن الدفعة كل ١٠ دقائق");
   }
 
   // ---- U10: لا alert() متبقٍ، شريط داخلي بديل ----
   {
-    const src = readSrc("dashboard.html");
+    const src = await readSrc("dashboard.html");
     assert(!/\balert\(/.test(src), "U10: dashboard.html بلا استدعاءات alert() متبقية");
-    const shared = readSrc("public/js/shared.js");
+    const shared = await readSrc("public/js/shared.js");
     assert(shared.includes("function showToast") && src.includes("/js/shared.js"), "U10: يوجد شريط إشعار داخلي showToast (بالملف المشترك public/js/shared.js) بديل عن alert()");
   }
 
   // ---- U11: showMsg يقبل نوعاً بألوان مختلفة ----
   {
-    const src = readSrc("dashboard.html");
-    const shared = readSrc("public/js/shared.js");
+    const src = await readSrc("dashboard.html");
+    const shared = await readSrc("public/js/shared.js");
     assert(/function showMsg\(id, text, type\)/.test(shared), "U11: showMsg تقبل معامل type (بالملف المشترك)");
     assert(shared.includes("bg-rose-50") && shared.includes("bg-emerald-50"), "U11: showMsg يفرّق ألوان الخطأ/النجاح");
-    assert(/showMsg\('reviewFeedback',[\s\S]{0,120}'error'\)/.test(src), "U11: نداء showMsg بنوع 'error' مطبّق على أحد أهم المواضع");
+    // بعد التقسيم public/js/dashboard/review.js يستخدم اقتباساً مزدوجاً — نفس المعنى.
+    assert(/showMsg\((['"])reviewFeedback\1,[\s\S]{0,120}(['"])error\2\)/.test(src), "U11: نداء showMsg بنوع 'error' مطبّق على أحد أهم المواضع");
   }
 
   // ---- U12: إصلاحات الجوال الثلاثة + شارة بلا SKU + data-attribute للتراجع ----
   {
-    const src = readSrc("dashboard.html");
+    const src = await readSrc("dashboard.html");
     assert(!/px-4\.5/.test(src), "U12: لا يوجد صنف Tailwind غير صالح px-4.5");
     assert(src.includes("truncate") && src.includes("navStoreTitle"), "U12: اسم المتجر بالشريط العلوي يُقصّ (truncate) بالجوال");
     assert(/flex flex-wrap items-center gap-3/.test(src), "U12: صف مؤشرات KPI يتحمّل flex-wrap بالجوال");

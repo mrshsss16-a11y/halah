@@ -12,9 +12,9 @@
 //   CSRF           — withApi يرفض أصلاً غير موثوق قبل تنفيذ المعالج
 //   cron/reminders — الفتحة والاستحقاق والتذكير وختم reminder_sent_at
 //   stats/health   — أرقام حقيقية · ٥٠٣ عند سقوط فحص حرج
-import { withApi } from "../functions/_lib/core/respond.js";
-import { createSessionToken } from "../functions/_lib/core/session.js";
-import { hashPassword } from "../functions/_lib/core/auth.js";
+import { withApi } from "../../functions/_lib/core/respond.js";
+import { createSessionToken } from "../../functions/_lib/core/session.js";
+import { hashPassword } from "../../functions/_lib/core/auth.js";
 
 let passed = 0;
 let total = 0;
@@ -145,7 +145,7 @@ async function runTests() {
 
   // ── CSRF: withApi يحرس المعالجات التي كانت خاماً ───────────────────────────
   {
-    const { onRequestPost: signup } = await import("../functions/api/auth/signup.js");
+    const { onRequestPost: signup } = await import("../../functions/api/auth/signup.js");
     const evil = new Request("https://hala-ai-os.pages.dev/api/auth/signup", {
       method: "POST",
       headers: { "content-type": "application/json", origin: "https://evil.example" },
@@ -161,7 +161,7 @@ async function runTests() {
 
   // ── auth/signup ────────────────────────────────────────────────────────────
   {
-    const { onRequestPost: signup } = await import("../functions/api/auth/signup.js");
+    const { onRequestPost: signup } = await import("../../functions/api/auth/signup.js");
     const inserted = [];
     const env = {
       SESSION_SECRET: SECRET,
@@ -208,7 +208,7 @@ async function runTests() {
 
   // ── auth/login ─────────────────────────────────────────────────────────────
   {
-    const { onRequestPost: login } = await import("../functions/api/auth/login.js");
+    const { onRequestPost: login } = await import("../../functions/api/auth/login.js");
     const { hash, salt } = await hashPassword("correct-horse");
     const account = { merchant_id: "m_abc", email: "m@shop.com", password_hash: hash, password_salt: salt, disabled: 0 };
     const routes = [
@@ -246,8 +246,8 @@ async function runTests() {
 
   // ── auth/logout · auth/me ──────────────────────────────────────────────────
   {
-    const { onRequestPost: logout } = await import("../functions/api/auth/logout.js");
-    const { onRequestPost: me } = await import("../functions/api/auth/me.js");
+    const { onRequestPost: logout } = await import("../../functions/api/auth/logout.js");
+    const { onRequestPost: me } = await import("../../functions/api/auth/me.js");
 
     const bumped = [];
     const env = {
@@ -279,7 +279,7 @@ async function runTests() {
 
   // ── auth/complete_account ──────────────────────────────────────────────────
   {
-    const { onRequestPost: complete } = await import("../functions/api/auth/complete_account.js");
+    const { onRequestPost: complete } = await import("../../functions/api/auth/complete_account.js");
     const mk = (routes) => ({ SESSION_SECRET: SECRET, HALA_CACHE: mockKv(), DB: mockDb(routes) });
 
     const baseRoutes = [
@@ -317,8 +317,8 @@ async function runTests() {
 
   // ── auth/verify_email — العدّ ذرّي، والحرق بعد ٥ ──────────────────────────
   {
-    const { onRequestPost: verify } = await import("../functions/api/auth/verify_email.js");
-    const { hashVerificationCode } = await import("../functions/_lib/domain/auth.js");
+    const { onRequestPost: verify } = await import("../../functions/api/auth/verify_email.js");
+    const { hashVerificationCode } = await import("../../functions/_lib/domain/auth.js");
     const codeHash = await hashVerificationCode("m@shop.com", "123456");
     let attempts = 0;
     const burned = [];
@@ -353,7 +353,7 @@ async function runTests() {
 
   // ── cron/reminders — الفتحة والاستحقاق والختم ─────────────────────────────
   {
-    const { targetSlotLabel, dueReminders, ticketOf } = await import("../functions/_lib/domain/booking.js");
+    const { targetSlotLabel, dueReminders, ticketOf } = await import("../../functions/_lib/domain/booking.js");
 
     // الجمعة ١٠ص بتوقيت الرياض ⇒ خارج الفتحات (WEEKLY_SLOTS تبدأ الأحد).
     const friday = Date.parse("2026-09-11T06:00:00Z"); // ٩ص الرياض جمعة
@@ -376,7 +376,7 @@ async function runTests() {
     assert(ticketOf(rows[0]) === "AURA-00007", "REM-5 (P18): رقم التذكرة من العمود لا من إعادة الحساب");
     assert(ticketOf({ id: 9, ticket_code: null }) === "AURA-00009", "REM-6: الاشتقاق احتياطي لصفوف ما قبل الهجرة فقط");
 
-    const { onRequestGet: reminders } = await import("../functions/api/cron/reminders.js");
+    const { onRequestGet: reminders } = await import("../../functions/api/cron/reminders.js");
     const marked = [];
     const env = {
       CRON_SECRET: "s3cr3t",
@@ -392,7 +392,7 @@ async function runTests() {
 
   // ── stats — أرقام حقيقية فقط، والجدول الناقص لا يُسقط النقطة ──────────────
   {
-    const { onRequestPost: stats } = await import("../functions/api/stats.js");
+    const { onRequestPost: stats } = await import("../../functions/api/stats.js");
     const env = {
       DB: mockDb([
         { match: /SUM\(total\)/, first: () => ({ v: 1500 }) },
@@ -408,7 +408,7 @@ async function runTests() {
 
   // ── health — ٥٠٣ عند سقوط فحص حرج، ٢٠٠ عند السلامة ───────────────────────
   {
-    const { onRequest: health } = await import("../functions/api/health.js");
+    const { onRequest: health } = await import("../../functions/api/health.js");
     const req = new Request("https://x.test/api/health");
 
     const down = await health(ctx(req, {}));

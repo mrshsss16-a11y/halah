@@ -12,14 +12,14 @@
 //              التوقيع الخاطئ يُرفض ٤٠١ والصحيح يصل المعالجة
 //   instagram — صفر نشر مباشر: كل مسودة تنتهي بـ`enqueue` و[SKIP] لا يدخل
 //   support   — معرّف متجر غير معروف يُرفض (fail-closed) لا يُقبل بصمت
-import { generateProductCopy } from "../functions/_lib/domain/copy.js";
-import { CopyParseError, parseSeoResponse } from "../functions/_lib/domain/copyParse.js";
-import { replyToVisitor } from "../functions/_lib/domain/conversation.js";
-import { autoReply } from "../functions/_lib/domain/whatsappAutoReply.js";
-import { routeInbound } from "../functions/_lib/domain/whatsappInbound.js";
-import { draftReply, processIgEvents } from "../functions/_lib/domain/instagram.js";
-import { resolveWidgetStoreId } from "../functions/_lib/domain/support.js";
-import { onRequestPost as waWebhookPost } from "../functions/api/whatsapp/webhook.js";
+import { generateProductCopy } from "../../functions/_lib/domain/copy.js";
+import { CopyParseError, parseSeoResponse } from "../../functions/_lib/domain/copyParse.js";
+import { replyToVisitor } from "../../functions/_lib/domain/conversation.js";
+import { autoReply } from "../../functions/_lib/domain/whatsappAutoReply.js";
+import { routeInbound } from "../../functions/_lib/domain/whatsappInbound.js";
+import { draftReply, processIgEvents } from "../../functions/_lib/domain/instagram.js";
+import { resolveWidgetStoreId } from "../../functions/_lib/domain/support.js";
+import { onRequestPost as waWebhookPost } from "../../functions/api/whatsapp/webhook.js";
 
 let passed = 0;
 let total = 0;

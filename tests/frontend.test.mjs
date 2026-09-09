@@ -75,6 +75,69 @@ async function runTests() {
     }
   }
 
+  // ---- المرحلة ٥: تقسيم dashboard.html وadmin.html ----
+  // الحجّة: بعد نقل العلامة إلى partials/ والـJS إلى وحدات ES، ينكسر الاتصال
+  // بينهما بصمت — معرّف عنصر يتغيّر بملف ولا يتبعه الآخر، أو دالة تستدعيها سمة
+  // onclick تبقى داخل نطاق الوحدة فلا يجدها المتصفح. الفحصان أدناه يقرآن ناتج
+  // البناء (dist/، حيث كل #include مفكوك) فيغطيان الصفحة كما تصل التاجر فعلاً.
+  const PAGES = [
+    { html: "dashboard.html", jsDir: "js/dashboard" },
+    { html: "admin.html", jsDir: "js/admin" }
+  ];
+
+  function readJsDir(dir) {
+    if (!existsSync(dir)) return "";
+    return readdirSync(dir).filter((n) => n.endsWith(".js")).map((n) => readFileSync(join(dir, n), "utf8")).join("\n");
+  }
+
+  {
+    const distDir = join(ROOT, "dist");
+    for (const page of PAGES) {
+      const pagePath = join(distDir, page.html);
+      if (!existsSync(pagePath)) { assert(false, `dist/${page.html} موجود بعد البناء`); continue; }
+      const html = readFileSync(pagePath, "utf8");
+      const js = readJsDir(join(distDir, page.jsDir));
+
+      // (١) كل معرّف يطلبه JS بـgetElementById موجود بالـHTML المفكوك.
+      const htmlIds = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+      const wantedIds = new Set([...js.matchAll(/getElementById\(\s*["'`]([A-Za-z][\w-]*)["'`]\s*\)/g)].map((m) => m[1]));
+      // عنصر ينشئه JS نفسه ويعطيه id (سكربت FB SDK) ليس معرّفاً ناقصاً بالعلامة.
+      const jsCreatedIds = new Set([...js.matchAll(/\.id\s*=\s*["'`]([A-Za-z][\w-]*)["'`]/g)].map((m) => m[1]));
+      const missingIds = [...wantedIds].filter((id) => !htmlIds.has(id) && !jsCreatedIds.has(id));
+      assert(wantedIds.size > 0, `${page.html}: وحدات ${page.jsDir} تطلب معرّفات عناصر (الفحص غير فارغ)`);
+      assert(missingIds.length === 0, `${page.html}: كل معرّف يستدعيه JS موجود بالـHTML${missingIds.length ? " — ناقص: " + missingIds.join(", ") : ""}`);
+
+      // (٢) كل دالة تستدعيها سمة onclick/onchange/onsubmit/onkeydown منشورة على
+      //     window بـmain.js (وحدات ES لها نطاقها الخاص — بلا النشر لا تعمل).
+      const handlers = new Set();
+      for (const m of html.matchAll(/\son(?:click|change|submit|keydown)="([^"]*)"/g)) {
+        for (const c of m[1].matchAll(/([A-Za-z_$][\w$]*)\s*\(/g)) handlers.add(c[1]);
+      }
+      // استدعاءات JS المدمجة داخل السمة نفسها (this.remove()، JSON.parse…) ليست دوال عامة.
+      const BUILTIN = new Set(["remove", "querySelector", "if", "for", "while", "switch", "return", "typeof", "String", "Number", "Boolean"]);
+      const exposed = new Set();
+      for (const block of js.matchAll(/Object\.assign\(\s*window\s*,\s*\{([\s\S]*?)\}\s*\)/g)) {
+        const body = block[1].replace(/\/\/[^\n]*/g, ""); // تعليقات التجميع داخل الكائن
+        for (const name of body.matchAll(/([A-Za-z_$][\w$]*)\s*(?::|,|$)/gm)) exposed.add(name[1]);
+      }
+      for (const m of js.matchAll(/window\.([A-Za-z_$][\w$]*)\s*=/g)) exposed.add(m[1]);
+      const missingFns = [...handlers].filter((fn) => !BUILTIN.has(fn) && !exposed.has(fn));
+      assert(handlers.size > 0, `${page.html}: توجد سمات onclick لفحصها`);
+      assert(missingFns.length === 0, `${page.html}: كل دالة تستدعيها onclick منشورة على window${missingFns.length ? " — ناقص: " + missingFns.join(", ") : ""}`);
+    }
+  }
+
+  // ---- الصفحتان المقسّمتان تحوّلتا لهيكل + includes + وحدات ES ----
+  {
+    for (const page of PAGES) {
+      const src = readFileSync(join(ROOT, page.html), "utf8");
+      const lines = src.split("\n").filter((l, i, a) => !(i === a.length - 1 && l === "")).length;
+      assert(lines <= 300, `${page.html} هيكل فقط (${lines} سطراً ≤ ٣٠٠)`);
+      assert(!/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?\S[\s\S]*?<\/script>/.test(src), `${page.html} بلا أي <script> مضمّن`);
+      assert(src.includes(`<script type="module" src="/${page.jsDir}/main.js"></script>`), `${page.html} يحمّل /${page.jsDir}/main.js كوحدة ES`);
+    }
+  }
+
   console.log(`\n${passed}/${total} passed.`);
   if (passed !== total) process.exit(1);
 }
