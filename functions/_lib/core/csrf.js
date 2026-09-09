@@ -23,7 +23,17 @@ function projectOrigins(env) {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  return new Set(["https://halah.aura.sa", "https://hala-ai-os.pages.dev", "https://s.salla.sa", ...extra]);
+  // aura.sa وwww.aura.sa: موقع أورا نفسه يستضيف ودجت الدعم (/api/support).
+  // رُصد بسجل الأخطاء 2026-09-08: CSRF_REJECTED لأصل aura.sa ⇒ ودجت الموقع
+  // الحي كان محجوباً منذ تفعيل بوابة CSRF. نطاقان يملكهما المشروع، لا أسرار.
+  return new Set([
+    "https://halah.aura.sa",
+    "https://aura.sa",
+    "https://www.aura.sa",
+    "https://hala-ai-os.pages.dev",
+    "https://s.salla.sa",
+    ...extra
+  ]);
 }
 
 function originAllowed(origin, requestOrigin, env, extraAllowed) {
