@@ -30,6 +30,8 @@ async function copyHandler(body, env, request) {
   const features = (body.features || "").toString().trim().slice(0, 500);
   const existingDescription = (body.existingDescription || "").toString().trim().slice(0, 3000);
   const imageUrl = (body.imageUrl || "").toString().trim().slice(0, 500);
+  // خيارات المنتج (ألوان/مقاسات) كما سُحبت من سلة — نص JSON من الكتالوج.
+  const variants = (body.variants || "").toString().slice(0, 2000);
 
   if (!name) return { error: "أدخل اسم المنتج أولاً." };
 
@@ -41,7 +43,7 @@ async function copyHandler(body, env, request) {
   let parsed;
   try {
     parsed = await generateProductCopy({
-      env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, keywordsExtra: body.keywords
+      env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, variants, keywordsExtra: body.keywords
     });
   } catch (err) {
     if (!(err instanceof CopyParseError)) throw err;

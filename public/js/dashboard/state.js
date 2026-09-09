@@ -19,6 +19,8 @@ export const S = {
 
   // ── منتجاتي (كتالوج سلة المسحوب) ──
   catalogItems: {},
+  // خيارات المنتج المختار (JSON من سلة) — تُمرَّر للتوليد كبيانات مؤكَّدة.
+  selectedVariants: null,
   catalogNextOffset: 0,
   catalogLoadedOnce: false,
   lastCatalogTotal: 0,

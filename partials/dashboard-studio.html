@@ -54,7 +54,7 @@
       <div id="copyPending" class="hidden sleek-card rounded-3xl p-6 shadow-sm flex items-center gap-3">
         <span class="material-symbols-outlined text-2xl text-black animate-spin">progress_activity</span>
         <div>
-          <p class="text-sm font-black text-black">جاري تحليل صورة المنتج وكتابة الوصف…</p>
+          <p id="copyPendingStage" class="text-sm font-black text-black">الخطوة ١ من ٢ — تحليل صورة المنتج…</p>
           <p id="copyPendingName" class="text-[11px] text-slate-600 font-medium"></p>
         </div>
       </div>
@@ -109,6 +109,32 @@
           </div>
         </div>
 
+        <div id="publishBox" class="hidden sleek-card-darkborder rounded-3xl p-6 space-y-3 shadow-sm">
+          <h3 class="text-sm font-black text-black">اعتمد وانشر مباشرة على سلة</h3>
+          <p class="text-xs text-slate-600 font-medium">اختر المنتج من متجرك لتحديث وصفه بالوصف اللي راجعته أعلاه.</p>
+          <select id="publishProduct" onchange="onPublishProductChange()" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></select>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="publishBtn" onclick="publishToSalla()" class="sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-base">check_circle</span>
+              <span id="publishBtnText">اعتمد وانشر على سلة</span>
+            </button>
+            <button id="regenBtn" onclick="regenerateCopy()" class="sleek-btn-white py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+              <span class="material-symbols-outlined text-base">refresh</span>
+              <span>أعد التوليد</span>
+            </button>
+          </div>
+          <div id="publishTargetLine" class="hidden text-[11px] font-bold text-black bg-slate-100 border border-slate-300 rounded-xl px-3 py-2"></div>
+          <div id="publishFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+
+        <!-- السيو ونسخة واتساب تفاصيل ثانوية: كانت تفصل بين الوصف وزر النشر
+             بسبعين سطراً، فيقرأ التاجر الوصف ثم يبحث عن الزر. الفعل الأساسي
+             صار ملاصقاً للنص الذي يراجعه. -->
+        <details class="sleek-card rounded-3xl p-5 shadow-sm">
+          <summary class="cursor-pointer select-none flex items-center gap-2 text-xs font-black text-black">
+            <span class="material-symbols-outlined text-base">tune</span>
+            <span>حقول السيو ونسخة واتساب — تُنشر مع الوصف تلقائياً</span>
+          </summary>
+          <div class="space-y-4 pt-4">
         <div class="sleek-card rounded-3xl p-6 space-y-3 shadow-sm">
           <h3 class="text-sm font-black text-black border-b border-slate-200 pb-3">حقول السيو (SEO)</h3>
           <div class="grid grid-cols-1 gap-2.5 text-xs">
@@ -128,23 +154,9 @@
           </div>
           <div id="outWhatsapp" class="text-xs leading-relaxed text-black whitespace-pre-wrap"></div>
         </div>
-
-        <div id="publishBox" class="hidden sleek-card-darkborder rounded-3xl p-6 space-y-3 shadow-sm">
-          <h3 class="text-sm font-black text-black">اعتمد وانشر مباشرة على سلة</h3>
-          <p class="text-xs text-slate-600 font-medium">اختر المنتج من متجرك لتحديث وصفه بالوصف اللي راجعته أعلاه.</p>
-          <select id="publishProduct" onchange="onPublishProductChange()" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></select>
-          <div class="grid grid-cols-2 gap-2">
-            <button id="publishBtn" onclick="publishToSalla()" class="sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined text-base">check_circle</span>
-              <span id="publishBtnText">اعتمد وانشر على سلة</span>
-            </button>
-            <button id="regenBtn" onclick="regenerateCopy()" class="sleek-btn-white py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined text-base">refresh</span>
-              <span>أعد التوليد</span>
-            </button>
           </div>
-          <div id="publishTargetLine" class="hidden text-[11px] font-bold text-black bg-slate-100 border border-slate-300 rounded-xl px-3 py-2"></div>
-          <div id="publishFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+        </details>
+
         </div>
       </div>
 

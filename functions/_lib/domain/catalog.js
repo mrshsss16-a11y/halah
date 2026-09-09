@@ -80,6 +80,27 @@ function normalizeImage(product) {
  * منتج بلا SKU **لا يُدرَج** — المفتاح الأساسي (merchant_id, sku) يتطلبه.
  * المستدعي يعدّه ويُبلغ عنه (المخاطرة ٧ بالخطة) بدل إسقاطه صامتاً.
  */
+/**
+ * خيارات المنتج (لون، مقاس…) بصيغة مضغوطة للبرومبت.
+ *
+ * سلة: `options[].name` + `options[].values[].name`. نحدّ بستة خيارات و١٢
+ * قيمة لكل خيار — منتج بأربعين مقاساً يملأ البرومبت بلا فائدة، والمقصود
+ * إعلام النموذج بالمدى المتاح لا سرده كاملاً.
+ */
+function normalizeVariants(product) {
+  const options = Array.isArray(product?.options) ? product.options.slice(0, 6) : [];
+  const out = [];
+  for (const opt of options) {
+    const name = text(opt?.name, 40);
+    const values = (Array.isArray(opt?.values) ? opt.values : [])
+      .slice(0, 12)
+      .map((v) => text(v?.name || v?.display_value, 40))
+      .filter(Boolean);
+    if (name && values.length) out.push({ name, values });
+  }
+  return out.length ? JSON.stringify(out).slice(0, 2000) : null;
+}
+
 function toRow(product) {
   const sku = text(product?.sku, 100);
   const name = text(product?.name, 200);
@@ -91,7 +112,8 @@ function toRow(product) {
     price: normalizePrice(product?.price),
     category: normalizeCategory(product),
     currentDescription: text(product?.description, 20000),
-    imageUrl: normalizeImage(product)
+    imageUrl: normalizeImage(product),
+    variants: normalizeVariants(product)
   };
 }
 
@@ -138,8 +160,8 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = f
     // يمنع أي كتابة فوق صف تاجر ثانٍ حتى لو تكرر SKU بين متجرين.
     const stmt = db.prepare(
       `INSERT INTO store_products
-         (merchant_id, sku, salla_product_id, name, price, category, current_description, original_description, image_url, synced_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+         (merchant_id, sku, salla_product_id, name, price, category, current_description, original_description, image_url, variants, synced_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
        ON CONFLICT(merchant_id, sku) DO UPDATE SET
          salla_product_id = excluded.salla_product_id,
          name = excluded.name,
@@ -150,10 +172,11 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = f
          -- يحتاجه "التراجع" بعد نشر هالة.
          original_description = COALESCE(store_products.original_description, excluded.current_description),
          image_url = excluded.image_url,
+         variants = excluded.variants,
          synced_at = datetime('now')`
     );
     const batch = rows.map((r) =>
-      stmt.bind(mid, r.sku, r.sallaProductId, r.name, r.price, r.category, r.currentDescription, r.currentDescription, r.imageUrl)
+      stmt.bind(mid, r.sku, r.sallaProductId, r.name, r.price, r.category, r.currentDescription, r.currentDescription, r.imageUrl, r.variants)
     );
     for (let i = 0; i < batch.length; i += UPSERT_CHUNK) {
       await db.batch(batch.slice(i, i + UPSERT_CHUNK));
@@ -187,7 +210,7 @@ export async function listCatalog(env, { merchantId, limit = CATALOG_LIST_LIMITS
   const { results } = cat
     ? await db
         .prepare(
-          `SELECT sku, salla_product_id, name, price, category, current_description, image_url, synced_at
+          `SELECT sku, salla_product_id, name, price, category, current_description, image_url, variants, synced_at
            FROM store_products WHERE merchant_id = ? AND category = ?
            ORDER BY synced_at DESC, sku ASC LIMIT ? OFFSET ?`
         )
@@ -195,7 +218,7 @@ export async function listCatalog(env, { merchantId, limit = CATALOG_LIST_LIMITS
         .all()
     : await db
         .prepare(
-          `SELECT sku, salla_product_id, name, price, category, current_description, image_url, synced_at
+          `SELECT sku, salla_product_id, name, price, category, current_description, image_url, variants, synced_at
            FROM store_products WHERE merchant_id = ?
            ORDER BY synced_at DESC, sku ASC LIMIT ? OFFSET ?`
         )
@@ -214,7 +237,7 @@ export async function getCatalogItem(env, { merchantId, sku } = {}) {
 
   return db
     .prepare(
-      `SELECT sku, salla_product_id, name, price, category, current_description, original_description, hala_published_at, image_url, synced_at
+      `SELECT sku, salla_product_id, name, price, category, current_description, original_description, hala_published_at, image_url, variants, synced_at
        FROM store_products WHERE merchant_id = ? AND sku = ?`
     )
     .bind(mid, key)
@@ -262,7 +285,7 @@ export async function listPriorityCatalog(env, { merchantId, limit = 500 } = {})
   const cap = Math.min(Math.max(Number(limit) || 1, 1), 500);
   const { results } = await db
     .prepare(
-      `SELECT sku, name, price, category, current_description, image_url, hala_published_at
+      `SELECT sku, name, price, category, current_description, image_url, variants, hala_published_at
          FROM store_products
         WHERE merchant_id = ?
         ORDER BY (hala_published_at IS NOT NULL) ASC,
@@ -304,7 +327,7 @@ export async function selectCatalogBySkus(env, { merchantId, skus } = {}) {
     const holes = part.map(() => "?").join(",");
     const { results } = await db
       .prepare(
-        `SELECT sku, name, price, category, current_description, image_url
+        `SELECT sku, name, price, category, current_description, image_url, variants
            FROM store_products
           WHERE merchant_id = ? AND sku IN (${holes})`
       )

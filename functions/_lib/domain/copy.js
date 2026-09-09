@@ -77,7 +77,7 @@ async function saveCopy(env, { merchantId, productName, opening, keywords }) {
 // below AND by cron/bulk_process.js (B3), which calls this directly instead
 // of self-fetching over HTTP to avoid an extra round-trip per product in a
 // job that's already rate-limited to ~1/sec by Salla.
-export async function generateProductCopy({ env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, keywordsExtra }) {
+export async function generateProductCopy({ env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, variants, keywordsExtra }) {
   const keywords = seedKeywords(name, category, keywordsExtra);
   const recent = await recentCopy(env, merchantId, RECENT_OPENINGS_WINDOW).catch(() => []);
 
@@ -94,6 +94,15 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // بنفس المصطلحات. فئة غير مغطاة ⇒ "" ⇒ لا فرق عن السلوك القديم.
   // الفئة أولاً، ثم اسم المنتج احتياطاً: فئة المتجر بيانات تاجر قد تكون
   // خاطئة (رُصد "فستان" مصنَّفاً تحت "البلايز" — فسقط الكتيب كله بصمت).
+  // الخيارات تصل نصاً JSON من الكتالوج — تحليل متساهل: صف تالف لا يُسقط التوليد.
+  let parsedVariants = [];
+  if (variants) {
+    try {
+      parsedVariants = typeof variants === "string" ? JSON.parse(variants) : variants;
+      if (!Array.isArray(parsedVariants)) parsedVariants = [];
+    } catch { parsedVariants = []; }
+  }
+
   const taxonomyBlock = taxonomyForProduct({ category, name });
   const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock);
   // فشل الرؤية كان يُبلع بـ`.catch(() => null)` بلا سطر واحد بالسجل — فحين
@@ -150,7 +159,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
     : [];
 
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, styleExamples, profileBlock, taxonomyBlock });
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock });
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
   const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
 

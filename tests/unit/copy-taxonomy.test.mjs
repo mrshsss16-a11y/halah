@@ -370,3 +370,88 @@ main()
       "APPLY-9: زر التطبيق موجود بالواجهة ومربوط"
     );
   }
+
+  // ── خيارات المنتج (ألوان/مقاسات) بيانات مؤكَّدة فوق الصورة (2026-09-10) ──
+  {
+    const { readFileSync } = await import("node:fs");
+    const readF = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const { buildSeoSystem } = await import("../../functions/_lib/ai/prompts/seo.js");
+
+    const args = { recent: [], keywords: ["فستان"], existingDescription: "", styleExamples: [] };
+    const withVars = buildSeoSystem({
+      ...args,
+      visionNotes: "فستان أخضر فاتح بأكمام قصيرة.",
+      variants: [{ name: "اللون", values: ["أخضر", "أسود", "بيج"] }, { name: "المقاس", values: ["S", "M", "L"] }]
+    });
+    assert(
+      /خيارات المنتج المتاحة بمتجر التاجر/.test(withVars) &&
+        /اللون: أخضر · أسود · بيج/.test(withVars) && /المقاس: S · M · L/.test(withVars),
+      "VAR-1: الخيارات تُحقن بالبرومبت بصيغة مقروءة"
+    );
+    assert(
+      /الخيارات هي المرجع/.test(withVars) && /لون الصورة لون النموذج المعروض/.test(withVars),
+      "VAR-2: عند التعارض الخيارات تتقدّم على لون الصورة"
+    );
+    assert(
+      /لا تذكري خياراً غير مذكور بهذي القائمة/.test(withVars),
+      "VAR-3: ممنوع ادعاء لون أو مقاس غير مذكور — لا اختلاق"
+    );
+    // الأولوية بالترتيب: الخيارات قبل ملاحظات الصورة.
+    assert(
+      withVars.indexOf("خيارات المنتج المتاحة") < withVars.indexOf("ما يُرى في صورة المنتج"),
+      "VAR-4: كتلة الخيارات تسبق ملاحظات الصورة بالبرومبت"
+    );
+    // بلا خيارات ⇒ السلوك السابق حرفياً.
+    const noVars = buildSeoSystem({ ...args, visionNotes: "فستان أخضر." });
+    assert(
+      !/خيارات المنتج المتاحة/.test(noVars),
+      "VAR-5: منتج بلا خيارات ⇒ لا كتلة ولا تغيير عن السلوك السابق"
+    );
+    // صف تالف لا يُسقط التوليد.
+    assert(
+      !/خيارات المنتج المتاحة/.test(buildSeoSystem({ ...args, visionNotes: "x", variants: "ليست مصفوفة" })) &&
+        !/خيارات المنتج المتاحة/.test(buildSeoSystem({ ...args, visionNotes: "x", variants: [{ name: "اللون" }] })),
+      "VAR-6: خيارات تالفة أو بلا قيم تُتجاهَل بصمت"
+    );
+    // السلسلة كاملة: سلة ⇒ قاعدة ⇒ list ⇒ الواجهة ⇒ التوليد، والجملة أيضاً.
+    assert(
+      /ALTER TABLE store_products ADD COLUMN variants/.test(readF("../../migrations/0027_store_product_variants.sql")),
+      "VAR-7: هجرة 0027 تضيف عمود variants"
+    );
+    assert(
+      /function normalizeVariants/.test(readF("../../functions/_lib/domain/catalog.js")) &&
+        /variants = excluded\.variants/.test(readF("../../functions/_lib/domain/catalog.js")),
+      "VAR-8: السحب يستخرج الخيارات ويحدّثها بكل مزامنة"
+    );
+    assert(
+      /variants: r\.variants \|\| null/.test(readF("../../functions/api/store/catalog/list.js")) &&
+        /variants: S\.selectedVariants/.test(readF("../../public/js/dashboard/studio.js")) &&
+        /variants: catalogRow\?\.variants/.test(readF("../../functions/_lib/domain/bulkTick.js")),
+      "VAR-9: الخيارات تصل المسارين — المفرد والجملة"
+    );
+  }
+
+  // ── إزالة الخطوة الزايدة: النشر ملاصق للوصف + مؤشر مرحلتين ──────────
+  {
+    const dashV = await readComposedPage("dashboard");
+    const catV = read("../../public/js/dashboard/catalog.js");
+    const iDesc = dashV.indexOf('id="outDescription"');
+    const iPub = dashV.indexOf('id="publishBox"');
+    const iSeo = dashV.indexOf("حقول السيو (SEO)");
+    assert(
+      iDesc > 0 && iPub > iDesc && iSeo > iPub,
+      "STEP-1: زر النشر بعد الوصف مباشرة، والسيو بعده لا بينهما"
+    );
+    assert(
+      /حقول السيو ونسخة واتساب — تُنشر مع الوصف تلقائياً/.test(dashV),
+      "STEP-2: السيو وواتساب مطويّان — تفاصيل لا تفصل الفعل عن النص"
+    );
+    assert(
+      /id="copyPendingStage"/.test(dashV) && /الخطوة ١ من ٢/.test(catV) && /الخطوة ٢ من ٢/.test(catV),
+      "STEP-3: مؤشر مرحلتين يعكس نداءي الرؤية والكتابة"
+    );
+    assert(
+      /clearTimeout\(window\.__halaStageTimer\)/.test(catV),
+      "STEP-4: مؤقّت المراحل يُلغى عند الإغلاق — لا نص يتبدّل بعد الانتهاء"
+    );
+  }

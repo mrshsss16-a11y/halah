@@ -56,6 +56,8 @@ async function catalogListHandler(body, env, request) {
       price: r.price,
       category: r.category,
       imageUrl: r.image_url || null,
+      // خيارات المنتج (لون/مقاس) — الواجهة تمرّرها للتوليد كبيانات مؤكَّدة.
+      variants: r.variants || null,
       // الوصف الحالي كامل — منه تولّد هالة النسخة المحسّنة بلا لصق يدوي.
       currentDescription: r.current_description || "",
       hasDescription: !!(r.current_description && String(r.current_description).trim())

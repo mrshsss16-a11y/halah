@@ -59,7 +59,32 @@ export function visionPromptFromTaxonomy(taxonomy) {
     taxonomy
   ].join("\n");
 }
-export function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, styleExamples, profileBlock, taxonomyBlock }) {
+/**
+ * خيارات المنتج من سلة — **بيانات تاجر مؤكَّدة**، أعلى ثقة من قراءة الصورة.
+ *
+ * رصده صاحب المشروع 2026-09-10: الوصف يذكر لون الصورة وحده لمنتج متوفر بعدة
+ * ألوان. نقص بيع (عميل يبحث عن الأسود ولا يجده بالوصف)، وتضليل (يقرأ "أخضر"
+ * فيظنه اللون الوحيد). الصورة تعرض **نموذجاً واحداً**، لا مدى المتاح.
+ */
+function variantsBlock(variants) {
+  const list = Array.isArray(variants) ? variants : [];
+  const lines = list
+    .filter((v) => v && v.name && Array.isArray(v.values) && v.values.length)
+    .map((v) => `- ${v.name}: ${v.values.join(" · ")}`);
+  if (!lines.length) return "";
+  return [
+    "## خيارات المنتج المتاحة بمتجر التاجر (بيانات مؤكَّدة — أعلى ثقة من الصورة)",
+    ...lines,
+    "",
+    "**واجب:** الصورة تعرض نموذجاً واحداً فقط. لو كان للمنتج أكثر من لون أو مقاس،",
+    "اذكري المدى المتاح لا ما بالصورة وحده — مثل «متوفر بالأخضر والأسود والبيج».",
+    "وعند تعارض لون الصورة مع الخيارات المذكورة هنا، **الخيارات هي المرجع**.",
+    "**حدّ:** لا تذكري خياراً غير مذكور بهذي القائمة، ولا تدّعي توفّر مقاس أو لون",
+    "ما ورد هنا نصاً."
+  ].join("\n");
+}
+
+export function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants, styleExamples, profileBlock, taxonomyBlock }) {
   const avoid = recent.length
     ? `\n\n## لا تكرري هذه الافتتاحيات السابقة لنفس المتجر:\n${recent.map((r, i) => `${i + 1}. "${r.opening}"`).join("\n")}`
     : "";
@@ -86,6 +111,8 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
       `## الوصف الحالي للمنتج (بيانات حقيقية — حسّني الصياغة والـSEO، لا تخترعي مواصفات غير مذكورة هنا أو بالمزايا المدخلة)\n${existingFenced}`
     );
   }
+  const variantsText = variantsBlock(variants);
+  if (variantsText) grounding.push(variantsText);
   if (visionNotes) {
     grounding.push(
       `## ما يُرى في صورة المنتج (ملاحظات وصف بصري، ليست مواصفات مؤكدة من التاجر)\n` +
@@ -94,6 +121,8 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
         `- اذكري صراحةً في الوصف كل تفصيل بصري ورد بهذي الملاحظات: اللون، ونوع القصّة/السيلويت، والطول، والأكمام، وأي تفصيل بارز مذكور. هذي حقائق مرئية، ذكرها مطلوب لا اختياري.\n` +
         `- ابنِ على هذي المرئيات اقتراح استخدام معقول (يناسب أي مناسبة أو موسم أو إطلالة)، مشتقاً مما يُرى فقط: فستان طويل بقصّة رسمية ⇒ المناسبات والسهرات · لون فاتح وقصّة خفيفة ⇒ الأجواء الصيفية والنهارية. بلا ادعاء خامة أو جودة غير مذكورة.\n` +
         `- الصمت عن تفصيل ورد بهذي الملاحظات = نقص بالوصف، لا احتياط. وصف بلا لون رغم ذكره هنا = وصف ناقص.\n` +
+          `- **لون الصورة لون النموذج المعروض، لا لون المنتج كله.** إن وردت خيارات ألوان بالقسم أعلاه فاذكري المدى المتاح، ولا تحصري المنتج بلون الصورة.
+` +
         `\n**وبالحدود التالية:**\n` +
         `- لا تذكري أي تفصيل غير مذكور هنا صراحةً (خامة، تطريز، بطانة، طبقات، إغلاق…). ما لم يُذكر = غير معروف ⇒ اسكتي عنه.\n` +
         `- ممنوع بناء أي ادعاء جودة أو خامة على هذي الملاحظات (مثل "خامة فاخرة" أو "قماش يتنفس") ما لم تكن الخامة نفسها مذكورة هنا بالنص.\n` +

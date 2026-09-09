@@ -119,7 +119,9 @@ async function tickGenerate(log, generateCopy) {
         category: item.category,
         features: "",
         existingDescription: catalogRow?.current_description || "",
-        imageUrl: catalogRow?.image_url || ""
+        imageUrl: catalogRow?.image_url || "",
+        // نفس بيانات المسار المفرد: الخيارات مؤكَّدة من التاجر وتتقدّم على الصورة.
+        variants: catalogRow?.variants || null
       });
 
       const payload = buildDescriptionPayload({ item, parsed, catalogRow });

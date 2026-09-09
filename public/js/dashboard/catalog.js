@@ -253,6 +253,9 @@ export function useCatalogItem(sku) {
   document.getElementById("pCategory").value = it.category || "";
   document.getElementById("pExistingDescription").value = it.currentDescription || "";
   document.getElementById("pImageUrl").value = it.imageUrl || "";
+  // خيارات المنتج (ألوان/مقاسات) — تُحمل بالحالة لا بحقل ظاهر: بيانات سلة
+  // لا يحرّرها التاجر، وعرضها نصاً JSON تشويش.
+  S.selectedVariants = it.variants || null;
 
   const banner = document.getElementById("studioSourceBanner");
   // innerText لا innerHTML — اسم المنتج من سلة.
@@ -282,6 +285,16 @@ export function openCopyPanel(it) {
     if (nameEl) nameEl.innerText = it?.name || "";
     pending.classList.remove("hidden");
     pending.scrollIntoView({ behavior: "smooth", block: "center" });
+    // نداءان متتاليان (رؤية ثم كتابة) ≈ ١٥ ثانية. مؤشر بنص ثابت يبدو معلّقاً؛
+    // تبديل النص عند الثانية السابعة يعكس المرحلة الفعلية بصدق.
+    const stage = document.getElementById("copyPendingStage");
+    if (stage) {
+      stage.innerText = "الخطوة ١ من ٢ — تحليل صورة المنتج…";
+      clearTimeout(window.__halaStageTimer);
+      window.__halaStageTimer = setTimeout(() => {
+        if (!pending.classList.contains("hidden")) stage.innerText = "الخطوة ٢ من ٢ — كتابة الوصف والسيو…";
+      }, 7000);
+    }
   }
   // رأس اللوحة: صورة المنتج واسمه — يعرف التاجر أي منتج يراجع بلا تخمين.
   const img = document.getElementById("copyResultImg");
@@ -295,6 +308,7 @@ export function openCopyPanel(it) {
 
 /** إغلاق اللوحة — الشبكة تبقى كما هي، لا إعادة تحميل. */
 export function closeCopyPanel() {
+  clearTimeout(window.__halaStageTimer);
   document.getElementById("copyPending")?.classList.add("hidden");
   document.getElementById("copyResult")?.classList.add("hidden");
   document.getElementById("copyFeedback")?.classList.add("hidden");

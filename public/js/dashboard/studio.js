@@ -27,10 +27,12 @@ export async function generateCopy() {
       tone: document.getElementById("pTone").value,
       features: document.getElementById("pFeatures").value.trim(),
       existingDescription: document.getElementById("pExistingDescription").value.trim(),
-      imageUrl: document.getElementById("pImageUrl").value.trim()
+      imageUrl: document.getElementById("pImageUrl").value.trim(),
+      variants: S.selectedVariants || ""
     });
 
     // خطأ خادم بلا حقل error كان يمرّ كنجاح فيعرض مربعات فارغة بصمت.
+    clearTimeout(window.__halaStageTimer);
     document.getElementById("copyPending")?.classList.add("hidden");
     const emptyResult = !data || (!data.copywriting && !data.result);
     if (!res.ok || data?.error || emptyResult) {
