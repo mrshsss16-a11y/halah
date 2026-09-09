@@ -7,7 +7,9 @@ import { loadWaStatus } from "./whatsapp.js";
 import { loadStore } from "./store.js";
 
 export function switchTab(tab) {
-  const tabs = ["studio", "catalog", "agent", "store"];
+  // «وصف المنتجات» دُمج داخل «منتجاتي» — أي نداء قديم يُحوَّل بدل أن يُخفي كل شيء.
+  if (tab === "studio") tab = "catalog";
+  const tabs = ["catalog", "agent", "store"];
   tabs.forEach((t) => {
     const btn = document.getElementById("navTab" + t.charAt(0).toUpperCase() + t.slice(1));
     const sec = document.getElementById("section" + t.charAt(0).toUpperCase() + t.slice(1));
@@ -16,6 +18,9 @@ export function switchTab(tab) {
   });
   if (tab === "agent") { loadAgentContext(); loadWaStatus(); }
   if (tab === "store") loadStore();
-  if (tab === "catalog" && !S.catalogLoadedOnce) loadCatalog(0);
-  if (tab === "studio" && !S.reviewLoadedOnce) { S.reviewLoadedOnce = true; loadReview("pending"); }
+  if (tab === "catalog") {
+    if (!S.catalogLoadedOnce) loadCatalog(0);
+    // طابور المراجعة بنفس التبويب الآن — يُحمَّل مرة واحدة معه.
+    if (!S.reviewLoadedOnce) { S.reviewLoadedOnce = true; loadReview("pending"); }
+  }
 }

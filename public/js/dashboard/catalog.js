@@ -7,7 +7,6 @@
 import { S } from "./state.js";
 import { fetchCatalogList, postCatalogSync, postBulkGenerateSelected } from "./api.js";
 import { renderIdentityLine } from "./render.js";
-import { switchTab } from "./tabs.js";
 import { setPublishTarget, generateCopy } from "./studio.js";
 import { pollBulkJob } from "./bulk.js";
 
@@ -227,12 +226,13 @@ export async function generateSelectedCatalog() {
     if (!res.ok || !data?.ok) {
       showMsg("catalogFeedback", data?.error || "تعذر بدء التوليد. حاول مرة ثانية.", "error");
     } else {
-      showMsg("catalogFeedback", (data.message || `بدأ توليد ${skus.length} وصفاً`) + " — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة)، وراجعها بتبويب «وصف المنتجات» قبل النشر.", "success");
+      // المراجعة صارت بنفس التبويب — لا إحالة لتبويب ثانٍ، والقائمة أسفل الشبكة.
+      showMsg("catalogFeedback", (data.message || `بدأ توليد ${skus.length} وصفاً`) + " — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة)، وتظهر بقائمة المراجعة تحت لتعتمدها واحداً واحداً.", "success");
       S.selectedSkus.clear();
       selectAllCatalog(false);
       renderCatalogSelection();
       if (data.jobId) pollBulkJob(data.jobId);
-      switchTab("studio");
+      document.getElementById("reviewCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   } catch (e) {
     showMsg("catalogFeedback", "ما قدرنا نتصل — تأكد من الإنترنت وجرّب مرة ثانية.", "error");
@@ -262,9 +262,42 @@ export function useCatalogItem(sku) {
   // وجهة النشر تُضبط آلياً من المنتج نفسه — لا يكتب التاجر معرّفاً بيده.
   setPublishTarget(it.productId, it.name);
 
-  switchTab("studio");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  // لا قفز لتبويب ثانٍ: اللوحة تُفتح تحت الشبكة نفسها. أول ما يُضغط المنتج
+  // تظهر حالة انتظار باسمه، فيرى التاجر أن شيئاً بدأ فعلاً — كان يحسّ أن
+  // التوليد "بالخلفية" لأن الشاشة تتبدّل ولا أثر مرئي عندها.
+  openCopyPanel(it);
   generateCopy();
+}
+
+/** يفتح لوحة الوصف بحالة انتظار ويمرّرها لمجال الرؤية — بلا تبديل تبويب. */
+export function openCopyPanel(it) {
+  const pending = document.getElementById("copyPending");
+  const result = document.getElementById("copyResult");
+  const feedback = document.getElementById("copyFeedback");
+  if (feedback) feedback.classList.add("hidden");
+  if (result) result.classList.add("hidden");
+  if (pending) {
+    // innerText لا innerHTML — الاسم من سلة.
+    const nameEl = document.getElementById("copyPendingName");
+    if (nameEl) nameEl.innerText = it?.name || "";
+    pending.classList.remove("hidden");
+    pending.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  // رأس اللوحة: صورة المنتج واسمه — يعرف التاجر أي منتج يراجع بلا تخمين.
+  const img = document.getElementById("copyResultImg");
+  if (img) {
+    if (it?.imageUrl) { img.src = it.imageUrl; img.classList.remove("hidden"); }
+    else img.classList.add("hidden");
+  }
+  const rName = document.getElementById("copyResultName");
+  if (rName) rName.innerText = it?.name || "";
+}
+
+/** إغلاق اللوحة — الشبكة تبقى كما هي، لا إعادة تحميل. */
+export function closeCopyPanel() {
+  document.getElementById("copyPending")?.classList.add("hidden");
+  document.getElementById("copyResult")?.classList.add("hidden");
+  document.getElementById("copyFeedback")?.classList.add("hidden");
 }
 
 export async function startCatalogSync() {

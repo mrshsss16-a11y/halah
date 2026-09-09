@@ -11,11 +11,13 @@ async function main() {
     const listSrc = read("../../functions/api/store/catalog/list.js");
     const hookSrc = read("../../functions/api/webhooks/salla.js");
 
-    // #1 التبويب الافتراضي «منتجاتي» — لا نموذج كتابة يدوية أول ما يفتح التاجر.
+    // #1 تبويب واحد افتراضي «منتجاتي ووصفها» — الاستوديو دُمج داخله 2026-09-10،
+    // فلم يعد قسماً مستقلاً ولا تبويباً يقفز إليه الاختيار.
     assert(
-      /id="sectionCatalog" class="space-y-5"/.test(dash) && /id="sectionStudio" class="hidden space-y-5"/.test(dash) &&
+      /id="sectionCatalog" class="space-y-5"/.test(dash) &&
+        !/id="sectionStudio"/.test(dash) && !/navTabStudio/.test(dash) &&
         /id="navTabCatalog"[^>]*class="tab-on/.test(dash),
-      "UX-1: التبويب الافتراضي «منتجاتي» لا الاستوديو"
+      "UX-1: تبويب واحد «منتجاتي ووصفها» — لا قسم استوديو منفصل"
     );
     // #2/#3/#7 الحالة الفارغة ثلاث حالات صادقة من أعلام الخادم.
     assert(
@@ -154,3 +156,67 @@ main()
     console.error(e);
     process.exit(1);
   });
+
+  // ── دمج «منتجاتي» مع «وصف المنتجات» — أقل نقرات وبلا تشتيت (2026-09-10) ──
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const dashM = await readComposedPage("dashboard");
+    const cat = read("../../public/js/dashboard/catalog.js");
+    const stu = read("../../public/js/dashboard/studio.js");
+    const tabs = read("../../public/js/dashboard/tabs.js");
+
+    assert(
+      !/navTabStudio/.test(dashM) && /منتجاتي ووصفها/.test(dashM),
+      "MERGE-1: تبويب «وصف المنتجات» أُزيل وصار «منتجاتي ووصفها»"
+    );
+    // اللوحة داخل قسم المنتجات نفسه — الشبكة تبقى ظاهرة.
+    const section = dashM.slice(dashM.indexOf('id="sectionCatalog"'), dashM.indexOf('id="sectionAgent"'));
+    assert(
+      section.includes('id="copyResult"') && section.includes('id="catalogGrid"') &&
+        section.includes('id="reviewCard"'),
+      "MERGE-2: الشبكة ولوحة الوصف وطابور المراجعة بقسم واحد"
+    );
+    // لا قفز تبويب عند اختيار منتج.
+    assert(
+      !/switchTab\("studio"\)/.test(cat) && /openCopyPanel\(it\)/.test(cat),
+      "MERGE-3: اختيار منتج يفتح اللوحة بمكانها بلا تبديل تبويب"
+    );
+    // حالة انتظار مرئية فور الضغط — كان التوليد يبدو "بالخلفية".
+    assert(
+      /id="copyPending"/.test(dashM) && /copyPendingName/.test(cat) &&
+        /getElementById\("copyPending"\)\?\.classList\.add\("hidden"\)/.test(stu),
+      "MERGE-4: حالة انتظار باسم المنتج تظهر فوراً وتُخفى عند النتيجة أو الخطأ"
+    );
+    assert(
+      /panel\.scrollIntoView/.test(stu) && /pending\.scrollIntoView/.test(cat),
+      "MERGE-5: النتيجة تُمرَّر لمجال الرؤية — لا بحث عنها بالصفحة"
+    );
+    // رأس اللوحة يعرّف المنتج: صورة واسم.
+    assert(
+      /id="copyResultImg"/.test(dashM) && /id="copyResultName"/.test(dashM) &&
+        /copyResultImg/.test(cat),
+      "MERGE-6: رأس اللوحة يعرض صورة المنتج واسمه"
+    );
+    assert(
+      /closeCopyPanel/.test(dashM) && /export function closeCopyPanel/.test(cat),
+      "MERGE-7: إغلاق اللوحة يرجّع للشبكة بلا إعادة تحميل"
+    );
+    // نداء قديم لا يُخفي كل شيء.
+    assert(
+      /if \(tab === "studio"\) tab = "catalog";/.test(tabs) &&
+        /const tabs = \["catalog", "agent", "store"\]/.test(tabs),
+      "MERGE-8: switchTab(\"studio\") القديم يُحوَّل لا يكسر"
+    );
+    // المراجعة تُحمَّل مع نفس التبويب.
+    assert(
+      /if \(tab === "catalog"\) \{[\s\S]*?loadReview\("pending"\)/.test(tabs),
+      "MERGE-9: طابور المراجعة يُحمَّل مع «منتجاتي»"
+    );
+    // المسار اليدوي باقٍ لكن مطويّاً.
+    assert(
+      /id="studioManual"/.test(dashM) && /أو اكتب منتجاً يدوياً/.test(dashM) &&
+        /id="pName"/.test(dashM),
+      "MERGE-10: المسار اليدوي محفوظ داخل <details> لا محذوفاً"
+    );
+  }

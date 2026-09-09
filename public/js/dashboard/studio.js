@@ -31,13 +31,17 @@ export async function generateCopy() {
     });
 
     // خطأ خادم بلا حقل error كان يمرّ كنجاح فيعرض مربعات فارغة بصمت.
+    document.getElementById("copyPending")?.classList.add("hidden");
     const emptyResult = !data || (!data.copywriting && !data.result);
     if (!res.ok || data?.error || emptyResult) {
       showMsg("copyFeedback", data?.error || "ما قدرنا نولّد الوصف هالمرة — جرّب تضغط «اكتب الوصف الآن» مرة ثانية.", "error");
     } else {
       S.lastCopy = data;
       renderCopy(data);
-      document.getElementById("copyResult").classList.remove("hidden");
+      const panel = document.getElementById("copyResult");
+      panel.classList.remove("hidden");
+      // النتيجة تُعرض بمكانها — نمرّر إليها بلطف بدل أن يبحث عنها التاجر.
+      panel.scrollIntoView({ behavior: "smooth", block: "start" });
       // بلا صورة الوصف مبني على الاسم والنص فقط — يُقال صراحةً لا يُخفى.
       const noImg = document.getElementById("copyNoImageNote");
       if (noImg) noImg.classList.toggle("hidden", !!data.usedImage);
@@ -45,6 +49,7 @@ export async function generateCopy() {
       loadUsage();
     }
   } catch (err) {
+    document.getElementById("copyPending")?.classList.add("hidden");
     showMsg("copyFeedback", "تعذر الاتصال. حاول مرة ثانية.", "error");
   }
 

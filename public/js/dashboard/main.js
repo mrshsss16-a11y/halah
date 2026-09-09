@@ -13,7 +13,7 @@ import { S } from "./state.js";
 import { switchTab } from "./tabs.js";
 import {
   loadCatalog, loadCatalogMore, startCatalogSync, selectAllCatalog,
-  generateSelectedCatalog, useCatalogItem, setBulkGenerateEnabled
+  generateSelectedCatalog, useCatalogItem, closeCopyPanel, setBulkGenerateEnabled
 } from "./catalog.js";
 import { generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, applySuggestedCategory } from "./studio.js";
 import { startBulkJob, startCatalogGenerate } from "./bulk.js";
@@ -38,7 +38,7 @@ Object.assign(window, {
   handleMerchantLogout,
   // منتجاتي
   loadCatalog, loadCatalogMore, startCatalogSync, selectAllCatalog,
-  generateSelectedCatalog, useCatalogItem,
+  generateSelectedCatalog, useCatalogItem, closeCopyPanel,
   // الاستوديو والنشر
   generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, copyToClipboard,
   applySuggestedCategory,

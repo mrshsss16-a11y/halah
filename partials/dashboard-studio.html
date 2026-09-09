@@ -1,9 +1,11 @@
-      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
-        <div class="space-y-1 border-b border-slate-200 pb-4">
-          <h2 class="text-lg font-black text-black">وصف منتج مثالي — سيو السوق السعودي</h2>
-          <p class="text-xs text-slate-600 font-medium">عنوان، ميتا، نقاط بيع، أسئلة شائعة، وسوم، وسكيما — بلهجة سعودية بيضاء</p>
-        </div>
-
+      <!-- نموذج الإدخال مطويّ: المسار الأساسي ضغطة على بطاقة، والحقول تتعبّى
+           تلقائياً. يبقى مفتوحاً للمسار اليدوي (منتج غير مسحوب من سلة). -->
+      <details id="studioManual" class="sleek-card rounded-3xl p-5 shadow-sm">
+        <summary class="cursor-pointer select-none flex items-center gap-2 text-xs font-black text-black">
+          <span class="material-symbols-outlined text-base">edit_note</span>
+          <span>أو اكتب منتجاً يدوياً — لمنتج مو بسلة بعد</span>
+        </summary>
+        <div class="space-y-4 pt-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input id="pName" type="text" placeholder="اسم المنتج (مثال: عطر عود ملكي 100مل)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
           <input id="pPrice" type="number" placeholder="السعر (ر.س)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
@@ -42,13 +44,34 @@
           <span id="genBtnText">اكتب الوصف الآن</span>
         </button>
 
-        <div id="copyFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+        </div>
+      </details>
+
+      <div id="copyFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+
+      <!-- حالة الانتظار — تظهر مكان اللوحة فور الضغط على منتج، فلا يحسّ التاجر
+           أن شيئاً يجري "بالخلفية" بلا أثر مرئي. -->
+      <div id="copyPending" class="hidden sleek-card rounded-3xl p-6 shadow-sm flex items-center gap-3">
+        <span class="material-symbols-outlined text-2xl text-black animate-spin">progress_activity</span>
+        <div>
+          <p class="text-sm font-black text-black">جاري تحليل صورة المنتج وكتابة الوصف…</p>
+          <p id="copyPendingName" class="text-[11px] text-slate-600 font-medium"></p>
+        </div>
       </div>
 
       <div id="copyResult" class="hidden space-y-4">
         <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
-          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
-            <h3 class="text-sm font-black text-black">راجع الوصف — عدّله إن حبيت، ثم اعتمد</h3>
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3 gap-2 flex-wrap">
+            <div class="flex items-center gap-2 min-w-0">
+              <img id="copyResultImg" class="hidden w-10 h-10 rounded-lg object-cover bg-slate-100" referrerpolicy="no-referrer" alt=""/>
+              <div class="min-w-0">
+                <h3 class="text-sm font-black text-black">راجع الوصف — عدّله إن حبيت، ثم اعتمد</h3>
+                <p id="copyResultName" class="text-[11px] text-slate-600 font-medium truncate"></p>
+              </div>
+            </div>
+            <button onclick="closeCopyPanel()" class="text-slate-400 hover:text-black" title="إغلاق">
+              <span class="material-symbols-outlined text-base">close</span>
+            </button>
             <span id="copyNoImageNote" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">بلا صورة — الوصف مبني على الاسم والوصف الحالي فقط</span>
             <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
           </div>

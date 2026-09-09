@@ -57,11 +57,14 @@ async function main() {
       /catalogEmpty[\s\S]{0,400}ما سحبنا منتجاتك بعد/.test(dashSrc),
       "CATUI-8: حالة فارغة صريحة توجّه للسحب"
     );
-    // pImageUrl خرج من <details> — لم يعد حقلاً يدوياً مخفياً.
-    const detailsBlocks = dashSrc.match(/<details[\s\S]*?<\/details>/g) || [];
+    // CATUI-9 انقلب عمداً 2026-09-10 بدمج «منتجاتي» مع «وصف المنتجات»:
+    // المسار الأساسي لم يعد يعرض **رابط** الصورة إطلاقاً — يعرض الصورة نفسها
+    // برأس لوحة الوصف. رابط نصّي طويل كان تشويشاً لا معلومة. الحقل بقي داخل
+    // <details> للمسار اليدوي وحده (منتج غير مسحوب من سلة).
     assert(
-      detailsBlocks.every((b) => !b.includes('id="pImageUrl"')),
-      "CATUI-9: حقل الصورة ظاهر بالمسار الأساسي لا مخفياً داخل <details>"
+      /id="studioManual"[\s\S]*?id="pImageUrl"/.test(dashSrc) &&
+        /id="copyResultImg"/.test(dashSrc),
+      "CATUI-9: المسار الأساسي يعرض صورة المنتج لا رابطها؛ الحقل للمسار اليدوي"
     );
     assert(
       !/تحسين وصف موجود بدل كتابة من الصفر/.test(dashSrc),
