@@ -53,6 +53,8 @@ async function copyHandler(body, env, request) {
     ok: true,
     // صادق مع التاجر: بلا صورة (أو فشل تحليلها) الوصف مبني على النص فقط.
     usedImage: Boolean(parsed.usedImage),
+    // تنبيه تصنيف (اقتراح للتاجر، لا تغيير) — null حين لا تعارض بيقين.
+    categoryMismatch: parsed.categoryMismatch || null,
     result: parsed.copywriting.description,
     whatsapp: parsed.copywriting.whatsapp,
     seo: parsed.seo,

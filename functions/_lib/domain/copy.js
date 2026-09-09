@@ -9,6 +9,7 @@ import { getProfile, profileToPromptBlock } from "./storeProfile.js";
 import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes } from "./copyParse.js";
+import { categoryMismatch } from "../ai/productType.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -185,5 +186,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   }
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
   parsed.usedImage = Boolean(visionNotes);
+  // تصنيف المتجر بيانات تاجر قد تكون خاطئة — رُصد فستان تحت «التنانير». حين
+  // ترى هالة نوعاً يخالف التصنيف المسجَّل، **تقترح** التصحيح ولا تنفّذه:
+  // تغيير تصنيف منتج على متجر حي بلا موافقة التاجر تصرّف بمتجره لا مساعدة.
+  parsed.categoryMismatch = categoryMismatch({ visionNotes, name, category });
   return parsed;
 }

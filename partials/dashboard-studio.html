@@ -52,6 +52,18 @@
             <span id="copyNoImageNote" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">بلا صورة — الوصف مبني على الاسم والوصف الحالي فقط</span>
             <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
           </div>
+          <!-- تنبيه تصنيف: هالة رأت نوعاً يخالف تصنيف المتجر. اقتراح لا تنفيذ —
+               التصنيف يُغيَّر من سلة بيد التاجر. -->
+          <div id="categoryMismatchNote" class="hidden p-3.5 rounded-xl bg-amber-50 border border-amber-300 space-y-1">
+            <p class="text-xs font-black text-amber-900">
+              <span class="material-symbols-outlined text-sm align-middle">label_important</span>
+              <span id="categoryMismatchText"></span>
+            </p>
+            <p class="text-[11px] text-amber-800 font-medium">
+              تصنيف غير مطابق يضعف تصفح متجرك وفلترته ونتائج البحث. عدّله من صفحة المنتج بسلة — هالة تنبّه ولا تغيّر تصنيفك بنفسها.
+            </p>
+          </div>
+
           <div class="space-y-1.5">
             <label for="outDescription" class="flex items-center gap-1.5 text-[11px] font-bold text-black">
               <span class="material-symbols-outlined text-sm">edit</span>

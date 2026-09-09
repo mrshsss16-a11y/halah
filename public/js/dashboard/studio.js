@@ -41,6 +41,7 @@ export async function generateCopy() {
       // بلا صورة الوصف مبني على الاسم والنص فقط — يُقال صراحةً لا يُخفى.
       const noImg = document.getElementById("copyNoImageNote");
       if (noImg) noImg.classList.toggle("hidden", !!data.usedImage);
+      renderCategoryMismatch(data.categoryMismatch);
       loadUsage();
     }
   } catch (err) {
@@ -49,6 +50,24 @@ export async function generateCopy() {
 
   btn.disabled = false;
   btnText.innerText = "اكتب الوصف الآن";
+}
+
+/**
+ * تنبيه التصنيف — رُصد فستان مصنَّفاً تحت «التنانير» بمتجر حي، وهالة تراه
+ * فستاناً بالصورة وتسكت. تُعرض المقارنة بنص صريح، والقرار للتاجر: التصنيف
+ * يُغيَّر من سلة بيده، لا نكتبه نيابة عنه.
+ */
+function renderCategoryMismatch(mismatch) {
+  const box = document.getElementById("categoryMismatchNote");
+  if (!box) return;
+  if (!mismatch?.detected || !mismatch?.current) {
+    box.classList.add("hidden");
+    return;
+  }
+  // innerText لا innerHTML — النصان مشتقّان من بيانات سلة ومن مخرج النموذج.
+  document.getElementById("categoryMismatchText").innerText =
+    `هالة تشوف المنتج ${mismatch.detected}، لكنه مصنَّف بمتجرك تحت ${mismatch.current}.`;
+  box.classList.remove("hidden");
 }
 
 // ── وجهة النشر ────────────────────────────────────────────────────

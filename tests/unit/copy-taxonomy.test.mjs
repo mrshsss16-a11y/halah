@@ -229,3 +229,67 @@ main()
     console.error(e);
     process.exit(1);
   });
+
+  // ── تصحيح التصنيف — رُصد فستان تحت «التنانير» (2026-09-09) ──────────
+  {
+    const { detectProductType, categoryMismatch, productTypeOf, KNOWN_TYPES } =
+      await import("../../functions/_lib/ai/productType.js");
+
+    assert(
+      productTypeOf("فستان سهرة أخضر") === "فستان" && productTypeOf("عبايات") === "عباية" &&
+        productTypeOf("التنانير") === "تنورة",
+      "CAT-1: النوع يُستنتج من الكلمة الأولى مع تطبيع الجمع والتعريف"
+    );
+    // الحالة الحقيقية من الفيديو.
+    const m = categoryMismatch({
+      visionNotes: "فستان قصير مطبوع عليه زهور، ياقة قميص وأكمام قصيرة.",
+      name: "فستان",
+      category: "التنانير"
+    });
+    assert(
+      m && m.detected === "فستان" && m.current === "تنورة",
+      "CAT-2: فستان مصنَّف تحت التنانير يُرصد بيقين"
+    );
+    assert(
+      categoryMismatch({ visionNotes: "فستان طويل", name: "فستان", category: "فساتين" }) === null,
+      "CAT-3: تصنيف مطابق ⇒ لا تنبيه"
+    );
+    // تصنيف تسويقي مشروع ليس خطأً — لا تنبيه بلا تعارض نوعين معروفين.
+    assert(
+      categoryMismatch({ visionNotes: "فستان طويل", name: "فستان", category: "وصل حديثاً" }) === null &&
+        categoryMismatch({ visionNotes: "فستان طويل", name: "فستان", category: "" }) === null,
+      "CAT-4: فئة غير معروفة أو فارغة لا تُتهم بالخطأ"
+    );
+    // البحث الجزئي هو ما أُغلقت القائمة لمنعه.
+    assert(
+      detectProductType({ name: "شنطة تناسب الفساتين" }) === "حقيبة" &&
+        categoryMismatch({ name: "شنطة تناسب الفساتين", category: "حقائب" }) === null,
+      "CAT-5: اسم يذكر فئة أخرى عرضاً لا يقلب النوع"
+    );
+    assert(
+      detectProductType({}) === null && detectProductType({ name: "منتج مميز" }) === null &&
+        categoryMismatch() === null,
+      "CAT-6: نوع غير معروف ⇒ صمت لا تخمين"
+    );
+    // ملاحظات الصورة أسبق: شهادة بصرية تتقدّم على اسم قد يكون خاطئاً.
+    assert(
+      detectProductType({ visionNotes: "عباية سوداء واسعة", name: "فستان" }) === "عباية",
+      "CAT-7: ملاحظات الصورة تتقدّم على اسم المنتج"
+    );
+    assert(KNOWN_TYPES.length >= 12, "CAT-8: قائمة الأنواع تغطي فئات المتاجر الشائعة");
+
+    // اقتراح لا تنفيذ: صفر كتابة تصنيف على سلة.
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const payload = read("../../functions/_lib/domain/sallaProductPayload.js");
+    assert(
+      !/categories/.test(payload),
+      "CAT-9: لا تصنيف يُكتب على سلة — التنبيه اقتراح، والقرار للتاجر"
+    );
+    assert(
+      /categoryMismatch: parsed\.categoryMismatch/.test(read("../../functions/api/copy.js")) &&
+        /renderCategoryMismatch/.test(read("../../public/js/dashboard/studio.js")) &&
+        /id="categoryMismatchNote"/.test(read("../../partials/dashboard-studio.html")),
+      "CAT-10: التنبيه يصل الواجهة من الخادم ويُعرض"
+    );
+  }
