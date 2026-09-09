@@ -156,6 +156,8 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = l
 
   const more = hasMorePages(payload, pageNum, products.length);
   // ختم "سُحب مرة على الأقل" — به تفرّق الواجهة بين "لم يبدأ" و"سُحب ولم يجد".
+  // يُكتب هنا فقط لأن الوصول لهذا السطر يعني أن سلة ردّت بصفحة سليمة
+  // (أي فشل شبكة/توكن/حد معدل يرمي قبله) — فالختم شهادة نجاح لا مرور.
   await env.DB.prepare("UPDATE merchants SET catalog_synced_at = datetime('now') WHERE id = ?")
     .bind(merchantId).run().catch(() => {});
   return {

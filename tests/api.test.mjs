@@ -3031,7 +3031,7 @@ async function runTests() {
     );
     // #11 زر السحب بعد النجاح.
     assert(
-      /txt\.innerText = 'تحديث المنتجات'/.test(dash) && /setTimeout\(\(\) => \{ btn\.disabled = false; \}, 60000\)/.test(dash),
+      /txt\.innerText = 'تحديث المنتجات'/.test(dash) && /syncCooldownTimer = setTimeout\(\(\) => \{ btn\.disabled = false; syncCooldownTimer = null; \}, 60000\)/.test(dash),
       "UX-8: بعد السحب الزر يصير «تحديث» ويهدأ ٦٠ ثانية"
     );
     // #12 تنبيه إكمال الحساب يشير لزر موجود.
@@ -3089,6 +3089,39 @@ async function runTests() {
     assert(
       /ADD COLUMN catalog_synced_at/.test(read("../migrations/0026_catalog_synced_at.sql")),
       "UX-14: هجرة 0026 تضيف catalog_synced_at"
+    );
+  }
+
+  // ── مراجعة Opus على إصلاحات التجربة: ٣ حمراء أُغلقت (2026-09-09) ──
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const dash = read("../dashboard.html");
+    const boot = dash.slice(dash.indexOf("document.addEventListener('DOMContentLoaded'"));
+    assert(
+      /loadCatalog\(0\);/.test(boot) && /setBulkGenerateEnabled\(false\);/.test(boot),
+      "REV-1: التبويب الافتراضي يُحمَّل عند الفتح (كان قسماً فاضياً بلا تحميل)"
+    );
+    assert(
+      /grid\.appendChild\(catalogCard\(it, key\)\)/.test(dash) && /card\.dataset\.sku = key;/.test(dash) &&
+        /useCatalogItem\(key\)/.test(dash) && !/useCatalogItem\(it\.sku\)/.test(dash),
+      "REV-2: بطاقة بلا SKU تُفتح بنفس مفتاحها — لا نقرة ميتة"
+    );
+    assert(
+      /line\.innerText = 'هذا المنتج بلا معرّف سلة[^]*?line\.classList\.remove\('hidden'\)/.test(dash),
+      "REV-3: سبب «بلا معرّف سلة» يظهر فعلاً لا يبقى مخفياً"
+    );
+    assert(
+      /if \(catalogNextOffset > 0\) return;/.test(dash) && /clearTimeout\(catalogRefreshTimer\)/.test(dash),
+      "REV-4: التحديث الذاتي لا يمسح صفحات «عرض المزيد» ولا يتوازى مع تحميل يدوي"
+    );
+    assert(
+      !/'متجرك على سلة'/.test(dash),
+      "REV-5: غياب اسم المتجر لا يدّعي ربطاً بسلة"
+    );
+    assert(
+      /settings\\\.read/.test(read("../functions/api/webhooks/salla.js")),
+      "REV-6: /store/info يُستدعى فقط إن مُنح settings.read"
     );
   }
 

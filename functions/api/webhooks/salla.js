@@ -102,12 +102,17 @@ async function handleEvent(env, event, payload, context) {
         .bind(merchantId)
         .run()
         .catch(() => {});
-      // اسم المتجر: الحمولة لا تحمله، والتوكن صار بيدنا الآن. فشله لا يوقف شيئاً.
-      try {
-        const info = await getStoreInfo(env, merchantId);
-        if (info.name) await upsertMerchantFromSalla(env, { sallaMerchantId, storeName: info.name });
-      } catch (err) {
-        logError(context, { requestId: null, path: "webhooks/salla", code: "SALLA_STORE_INFO_FAILED", storeId: merchantId, internal: String(err?.message || err).slice(0, 300) });
+      // اسم المتجر: الحمولة لا تحمله، والتوكن صار بيدنا الآن. /store/info يحتاج
+      // scope `settings.read` — نتحقق من scope الحمولة قبل استهلاك طلب على سلة
+      // (حد ١ط/ث) بدل 403 يلوّث سجل الأخطاء بكل تثبيت. فشله لا يوقف شيئاً.
+      const grantedScope = String(data.scope || "");
+      if (/\bsettings\.read(_write)?\b/.test(grantedScope) || grantedScope === "") {
+        try {
+          const info = await getStoreInfo(env, merchantId);
+          if (info.name) await upsertMerchantFromSalla(env, { sallaMerchantId, storeName: info.name });
+        } catch (err) {
+          logError(context, { requestId: null, path: "webhooks/salla", code: "SALLA_STORE_INFO_FAILED", storeId: merchantId, internal: String(err?.message || err).slice(0, 300) });
+        }
       }
       // أول سحب فوراً — التاجر يفتح «منتجاتي» فيجد منتجاته لا شاشة فارغة.
       await kickoffFirstSync(env, merchantId, context);

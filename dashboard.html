@@ -635,12 +635,15 @@
     let catalogLoadedOnce = false;
     let lastCatalogTotal = 0;
     let catalogRefreshTimer = null;
+    let syncCooldownTimer = null;
 
     // تحديث ذاتي أثناء سحب بالخلفية: كل ٢٠ ثانية، ويتوقف لما يخلص السحب.
     function scheduleCatalogRefresh() {
       if (catalogRefreshTimer) return;
       catalogRefreshTimer = setTimeout(async () => {
         catalogRefreshTimer = null;
+        // تاجر ضغط «عرض المزيد» أثناء السحب: لا نمسح صفحاته كل ٢٠ ثانية.
+        if (catalogNextOffset > 0) return;
         await loadCatalog(0);
       }, 20000);
     }
@@ -661,6 +664,8 @@
       const empty = document.getElementById('catalogEmpty');
       const moreBtn = document.getElementById('catalogMoreBtn');
 
+      // تحميل يدوي يلغي أي تحديث ذاتي معلّق — لا تحميلان متوازيان.
+      if (catalogRefreshTimer) { clearTimeout(catalogRefreshTimer); catalogRefreshTimer = null; }
       if (offset === 0) { catalogItems = {}; grid.innerHTML = ''; }
       document.getElementById('catalogFeedback').classList.add('hidden');
       empty.classList.add('hidden');
@@ -680,7 +685,11 @@
         catalogLoadedOnce = true;
         const items = data.items || [];
         // مفتاح البطاقة: SKU وإلا معرّف سلة — صفّان بلا SKU كانا يدهس أحدهما الآخر.
-        items.forEach(it => { catalogItems[it.sku || ('pid_' + it.productId)] = it; grid.appendChild(catalogCard(it)); });
+        items.forEach(it => {
+          const key = it.sku || ('pid_' + it.productId);
+          catalogItems[key] = it;
+          grid.appendChild(catalogCard(it, key));
+        });
 
         const count = Object.keys(catalogItems).length;
         grid.classList.toggle('hidden', count === 0);
@@ -727,11 +736,12 @@
       }
     }
 
-    function catalogCard(it) {
+    function catalogCard(it, key) {
+      key = key || it.sku || ('pid_' + it.productId);
       const card = document.createElement('button');
       card.type = 'button';
       card.className = 'text-right rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-black transition shadow-sm';
-      card.dataset.sku = it.sku;
+      card.dataset.sku = key;
 
       // صور سلة قد تكون محمية (hotlink/CDN مقيّد): لو فشل التحميل نُخفي الـimg
       // ونُظهر بديلاً نصياً بدل أيقونة مكسورة. onerror داخل السمة يحتاج تهريب
@@ -758,7 +768,7 @@
            <div class="text-[11px] text-slate-500">${escHtml(it.price || '')}${it.category ? ' · ' + escHtml(it.category) : ''}</div>
          </div>`;
 
-      card.addEventListener('click', () => useCatalogItem(it.sku));
+      card.addEventListener('click', () => useCatalogItem(key));
       return card;
     }
 
@@ -810,7 +820,8 @@
           // نجح ⇒ الزر يصير «تحديث» ويهدأ ٦٠ ثانية: الضغط المتكرر كان يصطدم
           // بحد المعدل (٣ محاولات/٥ دقائق) فيُعاقَب التاجر على فعل بدا مسموحاً.
           txt.innerText = 'تحديث المنتجات';
-          setTimeout(() => { btn.disabled = false; }, 60000);
+          if (syncCooldownTimer) clearTimeout(syncCooldownTimer);
+          syncCooldownTimer = setTimeout(() => { btn.disabled = false; syncCooldownTimer = null; }, 60000);
           return;
         }
       } catch (err) {
@@ -1065,7 +1076,10 @@
         const box = document.getElementById('publishBox');
         if (box) box.classList.remove('hidden');
         const line = document.getElementById('publishTargetLine');
-        if (line) line.innerText = 'هذا المنتج بلا معرّف سلة — اضغط «اسحب منتجاتي» مرة ثانية لتحديثه، ثم اختره من جديد.';
+        if (line) {
+          line.innerText = 'هذا المنتج بلا معرّف سلة — اضغط «اسحب منتجاتي» مرة ثانية لتحديثه، ثم اختره من جديد.';
+          line.classList.remove('hidden');
+        }
         return;
       }
 
@@ -1738,7 +1752,7 @@
         }
         // الهوية دائماً ظاهرة: أي متجر وأي حساب — رُصد تاجر بثلاثة حسابات لا
         // يعرف أيها مفتوح. بالذاكرة فقط، لا تخزين محلي (جهاز مشترك = تسريب).
-        const storeLabel = data?.storeName || 'متجرك على سلة';
+        const storeLabel = data?.storeName || 'لوحة متجرك';
         document.getElementById('navStoreTitle').innerText = storeLabel;
         document.getElementById('merchantHeroHeader').innerText = storeLabel;
         window.__accountEmail = data?.email || '';
@@ -1747,6 +1761,11 @@
       } catch (e) {}
       loadUsage();
       loadStore();
+      // «منتجاتي» هو التبويب الافتراضي — بلا تحميل هنا يفتح قسماً فاضياً بلا
+      // شبكة ولا حالة فارغة ولا "جاري التحميل" (رصدها المراجع). الزر معطّل
+      // حتى يثبت وجود منتجات.
+      setBulkGenerateEnabled(false);
+      loadCatalog(0);
       reviewLoadedOnce = true;
       loadReview('pending');
 
