@@ -2941,6 +2941,35 @@ async function runTests() {
     );
   }
 
+  // ── أول سحب فور الربط (2026-09-09: "الواجهة ما تطلع منتجات" = متجر جديد بلا سحب) ──
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const hookSrc = read("../functions/api/webhooks/salla.js");
+    assert(
+      /import \{ syncFirstPage \} from "\.\.\/store\/catalog\/sync\.js"/.test(hookSrc) &&
+        /await kickoffFirstSync\(env, merchantId, context\)/.test(hookSrc),
+      "FIRSTSYNC-1: app.store.authorize يطلق أول سحب بلا انتظار ضغطة زر"
+    );
+    assert(
+      /getActiveJobByKind\(env, merchantId, "catalog_sync"\)/.test(hookSrc) && /if \(active\) return;/.test(hookSrc),
+      "FIRSTSYNC-2: سحب شغّال أصلاً ⇒ لا سحب ثانٍ (حد سلة ١ طلب/ثانية)"
+    );
+    assert(
+      /SALLA_FIRST_SYNC_FAILED/.test(hookSrc) && /catch \(err\)/.test(hookSrc),
+      "FIRSTSYNC-3: فشل السحب الأول يُسجَّل ولا يُفشل الويبهوك — التوكن يبقى محفوظاً"
+    );
+    assert(
+      /UPDATE merchants SET salla_disconnected_at = NULL WHERE id = \?/.test(hookSrc),
+      "FIRSTSYNC-4: إعادة التثبيت تصفّر ختم فك الربط — لا يُعرض متجر مربوط كمفكوك"
+    );
+    // الاستيراد لا يخلق حلقة: sync.js لا يعرف الويبهوك.
+    assert(
+      !/webhooks\/salla/.test(read("../functions/api/store/catalog/sync.js")),
+      "FIRSTSYNC-5: لا استيراد دائري بين الويبهوك ومسار السحب"
+    );
+  }
+
   console.log(`\nTest Summary: ${passed}/${total} Passed.`);
   if (passed !== total) {
     process.exit(1);

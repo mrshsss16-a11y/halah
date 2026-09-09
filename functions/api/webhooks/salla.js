@@ -17,9 +17,38 @@ import {
   saveTokens,
   logWebhook,
   saveAbandonedCart,
-  revokeSallaConnection
+  revokeSallaConnection,
+  getActiveJobByKind
 } from "../../_lib/core/db.js";
 import { logError } from "../../_lib/core/errorLog.js";
+import { syncFirstPage } from "../store/catalog/sync.js";
+
+/**
+ * أول سحب للمنتجات **فور الربط** — بلا انتظار ضغطة زر.
+ *
+ * مرصود 2026-09-09: التاجر ربط متجراً جديداً، فتح «منتجاتي» فوجدها فارغة
+ * وحكم أن التطبيق "خرب". السبب أن السحب كان يبدأ فقط بضغطة «اسحب منتجاتي»،
+ * وتاجر جديد لا يعرف أن عليه ضغطها. أول انطباع = شاشة فارغة = تطبيق معطّل.
+ *
+ * صفحة واحدة فقط (نفس قاعدة sync.js: حد سلة ١ طلب/ثانية لكل متجر)، والباقي
+ * للوظيفة. الفشل هنا لا يُفشل الويبهوك: التوكن محفوظ، والزر باقٍ كمسار بديل.
+ * يُتجاهل إن كان سحب شغّالاً أصلاً (إعادة تصريح على متجر قائم).
+ */
+async function kickoffFirstSync(env, merchantId, context) {
+  try {
+    const active = await getActiveJobByKind(env, merchantId, "catalog_sync");
+    if (active) return;
+    await syncFirstPage(env, merchantId);
+  } catch (err) {
+    logError(context, {
+      requestId: null,
+      path: "webhooks/salla",
+      code: "SALLA_FIRST_SYNC_FAILED",
+      storeId: merchantId,
+      internal: String(err?.message || err).slice(0, 300)
+    });
+  }
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -49,7 +78,7 @@ async function verifySignature(rawBody, signatureHeader, secret) {
   return diff === 0;
 }
 
-async function handleEvent(env, event, payload) {
+async function handleEvent(env, event, payload, context) {
   const data = payload.data || {};
   const sallaMerchantId = payload.merchant || data.merchant || null;
 
@@ -67,6 +96,13 @@ async function handleEvent(env, event, payload) {
         refreshToken: data.refresh_token,
         expiresAt: Number(data.expires) || Math.floor(Date.now() / 1000) + 14 * 24 * 3600
       });
+      // إعادة تثبيت بعد فك ربط ⇒ الختم يُصفَّر، وإلا عرض الداشبورد "مفكوك" لمتجر مربوط.
+      await env.DB.prepare("UPDATE merchants SET salla_disconnected_at = NULL WHERE id = ?")
+        .bind(merchantId)
+        .run()
+        .catch(() => {});
+      // أول سحب فوراً — التاجر يفتح «منتجاتي» فيجد منتجاته لا شاشة فارغة.
+      await kickoffFirstSync(env, merchantId, context);
       return merchantId;
     }
     case "app.installed": {
@@ -176,7 +212,7 @@ export async function onRequestPost(context) {
       let merchantId = null;
       let handlerError = null;
       try {
-        merchantId = await handleEvent(env, event, payload);
+        merchantId = await handleEvent(env, event, payload, context);
       } catch (err) {
         logError(context, { requestId: null, path: "webhooks/salla", code: "SALLA_EVENT_FAILED", internal: `${event}: ${err?.message || err}`, storeId: merchantId });
         // Temporary diagnostic (2026-08-08): app.store.authorize was silently
