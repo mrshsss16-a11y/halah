@@ -36,9 +36,10 @@ async function main() {
       "VIS-6: سقف موسّع للتفاصيل المرئية مع منع الحشو"
     );
     assert(
-      /askVisionAI\(\{ env, imageUrl, prompt: visionPrompt \}\)\.catch\(\(\) => null\)/.test(copyDomainSrc) &&
+      /askVisionDetailed\(\{ env, imageUrl, prompt: visionPrompt \}\)/.test(copyDomainSrc) &&
+        /catch \(err\) \{/.test(copyDomainSrc) &&
         /const visionPrompt = visionPromptFromTaxonomy\(taxonomyBlock\)/.test(copyDomainSrc),
-      "VIS-7: التوجيه مصدر واحد، وفشل الرؤية ما زال لا يكسر المسار"
+      "VIS-7: التوجيه مصدر واحد، وفشل الرؤية لا يكسر المسار ويُسجَّل بسببه"
     );
 
     // حصانة المخرَج بالمرحلة التالية.

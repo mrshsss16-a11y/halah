@@ -57,8 +57,25 @@ export function readVisionText(response) {
  * @param {string} opts.prompt     - The prompt to ask about the image
  * @param {string} [opts.mimeType] - Image mime type for the data URI (default image/jpeg)
  */
-export async function askVisionAI({ env, imageUrl, imageBuffer, prompt, mimeType = "image/jpeg" }) {
+export async function askVisionAI(opts) {
+  const { text } = await askVisionDetailed(opts);
+  return text;
+}
+
+/**
+ * نفس المسار، لكن يرجّع **تشخيصاً** لا نصاً فقط.
+ *
+ * سبب وجودها (رُصد 2026-09-09 بفيديو صاحب المشروع): الوصف طلع بلا أي تحليل
+ * صورة رغم أن الرابط سليم (تحقُّق مباشر: 200 image/jpeg 35KB) — والمستدعي
+ * كان يبلع الخطأ بـ`.catch(() => null)`، وسجل الأخطاء الحي **فاضٍ تماماً**
+ * من أي أثر. فشل صامت لا يمكن تشخيصه = ساعة تخمين لكل بلاغ.
+ *
+ * الآن كل نداء يعود بـ`{ text, model, errors }`: أي نموذج أنتج النص فعلاً،
+ * ورسائل فشل ما قبله. المستدعي يسجّلها — لا يبلعها.
+ */
+export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mimeType = "image/jpeg" }) {
   if (!env.AI) throw new Error("AI binding is missing.");
+  const errors = [];
 
   let buffer = imageBuffer;
   if (!buffer && imageUrl) {
@@ -93,16 +110,24 @@ export async function askVisionAI({ env, imageUrl, imageBuffer, prompt, mimeType
       max_tokens: 700
     });
     const text = readVisionText(response);
-    if (text) return text;
+    if (text) return { text, model: VISION_MODEL, errors };
     throw new Error("vision model returned empty text");
   } catch (err) {
     // لا نُسقط الميزة على تغيّر صيغة أو نموذج غير متاح — نسقط للسابق ونسجّل.
-    console.warn(`[hala-vision] ${VISION_MODEL} failed, falling back: ${err?.message || err}`);
+    errors.push(`${VISION_MODEL}: ${String(err?.message || err).slice(0, 160)}`);
   }
 
-  const response = await env.AI.run(VISION_FALLBACK_MODEL, {
-    prompt: question,
-    image: [...bytes]
-  });
-  return readVisionText(response);
+  try {
+    const response = await env.AI.run(VISION_FALLBACK_MODEL, {
+      prompt: question,
+      image: [...bytes]
+    });
+    const text = readVisionText(response);
+    if (text) return { text, model: VISION_FALLBACK_MODEL, errors };
+    errors.push(`${VISION_FALLBACK_MODEL}: empty text`);
+  } catch (err) {
+    errors.push(`${VISION_FALLBACK_MODEL}: ${String(err?.message || err).slice(0, 160)}`);
+  }
+
+  return { text: "", model: null, errors };
 }

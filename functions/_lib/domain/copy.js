@@ -1,13 +1,14 @@
 // مجال النسخ التسويقي: توليد وصف المنتج والـSEO كاملاً، وسجل ما وُلّد سابقاً
 // لمنع التكرار. مُنقول من `core/db.js` (المرحلة ٣) ومن `api/copy.js`
 // (المرحلة ٤ — ARCHITECTURE §٢) بلا تغيير سلوكي.
-import { askWorkersAI, askVisionAI, COPY_MODEL } from "../ai/gateway.js";
+import { askWorkersAI, COPY_MODEL } from "../ai/gateway.js";
+import { askVisionDetailed } from "../ai/vision.js";
 import { buildSeoSystem, visionPromptFromTaxonomy } from "../ai/prompts/seo.js";
 import { recallStyleExamples } from "../ai/memory.js";
 import { getProfile, profileToPromptBlock } from "./storeProfile.js";
 import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
-import { CopyParseError, parseSeoResponse, acceptArabicVisionNotes } from "./copyParse.js";
+import { CopyParseError, parseSeoResponse, classifyVisionNotes } from "./copyParse.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -94,22 +95,52 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // خاطئة (رُصد "فستان" مصنَّفاً تحت "البلايز" — فسقط الكتيب كله بصمت).
   const taxonomyBlock = taxonomyForProduct({ category, name });
   const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock);
-  const rawVisionNotes = imageUrl
-    ? await askVisionAI({ env, imageUrl, prompt: visionPrompt }).catch(() => null)
-    : null;
+  // فشل الرؤية كان يُبلع بـ`.catch(() => null)` بلا سطر واحد بالسجل — فحين
+  // طلع وصف مفبرك على متجر حي لم يكن بالسجل ما يفسّره. الآن يُسجَّل السبب
+  // الحقيقي (أي نموذج فشل وبأي رسالة) بلا أن يُسقط التوليد.
+  let rawVisionNotes = null;
+  let visionModel = null;
+  if (imageUrl) {
+    try {
+      const out = await askVisionDetailed({ env, imageUrl, prompt: visionPrompt });
+      rawVisionNotes = out.text || null;
+      visionModel = out.model;
+      if (!out.text) {
+        logError({ env }, {
+          requestId: null,
+          path: "api/copy:vision",
+          code: "VISION_EMPTY",
+          internal: (out.errors || []).join(" | ").slice(0, 300) || "no text from any vision model",
+          storeId: merchantId
+        });
+      }
+    } catch (err) {
+      logError({ env }, {
+        requestId: null,
+        path: "api/copy:vision",
+        code: "VISION_FAILED",
+        internal: String(err?.message || err).slice(0, 300),
+        storeId: merchantId
+      });
+    }
+  }
 
   // A5 — النموذج الاحتياطي للرؤية (`llama-3.2-11b-vision`) **إنجليزي فقط مع
   // الصور** ببطاقة ميتا نفسها. حين يُستخدم تعود الملاحظات بالإنجليزية، ثم كان
   // البرومبت يُلزم الوصف العربي بـ"ذكر كل تفصيل ورد بهذي الملاحظات صراحةً" —
   // فيقحم النموذج مصطلحات إنجليزية بوصف منتج عربي، أو يترجمها تخميناً. مخرج
   // بلا حرف عربي واحد يُهمل بالكامل ويُسجَّل، ويُبنى الوصف من النص وحده.
-  const visionNotes = acceptArabicVisionNotes(rawVisionNotes);
-  if (rawVisionNotes && !visionNotes) {
+  // الملاحظات الإنجليزية تُستخدم ولا تُهدر — إهدارها ترك النموذج بلا حقائق
+  // فاخترع خامة وجودة على منتج لم يره. اللغة تُعالَج بالبرومبت لا بالحذف.
+  const classified = classifyVisionNotes(rawVisionNotes);
+  const visionNotes = classified?.text || "";
+  const visionLanguage = classified?.language || null;
+  if (classified?.language === "en") {
     logError({ env }, {
       requestId: null,
       path: "api/copy:vision",
-      code: "VISION_FALLBACK_DISCARDED",
-      internal: "vision notes contained no Arabic script — English fallback model output discarded",
+      code: "VISION_NOTES_ENGLISH",
+      internal: `model=${visionModel || "?"} — notes returned in English; translated by the copy prompt`,
       storeId: merchantId
     });
   }
@@ -118,7 +149,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
     : [];
 
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, styleExamples, profileBlock, taxonomyBlock });
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, styleExamples, profileBlock, taxonomyBlock });
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
   const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
 

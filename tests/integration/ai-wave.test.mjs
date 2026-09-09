@@ -266,7 +266,18 @@ async function runTests() {
     );
     assert(acceptArabicVisionNotes("") === null && acceptArabicVisionNotes(null) === null, "A5-3: فراغ ⇒ null");
     const src = read("../../functions/_lib/domain/copy.js") + read("../../functions/_lib/ai/prompts/seo.js");
-    assert(/code: "VISION_FALLBACK_DISCARDED"/.test(src), "A5-4: الإهمال مسجَّل بكود VISION_FALLBACK_DISCARDED");
+    // A5-4 تغيّر عمداً 2026-09-09: الإهدار كان يترك النموذج بلا حقائق فيخترع
+    // خامة وجودة على منتج لم يره (رُصد بمتجر حي). الملاحظات الإنجليزية تُستخدم
+    // الآن مع علامة لغة، والبرومبت يُلزم بالترجمة وحظر نقل المصطلح اللاتيني.
+    assert(
+      /code: "VISION_NOTES_ENGLISH"/.test(src) && /ترجمي معناها للعربية/.test(src),
+      "A5-4: الملاحظات الإنجليزية تُستخدم مترجَمة وتُسجَّل — لا تُهدر"
+    );
+    assert(
+      /code: "VISION_EMPTY"/.test(src) && /code: "VISION_FAILED"/.test(src) &&
+        !/askVisionAI\([^)]*\)\.catch\(\(\) => null\)/.test(src),
+      "A5-6: فشل الرؤية يُسجَّل بسببه الحقيقي — لا ابتلاع صامت"
+    );
     assert(
       /const visionOutputRule = visionNotes/.test(src),
       "A5-5: إلزام ذكر تفاصيل الصورة مشروط بوجود ملاحظات مقبولة (عربية) فقط"

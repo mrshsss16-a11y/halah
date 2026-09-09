@@ -61,6 +61,26 @@ export function acceptArabicVisionNotes(notes) {
   if (!text) return null;
   return ARABIC_LETTER_RE.test(text) ? text : null;
 }
+
+/**
+ * تصنيف ملاحظات الرؤية بدل إهدارها.
+ *
+ * السلوك السابق (A5) كان يُهمل أي مخرج بلا حرف عربي بالكامل. النية صحيحة —
+ * مصطلح إنجليزي داخل وصف عربي عيب حقيقي — لكن **الأثر كان أسوأ من المرض**:
+ * رُصد 2026-09-09 وصفٌ نُشر على متجر حي يقول "مصنوع من مواد عالية الجودة"
+ * لفستان لم يره النموذج إطلاقاً. إهدار الملاحظات ترك النموذج بلا أي حقيقة،
+ * فاخترع بدل أن يصمت.
+ *
+ * الملاحظات الإنجليزية **محتواها صحيح، لغتها فقط خاطئة** — تُمرَّر مع علامة،
+ * والبرومبت يُلزم بترجمة المعنى وحظر نقل أي مصطلح إنجليزي حرفياً.
+ *
+ * @returns {{ text: string, language: "ar"|"en" } | null}
+ */
+export function classifyVisionNotes(notes) {
+  const text = String(notes || "").trim();
+  if (!text) return null;
+  return { text, language: ARABIC_LETTER_RE.test(text) ? "ar" : "en" };
+}
 /**
  * A4 — يرجّع الكائن المنظَّم، أو **يرمي** `CopyParseError`.
  *
