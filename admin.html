@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="ar" data-theme="light">
 <head>
+  <!--#include partials/head-common.html-->
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>لوحة الإشراف الإداري — أورا للتسويق (Sleek White & Black Admin)</title>
@@ -15,12 +16,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: 'DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', sans-serif; background: #FFFFFF; color: #000000; }
-    .sleek-white-card { background: #FFFFFF; border: 1px solid #E2E8F0; }
-    .sleek-white-card-darkborder { background: #FFFFFF; border: 1px solid #000000; }
-    .sleek-btn-black { background: #000000; color: #FFFFFF; font-weight: 700; }
-    .sleek-btn-black:hover { background: #1E293B; }
-    .sleek-btn-white { background: #FFFFFF; border: 1px solid #000000; color: #000000; font-weight: 700; }
-    .sleek-btn-white:hover { background: #F8FAFC; }
+    /* .sleek-white-card / .sleek-btn-black / .sleek-btn-white من /style.css (styles/08-shared-components.css). */
   </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between relative bg-white text-black selection:bg-black selection:text-white">
@@ -462,20 +458,13 @@
     <p>حقوق الطبع والنشر © 2026 <strong>أورا للتسويق (Aura Marketing)</strong> — جميع الحقوق محفوظة.</p>
   </footer>
 
+  <script src="/js/shared.js"></script>
   <script>
     let activeTab = 'overview';
 
-    // Escape every value that comes from the API before it goes into innerHTML.
-    // storeName/email (accounts) and name/ticket/slot (bookings) are ultimately
-    // attacker-controllable (signup storeName, WhatsApp profile name), so an
-    // un-escaped `${...}` here is stored XSS running in the admin's own session
-    // (SECURITY_AUDIT C3/H3). Use for text AND for values placed inside quoted
-    // HTML attributes (it escapes both quote styles).
-    function esc(v) {
-      return String(v ?? '').replace(/[&<>"']/g, c => (
-        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-      ));
-    }
+    // esc() هنا لقب محلي لـescHtml من /js/shared.js — بقي الاسم القصير لتجنّب
+    // تعديل ٢١ موضع استدعاء بالملف (المرحلة ٢، بند ٤).
+    const esc = escHtml;
 
     function switchAdminTab(tab) {
       activeTab = tab;

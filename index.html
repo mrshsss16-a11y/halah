@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="ar" data-theme="light">
 <head>
+  <!--#include partials/head-common.html-->
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   
@@ -53,20 +54,7 @@
       overflow-x: hidden;
       width: 100%;
     }
-    .wire-box {
-      background: #FFFFFF;
-      border: 1px solid #E2E8F0;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
-    }
-    .wire-btn {
-      background: #0F172A;
-      color: #FFFFFF;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .wire-btn:hover {
-      background: #334155;
-      transform: translateY(-1px);
-    }
+    /* .wire-box / .wire-btn من /style.css (styles/08-shared-components.css). */
     /* Multi-Spectral Soothing Low-Contrast Mesh Aura System */
     .spectrum-orb {
       position: fixed;
@@ -131,11 +119,17 @@
       <span class="font-bold text-slate-900 text-xs tracking-tight">منصة هالة</span>
     </a>
 
-    <!-- Top Left: Simple Login Icon -->
-    <a href="login.html" class="pointer-events-auto flex items-center gap-1.5 bg-white/90 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm text-xs font-bold text-slate-700 hover:text-slate-900 hover:border-slate-300 transition-all">
-      <span class="material-symbols-outlined text-base">login</span>
-      <span>تسجيل الدخول</span>
-    </a>
+    <!-- Top Left: Agents + Login -->
+    <div class="pointer-events-auto flex items-center gap-2">
+      <a href="/agents" class="hidden sm:flex items-center gap-1.5 bg-white/90 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm text-xs font-bold text-slate-700 hover:text-slate-900 hover:border-slate-300 transition-all">
+        <span class="material-symbols-outlined text-base">support_agent</span>
+        <span>وكلاء هالة</span>
+      </a>
+      <a href="login.html" class="flex items-center gap-1.5 bg-white/90 backdrop-blur-md border border-slate-200/80 px-4 py-2 rounded-full shadow-sm text-xs font-bold text-slate-700 hover:text-slate-900 hover:border-slate-300 transition-all">
+        <span class="material-symbols-outlined text-base">login</span>
+        <span>تسجيل الدخول</span>
+      </a>
+    </div>
 
   </div>
 
@@ -383,7 +377,7 @@
       let history = [];
       let opened = false;
 
-      function addBubble(role, text) {
+      function demoAddBubble(role, text) {
         const wrap = document.createElement("div");
         wrap.className = role === "user" ? "flex justify-end" : "flex justify-start";
         const bubble = document.createElement("div");
@@ -397,7 +391,7 @@
         return bubble;
       }
 
-      function toggle(forceOpen) {
+      function demoToggle(forceOpen) {
         opened = typeof forceOpen === "boolean" ? forceOpen : !opened;
         if (opened) {
           panel.classList.remove("opacity-0", "scale-95", "pointer-events-none");
@@ -405,7 +399,7 @@
           iconOpen.classList.add("hidden");
           iconClose.classList.remove("hidden");
           if (!history.length) {
-            addBubble("assistant", "هلا والله 👋 وش تبي تعرف عن هالة؟");
+            demoAddBubble("assistant", "هلا والله 👋 وش تبي تعرف عن هالة؟");
           }
           input.focus();
         } else {
@@ -416,20 +410,20 @@
         }
       }
 
-      launcher.addEventListener("click", () => toggle());
+      launcher.addEventListener("click", () => demoToggle());
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         const text = input.value.trim();
         if (!text) return;
 
-        addBubble("user", text);
+        demoAddBubble("user", text);
         history.push({ role: "user", content: text });
         input.value = "";
         input.disabled = true;
         sendBtn.disabled = true;
 
-        const typingBubble = addBubble("assistant", "...");
+        const typingBubble = demoAddBubble("assistant", "...");
 
         try {
           const res = await fetch("/api/support", {

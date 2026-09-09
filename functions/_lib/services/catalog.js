@@ -10,9 +10,8 @@
 // **صفحة واحدة فقط** لكل استدعاء، والـcron يستدعيها مرة كل تِك.
 import { ApiError } from "../core/respond.js";
 import { listProducts } from "../integrations/salla.js";
+import { CATALOG_LIST_LIMITS, clampLimit } from "../core/limits.js";
 
-const MAX_LIMIT = 100;
-const DEFAULT_LIMIT = 50;
 const UPSERT_CHUNK = 50; // D1 batch() — جولة واحدة بدل N
 
 function invalid(message, internal) {
@@ -171,10 +170,10 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = l
 }
 
 /** صفحة من كتالوج تاجر واحد — صفر طلبات سلة. */
-export async function listCatalog(env, { merchantId, limit = DEFAULT_LIMIT, offset = 0, category = null } = {}) {
+export async function listCatalog(env, { merchantId, limit = CATALOG_LIST_LIMITS.default, offset = 0, category = null } = {}) {
   const mid = requireMerchantId(merchantId);
   const db = requireDb(env);
-  const lim = Math.min(MAX_LIMIT, Math.max(1, Math.floor(Number(limit) || DEFAULT_LIMIT)));
+  const lim = clampLimit(limit, CATALOG_LIST_LIMITS);
   const off = Math.max(0, Math.floor(Number(offset) || 0));
   const cat = text(category, 60);
 

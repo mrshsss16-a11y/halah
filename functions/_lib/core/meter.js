@@ -11,10 +11,8 @@
 //
 // KV key format: meter:{merchantId}:{YYYY-MM-DD}
 // KV TTL:        25h (auto-expires slightly after UTC midnight rollover)
-export const DAILY_LIMIT = 50;
-export const MONTHLY_FREE_LIMIT = 1000; // Meta's WhatsApp service-conversation free tier is uncapped since 2026-11-01 — this constant is unused, kept only as a documented historical note (see docs/ROADMAP.md m2.2.5).
-export const COSTS = { copy: 1, chat: 1, image: 3, ocr: 1, voice: 2, campaign: 1, recovery: 1 };
-
+const DAILY_LIMIT = 50;
+const MONTHLY_FREE_LIMIT = 1000; // Meta's WhatsApp service-conversation free tier is uncapped since 2026-11-01 — this constant is unused, kept only as a documented historical note (see docs/ROADMAP.md m2.2.5).
 // ── Monthly merchant quota (docs/ROADMAP.md m2.2.5) ─────────────────────────
 // Two independent buckets instead of one blended daily credit pool — the old
 // DAILY_LIMIT let a single merchant exhaust the entire account's shared free
@@ -41,78 +39,6 @@ function kvKey(merchantId) {
 
 function monthlyKvKey(merchantId, bucket) {
   return `quota:${merchantId}:${bucket}:${currentMonth()}`;
-}
-
-/**
- * KV-accelerated atomic meter check.
- * Returns immediately from KV cache when possible (~5ms vs ~60ms D1).
- *
- * @returns {Promise<{ok: boolean, remaining: number, used: number, limit: number}>}
- */
-export async function checkAndConsume(env, merchantId, cost) {
-  if (!env.DB) return { ok: true, remaining: DAILY_LIMIT, used: 0, limit: DAILY_LIMIT };
-
-  const key = kvKey(merchantId);
-
-  // ── Fast path: KV cache ─────────────────────────────────────────────────
-  if (env.HALA_CACHE) {
-    try {
-      const cached = await env.HALA_CACHE.get(key);
-      const used = cached ? parseInt(cached, 10) : 0;
-
-      if (used + cost > DAILY_LIMIT) {
-        return { ok: false, remaining: 0, used, limit: DAILY_LIMIT };
-      }
-
-      const newUsed = used + cost;
-      // Write-back to KV (non-blocking — latency path ends here)
-      env.HALA_CACHE.put(key, String(newUsed), { expirationTtl: METER_TTL_SECONDS }).catch(() => {});
-
-      // Sync to D1 in the background — doesn't block the response
-      syncToD1(env, merchantId, cost).catch(() => {});
-
-      return {
-        ok: true,
-        remaining: Math.max(0, DAILY_LIMIT - newUsed),
-        used: newUsed,
-        limit: DAILY_LIMIT
-      };
-    } catch {
-      // KV unavailable — fall through to D1
-    }
-  }
-
-  // ── Cold path: D1 (source of truth) ────────────────────────────────────
-  const day = today();
-  const result = await env.DB.prepare(
-    `INSERT INTO usage_meter (merchant_id, day, credits_used, updated_at)
-     VALUES (?, ?, ?, datetime('now'))
-     ON CONFLICT (merchant_id, day) DO UPDATE SET
-       credits_used = credits_used + ?,
-       updated_at = datetime('now')
-     WHERE credits_used + ? <= ?`
-  )
-    .bind(merchantId, day, cost, cost, cost, DAILY_LIMIT)
-    .run();
-
-  const row = await env.DB.prepare(
-    "SELECT credits_used FROM usage_meter WHERE merchant_id = ? AND day = ?"
-  )
-    .bind(merchantId, day)
-    .first();
-  const used = (row && row.credits_used) || 0;
-
-  // Warm the KV cache for next requests
-  if (env.HALA_CACHE && result.meta.changes > 0) {
-    env.HALA_CACHE.put(key, String(used), { expirationTtl: METER_TTL_SECONDS }).catch(() => {});
-  }
-
-  return {
-    ok: result.meta.changes > 0,
-    remaining: Math.max(0, DAILY_LIMIT - used),
-    used,
-    limit: DAILY_LIMIT
-  };
 }
 
 /** Background D1 sync — called from KV fast path, never blocks the response. */

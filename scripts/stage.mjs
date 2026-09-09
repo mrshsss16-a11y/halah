@@ -19,7 +19,7 @@ const stylesDir = join(root, "styles");
 const INCLUDE = /\.(html|css|js|png|svg|webp|ico|txt)$/;
 // Cloudflare Pages config files — no extension, matched by exact name instead.
 const EXACT_NAME_INCLUDE = new Set(["_headers", "_redirects"]);
-const EXCLUDE_DIRS = new Set([".git", ".agents", ".wrangler", "node_modules", "dist", "docs", "functions", "migrations", "partials", "persona", "scripts", "styles"]);
+const EXCLUDE_DIRS = new Set([".git", ".agents", ".wrangler", "node_modules", "dist", "docs", "functions", "migrations", "partials", "persona", "scripts", "styles", "public"]);
 const INCLUDE_TAG = /<!--\s*#include\s+([\w./-]+)\s*-->/g;
 
 function resolveIncludes(html, fromFile, depth = 0) {
@@ -36,6 +36,9 @@ function resolveIncludes(html, fromFile, depth = 0) {
   });
 }
 
+// dist/ يُبنى من الصفر كل مرة: بقايا بناء سابق (مثل _redirects حُذف من المصدر
+// 2026-09-09 لكنه بقي بـdist وأسقط /dashboard بحلقة 308) لا يجوز أن تصل الإنتاج.
+rmSync(dist, { recursive: true, force: true });
 mkdirSync(dist, { recursive: true });
 
 // style.css is authored as numbered sections under styles/ (01-base,
@@ -45,6 +48,15 @@ mkdirSync(dist, { recursive: true });
 const styleParts = readdirSync(stylesDir).filter((f) => f.endsWith(".css")).sort();
 const styleCss = styleParts.map((f) => readFileSync(join(stylesDir, f), "utf8")).join("");
 writeFileSync(join(dist, "style.css"), styleCss);
+
+// public/ carries shared static assets (public/js/shared.js, public/assets/*)
+// copied verbatim into dist/ at the same relative path.
+const publicDir = join(root, "public");
+try {
+  cpSync(publicDir, dist, { recursive: true });
+} catch {
+  // no public/ dir — nothing to copy.
+}
 
 let count = 1;
 for (const entry of readdirSync(root, { withFileTypes: true })) {

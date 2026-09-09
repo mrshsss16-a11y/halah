@@ -91,4 +91,3 @@ export async function verifyOAuthState(env, request, stateFromQuery) {
   return timingSafeEqualStr(mac, expected);
 }
 
-export { STATE_COOKIE, STATE_TTL_SECONDS };

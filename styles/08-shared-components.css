@@ -1,0 +1,31 @@
+/* 08-shared-components.css — تعريف واحد لكل صنف كان مكرراً بقيم متعارضة عبر
+   صفحات الجذر (dashboard.html, admin.html, index.html, consultation.html,
+   agent-studio.html). المرجع: dashboard.html (الأحدث). أي صفحة تحتاج هذه
+   الأصناف تحمّل /style.css عبر partials/head-common.html — لا تُعرَّف هذه
+   الأصناف مرة ثانية داخل <style> الصفحة. */
+
+.sleek-card { background: #FFFFFF; border: 1px solid #E2E8F0; }
+.sleek-card-darkborder { background: #FFFFFF; border: 1px solid #000000; }
+/* اسم بديل استُخدم بـadmin.html لنفس الصنف — يبقى للتوافق الخلفي بلا تعديل ٢١ موضع استدعاء. */
+.sleek-white-card { background: #FFFFFF; border: 1px solid #E2E8F0; }
+.sleek-white-card-darkborder { background: #FFFFFF; border: 1px solid #000000; }
+
+.sleek-btn-black { background: #000000; color: #FFFFFF; font-weight: 700; }
+.sleek-btn-black:hover { background: #1E293B; }
+.sleek-btn-white { background: #FFFFFF; border: 1px solid #000000; color: #000000; font-weight: 700; }
+.sleek-btn-white:hover { background: #F8FAFC; }
+
+.wire-box {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+.wire-btn {
+  background: #0F172A;
+  color: #FFFFFF;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.wire-btn:hover {
+  background: #334155;
+  transform: translateY(-1px);
+}

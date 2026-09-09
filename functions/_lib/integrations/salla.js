@@ -15,7 +15,7 @@ const REFRESH_MARGIN_S = 24 * 3600; // renew when less than a day remains
 const SALLA_ALLOWED_HOSTS = new Set(["api.salla.dev", "accounts.salla.sa"]);
 
 /** fail closed: يرمي قبل بناء ترويسة Authorization — لا يُرسَل التوكن إطلاقاً. */
-export function assertSallaUrlAllowed(rawUrl) {
+function assertSallaUrlAllowed(rawUrl) {
   let parsed;
   try {
     parsed = new URL(String(rawUrl));
@@ -80,7 +80,7 @@ async function getValidToken(env, merchantId) {
   return tokens.access_token;
 }
 
-export async function sallaFetch(env, merchantId, path, opts = {}) {
+async function sallaFetch(env, merchantId, path, opts = {}) {
   // التحقق أولاً — قبل حتى جلب/تجديد التوكن.
   const url = assertSallaUrlAllowed(`${API_BASE}${path}`);
   const token = await getValidToken(env, merchantId);

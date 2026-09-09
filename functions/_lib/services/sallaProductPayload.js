@@ -18,7 +18,7 @@ const MAX_META_TITLE = 65;
 const MAX_META_DESC = 160;
 const MAX_SUBTITLE = 120;
 
-export function escapeHtml(v) {
+function escapeHtml(v) {
   return String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 

@@ -7,7 +7,7 @@
 //
 // This runs as part of `npm run deploy` so the mistake cannot reach production
 // again. See AGENT.md section 4.
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const DIST = "dist";
@@ -37,6 +37,23 @@ src/pages/api/, the deployable build is stage.mjs only:
 See AGENT.md section 4.
 `);
   process.exit(1);
+}
+
+// A `_redirects` rewrite to a .html target loops forever against Pages' own
+// clean-URL handling (Pages serves /x from x.html and 308s /x.html back to /x).
+// Happened on 2026-09-09: /dashboard (the Salla iframe) 308'd to itself until
+// the file was removed. Pages already provides clean URLs — never rewrite to .html.
+const redirectsPath = join(DIST, "_redirects");
+if (existsSync(redirectsPath)) {
+  const bad = readFileSync(redirectsPath, "utf8")
+    .split(/\r?\n/)
+    .filter((line) => /^\/\S*\s+\/\S+\.html\s+200\b/.test(line.trim()));
+  if (bad.length > 0) {
+    console.error(`✖ DEPLOY BLOCKED — ${DIST}/_redirects rewrites to .html (308 loop with clean URLs):`);
+    for (const line of bad) console.error(`    ${line}`);
+    console.error("See AGENT.md section 4.");
+    process.exit(1);
+  }
 }
 
 const files = readdirSync(DIST);

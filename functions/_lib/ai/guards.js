@@ -62,7 +62,7 @@ export function containsPrice(text) {
 }
 
 // الرسالة البديلة حين لا يبقى من الرد شيء بعد المسح. لا رقم فيها بحكم التعريف.
-export const PRICE_FALLBACK_TEXT =
+const PRICE_FALLBACK_TEXT =
   "الأسعار تختلف حسب حجم نشاطك — فريقنا يحددها لك مباشرة بالاستشارة المجانية.";
 
 /**

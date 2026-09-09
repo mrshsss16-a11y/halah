@@ -259,7 +259,7 @@ export const INSTAGRAM_DM_RULES = `## رد على رسالة خاصة بإنست
 
 بعد أول رد بنفس المحادثة، لا تكرّرين الإفصاح.`;
 
-export const DIALECT_LABELS = {
+const DIALECT_LABELS = {
   saudi_najdi: "سعودي أبيض - نجدية خفيفة",
   saudi_hijazi: "سعودي أبيض - حجازية لطيفة",
   fusha_friendly: "فصحى عصرية ودية"

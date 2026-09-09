@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="ar" data-theme="light">
 <head>
+  <!--#include partials/head-common.html-->
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>لوحة الوكلاء | هالة</title>
@@ -12,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/js/shared.js"></script>
   <style>
     body { font-family: 'IBM Plex Sans Arabic', 'DIN Next LT Arabic', system-ui, sans-serif; }
     .headline { font-family: 'Alexandria', 'IBM Plex Sans Arabic', sans-serif; }
@@ -247,31 +249,8 @@
   tabs.forEach(function (t) { t.addEventListener("click", function () { activate(t.dataset.tab); }); });
   activate("persona");
 
-  // ── طلب موحّد: يعرض رسالة الخادم العربية بدل كود خام ──
-  function api(url, body) {
-    return fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body || {})
-    }).then(function (r) {
-      // الرد قد لا يكون JSON إطلاقاً (صفحة تسجيل دخول، 404، عطل شبكة) —
-      // بلا هذا الالتفاف تظهر رسالة المتصفح الإنجليزية الخام للتاجر
-      // ("Failed to execute 'json'…") بدل رسالة عربية مفهومة.
-      return r.text().then(function (raw) {
-        var d;
-        try {
-          d = JSON.parse(raw);
-        } catch (e) {
-          if (r.status === 401 || r.status === 403) {
-            throw new Error("جلستك انتهت — سجّل دخولك مرة ثانية.");
-          }
-          throw new Error("تعذّر الاتصال بالخادم الآن. حاول بعد شوي.");
-        }
-        if (!r.ok || d.ok === false) throw new Error(d.error || "تعذّر تنفيذ الطلب.");
-        return d;
-      });
-    });
-  }
+  // ── طلب موحّد: api() لقب محلي لـapiPost من /js/shared.js ──
+  var api = apiPost;
 
   // ── الشخصية ──
   var TEXT_FIELDS = ["agent_name","business_name","business_type","city","about",
@@ -325,12 +304,8 @@
 
   $("reloadBtn").addEventListener("click", loadProfile);
 
-  // ── التدريب ──
-  function esc(v) {
-    return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) {
-      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-    });
-  }
+  // ── التدريب ── esc() لقب محلي لـescHtml من /js/shared.js.
+  var esc = escHtml;
 
   function loadFaqs() {
     api("/api/store/faq", { action: "list" })

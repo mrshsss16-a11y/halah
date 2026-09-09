@@ -99,6 +99,12 @@ endpoint إلى 404 على الإنتاج — بما فيها ويبهوك وا�
 - ❌ لا تُعِد إدخال Astro أو أي أداة تنتج `_worker.js` بدون هجرة كاملة ومقصودة لكل
   الـ endpoints (اقرأ `docs/archive/astro-experiment/README.md` أولاً).
 
+### ⚠️ لا `_redirects` بقواعد `/x /x.html 200`
+Cloudflare Pages يخدم المسارات النظيفة تلقائياً (`/dashboard` ← `dashboard.html`) ويحوّل
+`/dashboard.html` → `/dashboard` بـ308. قاعدة rewrite إلى `.html` تُنتج **حلقة 308 لا نهائية**
+— حدث فعلياً 2026-09-09 وأسقط `/dashboard` (إطار سلة) حتى حُذف الملف. لا تُنشئ `_redirects`
+لمسارات نظيفة؛ تُستخدم فقط لتحويلات حقيقية (دومين قديم → جديد).
+
 ### التحقق الإلزامي بعد أي نشر
 
 ```bash
@@ -127,9 +133,7 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ## 6. قاعدة البيانات — D1 `halah-tr-db`
 
-- Migrations في `migrations/` (0001..0026 مطبَّقة على البعيد، تحقق 2026-09-08؛ **0027
-  `cron_heartbeat` مكتوبة 2026-09-09 وبانتظار التطبيق اليدوي من المالك — لم تُطبَّق بعد،
-  انظر §13 O2). طبّق بـ: `npx wrangler d1 migrations apply halah-tr-db --remote`
+- Migrations في `migrations/` (0001..0027 كلها مطبَّقة على البعيد، تحقق 2026-09-09 — 0027 `cron_heartbeat` طُبِّقت ونبض الـcron `ok` بـ`/api/health`)  انظر §13 O2). طبّق بـ: `npx wrangler d1 migrations apply halah-tr-db --remote`
 - 0003 placeholder (للحفاظ على تسلسل الأرقام). 0010 أنشأ الجداول الناقصة سابقاً.
 - جداول قديمة (legacy) لا تزال موجودة من بناء سابق: `users`, `faqs`, `store_connections`,
   `synced_products`, `merchant_marketing_contexts`, `store_documents`. الجداول الجديدة حلّت محلها.

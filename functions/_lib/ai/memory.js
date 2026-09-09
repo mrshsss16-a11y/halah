@@ -5,20 +5,6 @@
 // Store isolation uses a metadata filter instead of a namespace.
 import { embedText } from "./gateway.js";
 
-export async function rememberReply({ env, storeId, question, reply, score, dialect }) {
-  if (!env.VECTORIZE_INDEX) return null;
-  const values = await embedText({ env, text: question });
-  const id = `${storeId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-  await env.VECTORIZE_INDEX.insert([
-    {
-      id,
-      values,
-      metadata: { question, reply, score, dialect, storeId, ts: Date.now() }
-    }
-  ]);
-  return id;
-}
-
 export async function storeVectorMemory({ env, storeId, text, metadata = {} }) {
   if (!env?.VECTORIZE_INDEX) return null;
   const values = await embedText({ env, text });

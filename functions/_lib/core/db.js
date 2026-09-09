@@ -553,23 +553,6 @@ export async function saveWaConnection(env, { merchantId, wabaId, phoneNumberId,
     .run();
 }
 
-/** Merchant disconnected from their side (account_update / PARTNER_REMOVED). */
-export async function revokeWaConnection(env, { merchantId = null, wabaId = null }) {
-  if (!env.DB || (!merchantId && !wabaId)) return;
-  // tenant-audit-ok: فرع الـwaba_id مفتاح بديل فريد عالمياً (حساب واتساب أعمال
-  // واحد لا يخدم متجرين)، ويطابق صفاً واحداً. ضروري لأن ويبهوك ميتا
-  // (account_update / PARTNER_REMOVED) يصل بمعرّف WABA فقط بلا merchant_id —
-  // اشتراط merchant_id هنا يعني تجاهل إشعار إلغاء ربط حقيقي، وهو أسوأ أمنياً
-  // من تنفيذه: يترك اتصالاً مُلغى من طرف التاجر مفعّلاً عندنا.
-  const sql = merchantId
-    ? "UPDATE wa_connections SET status = 'revoked', updated_at = datetime('now') WHERE merchant_id = ?"
-    : "UPDATE wa_connections SET status = 'revoked', updated_at = datetime('now') WHERE waba_id = ?";
-  await env.DB.prepare(sql)
-    .bind(merchantId || String(wabaId))
-    .run()
-    .catch(() => {});
-}
-
 // ── Consultation bookings ──
 
 export async function saveConsultationBooking(env, { name, phone, slotLabel }) {
@@ -691,57 +674,6 @@ export async function clearLoginAttempts(env, email) {
   await env.DB.prepare("DELETE FROM login_attempts WHERE email = ?").bind(email).run();
 }
 
-/**
- * Compiles weekly rescue digest metrics for a merchant store (for WhatsApp digest & viral share card).
- */
-export async function getWeeklyStoreStats(env, merchantId) {
-  if (!env.DB) {
-    return {
-      merchantId,
-      totalReplies: 42,
-      recoveredCarts: 3,
-      qaAnswered: 8,
-      estimatedSavingsSar: 1250,
-      periodDays: 7
-    };
-  }
-
-  try {
-    const waRepliesRow = await env.DB.prepare(
-      `SELECT COUNT(*) as cnt FROM wa_messages WHERE merchant_id = ? AND direction = 'out' AND source = 'bot' AND created_at >= datetime('now', '-7 days')`
-    ).bind(merchantId).first().catch(() => ({ cnt: 0 }));
-
-    const bookingsRow = await env.DB.prepare(
-      `SELECT COUNT(*) as cnt FROM consultation_bookings WHERE merchant_id = ? AND created_at >= datetime('now', '-7 days')`
-    ).bind(merchantId).first().catch(() => ({ cnt: 0 }));
-
-    const totalReplies = (waRepliesRow?.cnt || 0) + (bookingsRow?.cnt || 0);
-    const recoveredCarts = Math.max(1, Math.floor(totalReplies * 0.15));
-    const qaAnswered = Math.floor(totalReplies * 0.25);
-    // Estimated average saved value per recovered interaction (~150 SAR per cart/lead)
-    const estimatedSavingsSar = Math.max(450, (recoveredCarts * 250) + (totalReplies * 15));
-
-    return {
-      merchantId,
-      totalReplies: Math.max(12, totalReplies),
-      recoveredCarts,
-      qaAnswered,
-      estimatedSavingsSar,
-      periodDays: 7
-    };
-  } catch (err) {
-    logError({ env }, { requestId: null, path: "core/db.getWeeklyStoreStats", code: "DB_WEEKLY_STATS_FAILED", internal: err?.message || String(err) });
-    return {
-      merchantId,
-      totalReplies: 35,
-      recoveredCarts: 2,
-      qaAnswered: 5,
-      estimatedSavingsSar: 980,
-      periodDays: 7
-    };
-  }
-}
-
 // ── Omnichannel Sessions & Retargeting ──
 
 export async function saveOmnichannelSession(env, { sessionToken, merchantId, phone, name, lastProduct, chatSummary, themeCategory }) {
@@ -799,27 +731,6 @@ export async function getOmnichannelSession(env, { sessionToken, phone, merchant
       .first();
   }
   return null;
-}
-
-export async function scheduleRetargeting(env, { merchantId, customerPhone, productId, eventType, delayHours }) {
-  const scheduleTime = `+${delayHours} hours`;
-  await env.DB.prepare(
-    `INSERT INTO pending_retargeting (merchant_id, customer_phone, product_id, event_type, scheduled_for, status)
-     VALUES (?, ?, ?, ?, datetime('now', ?), 'pending')`
-  )
-    .bind(merchantId, customerPhone, productId || null, eventType, scheduleTime)
-    .run();
-}
-
-export async function getPendingRetargetingList(env, merchantId) {
-  const { results } = await env.DB.prepare(
-    `SELECT * FROM pending_retargeting 
-     WHERE merchant_id = ? AND status = 'pending' AND scheduled_for <= datetime('now')
-     ORDER BY scheduled_for ASC`
-  )
-    .bind(merchantId)
-    .all();
-  return results || [];
 }
 
 // ── B3: bulk description jobs ───────────────────────────────────────────────
@@ -937,20 +848,6 @@ export async function deleteMerchantFaq(env, merchantId, id) {
   await env.DB.prepare("DELETE FROM merchant_faqs WHERE id = ? AND merchant_id = ?")
     .bind(id, merchantId)
     .run();
-}
-
-export async function saveStoreFaqs(env, storeId, faqs) {
-  if (!env?.DB || !Array.isArray(faqs)) return false;
-  for (const item of faqs) {
-    const q = item?.question ?? item?.q;
-    const a = item?.answer ?? item?.a;
-    if (q && a) {
-      await env.DB.prepare(
-        "INSERT INTO merchant_faqs (merchant_id, question, answer, updated_at) VALUES (?, ?, ?, datetime('now'))"
-      ).bind(storeId, q, a).run().catch(() => {});
-    }
-  }
-  return true;
 }
 
 // ── Password-reset OTP brute-force protection (P39) ──
@@ -1153,37 +1050,6 @@ export async function getIgConnectionByUserId(env, igUserId) {
     .bind(String(igUserId))
     .first()
     .catch(() => null);
-}
-
-export async function getIgConnectionByMerchant(env, merchantId) {
-  if (!env.DB || !merchantId) return null;
-  return env.DB.prepare(
-    `SELECT merchant_id, ig_user_id, username, access_token, token_expires_at, created_at
-     FROM ig_connections WHERE merchant_id = ?`
-  )
-    .bind(merchantId)
-    .first()
-    .catch(() => null);
-}
-
-export async function saveIgConnection(env, { merchantId, igUserId, username, accessToken, tokenExpiresAt, scopes = null }) {
-  if (!merchantId || !igUserId || !accessToken) {
-    throw new Error("saveIgConnection: merchantId, igUserId and accessToken are required");
-  }
-  await env.DB.prepare(
-    `INSERT INTO ig_connections
-       (merchant_id, ig_user_id, username, access_token, token_expires_at, scopes, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-     ON CONFLICT(ig_user_id) DO UPDATE SET
-       merchant_id = excluded.merchant_id,
-       username = excluded.username,
-       access_token = excluded.access_token,
-       token_expires_at = excluded.token_expires_at,
-       scopes = excluded.scopes,
-       updated_at = datetime('now')`
-  )
-    .bind(merchantId, String(igUserId), username || null, accessToken, Number(tokenExpiresAt), scopes)
-    .run();
 }
 
 /**

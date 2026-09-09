@@ -149,14 +149,16 @@ async function runTests() {
   {
     const src = readSrc("dashboard.html");
     assert(!/\balert\(/.test(src), "U10: dashboard.html بلا استدعاءات alert() متبقية");
-    assert(src.includes("function showToast"), "U10: يوجد شريط إشعار داخلي showToast بديل عن alert()");
+    const shared = readSrc("public/js/shared.js");
+    assert(shared.includes("function showToast") && src.includes("/js/shared.js"), "U10: يوجد شريط إشعار داخلي showToast (بالملف المشترك public/js/shared.js) بديل عن alert()");
   }
 
   // ---- U11: showMsg يقبل نوعاً بألوان مختلفة ----
   {
     const src = readSrc("dashboard.html");
-    assert(/function showMsg\(id, text, type\)/.test(src), "U11: showMsg تقبل معامل type");
-    assert(src.includes("bg-rose-50") && src.includes("bg-emerald-50"), "U11: showMsg يفرّق ألوان الخطأ/النجاح");
+    const shared = readSrc("public/js/shared.js");
+    assert(/function showMsg\(id, text, type\)/.test(shared), "U11: showMsg تقبل معامل type (بالملف المشترك)");
+    assert(shared.includes("bg-rose-50") && shared.includes("bg-emerald-50"), "U11: showMsg يفرّق ألوان الخطأ/النجاح");
     assert(/showMsg\('reviewFeedback',[\s\S]{0,120}'error'\)/.test(src), "U11: نداء showMsg بنوع 'error' مطبّق على أحد أهم المواضع");
   }
 

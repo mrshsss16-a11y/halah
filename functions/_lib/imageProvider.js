@@ -56,10 +56,6 @@ export const STYLE_PRESETS = {
   }
 };
 
-export function styleLabel(styleKey) {
-  return (STYLE_PRESETS[styleKey] && STYLE_PRESETS[styleKey].label) || STYLE_PRESETS["minimal-white"].label;
-}
-
 function base64ToBytes(base64) {
   const binString = atob(base64);
   const bytes = new Uint8Array(binString.length);

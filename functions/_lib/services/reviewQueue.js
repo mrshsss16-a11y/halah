@@ -9,12 +9,9 @@
 // UPDATE يحمل merchant_id بالشرط حتى لو id فريد عالمياً: id مخمّن = تعديل صف
 // تاجر ثانٍ لو اعتمدنا على الـid وحده.
 import { ApiError } from "../core/respond.js";
+import { REVIEW_LIST_LIMITS, clampLimit } from "../core/limits.js";
 
-export const REVIEW_KINDS = ["report", "social_reply", "image", "description"];
-export const REVIEW_STATUSES = ["pending", "approved", "rejected"];
-
-const MAX_LIMIT = 100;
-const DEFAULT_LIMIT = 25;
+const REVIEW_KINDS = ["report", "social_reply", "image", "description"];
 const MAX_PAYLOAD_CHARS = 20000;
 const MAX_REASON_CHARS = 500;
 
@@ -83,10 +80,10 @@ export async function enqueue(env, { merchantId, kind, payload }) {
 }
 
 /** المعلّق لمتجر واحد، الأقدم أولاً (يطابق idx_review_queue_pending). */
-export async function listPending(env, { merchantId, limit = DEFAULT_LIMIT, kind = null } = {}) {
+export async function listPending(env, { merchantId, limit = REVIEW_LIST_LIMITS.default, kind = null } = {}) {
   const db = requireDb(env);
   const mid = requireMerchantId(merchantId);
-  const cap = Math.min(Math.max(Number(limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+  const cap = clampLimit(limit, REVIEW_LIST_LIMITS);
 
   if (kind !== null && !REVIEW_KINDS.includes(kind)) {
     throw invalid("نوع المحتوى غير مدعوم.", "reviewQueue: unknown kind filter");
@@ -335,10 +332,10 @@ const STATE_WHERE = {
 };
 
 /** صفوف بحالة نشر معيّنة لمتجر واحد — لشاشة المراجعة (published/failed/rejected). */
-export async function listByState(env, { merchantId, kind, state, limit = DEFAULT_LIMIT }) {
+export async function listByState(env, { merchantId, kind, state, limit = REVIEW_LIST_LIMITS.default }) {
   const db = requireDb(env);
   const mid = requireMerchantId(merchantId);
-  const cap = Math.min(Math.max(Number(limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+  const cap = clampLimit(limit, REVIEW_LIST_LIMITS);
   if (!REVIEW_KINDS.includes(kind)) throw invalid("نوع المحتوى غير مدعوم.", "reviewQueue.listByState: unknown kind");
   const where = STATE_WHERE[state];
   if (!where) throw invalid("الحالة غير مدعومة.", "reviewQueue.listByState: unknown state");
@@ -395,10 +392,10 @@ export async function claimNextPublishMerchant(env, { kind = "description" } = {
 }
 
 /** المعتمَد غير المنشور لمتجر واحد، الأقدم اعتماداً أولاً (يطابق idx_review_queue_unpublished). */
-export async function listApprovedUnpublished(env, { merchantId, kind = "description", limit = DEFAULT_LIMIT }) {
+export async function listApprovedUnpublished(env, { merchantId, kind = "description", limit = REVIEW_LIST_LIMITS.default }) {
   const db = requireDb(env);
   const mid = requireMerchantId(merchantId);
-  const cap = Math.min(Math.max(Number(limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
+  const cap = clampLimit(limit, REVIEW_LIST_LIMITS);
   const { results } = await db
     .prepare(
       `SELECT id, merchant_id, kind, payload, status, reviewed_by, reviewed_at

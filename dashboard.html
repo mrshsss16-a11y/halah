@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="ar" data-theme="light">
 <head>
+  <!--#include partials/head-common.html-->
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>هالة | لوحة تحكم التاجر - Hala AI OS</title>
@@ -30,12 +31,7 @@
   <script src="https://unpkg.com/@salla.sa/embedded-sdk/dist/umd/index.js"></script>
   <style>
     body { font-family: 'DIN Next LT Arabic', 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', sans-serif; background: #FFFFFF; color: #000000; }
-    .sleek-card { background: #FFFFFF; border: 1px solid #E2E8F0; }
-    .sleek-card-darkborder { background: #FFFFFF; border: 1px solid #000000; }
-    .sleek-btn-black { background: #000000; color: #FFFFFF; font-weight: 700; }
-    .sleek-btn-black:hover { background: #1E293B; }
-    .sleek-btn-white { background: #FFFFFF; border: 1px solid #000000; color: #000000; font-weight: 700; }
-    .sleek-btn-white:hover { background: #F8FAFC; }
+    /* .sleek-card / .sleek-btn-black / .sleek-btn-white من /style.css (styles/08-shared-components.css). */
     .tab-on { background:#000; color:#fff; }
     .tab-off { color:#334155; }
     .tab-off:hover { background:#F1F5F9; color:#000; }
@@ -573,17 +569,10 @@
     </div>
   </div>
 
+  <script src="/js/shared.js"></script>
   <script>
-    // Escape anything that comes from the API or from Salla data (product
-    // names, order references/statuses, uploaded SKUs) before it goes into
-    // innerHTML. Salla content is merchant/customer-controlled, so an
-    // un-escaped `${...}` is XSS in the merchant's own dashboard session.
-    // Also safe for values inside quoted HTML attributes (escapes both quotes).
-    function escHtml(v) {
-      return String(v ?? '').replace(/[&<>"']/g, c => (
-        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-      ));
-    }
+    // escHtml/showMsg/showToast/apiPost/checkSession تأتي الآن من /js/shared.js
+    // (المرحلة ٢، بند ٤) — لا تُعرَّف هنا مرة ثانية.
 
     // ── بوابة إكمال الحساب ────────────────────────────────────────────────
     // أي استدعاء يرجع code: "ACCOUNT_REQUIRED" (403) معناه: التاجر داخل بجلسة
@@ -1120,36 +1109,7 @@
       }
     }
 
-    let globalToastTimer = null;
-    function showToast(text, type) {
-      const el = document.getElementById('globalToast');
-      if (!el) return;
-      const base = 'fixed top-4 left-1/2 -translate-x-1/2 z-[100] max-w-md w-[92vw] p-3.5 rounded-xl text-xs font-bold border shadow-lg flex items-start gap-2';
-      const styles = {
-        error: base + ' bg-rose-50 text-rose-800 border-rose-300',
-        success: base + ' bg-emerald-50 text-emerald-800 border-emerald-300',
-        info: base + ' bg-slate-100 text-black border-black'
-      };
-      el.className = styles[type] || styles.info;
-      el.innerText = text;
-      el.classList.remove('hidden');
-      clearTimeout(globalToastTimer);
-      globalToastTimer = setTimeout(() => el.classList.add('hidden'), 6000);
-    }
-
-    function showMsg(id, text, type) {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.classList.remove('hidden');
-      el.innerText = text;
-      const base = 'p-3.5 rounded-xl text-xs font-bold border';
-      const styles = {
-        error: base + ' bg-rose-50 text-rose-800 border-rose-300',
-        success: base + ' bg-emerald-50 text-emerald-800 border-emerald-300',
-        info: base + ' bg-slate-100 text-black border-black'
-      };
-      el.className = styles[type] || styles.info;
-    }
+    // showToast/showMsg من /js/shared.js.
 
     async function copyToClipboard(id) {
       const el = document.getElementById(id);

@@ -45,7 +45,7 @@ const SAUDI_COMMERCE_TYPOS = new Map([
  * Removes character flooding/repetition (e.g. "سلاااام" -> "سلام", "بكممم" -> "بكم")
  * and standardizes basic Arabic letter forms without destroying dialect nuance.
  */
-export function normalizeArabicText(rawText) {
+function normalizeArabicText(rawText) {
   if (!rawText || typeof rawText !== "string") return "";
 
   let cleaned = rawText
@@ -65,7 +65,7 @@ export function normalizeArabicText(rawText) {
 /**
  * Maps known high-frequency Saudi e-commerce chat typos to clean search forms.
  */
-export function correctSaudiCommerceTypos(text) {
+function correctSaudiCommerceTypos(text) {
   if (!text) return "";
 
   const words = text.split(" ");

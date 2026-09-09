@@ -143,7 +143,7 @@ export async function verifySessionToken(env, token) {
   return merchantId;
 }
 
-export function parseCookies(request) {
+function parseCookies(request) {
   const header = request.headers.get("Cookie") || "";
   const map = {};
   header.split(";").forEach((pair) => {
@@ -354,4 +354,3 @@ export async function requireAdmin(request, env) {
   return null;
 }
 
-export { COOKIE_NAME };
