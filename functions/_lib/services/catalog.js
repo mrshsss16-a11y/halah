@@ -252,6 +252,48 @@ export async function listPriorityCatalog(env, { merchantId, limit = 500 } = {})
 }
 
 /**
+ * منتجات يختارها التاجر بنفسه من شبكة «منتجاتي» — بديل ترتيب الأولوية حين
+ * يقرّر هو أي المنتجات تُوصف.
+ *
+ * العزل شرط بنيوي لا تحسين: قائمة الـSKU **مدخل عميل**، فلو استُعلم بها بلا
+ * `merchant_id` لأمكن لتاجر أن يولّد أوصافاً على منتجات متجر آخر ويقرأ
+ * أسماءها وأسعارها بردّ الوظيفة. الشرط هنا يمنع ذلك عند المصدر، والترتيب
+ * يتبع ما اختاره التاجر لا ما رتّبناه له.
+ *
+ * سقف ٥٠٠: نفس سقف المسار التلقائي — قائمة أطول تعني وظيفة تتجاوز حصة
+ * الشهر بكثير، ولا فائدة من قبولها.
+ */
+export async function selectCatalogBySkus(env, { merchantId, skus } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const wanted = [...new Set((Array.isArray(skus) ? skus : [])
+    .map((s) => String(s ?? "").trim())
+    .filter(Boolean))].slice(0, 500);
+  if (!wanted.length) return [];
+
+  const rows = [];
+  // D1 يحدّ عدد المعاملات لكل استعلام — نقسّم القائمة لدفعات صغيرة.
+  const CHUNK = 50;
+  for (let i = 0; i < wanted.length; i += CHUNK) {
+    const part = wanted.slice(i, i + CHUNK);
+    const holes = part.map(() => "?").join(",");
+    const { results } = await db
+      .prepare(
+        `SELECT sku, name, price, category, current_description, image_url
+           FROM store_products
+          WHERE merchant_id = ? AND sku IN (${holes})`
+      )
+      .bind(mid, ...part)
+      .all();
+    rows.push(...(results || []));
+  }
+
+  // ترتيب التاجر كما اختاره، لا ترتيب قاعدة البيانات.
+  const order = new Map(wanted.map((s, i) => [s, i]));
+  return rows.sort((a, b) => (order.get(a.sku) ?? 0) - (order.get(b.sku) ?? 0));
+}
+
+/**
  * بعد نشر هالة وصفاً على سلة: الحالي = ما نُشر، والأصل يبقى كما هو.
  * لا يُنشئ صفاً: منتج غير مسحوب (مسار CSV اليدوي) يبقى بلا صف — لا نخترع
  * بيانات كتالوج من صف رفع يدوي.

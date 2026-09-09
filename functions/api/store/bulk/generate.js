@@ -10,7 +10,7 @@ import { requireCompletedAccount } from "../../../_lib/core/session.js";
 import { createBulkJob, getActiveJobByKind, DEFERRED_MARKER } from "../../../_lib/core/db.js";
 import { getMonthlyUsage } from "../../../_lib/core/meter.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
-import { listPriorityCatalog, countCatalog } from "../../../_lib/services/catalog.js";
+import { listPriorityCatalog, countCatalog, selectCatalogBySkus } from "../../../_lib/services/catalog.js";
 
 const MAX_ROWS = 500;
 const TONES = ["white", "formal", "luxury", "deals", "funny"];
@@ -39,7 +39,24 @@ async function bulkGenerateHandler(body, env, request) {
   const remaining = Math.max(0, Number(usage?.description?.remaining || 0));
   const limitMonthly = Number(usage?.description?.limit || 0);
 
-  const candidates = await listPriorityCatalog(env, { merchantId, limit: requested });
+  // التاجر يختار بنفسه من شبكة «منتجاتي» (صور + أسماء) — قائمة SKU صريحة
+  // تتقدّم على ترتيب الأولوية التلقائي. `selectCatalogBySkus` يقيّد بالتاجر،
+  // فأي SKU لا يخصّه يسقط بصمت بدل أن يصل وظيفة التوليد.
+  const chosenSkus = Array.isArray(body.skus)
+    ? body.skus.map((s) => String(s ?? "").trim()).filter(Boolean)
+    : [];
+  const candidates = chosenSkus.length
+    ? await selectCatalogBySkus(env, { merchantId, skus: chosenSkus })
+    : await listPriorityCatalog(env, { merchantId, limit: requested });
+
+  if (chosenSkus.length && !candidates.length) {
+    return {
+      ok: false,
+      error: "المنتجات المحددة ما لقيناها بكتالوجك — اضغط «تحديث المنتجات» ثم أعد الاختيار.",
+      code: "SELECTION_NOT_FOUND"
+    };
+  }
+
   const rows = candidates.map((c) => ({ sku: c.sku, name: c.name, price: c.price || "", category: c.category || "" }));
 
   const now = rows.slice(0, remaining);

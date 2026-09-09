@@ -131,6 +131,19 @@
 
         <div id="catalogLoading" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري تحميل منتجاتك…</div>
 
+        <!-- ── اختيار متعدد: التاجر يشوف الصور ويحدد أي منتجات تُوصف ── -->
+        <div id="catalogSelectBar" class="hidden flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+          <span id="catalogSelectCount" class="text-xs font-black text-black">محدد: ٠</span>
+          <button onclick="selectAllCatalog(true)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">تحديد كل المعروض</button>
+          <button onclick="selectAllCatalog(false)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">إلغاء التحديد</button>
+          <button id="catalogSelectedGenBtn" onclick="generateSelectedCatalog()" disabled
+                  class="sleek-btn-black px-4 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 opacity-50 cursor-not-allowed">
+            <span class="material-symbols-outlined text-sm">auto_awesome</span>
+            <span id="catalogSelectedGenText">ولّد أوصاف المحدد</span>
+          </button>
+          <span class="text-[11px] text-slate-500 font-medium">كل وصف يمرّ على مراجعتك قبل النشر.</span>
+        </div>
+
         <div id="catalogEmpty" class="hidden text-center py-10 space-y-2">
           <span id="catalogEmptyIcon" class="material-symbols-outlined text-4xl text-slate-300">inventory_2</span>
           <p id="catalogEmptyTitle" class="text-xs text-slate-600 font-bold">ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"</p>
@@ -693,6 +706,8 @@
 
         const count = Object.keys(catalogItems).length;
         grid.classList.toggle('hidden', count === 0);
+        document.getElementById('catalogSelectBar').classList.toggle('hidden', count === 0);
+        renderCatalogSelection();
         catalogNextOffset = data.nextOffset || 0;
         moreBtn.classList.toggle('hidden', !data.hasMore);
         lastCatalogTotal = Number(data.total || 0);
@@ -738,9 +753,15 @@
 
     function catalogCard(it, key) {
       key = key || it.sku || ('pid_' + it.productId);
+      // غلاف: البطاقة زر، ومربع الاختيار عنصر مستقل فوقها — زر داخل زر HTML
+      // غير صالح ويكسر النقر بالمتصفحات.
+      const wrap = document.createElement('div');
+      wrap.className = 'relative';
+      wrap.dataset.sku = key;
+
       const card = document.createElement('button');
       card.type = 'button';
-      card.className = 'text-right rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-black transition shadow-sm';
+      card.className = 'w-full text-right rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-black transition shadow-sm';
       card.dataset.sku = key;
 
       // صور سلة قد تكون محمية (hotlink/CDN مقيّد): لو فشل التحميل نُخفي الـimg
@@ -769,7 +790,88 @@
          </div>`;
 
       card.addEventListener('click', () => useCatalogItem(key));
-      return card;
+      wrap.appendChild(card);
+
+      // منتج بلا SKU لا يدخل التوليد الجماعي (الوظيفة تُعرّف صفوفها بالـSKU)،
+      // فلا نعرض له مربع اختيار يعد بما لا يُنفَّذ.
+      if (it.sku) {
+        const pick = document.createElement('label');
+        pick.className = 'absolute top-2 right-2 z-10 flex items-center justify-center w-7 h-7 rounded-lg bg-white/95 border border-slate-300 cursor-pointer shadow-sm';
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.className = 'catalog-pick w-4 h-4 accent-black cursor-pointer';
+        box.value = it.sku;
+        box.checked = selectedSkus.has(it.sku);
+        box.addEventListener('change', () => {
+          if (box.checked) selectedSkus.add(it.sku); else selectedSkus.delete(it.sku);
+          wrap.classList.toggle('ring-2', box.checked);
+          wrap.classList.toggle('ring-black', box.checked);
+          wrap.classList.toggle('rounded-2xl', box.checked);
+          renderCatalogSelection();
+        });
+        pick.appendChild(box);
+        wrap.appendChild(pick);
+        if (box.checked) wrap.classList.add('ring-2', 'ring-black', 'rounded-2xl');
+      }
+
+      return wrap;
+    }
+
+    /** حالة الاختيار المتعدد — تبقى بالذاكرة فقط، تُمسح بكل تحميل صفحة. */
+    const selectedSkus = new Set();
+
+    function renderCatalogSelection() {
+      const bar = document.getElementById('catalogSelectBar');
+      const btn = document.getElementById('catalogSelectedGenBtn');
+      const n = selectedSkus.size;
+      if (!bar || !btn) return;
+      document.getElementById('catalogSelectCount').innerText = `محدد: ${n}`;
+      document.getElementById('catalogSelectedGenText').innerText =
+        n ? `ولّد أوصاف المحدد (${n})` : 'ولّد أوصاف المحدد';
+      btn.disabled = n === 0;
+      btn.classList.toggle('opacity-50', n === 0);
+      btn.classList.toggle('cursor-not-allowed', n === 0);
+    }
+
+    function selectAllCatalog(on) {
+      document.querySelectorAll('.catalog-pick').forEach(box => {
+        if (box.checked !== on) { box.checked = on; box.dispatchEvent(new Event('change')); }
+      });
+    }
+
+    /**
+     * توليد للمنتجات المحددة — نفس مسار الجملة (طابور مراجعة، احترام حصة
+     * الشهر، فاصل ١.١ث لكل متجر)، لكن بقائمة التاجر لا بترتيب الأولوية.
+     */
+    async function generateSelectedCatalog() {
+      const skus = [...selectedSkus];
+      if (!skus.length) return;
+      const btn = document.getElementById('catalogSelectedGenBtn');
+      const txt = document.getElementById('catalogSelectedGenText');
+      btn.disabled = true;
+      txt.innerText = 'جاري البدء…';
+      try {
+        const res = await fetch('/api/store/bulk/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ skus, tone: document.getElementById('bulkTone')?.value || 'white' })
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.ok) {
+          showMsg('catalogFeedback', data?.error || 'تعذر بدء التوليد. حاول مرة ثانية.');
+        } else {
+          showMsg('catalogFeedback', data.message || `بدأ توليد ${skus.length} وصفاً — راجعها بتبويب «وصف المنتجات» قبل النشر.`);
+          selectedSkus.clear();
+          selectAllCatalog(false);
+          renderCatalogSelection();
+          if (data.jobId) pollBulkJob(data.jobId);
+          switchTab('studio');
+        }
+      } catch (e) {
+        showMsg('catalogFeedback', 'ما قدرنا نتصل — تأكد من الإنترنت وجرّب مرة ثانية.');
+      }
+      txt.innerText = 'ولّد أوصاف المحدد';
+      renderCatalogSelection();
     }
 
     /** بطاقة → حقول الاستوديو → توليد فوري. لا إدخال يدوي إطلاقاً. */

@@ -1904,10 +1904,10 @@ async function runTests() {
       "CATUI-11: المسار اليدوي (كتابة الاسم بلا اختيار منتج) لم يُحذف"
     );
     // تهريب HTML إلزامي على كل محتوى سلة داخل البطاقة.
-    const cardFn = dashSrc.slice(
-      dashSrc.indexOf("function catalogCard"),
-      dashSrc.indexOf("function useCatalogItem")
-    );
+    // حدّ الدالة نفسها لا ما بعدها: أُضيفت دوال الاختيار المتعدد بينها وبين
+    // useCatalogItem، وقوالبها (${n}) عدّادات لا محتوى من سلة.
+    const cardStart = dashSrc.indexOf("function catalogCard");
+    const cardFn = dashSrc.slice(cardStart, dashSrc.indexOf("return wrap;", cardStart));
     const interpolations = cardFn.match(/\$\{[^}]*\}/g) || [];
     assert(
       interpolations.length > 0 &&
@@ -3122,6 +3122,80 @@ async function runTests() {
     assert(
       /settings\\\.read/.test(read("../functions/api/webhooks/salla.js")),
       "REV-6: /store/info يُستدعى فقط إن مُنح settings.read"
+    );
+  }
+
+  // ── اختيار متعدد من «منتجاتي» ثم توليد للمحدد (2026-09-09) ──────────
+  {
+    const { readFileSync } = await import("node:fs");
+    const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const { selectCatalogBySkus } = await import("../functions/_lib/services/catalog.js");
+    const dash = read("../dashboard.html");
+    const genSrc = read("../functions/api/store/bulk/generate.js");
+
+    // العزل: قائمة الـSKU مدخل عميل — الاستعلام يقيّد بالتاجر دائماً.
+    const seen = [];
+    const env = {
+      DB: {
+        prepare: (q) => ({
+          bind: (...b) => { seen.push({ q: q.replace(/\s+/g, " ").trim(), b }); return { all: async () => ({ results: [{ sku: b[2] }, { sku: b[1] }] }) }; }
+        })
+      }
+    };
+    const out = await selectCatalogBySkus(env, { merchantId: "m_1", skus: ["A", "B"] });
+    assert(
+      seen.length === 1 && /WHERE merchant_id = \? AND sku IN \(\?,\?\)/.test(seen[0].q) && seen[0].b[0] === "m_1",
+      "PICK-1: اختيار بالـSKU مقيَّد بـmerchant_id (مدخل عميل)"
+    );
+    assert(
+      out.map((r) => r.sku).join(",") === "A,B",
+      "PICK-2: الترتيب يتبع اختيار التاجر لا ترتيب القاعدة"
+    );
+    assert(
+      (await selectCatalogBySkus(env, { merchantId: "m_1", skus: [] })).length === 0 &&
+        (await selectCatalogBySkus(env, { merchantId: "m_1" })).length === 0,
+      "PICK-3: قائمة فارغة لا تستعلم ولا ترمي"
+    );
+    let threw = false;
+    try { await selectCatalogBySkus(env, { merchantId: "", skus: ["A"] }); } catch (e) { threw = true; }
+    assert(threw, "PICK-4: بلا معرّف تاجر يُرفض — لا استعلام عابر");
+    // تكرار وقصّ: ٦٠٠ SKU ⇒ دفعات ٥٠، وسقف ٥٠٠.
+    seen.length = 0;
+    const many = Array.from({ length: 600 }, (_, i) => "S" + i);
+    await selectCatalogBySkus(env, { merchantId: "m_1", skus: many });
+    assert(seen.length === 10 && seen.every((c) => c.b[0] === "m_1"), `PICK-5: يقصّ عند ٥٠٠ ويقسّم دفعات ٥٠ (دفعات: ${seen.length})`);
+
+    // الخادم: قائمة صريحة تتقدّم على ترتيب الأولوية.
+    assert(
+      /selectCatalogBySkus\(env, \{ merchantId, skus: chosenSkus \}\)/.test(genSrc) &&
+        /: await listPriorityCatalog\(env, \{ merchantId, limit: requested \}\)/.test(genSrc),
+      "PICK-6: اختيار التاجر يتقدّم على الترتيب التلقائي، والتلقائي باقٍ"
+    );
+    assert(
+      /SELECTION_NOT_FOUND/.test(genSrc),
+      "PICK-7: SKU لا يخصّ التاجر ⇒ رسالة عربية لا وظيفة فارغة"
+    );
+
+    // الواجهة.
+    assert(
+      /id="catalogSelectBar"/.test(dash) && /'catalog-pick /.test(dash) && /function generateSelectedCatalog/.test(dash),
+      "PICK-8: شبكة «منتجاتي» فيها مربعات اختيار وزر توليد للمحدد"
+    );
+    assert(
+      /if \(it\.sku\) \{/.test(dash),
+      "PICK-9: منتج بلا SKU بلا مربع اختيار — لا وعد بما لا يُنفَّذ"
+    );
+    assert(
+      /const wrap = document\.createElement\('div'\)/.test(dash) && !/card\.appendChild\(pick\)/.test(dash),
+      "PICK-10: مربع الاختيار خارج زر البطاقة (زر داخل زر يكسر النقر)"
+    );
+    assert(
+      /body: JSON\.stringify\(\{ skus, tone:/.test(dash),
+      "PICK-11: الواجهة ترسل قائمة الـSKU المحددة"
+    );
+    assert(
+      !/localStorage[^\n]*selectedSkus/.test(dash) && /const selectedSkus = new Set\(\)/.test(dash),
+      "PICK-12: الاختيار بالذاكرة فقط — لا تخزين محلي لبيانات متجر"
     );
   }
 
