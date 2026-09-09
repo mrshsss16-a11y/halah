@@ -6,7 +6,7 @@ import { withApi, ApiError } from "../../_lib/core/respond.js";
 import { resolveMerchantStoreId } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
-import { saveMerchantFeedback } from "../../_lib/core/db.js";
+import { saveMerchantFeedback } from "../../_lib/domain/analytics.js";
 
 async function feedbackHandler(body, env, request) {
   const rl = await checkRateLimit(env, clientIp(request), "feedback", 5, 3600);

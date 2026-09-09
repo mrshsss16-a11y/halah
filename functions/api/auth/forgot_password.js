@@ -14,8 +14,7 @@ import { hashOtp } from "../../_lib/core/auth.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { findMerchantIdByEmail } from "../../_lib/domain/accounts.js";
-import { issuePasswordReset, resetDeliveryPhone } from "../../_lib/domain/auth.js";
-import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
+import { issuePasswordReset, deliverResetOtp } from "../../_lib/domain/auth.js";
 
 function generateOtp() {
   // Cryptographically random 6-digit code (Math.random is not acceptable for
@@ -46,18 +45,8 @@ async function forgotPasswordHandler(body, env, request) {
   await issuePasswordReset(env, { email, otpHash: await hashOtp(email, otpCode) });
 
   // Out-of-band delivery. WhatsApp is the only channel wired up today.
-  let delivered = false;
-  if (waConfigured(env)) {
-    const phone = await resetDeliveryPhone(env, merchantId);
-    if (phone) {
-      delivered = await sendWaText(env, {
-        to: phone,
-        body: `رمز استعادة كلمة المرور: ${otpCode}\nصالح ١٥ دقيقة. لا تشاركه مع أحد.`
-      })
-        .then(() => true)
-        .catch(() => false);
-    }
-  }
+  // ق٦: النداء على المحوّل يعيش بـ`domain/auth.js` — التنسيق يسأل «هل سُلّم؟».
+  const delivered = await deliverResetOtp(env, merchantId, otpCode);
 
   if (!delivered) {
     // N8 — التسجيل المهيكل يوثّق غياب قناة التسليم بلا ذكر أي بريد أو رمز (PII).

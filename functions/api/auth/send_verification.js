@@ -8,8 +8,8 @@
 import { withApi, json } from "../../_lib/core/respond.js";
 import { getSessionMerchantId } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
-import { isConfigured as emailConfigured, send as sendEmail } from "../../_lib/integrations/email.js";
-import { accountVerificationState, createEmailVerification, hashVerificationCode } from "../../_lib/domain/auth.js";
+import { accountVerificationState, createEmailVerification, hashVerificationCode,
+         verificationChannelReady, deliverVerificationCode } from "../../_lib/domain/auth.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
 function generateCode() {
@@ -32,7 +32,7 @@ async function sendVerificationHandler(body, env, request, requestId, context) {
   if (!account?.email) return json({ ok: false, error: "أكمل تسجيل حسابك أولاً.", code: "ACCOUNT_REQUIRED" }, 403);
   if (account.email_verified_at) return json({ ok: true, alreadyVerified: true, message: "بريدك متحقَّق منه مسبقاً." });
 
-  if (!emailConfigured(env)) {
+  if (!verificationChannelReady(env)) {
     return json({ ok: false, error: "تحقق البريد غير مفعّل حالياً.", code: "EMAIL_NOT_CONFIGURED" }, 503);
   }
 
@@ -40,11 +40,7 @@ async function sendVerificationHandler(body, env, request, requestId, context) {
   await createEmailVerification(env, { email: account.email, codeHash: await hashVerificationCode(account.email, code) });
 
   try {
-    await sendEmail(env, {
-      to: account.email,
-      subject: "رمز تأكيد بريدك — هالة",
-      text: `رمز تأكيد بريدك: ${code}\nصالح ١٥ دقيقة. لا تشاركه مع أحد.`
-    });
+    await deliverVerificationCode(env, { email: account.email, code });
   } catch (err) {
     logError(context, { requestId, path: "auth/send_verification", code: "EMAIL_SEND_FAILED", storeId: merchantId, internal: String(err?.message || err).slice(0, 250) });
     return json({ ok: false, error: "تعذّر إرسال رمز التحقق حالياً. حاول بعد قليل.", code: "EMAIL_SEND_FAILED" }, 502);

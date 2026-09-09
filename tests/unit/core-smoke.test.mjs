@@ -1,7 +1,7 @@
 import { createRunner } from "../_helpers.mjs";
 import { matchFastIntent } from "../../functions/_lib/ai/intents.js";
 import { hashPassword, verifyPassword } from "../../functions/_lib/core/auth.js";
-import { saveConsultationBooking } from "../../functions/_lib/core/db.js";
+import { saveConsultationBooking } from "../../functions/_lib/domain/booking.js";
 
 const { assert, done } = createRunner("core-smoke");
 

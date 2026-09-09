@@ -4,20 +4,17 @@
 //
 // المرحلة ٤: تنسيق فقط — الحارس بـ`withApi.raw({cron:true})` والفحوص بـ`domain/health.js`.
 import { withApi } from "../../_lib/core/respond.js";
-import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
 import {
-  runCriticalChecks, checkWaTokenValid, checkSallaTokenExpiry,
+  runCriticalChecks, checkWaTokenValid, checkSallaTokenExpiry, sendAdminAlert,
   claimAlertSlot, clearAlertSlot, WA_TOKEN_THROTTLE_KEY, WA_TOKEN_THROTTLE_SECONDS
 } from "../../_lib/domain/health.js";
+import { refreshExpiringIgTokens } from "../../_lib/domain/instagram.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { recordHeartbeat } from "../../_lib/core/heartbeat.js";
 
 async function healthcheckHandler(request, env, requestId, context) {
-  const adminPhone = () => env.STORE_WA_PHONE || "966545149591";
-  const alert = async (key, body) => {
-    if (!waConfigured(env) || !(await claimAlertSlot(env, key))) return;
-    await sendWaText(env, { to: adminPhone(), body }).catch(() => {});
-  };
+  // ق٦: التنبيه نفسه (قناة + خنق + رقم الأدمن) بـ`domain/health.js`.
+  const alert = (key, body) => sendAdminAlert(env, key, body);
 
   const { checks, critical, healthy } = await runCriticalChecks(env);
 
@@ -44,8 +41,15 @@ async function healthcheckHandler(request, env, requestId, context) {
     await alert("salla_token_expiry_alert_last_sent", `⚠️ تنبيه هالة: ${sallaExpiry.expiring.length} متجر سلة توكنه ينتهي خلال ٣ أيام أو تجديده فاشل. راجع /api/admin/overview.`);
   }
 
+  // توكن إنستغرام يعيش ٦٠ يوماً (INSTAGRAM_PLAN §٤.٢): بلا تجديد دوري يسقط
+  // المسار صامتاً. لا صف مستحق ⇒ صفر نداء شبكة.
+  const igTokens = await refreshExpiringIgTokens(env, context);
+  if (igTokens.failed) {
+    await alert("ig_token_refresh_alert_last_sent", `⚠️ تنبيه هالة: تعذّر تجديد ${igTokens.failed} توكن إنستغرام. راجع سجل الأخطاء (IG_TOKEN_REFRESH_FAILED).`);
+  }
+
   await recordHeartbeat(env, { job: "healthcheck", ok: healthy, note: healthy ? null : critical.map(([k]) => k).join(",") });
-  return { ok: true, healthy, checks, waTokenCheck, sallaTokenExpiring: sallaExpiry.expiring.length };
+  return { ok: true, healthy, checks, waTokenCheck, sallaTokenExpiring: sallaExpiry.expiring.length, igTokens };
 }
 
 export const onRequestGet = withApi.raw(healthcheckHandler, {

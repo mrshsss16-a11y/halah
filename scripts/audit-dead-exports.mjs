@@ -30,17 +30,19 @@ const ROOT = process.cwd();
 // ── قائمة السماح ────────────────────────────────────────────────────────────
 // الشكل: "مسار:اسم" → سبب. كل سطر: تاريخ + سبب + مرحلة الإزالة.
 const ALLOWLIST = new Map([
-  // 2026-09-09 · عقد المحوّل (integrations = isConfigured/receive/send، ARCHITECTURE.md §١).
-  // مسار إرسال إنستغرام مبني وغير موصول (AGENT.md §٣: «مبني، غير مفعَّل»).
-  // الإزالة أو التوصيل: المرحلة ٦ («توصيل أو حذف مسار إرسال إنستغرام الميت»).
-  ["functions/_lib/integrations/instagram.js:replyToComment", "عقد المحوّل — يوصَّل بالمرحلة ٦ (2026-09-09)"],
-  ["functions/_lib/integrations/instagram.js:sendPrivateReply", "عقد المحوّل — يوصَّل بالمرحلة ٦ (2026-09-09)"],
-  ["functions/_lib/integrations/instagram.js:sendDirectMessage", "عقد المحوّل — يوصَّل بالمرحلة ٦ (2026-09-09)"],
-  ["functions/_lib/integrations/instagram.js:subscribeToWebhooks", "عقد المحوّل — يوصَّل بالمرحلة ٦ (2026-09-09)"],
-  ["functions/_lib/integrations/instagram.js:refreshLongLivedToken", "عقد المحوّل — يوصَّل بالمرحلة ٦ (2026-09-09)"],
+  // 2026-09-09 · **صفر استثناء** بعد المرحلة ٦ (ARCHITECTURE.md §٣: «كل الحراس
+  // بلا قوائم سماح»). ما حُسم بمسار إرسال إنستغرام الميت (٥ استثناءات سقطت):
+  //  · `replyToComment` · `sendPrivateReply` · `sendDirectMessage` — **وُصِّلت**:
+  //    لم تعد مصدَّرة؛ `send(env, to, payload)` (المستخدَم بـdomain/publish.js)
+  //    يوجّه إليها حسب `to.mode`. صفر تغيير سلوكي.
+  //  · `refreshLongLivedToken` — **وُصِّل**: `domain/instagram.js:
+  //    refreshExpiringIgTokens(env)` يستدعيه من تِك `api/cron/healthcheck.js`
+  //    لكل توكن يتبقى له < ٧ أيام (INSTAGRAM_PLAN.md §٤.٢).
+  //  · `subscribeToWebhooks` — **حُذف**: نقطة الربط التي كانت ستستدعيه غير
+  //    موجودة (§٤.١ لم يُنفَّذ)، والاشتراك يتم يدوياً بلوحة Meta (§٠.١ و§٤.٣).
 ]);
 // الحارس يفشل لو زاد العدد عن هذا الرقم. يتقلّص كل مرحلة، لا يكبر.
-const EXPECTED_ALLOWLIST = 5;
+const EXPECTED_ALLOWLIST = 0;
 
 const LIB_DIR = process.env.AUDIT_LIB_DIR
   ? join(ROOT, process.env.AUDIT_LIB_DIR)

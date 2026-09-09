@@ -12,8 +12,8 @@
 import { withApi, ApiError } from "../../_lib/core/respond.js";
 import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
-import { listPending, approve, reject } from "../../_lib/services/reviewQueue.js";
-import { publishApproved } from "../../_lib/services/publishApproved.js";
+import { listPending, approve, reject } from "../../_lib/domain/review.js";
+import { publishApproved } from "../../_lib/domain/publish.js";
 
 async function reviewHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);

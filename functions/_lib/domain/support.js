@@ -21,7 +21,7 @@ import { logError } from "../core/errorLog.js";
 import { saveOmnichannelSession } from "./conversation.js";
 import { getWaConnectionByMerchant } from "./whatsapp.js";
 import { getAgentProfile } from "./persona.js";
-import { getMerchant } from "./accounts.js";
+import { getMerchant } from "../core/identity.js";
 
 function randomSessionCode() {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();

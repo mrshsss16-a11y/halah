@@ -6,7 +6,7 @@
 // المرحلة ٤: تنسيق فقط — التوقيع والأحداث بـ`domain/salla.js`، وبوابة CSRF
 // مُلغاة عمداً (`csrf: false`): حارس هذه النقطة هو التوقيع لا الأصل.
 import { withApi, json } from "../../_lib/core/respond.js";
-import { verifySallaSignature, handleSallaEvent } from "../../_lib/domain/salla.js";
+import { verifySallaSignature, processVerifiedSallaEvent } from "../../_lib/domain/salla.js";
 import { logWebhook } from "../../_lib/domain/platforms.js";
 import { kickoffFirstSync } from "../../_lib/domain/catalogSync.js";
 import { logError } from "../../_lib/core/errorLog.js";
@@ -55,25 +55,13 @@ async function sallaWebhookHandler(request, env, requestId, context) {
     return json({ error: "invalid signature" }, 401);
   }
 
-  // نقرّ بسرعة؛ المعالجة والتسجيل بالخلفية (مهلة سلة ٣٠ ثانية).
-  context.waitUntil((async () => {
-    let merchantId = null;
-    let handlerError = null;
-    try {
-      merchantId = await handleSallaEvent(env, event, payload, {
-        onFirstSync: (id) => kickoffFirstSync(env, id, (c, s, i) => log(context, c, s, i)),
-        onLog: (code, storeId, internal) => log(context, code, storeId, internal)
-      });
-    } catch (err) {
-      log(context, "SALLA_EVENT_FAILED", merchantId, `${event}: ${err?.message || err}`);
-      handlerError = String((err && err.message) || err).slice(0, 300);
-    }
-    // لا تُخزَّن التوكنات بالسجل إطلاقاً — تُحجب قبل الكتابة.
-    const safePayload = event === "app.store.authorize"
-      ? { event, merchant: payload.merchant, data: { scope: payload.data && payload.data.scope, redacted: true }, handlerError }
-      : { ...payload, handlerError };
-    await logWebhook(env, { platform: "salla", event, merchantId, payload: safePayload, signatureOk: true }).catch(() => {});
-  })());
+  // نقرّ بسرعة؛ التصريف والتسجيل بالخلفية بـdomain (مهلة سلة ٣٠ ثانية).
+  context.waitUntil(processVerifiedSallaEvent(env, {
+    event,
+    payload,
+    onFirstSync: (id) => kickoffFirstSync(env, id, (c, s, i) => log(context, c, s, i)),
+    onLog: (code, storeId, internal) => log(context, code, storeId, internal)
+  }));
 
   return json({ ok: true });
 }

@@ -3,7 +3,8 @@
 import { withApi } from "../../_lib/core/respond.js";
 import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin, bumpSessionVersion } from "../../_lib/core/session.js";
-import { listAccounts, setAccountDisabled, resetMerchantQuota } from "../../_lib/core/db.js";
+import { listAccounts, setAccountDisabled } from "../../_lib/domain/accounts.js";
+import { resetMerchantQuota } from "../../_lib/domain/quota.js";
 
 async function accountsHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);

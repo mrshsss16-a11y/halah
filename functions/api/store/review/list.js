@@ -7,7 +7,7 @@
 // الشاشة "الحالي ← المقترح" بلا تفكيك بالمتصفح.
 import { withApi } from "../../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../../_lib/core/session.js";
-import { listPending, listByState, countByState } from "../../../_lib/services/reviewQueue.js";
+import { listPending, listByState, countByState } from "../../../_lib/domain/review.js";
 
 const STATES = new Set(["pending", "awaiting_publish", "published", "publish_failed", "rejected"]);
 

@@ -8,7 +8,8 @@
  *
  * ثلاثة فحوص:
  *   م١  كل جدول+عمود يظهر بنص SQL داخل `functions/**` موجود فعلاً بالمخطط.
- *   م٢  كل جدول بالمخطط يذكره الكود (قائمة سماح للجداول القديمة الموثّقة بـAGENT.md §٦).
+ *   م٢  كل جدول بالمخطط يذكره الكود (الاستثناءات تُقرأ من كتلة LEGACY_TABLES
+ *       بـAGENT.md §٦ — مصدر واحد، لا نسخة بالسكربت).
  *   م٣  لا هجرة بالملفات غير مطبَّقة على البعيد — **فقط لو** توفّرت الأداة الخارجية.
  *       `npx wrangler d1 migrations list halah-tr-db --remote` بمهلة ٢٠ ثانية؛ لو فشل
  *       (لا شبكة، لا تسجيل دخول، لا صلاحية) نطبع تحذيراً ولا نفشل. الفشل هنا كان
@@ -29,24 +30,36 @@ const MIGRATIONS_DIR = join(ROOT, "migrations");
 const SCAN_DIR = join(ROOT, "functions");
 
 // ── قائمة سماح م٢: جداول بالمخطط لا يذكرها الكود ────────────────────────────
-// كل سطر بتاريخ وسبب ومرحلة الإزالة (قاعدة القائمة البيضاء، ARCHITECTURE.md §٤).
-const UNUSED_TABLE_ALLOWLIST = new Map([
-  // 2026-09-09 · جداول legacy من بناء سابق، موثّقة حرفياً بـAGENT.md §٦:
-  // «جداول قديمة (legacy) لا تزال موجودة من بناء سابق … الجداول الجديدة حلّت محلها».
-  // لا تُحذف بهجرة قبل نسخة احتياطية متحقَّق منها + قرار المالك (AGENT.md §٦).
-  ["users", "legacy — AGENT.md §٦، حلّت محلها accounts/merchants"],
-  ["faqs", "legacy — AGENT.md §٦، حلّ محلها store_faqs"],
-  ["store_connections", "legacy — AGENT.md §٦، حلّ محلها oauth_tokens/wa_connections"],
-  ["synced_products", "legacy — AGENT.md §٦، حلّ محلها store_products"],
-  ["merchant_marketing_contexts", "legacy — AGENT.md §٦"],
-  ["store_documents", "legacy — AGENT.md §٦"],
-  // 2026-09-09 · جدول وصفي يُقرأ بأدوات التشغيل لا بالكود.
-  ["merchants_meta", "بيانات وصفية تشغيلية — لا مسار كود يقرأها اليوم"],
-  // 2026-09-09 · مخطط ميزة إعادة الاستهداف: دوالها بـdb.js كانت ميتة (صفر مستدعٍ)
-  // وحُذفت بالمرحلة ١. الجدول يبقى حتى قرار المالك: يُحذف بهجرة أو تُبنى الميزة.
-  // الحسم: المرحلة ٦ (ARCHITECTURE.md §٣) — لا يُحذف بلا نسخة احتياطية (AGENT.md §٦).
-  ["pending_retargeting", "مخطط بلا ميزة — دواله الميتة حُذفت بالمرحلة ١، والحسم بالمرحلة ٦"],
-]);
+//
+// **مصدر واحد:** القائمة تُقرأ من `AGENT.md` §٦ بين علامتَي
+// `LEGACY_TABLES:START/END` — لا نسخة ثانية هنا. نسختان كانتا تفترقان بصمت،
+// فتوثّق الوثيقة شيئاً ويفرض الحارس شيئاً آخر (وهذا أسوأ من غياب أحدهما).
+//
+// ⚠️ **الحذف من الإنتاج ليس قرار هذا السكربت.** إسقاط أي من هذه الجداول بهجرة
+// عملية **مدمِّرة لا رجعة فيها**، تحتاج: (١) `npm run backup` بنسخة متحقَّق منها،
+// (٢) قرار صريح من مالك المشروع (AGENT.md §٦). لذلك تبقى القائمة قائمة سماح
+// دائمة لا دَيناً بمهلة — والبند مسجَّل بـ`docs/DEFERRED.md`.
+//
+// غياب الكتلة من AGENT.md = فشل صريح، لا قائمة فارغة تمرّر كل شيء بصمت.
+// بشجرة اختبار وهمية (AUDIT_MIG_ROOT) لا AGENT.md — نقرأ نسخة المستودع الحقيقية،
+// فالقائمة خاصية المشروع لا خاصية الشجرة المفحوصة.
+const AGENT_MD = [join(ROOT, "AGENT.md"), join(process.cwd(), "AGENT.md")].find((p) => existsSync(p));
+function readLegacyTables() {
+  if (!AGENT_MD) return null;
+  const md = readFileSync(AGENT_MD, "utf8");
+  const block = md.match(/LEGACY_TABLES:START[\s\S]*?LEGACY_TABLES:END/);
+  if (!block) return null;
+  const out = new Map();
+  for (const m of block[0].matchAll(/^\s*-\s*`([a-z_][a-z0-9_]*)`\s*[—-]\s*(.+)$/gim)) {
+    out.set(m[1].toLowerCase(), m[2].trim());
+  }
+  return out.size ? out : null;
+}
+const UNUSED_TABLE_ALLOWLIST = readLegacyTables();
+if (!UNUSED_TABLE_ALLOWLIST) {
+  console.error("✖ تدقيق الهجرات: تعذّرت قراءة كتلة LEGACY_TABLES من AGENT.md §٦ — المصدر الوحيد للقائمة. لا نمرّر بصمت.");
+  process.exit(1);
+}
 const EXPECTED_UNUSED_TABLES = 8;
 
 const failures = [];
@@ -212,14 +225,14 @@ const usedAllow = new Set();
 for (const table of schema.keys()) {
   if (usedTables.has(table)) continue;
   if (UNUSED_TABLE_ALLOWLIST.has(table)) { usedAllow.add(table); continue; }
-  failures.push(`م٢ migrations/: الجدول \`${table}\` بالمخطط ولا يذكره أي كود — احذفه بهجرة أو سجّله بقائمة السماح بسبب.`);
+  failures.push(`م٢ migrations/: الجدول \`${table}\` بالمخطط ولا يذكره أي كود — احذفه بهجرة (بعد نسخة احتياطية وقرار المالك) أو سجّله بكتلة LEGACY_TABLES بـAGENT.md §٦ بسبب.`);
 }
 if (UNUSED_TABLE_ALLOWLIST.size > EXPECTED_UNUSED_TABLES) {
-  failures.push(`عدد استثناءات م٢ ${UNUSED_TABLE_ALLOWLIST.size} > المسموح ${EXPECTED_UNUSED_TABLES} — القائمة تتقلّص ولا تكبر.`);
+  failures.push(`عدد استثناءات م٢ ${UNUSED_TABLE_ALLOWLIST.size} > المسموح ${EXPECTED_UNUSED_TABLES} — القائمة (AGENT.md §٦) تتقلّص ولا تكبر.`);
 }
 for (const t of UNUSED_TABLE_ALLOWLIST.keys()) {
   if (!usedAllow.has(t) && schema.has(t)) {
-    failures.push(`استثناء م٢ لم يعد لازماً: \`${t}\` صار مستخدَماً — احذفه من قائمة السماح.`);
+    failures.push(`استثناء م٢ لم يعد لازماً: \`${t}\` صار مستخدَماً — احذفه من كتلة LEGACY_TABLES بـAGENT.md §٦.`);
   }
 }
 

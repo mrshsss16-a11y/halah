@@ -36,7 +36,7 @@ if (!existsSync(join(ROOT, "dist", "dashboard.html")) || !existsSync(join(ROOT, 
 // المرحلة ٥ (النصف ب) — بعد تقسيم tests/api.test.mjs (٤٥٣ تأكيداً) إلى
 // tests/unit/*.test.mjs، هذا الرقم أدنى حد لمجموع التأكيدات المجمّعة من كل
 // الملفات. لو انخفض المجموع (نقل ناقص، حذف طارئ لملف) نفشل بدل تمرير صامت.
-const EXPECTED_MIN_ASSERTIONS = 884;
+const EXPECTED_MIN_ASSERTIONS = 1010;
 
 function collect(dir, out = []) {
   if (!existsSync(dir)) return out;

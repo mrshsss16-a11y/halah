@@ -2,7 +2,7 @@
 // Drives the dashboard card: show the connect button, or the connected number.
 import { withApi, ApiError } from "../../_lib/core/respond.js";
 import { getSessionMerchantId } from "../../_lib/core/session.js";
-import { getWaConnectionByMerchant } from "../../_lib/core/db.js";
+import { getWaConnectionByMerchant } from "../../_lib/domain/whatsapp.js";
 
 async function statusHandler(body, env, request) {
   const merchantId = await getSessionMerchantId(request, env);

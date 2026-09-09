@@ -202,7 +202,7 @@ async function igPost(url, token, body) {
  * قيود Meta الموثّقة: لا رد على تعليق مخفي · لا رد على رد (يُضاف للتعليق الأصلي)
  * · لا رد على تعليقات البث المباشر (استخدم الرد الخاص).
  */
-export async function replyToComment(conn, { commentId, message }) {
+async function replyToComment(conn, { commentId, message }) {
   return igPost(`${GRAPH}/${encodeURIComponent(commentId)}/replies`, conn.access_token, {
     message: String(message).slice(0, 2000)
   });
@@ -216,7 +216,7 @@ export async function replyToComment(conn, { commentId, message }) {
  * القيود: **مرة واحدة فقط** لكل معلّق · خلال **٧ أيام** من التعليق · لا متابعة
  * إلا إن رد المستخدم (وضمن ٢٤ ساعة من ردّه).
  */
-export async function sendPrivateReply(conn, { commentId, message }) {
+async function sendPrivateReply(conn, { commentId, message }) {
   return igPost(`${GRAPH}/${encodeURIComponent(conn.ig_user_id)}/messages`, conn.access_token, {
     recipient: { comment_id: commentId },
     message: { text: String(message).slice(0, 1000) }
@@ -227,7 +227,7 @@ export async function sendPrivateReply(conn, { commentId, message }) {
  * رسالة مباشرة: POST /<IG_ID>/messages
  * نافذة **٢٤ ساعة** من آخر رسالة للعميل — لا مبادرة إطلاقاً. المحادثة يفتحها العميل.
  */
-export async function sendDirectMessage(conn, { recipientId, message }) {
+async function sendDirectMessage(conn, { recipientId, message }) {
   return igPost(`${GRAPH}/${encodeURIComponent(conn.ig_user_id)}/messages`, conn.access_token, {
     recipient: { id: recipientId },
     message: { text: String(message).slice(0, 1000) }
@@ -235,8 +235,12 @@ export async function sendDirectMessage(conn, { recipientId, message }) {
 }
 
 /**
- * عقد المحوّل: إرسال موحّد. يوجّه حسب نوع الهدف.
- * يرمي خطأ مصنّفاً عند الفشل (M5 — الرسالة العربية تُبنى بطبقة الاستدعاء).
+ * عقد المحوّل: إرسال موحّد ⇒ **الواجهة العامة الوحيدة للإرسال**.
+ *
+ * المرحلة ٦: `replyToComment` و`sendPrivateReply` و`sendDirectMessage` لم تعد
+ * مُصدَّرة — كانت ثلاثة تصديرات بلا مستورد واحد (قائمة سماح audit-dead-exports)
+ * بينما `send` أدناه يستدعيها فعلاً. لا كود ميت ولا سطح تعديل زائف: التوجيه
+ * يمرّ من هنا، والوضع (`to.mode`) هو ما يختار الدالة. صفر تغيير سلوكي.
  */
 export async function send(env, to, payload) {
   const conn = to?.conn;
@@ -258,15 +262,19 @@ export async function send(env, to, payload) {
   }
 }
 
-/**
- * تفعيل اشتراك حساب التاجر بالحقول.
- * خطوة ثانية مستقلة عن اشتراك التطبيق بلوحة Meta — نسيانها سبب شائع لـ
- * "الويبهوك مضبوط ولا يصل شيء". تُستدعى بنهاية callback الربط.
- */
-export async function subscribeToWebhooks(conn, fields = "comments,messages") {
-  const url = `${GRAPH}/${encodeURIComponent(conn.ig_user_id)}/subscribed_apps?subscribed_fields=${encodeURIComponent(fields)}`;
-  return igPost(url, conn.access_token, {});
-}
+// ── اشتراك حساب التاجر بالحقول — **يدوي اليوم، بلوحة Meta** ─────────────────
+//
+// كان هنا `subscribeToWebhooks(conn, fields)` يستدعي
+// `POST /<IG_ID>/subscribed_apps?subscribed_fields=comments,messages`
+// (INSTAGRAM_PLAN.md §٤.٣ الخطوة ٢). حُذف بالمرحلة ٦ لأن **نقطة الربط التي
+// كانت ستستدعيه غير موجودة**: لا `/api/instagram/install` ولا `/api/instagram/
+// callback` بالمستودع (§٤.١ لم يُنفَّذ)، والصفوف تدخل `ig_connections` يدوياً.
+// إبقاء الدالة مصدَّرة بلا مستدعٍ كان يوهم أن الاشتراك آلي وهو ليس كذلك
+// (قاعدة الصدق، AGENT.md §١١) — والحارس كان يغطّيها باستثناء دائم.
+//
+// الوضع الحقيقي: الاشتراك يُفعَّل **يدوياً** من لوحة تطبيق Meta
+// (INSTAGRAM_PLAN.md §٠.١ + §٤.٣ الخطوة ١). عند تنفيذ §٤.١ يُعاد إحياء النداء
+// **داخل الـcallback نفسه** — لا كدالة مصدَّرة بانتظار مستدعٍ.
 
 /**
  * تجديد التوكن طويل الأمد (٦٠ يوماً).

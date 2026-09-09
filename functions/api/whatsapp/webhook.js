@@ -9,8 +9,7 @@
 // ملاحظة: هذا معالج **خام** (لا `withApi`) لأن التحقق من التوقيع يحتاج جسم
 // الطلب الخام. ينتظر `withApi.raw` (وكيل آخر يضيفه الآن بـcore/respond.js)
 // ليتوحّد مسار الأخطاء وسجلّها.
-import { verifyWaSignature, parseInbound, parseEchoes } from "../../_lib/integrations/whatsapp.js";
-import { handleInboundBatch } from "../../_lib/domain/whatsappInbound.js";
+import { handleInboundBatch, verifyInboundSignature, parseInboundPayload } from "../../_lib/domain/whatsappInbound.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 
@@ -29,7 +28,7 @@ export async function onRequestPost(context) {
   const { request, env } = context;
   const rawBody = await request.text();
 
-  const ok = await verifyWaSignature(
+  const ok = await verifyInboundSignature(
     rawBody,
     request.headers.get("X-Hub-Signature-256"),
     env.WHATSAPP_APP_SECRET
@@ -59,7 +58,7 @@ export async function onRequestPost(context) {
   // conversation history/RAG context the bot sees stays complete.
   // Ack immediately; process in the background (Meta expects a fast 200).
   context.waitUntil(
-    handleInboundBatch(env, context, { inbound: parseInbound(payload), echoes: parseEchoes(payload) })
+    handleInboundBatch(env, context, parseInboundPayload(payload))
   );
 
   return new Response("ok", { status: 200 });

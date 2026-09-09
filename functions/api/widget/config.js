@@ -4,7 +4,7 @@
 // حساباً مسجّلاً (إعدادات التاجر)، وهذا يناديه **زائر مجهول** من موقع التاجر.
 // فيرجّع حقول العرض فقط — لا تعليمات، لا سياسات، لا رقم تصعيد. أي حقل يُضاف
 // هنا يصير علنياً على أي موقع مركّب للودجت.
-import { getAgentProfile } from "../../_lib/core/db.js";
+import { getAgentProfile } from "../../_lib/domain/persona.js";
 import { resolveAllowedOrigin, corsHeaders, corsPreflight } from "../../_lib/core/cors.js";
 
 const DEFAULTS = {

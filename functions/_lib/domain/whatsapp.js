@@ -1,6 +1,7 @@
 // مجال واتساب: تسجيل الرسائل، نافذة الـ٢٤ ساعة، أثر الرد البشري، وربط أرقام
 // التجّار (`wa_connections`). نُقل من core/db.js بالمرحلة ٣ بلا تغيير سلوكي.
 import { logError } from "../core/errorLog.js";
+import { sendWaText, sendWaTemplate, waConfigured } from "../integrations/whatsapp.js";
 
 export async function recordWaInbound(env, { merchantId, phone, name, body, waMessageId }) {
   try {
@@ -169,4 +170,43 @@ export async function saveWaConnection(env, { merchantId, wabaId, phoneNumberId,
   )
     .bind(merchantId, String(wabaId), String(phoneNumberId), businessToken, displayPhone || null, verifiedName || null)
     .run();
+}
+
+// ── المرحلة ٦ (ق٦): `api/**` لا يستورد `integrations/**` ────────────────────
+/**
+ * الإرسال الصادر اليدوي (نقطة `api/whatsapp/send.js`، أدمن فقط — الصلاحية
+ * تُفحَص هناك قبل النداء). نُقل من طبقة التنسيق بلا أي تغيير سلوكي: نفس
+ * الترتيب (قالب أولاً، ثم نافذة الـ٢٤ ساعة للنص الحر)، نفس الرسائل ونفس
+ * أكواد الأخطاء ونفس أشكال القيم المعادة.
+ */
+export async function sendOutboundMessage(env, { to, template, lang, components, text }) {
+  if (!waConfigured(env)) {
+    return { ok: false, error: "WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID بأسرار Cloudflare." };
+  }
+  const phone = (to || "").toString().replace(/[^\d]/g, "");
+  if (!phone) return { ok: false, error: "رقم المستقبل مفقود." };
+  const merchantId = env.WHATSAPP_MERCHANT_ID || "hala";
+
+  // Outside the 24h window a template is required by WhatsApp policy.
+  if (template) {
+    const id = await sendWaTemplate(env, { to: phone, template, lang: lang || "ar", components: components || [] });
+    await recordWaOutbound(env, { merchantId, phone, body: `[template:${template}]`, waMessageId: id });
+    return { ok: true, messageId: id, kind: "template" };
+  }
+
+  const body = (text || "").toString();
+  if (!body) return { ok: false, error: "نص الرسالة مفقود." };
+
+  const windowOpen = await isWaWindowOpen(env, merchantId, phone).catch(() => false);
+  if (!windowOpen) {
+    return {
+      ok: false,
+      error: "خارج نافذة الـ24 ساعة — لا يمكن إرسال رسالة حرة. استخدم قالباً معتمداً (template).",
+      code: "WINDOW_CLOSED"
+    };
+  }
+
+  const id = await sendWaText(env, { to: phone, body });
+  await recordWaOutbound(env, { merchantId, phone, body, waMessageId: id });
+  return { ok: true, messageId: id, kind: "text" };
 }

@@ -4,7 +4,7 @@
 // WhatsApp booking flow in whatsapp/webhook.js (both call the same
 // saveConsultationBooking, single source of truth for ticket codes).
 import { withApi, json } from "../../_lib/core/respond.js";
-import { saveConsultationBooking } from "../../_lib/core/db.js";
+import { saveConsultationBooking } from "../../_lib/domain/booking.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 

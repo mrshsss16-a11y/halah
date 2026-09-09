@@ -3,8 +3,8 @@
 // يجمع بيانات حقيقية: منتجات وطلبات سلة (Merchant API الحي)، منتجات Trendyol
 // المُزامَنة (D1)، والسلات المتروكة. **كل قسم يتدهور مستقلاً** — منصة معطّلة أو
 // غير مربوطة يجب ألا تُفرِغ اللوحة كلها.
-import { getMerchant } from "./accounts.js";
-import { getTokens } from "./salla.js";
+import { getMerchant } from "../core/identity.js";
+import { getTokens, getValidSallaToken } from "./salla.js";
 import { getPlatformConnection, listAbandonedCarts, listSyncedProducts } from "./platforms.js";
 import { listProducts, listOrders } from "../integrations/salla.js";
 
@@ -46,7 +46,7 @@ export async function buildStoreOverview(env, merchantId, onSectionError) {
 
   if (sallaTokens) {
     await section("sallaProducts", "تعذّر جلب المنتجات من سلة الحين. حدّث الصفحة بعد شوي.", "OVERVIEW_SALLA_PRODUCTS_FAILED", async () => {
-      const res = await listProducts(env, merchant.id);
+      const res = await listProducts(await getValidSallaToken(env, merchant.id));
       result.products = (res.data || []).map((p) => ({
         id: p.id,
         name: p.name,
@@ -57,7 +57,7 @@ export async function buildStoreOverview(env, merchantId, onSectionError) {
       }));
     });
     await section("sallaOrders", "تعذّر جلب الطلبات من سلة الحين. حدّث الصفحة بعد شوي.", "OVERVIEW_SALLA_ORDERS_FAILED", async () => {
-      const res = await listOrders(env, merchant.id);
+      const res = await listOrders(await getValidSallaToken(env, merchant.id));
       result.orders = (res.data || []).map((o) => ({
         id: o.id,
         reference: o.reference_id,

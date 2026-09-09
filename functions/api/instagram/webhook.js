@@ -11,8 +11,7 @@
 //
 // 🔴 قيد إلزامي (INSTAGRAM_PLAN §٢.٢): **صفر نشر آلي**. كل رد مولَّد يدخل
 // review_queue بحالة pending، ولا يُرسل إلا بعد approve() بشرية.
-import { receive } from "../../_lib/integrations/instagram.js";
-import { processIgEvents } from "../../_lib/domain/instagram.js";
+import { processIgEvents, receiveIgEvents } from "../../_lib/domain/instagram.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
 function requestId(context) {
@@ -48,7 +47,7 @@ export async function onRequestPost(context) {
   let events;
   try {
     const rawBody = await request.text();
-    events = await receive(rawBody, request.headers.get("x-hub-signature-256"), env);
+    events = await receiveIgEvents(rawBody, request.headers.get("x-hub-signature-256"), env);
   } catch (err) {
     logError(context, {
       requestId: rid,

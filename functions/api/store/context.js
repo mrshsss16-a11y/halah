@@ -3,7 +3,7 @@
 // This is what makes communication.html's "حفظ وتطبيق التعليمات" real:
 // chat.js reads the saved context from D1 on every reply.
 import { withApi } from "../../_lib/core/respond.js";
-import { saveMarketingContext, getMarketingContext } from "../../_lib/core/db.js";
+import { saveMarketingContext, getMarketingContext } from "../../_lib/domain/persona.js";
 import { resolveStoreId, requireCompletedAccount } from "../../_lib/core/session.js";
 
 async function contextHandler(body, env, request) {

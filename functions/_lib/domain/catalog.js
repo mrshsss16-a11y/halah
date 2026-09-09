@@ -10,6 +10,13 @@
 // **صفحة واحدة فقط** لكل استدعاء، والـcron يستدعيها مرة كل تِك.
 import { DomainError } from "../core/errors.js";
 import { listProducts } from "../integrations/salla.js";
+import { getValidSallaToken } from "./salla.js";
+
+// المرحلة ٦: المحوّل صار HTTP خالصاً (يأخذ توكناً جاهزاً، ق٢). المجال يجلب
+// التوكن ويمرّره — نفس التوقيع القديم لمنفذ الحقن `fetchPage(env, merchantId, page)`
+// حتى لا يتغيّر أي اختبار ولا أي سلوك.
+const fetchSallaPage = async (env, merchantId, page) =>
+  listProducts(await getValidSallaToken(env, merchantId), page);
 import { CATALOG_LIST_LIMITS, clampLimit } from "../core/limits.js";
 
 const UPSERT_CHUNK = 50; // D1 batch() — جولة واحدة بدل N
@@ -101,13 +108,13 @@ function hasMorePages(payload, page, received) {
 /**
  * يسحب **صفحة واحدة** من كتالوج سلة ويخزّنها بـstore_products.
  *
- * `fetchPage` منفذ حقن للاختبار فقط (الافتراضي listProducts الحقيقية) — يسمح
+ * `fetchPage` منفذ حقن للاختبار فقط (الافتراضي سحب سلة الحقيقي) — يسمح
  * باختبار العزل وعدّ منتجات بلا SKU بلا شبكة ولا توكنات.
  *
  * @returns {Promise<{imported:number, skippedNoSku:number, received:number,
  *                    hasMore:boolean, nextPage:number|null, page:number}>}
  */
-export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = listProducts } = {}) {
+export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = fetchSallaPage } = {}) {
   const mid = requireMerchantId(merchantId);
   const db = requireDb(env);
   const pageNum = Math.max(1, Math.floor(Number(page) || 1));

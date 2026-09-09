@@ -138,6 +138,26 @@ async function runTests() {
     }
   }
 
+  // ---- fonts.cdnfonts.com (500 دائم، DIN Next LT Arabic غير موجود فعلياً) —
+  //      لا ذكر له بأي ملف واجهة أو بسياسة CSP (P.S. إغلاق طلب المهندس 2026-09-09) ----
+  {
+    const filesToCheck = [
+      ...readdirSync(ROOT).filter((n) => n.endsWith(".html")).map((n) => join(ROOT, n)),
+      ...readdirSync(join(ROOT, "partials")).filter((n) => n.endsWith(".html")).map((n) => join(ROOT, "partials", n)),
+      ...readdirSync(join(ROOT, "styles")).filter((n) => n.endsWith(".css")).map((n) => join(ROOT, "styles", n)),
+      join(ROOT, "_headers"),
+      join(ROOT, "functions/_lib/core/security.js"),
+      join(ROOT, "scripts/audit-security.mjs")
+    ].filter((p) => existsSync(p));
+
+    for (const filePath of filesToCheck) {
+      const content = readFileSync(filePath, "utf8");
+      const relPath = filePath.slice(ROOT.length + 1).replace(/\\/g, "/");
+      assert(!content.includes("cdnfonts"), `${relPath}: بلا ذكر لـcdnfonts`);
+      assert(!content.includes("DIN Next"), `${relPath}: بلا ذكر لخط DIN Next LT Arabic`);
+    }
+  }
+
   console.log(`\n${passed}/${total} passed.`);
   if (passed !== total) process.exit(1);
 }

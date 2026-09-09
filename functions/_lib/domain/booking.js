@@ -1,6 +1,7 @@
 // مجال حجوزات الاستشارة (`consultation_bookings`).
 // نُقل من core/db.js بالمرحلة ٣ بلا تغيير سلوكي.
 import { sanitizeInput } from "../core/security.js";
+import { sendWaText, waConfigured } from "../integrations/whatsapp.js";
 
 export async function saveConsultationBooking(env, { name, phone, slotLabel }) {
   // Chokepoint sanitize: the WhatsApp path (whatsapp/webhook.js) passes the
@@ -110,4 +111,15 @@ export async function markReminderSent(env, id) {
 /** رقم تذكرة الحجز. P18: العمود هو المصدر الوحيد؛ الاشتقاق احتياطي لصفوف ما قبل 0009. */
 export function ticketOf(booking) {
   return booking.ticket_code || `AURA-${String(booking.id).padStart(5, "0")}`;
+}
+
+// ── المرحلة ٦ (ق٦): `api/**` لا يستورد `integrations/**` ────────────────────
+/** هل قناة التذكير (واتساب) مضبوطة؟ نفس شرط `waConfigured` السابق بالتِك. */
+export function reminderChannelReady(env) {
+  return waConfigured(env);
+}
+
+/** تذكير واحد. الأخطاء تُبتلع كما كانت (`.catch(() => {})`) فلا يوقف التِك. */
+export async function sendReminderMessage(env, { to, body }) {
+  return sendWaText(env, { to, body }).catch(() => {});
 }

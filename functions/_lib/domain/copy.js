@@ -48,7 +48,9 @@ export function seedKeywords(name, category, extra) {
 export function approvedProfileBlock(profileRow) {
   return profileRow?.status === "approved" ? profileToPromptBlock(profileRow.profile) : "";
 }
-export async function recentCopy(env, merchantId, limit = 8) {
+// المرحلة ٦: لم تعد مصدَّرة — كان الـshim `core/db.js` (المحذوف) يعيد تصديرها
+// بلا مستورد واحد. تُستخدم داخل هذا الملف فقط؛ لا سطح تعديل زائف (لا كود ميت).
+async function recentCopy(env, merchantId, limit = 8) {
   if (!env.DB) return [];
   const { results } = await env.DB.prepare(
     "SELECT product_name, opening, keywords FROM copy_history WHERE merchant_id = ? ORDER BY created_at DESC LIMIT ?"
@@ -58,7 +60,9 @@ export async function recentCopy(env, merchantId, limit = 8) {
   return results || [];
 }
 
-export async function saveCopy(env, { merchantId, productName, opening, keywords }) {
+// المرحلة ٦: لم تعد مصدَّرة — كان الـshim `core/db.js` (المحذوف) يعيد تصديرها
+// بلا مستورد واحد. تُستخدم داخل هذا الملف فقط؛ لا سطح تعديل زائف (لا كود ميت).
+async function saveCopy(env, { merchantId, productName, opening, keywords }) {
   if (!env.DB) return;
   await env.DB.prepare(
     "INSERT INTO copy_history (merchant_id, product_name, opening, keywords) VALUES (?, ?, ?, ?)"

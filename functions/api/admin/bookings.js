@@ -3,7 +3,7 @@
 import { withApi } from "../../_lib/core/respond.js";
 import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
-import { listConsultationBookings, setBookingStatus } from "../../_lib/core/db.js";
+import { listConsultationBookings, setBookingStatus } from "../../_lib/domain/booking.js";
 
 const VALID_STATUS = new Set(["pending", "confirmed", "cancelled"]);
 

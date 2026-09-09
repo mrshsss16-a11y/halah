@@ -10,7 +10,7 @@
 //
 // docs.salla.dev/embedded-sdk/authentication
 import { withApi, json } from "../../_lib/core/respond.js";
-import { getMerchantBySalla } from "../../_lib/core/db.js";
+import { getMerchantBySalla } from "../../_lib/domain/salla.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 

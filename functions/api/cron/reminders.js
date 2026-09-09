@@ -4,8 +4,8 @@
 // المرحلة ٤: تنسيق فقط — حارس السر المشترك ووجود DB بـ`withApi.raw`،
 // ومنطق الفتحة والاستحقاق بـ`domain/booking.js`. نفس الرسائل والحالات.
 import { withApi } from "../../_lib/core/respond.js";
-import { sendWaText, waConfigured } from "../../_lib/integrations/whatsapp.js";
-import { targetSlotLabel, dueReminders, markReminderSent, ticketOf } from "../../_lib/domain/booking.js";
+import { targetSlotLabel, dueReminders, markReminderSent, ticketOf,
+         reminderChannelReady, sendReminderMessage } from "../../_lib/domain/booking.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { recordHeartbeat } from "../../_lib/core/heartbeat.js";
 
@@ -21,7 +21,7 @@ async function remindersHandler(request, env, requestId, context) {
     const bookings = await dueReminders(env, targetSlot);
     let sent = 0;
 
-    if (waConfigured(env) && bookings.length) {
+    if (reminderChannelReady(env) && bookings.length) {
       // لا رقم موظف مفبرك (§١١ / P49): غيابه يتخطى تذكير الموظف ويُسجَّل مرة
       // واحدة لكل تِك — وتذكير العميل يخرج على أي حال.
       const employeePhone = env.STORE_WA_PHONE || env.MERCHANT_WA_PHONE || null;
@@ -31,16 +31,16 @@ async function remindersHandler(request, env, requestId, context) {
 
       for (const booking of bookings) {
         const ticket = ticketOf(booking);
-        await sendWaText(env, {
+        await sendReminderMessage(env, {
           to: booking.phone,
           body: `تذكير: موعد استشارتك ${booking.preferred_slot_label} بعد 30 دقيقة 🙌 (تذكرة: ${ticket})`
-        }).catch(() => {});
+        });
 
         if (employeePhone) {
-          await sendWaText(env, {
+          await sendReminderMessage(env, {
             to: employeePhone,
             body: `تذكير للموظف: لديك استشارة مع ${booking.name || booking.phone} بعد 30 دقيقة 🙌 (الفتحة: ${booking.preferred_slot_label}) (تذكرة: ${ticket})`
-          }).catch(() => {});
+          });
         }
 
         await markReminderSent(env, booking.id);

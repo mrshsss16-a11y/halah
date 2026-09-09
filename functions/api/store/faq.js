@@ -11,7 +11,7 @@
 // يستخدمه أحد.
 import { withApi, ApiError } from "../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../_lib/core/session.js";
-import { listMerchantFaqs, saveMerchantFaq, deleteMerchantFaq } from "../../_lib/core/db.js";
+import { listMerchantFaqs, saveMerchantFaq, deleteMerchantFaq } from "../../_lib/domain/faq.js";
 import { storeVectorMemory } from "../../_lib/ai/memory.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";

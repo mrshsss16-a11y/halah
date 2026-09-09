@@ -45,7 +45,7 @@ async function main() {
       "AGENT-5: JSON تالف بـknowledge_links يُتجاهل بدل ما يكسر الرد"
     );
 
-    const { saveAgentProfile } = await import("../../functions/_lib/core/db.js");
+    const { saveAgentProfile } = await import("../../functions/_lib/domain/persona.js");
     const agentLog = [];
     const agentDb = {
       DB: {

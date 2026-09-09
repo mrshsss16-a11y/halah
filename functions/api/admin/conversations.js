@@ -2,7 +2,7 @@
 import { withApi } from "../../_lib/core/respond.js";
 import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
-import { recentWaConversations } from "../../_lib/core/db.js";
+import { recentWaConversations } from "../../_lib/domain/whatsapp.js";
 
 async function conversationsHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);

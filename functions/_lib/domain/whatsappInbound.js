@@ -1,7 +1,8 @@
 // استقبال دفعة واتساب: التوجيه بالرقم المستقبِل، الأصداء، والوسائط
 // (صوت/صورة) ثم `autoReply`. نُقل من `api/whatsapp/webhook.js` بالمرحلة ٤ بلا
 // تغيير سلوكي — الويبهوك يستدعي `handleInboundBatch` داخل waitUntil فقط.
-import { sendWaText, sendWaInteractiveList, waConfigured, getWaMedia } from "../integrations/whatsapp.js";
+import { sendWaText, sendWaInteractiveList, waConfigured, getWaMedia,
+         verifyWaSignature, parseInbound, parseEchoes } from "../integrations/whatsapp.js";
 import { askVisionAI } from "../ai/gateway.js";
 import { WEEKLY_SLOTS } from "../ai/persona.js";
 import { logError } from "../core/errorLog.js";
@@ -158,4 +159,18 @@ export async function handleInboundBatch(env, context, { inbound, echoes }) {
       logError(context, { requestId: `wa:${msg.id}`, path: "whatsapp/webhook", code: "WA_MESSAGE_HANDLING_FAILED", internal: err?.message || String(err), storeId: merchantId });
     }
   }
+}
+
+// ── المرحلة ٦ (ق٦): `api/**` لا يستورد `integrations/**` ────────────────────
+// الويبهوك كان يستدعي المحوّل مباشرة للتحقق والتفكيك. المنفذان أدناه ينقلان
+// ذلك للمجال بلا أي تغيير سلوكي — نفس الدوال، نفس الترتيب، نفس القيم.
+
+/** يتحقق من توقيع Meta على الجسم الخام. fail closed: أي شيء غير `true` = رفض. */
+export async function verifyInboundSignature(rawBody, signatureHeader, appSecret) {
+  return verifyWaSignature(rawBody, signatureHeader, appSecret);
+}
+
+/** يفكّك حمولة Meta إلى الرسائل الواردة وأصداء ما أرسله بشر من تطبيق الأعمال. */
+export function parseInboundPayload(payload) {
+  return { inbound: parseInbound(payload), echoes: parseEchoes(payload) };
 }

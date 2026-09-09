@@ -1,15 +1,15 @@
 // POST /api/store/publish — body: { storeId?, productId, description, seo?, copywriting?, faqs? }
 // النشر الفردي من الاستوديو: نفس حقول سلة التي يستخدمها النشر الجماعي
-// (services/sallaProductPayload.js) — الوصف HTML منظّم + subtitle + metadata_title +
+// (domain/sallaProductPayload.js) — الوصف HTML منظّم + subtitle + metadata_title +
 // metadata_description. كان يرسل الوصف وحده ويُسقط السيو الذي عرضه للتاجر.
 import { withApi, ApiError } from "../../_lib/core/respond.js";
-import { updateProduct } from "../../_lib/integrations/salla.js";
 import { requireCompletedAccount } from "../../_lib/core/session.js";
-import { buildSallaProductFields } from "../../_lib/services/sallaProductPayload.js";
+import { buildSallaProductFields } from "../../_lib/domain/sallaProductPayload.js";
 import { logError } from "../../_lib/core/errorLog.js";
 // N6 — P48 كان نصف مغلق: النشر يكتب على كتالوج سلة الحي بلا أي حد معدل.
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
-import { findCatalogBySallaProductId, markPublished } from "../../_lib/services/catalog.js";
+import { findCatalogBySallaProductId, markPublished } from "../../_lib/domain/catalog.js";
+import { updateSallaProduct } from "../../_lib/domain/publish.js";
 
 async function publishHandler(body, env, request, requestId, context) {
   // Writing onto the merchant's live Salla catalogue is a "real operation":
@@ -39,11 +39,11 @@ async function publishHandler(body, env, request, requestId, context) {
 
   let seoApplied = hasSeo;
   try {
-    await updateProduct(env, merchantId, productId, fields);
+    await updateSallaProduct(env, merchantId, productId, fields);
   } catch (err) {
     if (Number(err?.status) === 422 && hasSeo) {
       logError(context, { requestId, path: "store/publish", code: "SALLA_SEO_FIELDS_REJECTED", storeId: merchantId, internal: String(err?.message || err).slice(0, 250) });
-      await updateProduct(env, merchantId, productId, descriptionOnly);
+      await updateSallaProduct(env, merchantId, productId, descriptionOnly);
       seoApplied = false;
     } else if (Number(err?.status) === 429) {
       throw new ApiError(429, "سلة أوقفت الطلبات مؤقتاً — جرّب بعد دقيقة.", "SALLA_RATE_LIMITED", String(err?.message || err).slice(0, 250));

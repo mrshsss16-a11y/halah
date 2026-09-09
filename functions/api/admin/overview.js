@@ -2,7 +2,7 @@
 import { withApi } from "../../_lib/core/respond.js";
 import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
-import { adminStats } from "../../_lib/core/db.js";
+import { adminStats } from "../../_lib/domain/analytics.js";
 
 async function overviewHandler(body, env, request, requestId, context) {
   const admin = await requireAdmin(request, env);

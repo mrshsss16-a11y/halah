@@ -2,7 +2,8 @@
 // load to decide whether to show "مرحباً <email>" or an anonymous-demo banner.
 import { withApi, json } from "../../_lib/core/respond.js";
 import { getSessionMerchantId, requireAdmin } from "../../_lib/core/session.js";
-import { getAccountEmail, getStoreName } from "../../_lib/domain/accounts.js";
+import { getAccountEmail } from "../../_lib/core/identity.js";
+import { getStoreName } from "../../_lib/domain/accounts.js";
 import { getUsage } from "../../_lib/core/meter.js";
 
 async function meHandler(body, env, request) {

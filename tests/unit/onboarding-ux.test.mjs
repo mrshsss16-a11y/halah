@@ -74,7 +74,7 @@ async function main() {
     // اسم المتجر يُجلب من Store Info (الحمولة لا تحمله). المرحلة ٤: بالمجال.
     const eventSrc2 = read("../../functions/_lib/domain/salla.js");
     assert(
-      /getStoreInfo\(env, merchantId\)/.test(eventSrc2) && /SALLA_STORE_INFO_FAILED/.test(eventSrc2) &&
+      /getStoreInfo\(await getValidSallaToken\(env, merchantId\)\)/.test(eventSrc2) && /SALLA_STORE_INFO_FAILED/.test(eventSrc2) &&
         /export async function getStoreInfo/.test(read("../../functions/_lib/integrations/salla.js")),
       "UX-13: store_name يُجلب من /store/info بعد التوكن، وفشله لا يوقف الويبهوك"
     );

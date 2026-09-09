@@ -10,6 +10,9 @@
 //   • policy "window"  (رمز الاستعادة): الزيادة مشروطة بالنافذة (صفّ قديم =
 //     محاولة أولى)، والقفل = عدّاد داخل النافذة بلغ العتبة، ويُحرَق الرمز.
 
+import { sendWaText, waConfigured } from "../integrations/whatsapp.js";
+import { isConfigured as emailConfigured, send as sendEmail } from "../integrations/email.js";
+
 const ATTEMPT_THRESHOLD = 5;
 const ATTEMPT_MINUTES = 15;
 
@@ -198,7 +201,9 @@ export async function pendingResetOtpHash(env, email) {
  * قناة تسليم الرمز: آخر رقم واتساب تواصل مع هذا التاجر. لا مزوّد بريد مضبوط
  * لاستعادة كلمة المرور، ولا رقم مفبرك — غيابه يعني «لم يُسلَّم» (§١١ الصدق).
  */
-export async function resetDeliveryPhone(env, merchantId) {
+// المرحلة ٦: لم تعد مصدَّرة — كان الـshim `core/db.js` (المحذوف) يعيد تصديرها
+// بلا مستورد واحد. تُستخدم داخل هذا الملف فقط؛ لا سطح تعديل زائف (لا كود ميت).
+async function resetDeliveryPhone(env, merchantId) {
   const row = await env.DB.prepare(
     "SELECT phone FROM whatsapp_contacts WHERE merchant_id = ? ORDER BY last_inbound_at DESC LIMIT 1"
   )
@@ -298,4 +303,38 @@ export async function verifyGoogleIdToken(env, credential) {
   if (!env?.GOOGLE_CLIENT_ID || info.aud !== env.GOOGLE_CLIENT_ID) return null;
   if (info.email_verified !== "true" && info.email_verified !== true) return null;
   return { email: String(info.email).toLowerCase(), name: info.name || "", sub: String(info.sub || "") };
+}
+
+// ── المرحلة ٦ (ق٦): `api/**` لا يستورد `integrations/**` ────────────────────
+/**
+ * تسليم رمز استعادة كلمة المرور خارج النطاق. واتساب هي القناة الوحيدة
+ * الموصولة اليوم. نُقل من `api/auth/forgot_password.js` بلا تغيير سلوكي:
+ * غياب القناة أو الرقم أو فشل الإرسال ⇒ `false` (ونقطة النهاية تسجّل ذلك
+ * ولا تدّعي إرسالاً لم يحدث — §١١ الصدق).
+ * @returns {Promise<boolean>} هل خرجت الرسالة فعلاً؟
+ */
+export async function deliverResetOtp(env, merchantId, otpCode) {
+  if (!waConfigured(env)) return false;
+  const phone = await resetDeliveryPhone(env, merchantId);
+  if (!phone) return false;
+  return sendWaText(env, {
+    to: phone,
+    body: `رمز استعادة كلمة المرور: ${otpCode}\nصالح ١٥ دقيقة. لا تشاركه مع أحد.`
+  })
+    .then(() => true)
+    .catch(() => false);
+}
+
+/** هل مزوّد البريد مضبوط؟ غيابه ⇒ ٥٠٣ صريحة، لا ادّعاء إرسال. */
+export function verificationChannelReady(env) {
+  return emailConfigured(env);
+}
+
+/** إرسال رمز تحقق البريد. يرمي عند الفشل — نقطة النهاية تترجمه إلى ٥٠٢. */
+export async function deliverVerificationCode(env, { email, code }) {
+  return sendEmail(env, {
+    to: email,
+    subject: "رمز تأكيد بريدك — هالة",
+    text: `رمز تأكيد بريدك: ${code}\nصالح ١٥ دقيقة. لا تشاركه مع أحد.`
+  });
 }

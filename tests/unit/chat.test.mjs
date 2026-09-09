@@ -87,7 +87,7 @@ async function main() {
     );
     assert(
       /Number\(err\?\.status\) === 422 && hasSeo/.test(pubSrc) &&
-        /updateProduct\(env, merchantId, productId, descriptionOnly\)/.test(pubSrc),
+        /updateSallaProduct\(env, merchantId, productId, descriptionOnly\)/.test(pubSrc),
       "SEOPUB-2: رفض سلة لحقول SEO (422) يسقط للوصف وحده لا يُسقط النشر"
     );
     // lastCopy صار S.lastCopy بحالة مشتركة state.js بعد التقسيم.

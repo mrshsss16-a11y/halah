@@ -56,10 +56,13 @@ const CAPS = [
 // و`admin.html` ٩١٦ → ٤٢، بنقل العلامات إلى `partials/{dashboard,admin}-*.html`
 // (تُحَل بـ#include وقت البناء) والـJS إلى وحدات ES بـ`public/js/{dashboard,
 // admin}/*.js`. لا ملف من الوحدات الجديدة يتجاوز ٤٠٠ سطر. سقط الاستثناءان.
-const ALLOWLIST = new Map([
-  ["functions/api/webhooks/salla.js", 257],
-]);
-const EXPECTED_ALLOWLIST = 1;
+// أُنجز بالمرحلة ٦ (2026-09-09): `api/webhooks/salla.js` ٨١ → تحت السقف، بنقل
+// كتلة ما بعد التوقيع (التصريف + حجب التوكنات + `logWebhook`) إلى
+// `domain/salla.js:processVerifiedSallaEvent`. النقطة صارت: JSON ← تحقق توقيع
+// ← waitUntil(domain) ← 200. **قائمة السماح صارت فارغة** (ARCHITECTURE.md §٣:
+// «كل الحراس بلا قوائم سماح») — وقاعدة §٤ تمنع إضافة أي مدخل جديد.
+const ALLOWLIST = new Map([]);
+const EXPECTED_ALLOWLIST = 0;
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "archive", ".git", "backups", "graphify-out", ".wrangler"]);
 function walk(dir, ext, out = []) {

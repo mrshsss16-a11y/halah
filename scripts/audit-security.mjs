@@ -42,7 +42,7 @@ for (const f of fnFiles) {
 // ── ح٥ ──────────────────────────────────────────────────────────────────────
 const ALLOWED_HOSTS = new Set([
   "'self'", "'unsafe-inline'", "data:", "blob:", "https:",
-  "https://cdn.tailwindcss.com", "https://fonts.cdnfonts.com", "https://cdnjs.cloudflare.com",
+  "https://cdn.tailwindcss.com", "https://cdnjs.cloudflare.com",
   "https://accounts.google.com", "https://connect.facebook.net", "https://unpkg.com",
   "https://fonts.googleapis.com", "https://fonts.gstatic.com",
   "https://graph.facebook.com", "https://www.facebook.com", "https://web.facebook.com",

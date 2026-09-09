@@ -170,7 +170,7 @@ async function main() {
 
       // (e) an m_ id can never be mistaken for an m_g_ id: `m_` ids are
       //     `m_` + uuid hex, and `g` is not a hex digit.
-      const { GOOGLE_MERCHANT_PREFIX } = await import("../../functions/_lib/core/db.js");
+      const { GOOGLE_MERCHANT_PREFIX } = await import("../../functions/_lib/domain/accounts.js");
       let hexIdsLookGoogle = false;
       for (let i = 0; i < 200; i++) {
         if (`m_${crypto.randomUUID().slice(0, 12)}`.startsWith(GOOGLE_MERCHANT_PREFIX)) hexIdsLookGoogle = true;
@@ -182,7 +182,7 @@ async function main() {
   }
 
   {
-    const { normalizeEmailForDedupe, trialSeatUsage } = await import("../../functions/_lib/core/db.js");
+    const { normalizeEmailForDedupe, trialSeatUsage } = await import("../../functions/_lib/domain/accounts.js");
 
     // (أ) التطبيع نفسه
     assert(normalizeEmailForDedupe("Me+1@Gmail.com") === "me@gmail.com", "P59: +tag يُحذف");

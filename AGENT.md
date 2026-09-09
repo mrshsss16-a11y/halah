@@ -32,45 +32,40 @@ Bindings معرّفة في `wrangler.toml`: `AI`, `VECTORIZE_INDEX`, `DB`, `HALA
 
 ---
 
-## 3. خريطة المجلدات (متحقَّق من الشجرة 2026-09-08 — ٥٢ endpoint، ٢١ هجرة)
+## 3. خريطة المجلدات (العقد المعماري بـ`docs/ARCHITECTURE.md` — مفروض آلياً بـ`npm test`)
 
 ```
 functions/
   _lib/
-    ai/           gateway (تعاقب المزودين) · persona · memory (RAG) · intents · typoCorrector
-                  productTaxonomy (كتيّب مصطلحات الفئات للوصف والرؤية)
-    core/         db · session (توكن بنسخة P40) · csrf (P42) · auditLog (P9) · auth · adminEmails · crypto · meter · rateLimit
-                  respond (withApi + requestId) · errors (كتالوج رسائل عربية) · errorLog (→ D1)
-                  security · cors · oauthState
-    integrations/ salla · whatsapp · instagram · email (Resend، fail-closed) · dlq   (trendyol/zid مؤرشفان)
-    services/     catalog (سحب كتالوج سلة) · storeProfile (بصمة المتجر) · reviewQueue (بوابة
-                  المراجعة البشرية) · publishApproved (المكان الوحيد لإرسال مخرج AI لمنصة خارجية)
-    imageProvider.js   (klein أساسي + Hugging Face احتياطي)
-  api/
-    auth/         signup · login · logout · me · google · complete_account · forgot_password
-                  reset_password · send_verification · verify_email · salla_embedded · salla/{install,callback}
-    store/        status · config · context · overview · publish · logo · persona · profile · faq
-                  catalog/{sync,list} · bulk/{upload,generate,status} · review/{list,decide} · feedback
-    admin/        overview · accounts · bookings · conversations · faq · errors · review
-                  style_library · aura_whatsapp · launch (متابعة الإطلاق)
-    whatsapp/     webhook (استقبال) · send · connect · status
-    instagram/    webhook (مبني، غير مفعَّل — ينتظر P29/P30)
-    webhooks/     salla
-    consultation/ book
-    widget/       config
-    cron/         reminders · healthcheck · bulk_process (٣ مراحل: سحب كتالوج · توليد→review_queue · نشر المعتمَد متجر/تِك)
-    security/     pdpl_audit   (تقييم تقني، وليس شهادة امتثال قانوني)
-    chat · copy · image · support · usage · stats · health
-cron-worker/         Worker منفصل بجدولة */10 — Pages لا يدعم cron triggers
-docs/archive/         تجارب ومزايا مؤرشفة لا تُبنى ولا تُنشر (astro-experiment، deprioritized-features)
-docs/COMPLETION_PATH.md   مسار الإتمام الحالي (المرجع التنفيذي)
-*.html               صفحات ثابتة تمر بـ #include ثم scripts/stage.mjs → dist/
-partials/            مكونات #include (fouc-theme, app-shell)
-migrations/          مخطط D1 (0001..0024) — انظر §6
-persona/             نسخ مرجعية للشخصية (التشغيلية في functions/_lib/ai/persona.js — عدّل الاثنين)
-tests/api.test.mjs   ٣٦٦ تأكيداً (عزل · توقيع · حصة · مصادقة · كتيّب المصطلحات · نماذج الرؤية)
-scripts/             stage · verify-dist · audit-isolation + audit-security (ضمن npm test) · backup-db · smoke-test (ضمن deploy)
+    core/          بنية تحتية فقط: respond (withApi + withApi.raw) · errors (ApiError/DomainError) · errorLog
+                   session · identity · csrf · crypto · cors · rateLimit · security · oauthState · adminEmails
+                   auditLog · heartbeat · limits · meter
+    domain/        منطق الأعمال — ملف لكل مجال، لا يعرف HTTP: auth · accounts · salla · whatsapp ·
+                   whatsappAutoReply · whatsappInbound · whatsappConnect · bulk · bulkTick · catalog · catalogSync
+                   review · reviewGuards · publish · copy · copyParse · conversation · support · storeProfile
+                   storeOverview · sallaProductPayload · quota · faq · booking · analytics · health · instagram
+                   persona · platforms · auraAgent
+    integrations/  محوّلات HTTP خالصة (صفر D1): salla · whatsapp · instagram · email
+    ai/            gateway · vision · parseModelJson · guards (أسعار + محدِّدات) · persona (المصدر الوحيد)
+                   prompts/{seo,chat,support,whatsapp,instagram} · memory · intents · productTaxonomy · supportPlaybook
+    imageProvider.js
+  api/**           تنسيق فقط (≤ ٨٠ سطراً، صفر SQL، صفر prompt، لا يستورد integrations):
+                   auth/* · store/{catalog,bulk,review,…} · admin/* · whatsapp/* · instagram/webhook · webhooks/salla
+                   cron/{reminders,healthcheck,bulk_process} · chat · copy · support · image · health · stats · usage
+cron-worker/         Worker منفصل */10 يضرب الـcron الثلاث بـCRON_SECRET
+partials/            head-common (كل الصفحات) · dashboard-* · admin-*   (#include عبر scripts/stage.mjs)
+public/js/           shared.js · dashboard/{state,api,render,catalog,studio,bulk,review,agent,whatsapp,store,account,tabs,main}.js · admin/*
+styles/              01..08 تُدمج في dist/style.css (08-shared-components = الأصناف المشتركة بقيمة واحدة)
+*.html               صفحات هيكلية قصيرة (dashboard 43 سطراً، admin 40)
+migrations/          مخطط D1 (0001..0027) — انظر §6
+persona/             مولَّد آلياً من ai/persona.js بـscripts/export-persona.mjs — لا يُحرَّر يدوياً
+tests/unit/*         ٢٤ ملف وحدة · tests/integration/* ٦ موجات · tests/frontend.test.mjs · tests/_helpers.mjs
+scripts/             stage (ينظّف dist ثم يبني) · verify-dist · run-tests (يجمع tests/**، حد أدنى ١٠١٠ تأكيداً)
+                     audit-{isolation,security,dead-exports,file-size,layering,migrations,frontend} (كلها ضمن npm test)
+                     backup-db · smoke-test · export-persona
 ```
+
+**الحراس (قوائم السماح صفرية):** أي ملف `api` فوق ٨٠ سطراً أو `_lib` فوق ٤٠٠ أو HTML فوق ٨٠٠، أي استيراد بالاتجاه الخاطئ (ق١–ق٦)، أي تصدير بلا مستورد، أي عمود بلا هجرة، أي `innerHTML` غير مهرَّب، أي `resolveStoreId` بلا تبرير — يُسقط `npm test`.
 
 ---
 
@@ -135,8 +130,22 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 - Migrations في `migrations/` (0001..0027 كلها مطبَّقة على البعيد، تحقق 2026-09-09 — 0027 `cron_heartbeat` طُبِّقت ونبض الـcron `ok` بـ`/api/health`)  انظر §13 O2). طبّق بـ: `npx wrangler d1 migrations apply halah-tr-db --remote`
 - 0003 placeholder (للحفاظ على تسلسل الأرقام). 0010 أنشأ الجداول الناقصة سابقاً.
-- جداول قديمة (legacy) لا تزال موجودة من بناء سابق: `users`, `faqs`, `store_connections`,
-  `synced_products`, `merchant_marketing_contexts`, `store_documents`. الجداول الجديدة حلّت محلها.
+- **جداول بالمخطط لا يذكرها الكود — المصدر الوحيد للقائمة.**
+  `scripts/audit-migrations.mjs` (فحص م٢) يقرأ الكتلة أدناه حرفياً؛ لا تكرّرها بالسكربت.
+  لتغيير القائمة: عدّل هنا فقط. حذف أي منها من الإنتاج **يحتاج نسخة احتياطية
+  متحقَّقاً منها (`npm run backup`) + قرار مالك المشروع** — قرار مؤجَّل، انظر
+  `docs/DEFERRED.md`.
+
+  <!-- LEGACY_TABLES:START (تُقرأ آلياً — سطر لكل جدول: `اسم` — السبب) -->
+  - `users` — legacy من بناء سابق، حلّت محلها accounts/merchants
+  - `faqs` — legacy، حلّ محلها store_faqs
+  - `store_connections` — legacy، حلّ محلها oauth_tokens/wa_connections
+  - `synced_products` — legacy، حلّ محلها store_products
+  - `merchant_marketing_contexts` — legacy من بناء سابق
+  - `store_documents` — legacy من بناء سابق
+  - `merchants_meta` — بيانات وصفية تشغيلية تُقرأ بأدوات التشغيل لا بالكود
+  - `pending_retargeting` — مخطط بلا ميزة؛ دواله الميتة حُذفت بالمرحلة ١
+  <!-- LEGACY_TABLES:END -->
 - **قبل أي ادعاء أن جدولاً موجود، تحقق فعلياً:**
   `npx wrangler d1 execute halah-tr-db --remote --command "SELECT name FROM sqlite_master WHERE type='table'"`
 

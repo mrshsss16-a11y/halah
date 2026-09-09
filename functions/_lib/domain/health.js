@@ -3,7 +3,7 @@
 //
 // لماذا هنا: هذه قرارات أعمال (ما الحرِج؟ متى ننبّه؟ كم مرة؟) لا تنسيق HTTP.
 // نقطة الدخول تبقى حارس CRON_SECRET + استدعاء واحد.
-import { assertWaUrlAllowed } from "../integrations/whatsapp.js";
+import { assertWaUrlAllowed, sendWaText, waConfigured } from "../integrations/whatsapp.js";
 
 const ALERT_DEDUPE_SECONDS = 3600; // إعادة التنبيه مرة/ساعة بينما العطل قائم
 const WA_TOKEN_CHECK_THROTTLE_SECONDS = 3600; // O3: debug_token مرة/ساعة كحد أقصى
@@ -167,4 +167,16 @@ export async function publicHealthChecks(env, readHeartbeats) {
     checks,
     criticalDown: CRITICAL_CHECK_KEYS.some((k) => checks[k] === "error" || checks[k] === "missing")
   };
+}
+
+// ── المرحلة ٦ (ق٦): `api/**` لا يستورد `integrations/**` ────────────────────
+/**
+ * تنبيه أدمن واحد بواتساب، مخنوق بـKV. نُقل حرفياً من `api/cron/healthcheck.js`
+ * (الدالة المحلية `alert`) بلا تغيير سلوكي: نفس الرقم الافتراضي، نفس شرط
+ * `waConfigured` + `claimAlertSlot`، ونفس ابتلاع أخطاء الإرسال بصمت.
+ */
+export async function sendAdminAlert(env, key, body) {
+  if (!waConfigured(env) || !(await claimAlertSlot(env, key))) return;
+  const to = env.STORE_WA_PHONE || "966545149591";
+  await sendWaText(env, { to, body }).catch(() => {});
 }

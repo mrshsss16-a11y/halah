@@ -3,7 +3,7 @@
 import { withApi } from "../../_lib/core/respond.js";
 import { recordAdminAction } from "../../_lib/core/auditLog.js";
 import { requireAdmin } from "../../_lib/core/session.js";
-import { listHalaFaq, saveHalaFaqEntry, deleteHalaFaqEntry } from "../../_lib/core/db.js";
+import { listHalaFaq, saveHalaFaqEntry, deleteHalaFaqEntry } from "../../_lib/domain/faq.js";
 import { reembedHalaFaq, deleteHalaFaqEmbedding } from "../../_lib/ai/memory.js";
 
 async function faqHandler(body, env, request, requestId, context) {

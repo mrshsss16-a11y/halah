@@ -2,22 +2,12 @@
 // تطبيع البريد ومحاسبة مقاعد التجربة، وربط حساب جوجل.
 // نُقل من core/db.js بالمرحلة ٣ (docs/ARCHITECTURE.md §٢) بلا تغيير سلوكي.
 //
-// قرار موثَّق (§٢ يترك الخيار): `getMerchant(env, id)` **هنا** لا بـsalla.js —
-// صف `merchants` هوية الحساب نفسه (اسم المتجر، آخر نشاط، ختم فك الربط)
-// ويقرأه عشرات المسارات بلا أي علاقة بسلة. أما البحث/الإنشاء بمعرّف سلة
+// المرحلة ٦: `getMerchant` و`getAccountEmail` انتقلا إلى `core/identity.js`
+// (قراءة صف بمفتاحه، صفر منطق) لأن `core/session.js` يحتاجهما ولا يجوز لـcore
+// أن يستورد domain (ق١). استوردهما من هناك. أما البحث/الإنشاء بمعرّف سلة
 // (`getMerchantBySalla` · `upsertMerchantFromSalla`) فهما بـdomain/salla.js
 // لأنهما جزء من تدفق OAuth الخاص بالمنصة.
 
-export async function getMerchant(env, merchantId) {
-  return env.DB.prepare("SELECT * FROM merchants WHERE id = ?").bind(merchantId).first();
-}
-
-export async function getAccountEmail(env, merchantId) {
-  const row = await env.DB.prepare("SELECT email FROM accounts WHERE merchant_id = ?")
-    .bind(merchantId)
-    .first();
-  return row ? row.email : null;
-}
 
 export async function listAccounts(env, limit = 200) {
   const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Riyadh" }).format(new Date());

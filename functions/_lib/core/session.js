@@ -1,4 +1,4 @@
-import { getAccountEmail, getMerchant } from "./db.js";
+import { getAccountEmail, getMerchant } from "./identity.js";
 import { ApiError } from "./respond.js";
 // Q1 — نسخة واحدة للمقارنة الثابتة الزمن (كانت مكرّرة هنا وبـoauthState.js وreset_password.js).
 import { timingSafeEqualStr } from "./crypto.js";

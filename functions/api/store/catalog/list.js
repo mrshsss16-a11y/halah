@@ -11,8 +11,8 @@
 // وlistCatalog تشترط merchant_id بكل استعلام. لا نثق بأي معرّف مرسَل.
 import { withApi } from "../../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../../_lib/core/session.js";
-import { getActiveJobByKind } from "../../../_lib/core/db.js";
-import { listCatalog, countCatalog, getCatalogSyncState } from "../../../_lib/services/catalog.js";
+import { getActiveJobByKind } from "../../../_lib/domain/bulk.js";
+import { listCatalog, countCatalog, getCatalogSyncState } from "../../../_lib/domain/catalog.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
 
 const PAGE_LIMIT = 24;

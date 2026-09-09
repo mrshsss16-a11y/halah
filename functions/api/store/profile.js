@@ -7,7 +7,7 @@ import { withApi } from "../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { checkAndConsumeMonthly } from "../../_lib/core/meter.js";
-import { buildProfile, getProfile, approveProfile } from "../../_lib/services/storeProfile.js";
+import { buildProfile, getProfile, approveProfile } from "../../_lib/domain/storeProfile.js";
 
 const ACTIONS = new Set(["get", "rebuild", "approve"]);
 

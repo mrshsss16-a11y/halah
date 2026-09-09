@@ -8,10 +8,23 @@
 // بنفسها ولا تقرر ما يُنشر — القرار اتُّخذ بشرياً قبلها.
 import { getIgConnectionByUserId } from "./instagram.js";
 import { send as igSend } from "../integrations/instagram.js";
-import { updateProductBySku } from "../integrations/salla.js";
+import { updateProduct, updateProductBySku } from "../integrations/salla.js";
+import { getValidSallaToken } from "./salla.js";
 import { recordPublishResult } from "./review.js";
 import { markPublished, getCatalogItem, markReverted } from "./catalog.js";
 import { buildSallaProductFields } from "./sallaProductPayload.js";
+
+/**
+ * تحديث منتج واحد بمعرّفه على سلة — يجلب التوكن ويمرّره للمحوّل.
+ *
+ * موجودة هنا لأن `api/**` لا يستورد `integrations/**` مباشرة (ق٦): النشر
+ * الفردي من الاستوديو (`api/store/publish.js`) كان يستدعي المحوّل ويعتمد على
+ * كتلة shim محذوفة بالمرحلة ٦. صفر تغيير سلوكي — نفس النداء ونفس الأخطاء
+ * (`err.status` ٤٢٢/٤٢٩) التي تعتمدها نقطة النهاية.
+ */
+export async function updateSallaProduct(env, merchantId, productId, fields) {
+  return updateProduct(await getValidSallaToken(env, merchantId), productId, fields);
+}
 
 /**
  * نافذة الإرسال انتهت؟ عنصر فات أوانه يفشل عند Meta برسالة غامضة — نرفضه قبل
@@ -84,7 +97,7 @@ async function publishDescription(env, { merchantId, payload }) {
 
   const attempt = async (body, fallback) => {
     try {
-      return await updateProductBySku(env, merchantId, sku, body);
+      return await updateProductBySku(await getValidSallaToken(env, merchantId), sku, body);
     } catch (err) {
       const status = Number(err?.status) || Number((String(err?.message || "").match(/HTTP (\d{3})/) || [])[1]) || 0;
       if (status === 429) {
@@ -94,7 +107,7 @@ async function publishDescription(env, { merchantId, payload }) {
       }
       if (status === 422 && fallback) {
         // حقول السيو رُفضت — الوصف وحده مرة واحدة، ثم أي فشل يُسجَّل على الصف.
-        return updateProductBySku(env, merchantId, sku, fallback);
+        return updateProductBySku(await getValidSallaToken(env, merchantId), sku, fallback);
       }
       throw err;
     }
@@ -192,7 +205,7 @@ export async function revertProduct(env, { merchantId, sku }) {
   // الأصل قد يكون فارغاً فعلاً (منتج بلا وصف قبل هالة) — نُرجعه فارغاً بصدق،
   // لا نخترع نصاً.
   const original = item.original_description || "";
-  await updateProductBySku(env, merchantId, sku, { description: original });
+  await updateProductBySku(await getValidSallaToken(env, merchantId), sku, { description: original });
   await markReverted(env, { merchantId, sku });
 
   const seoNote = "عنوان ووصف البحث اللذان أضافتهما هالة يبقيان — عدّلهما من لوحة سلة إن أردت.";

@@ -9,12 +9,15 @@
  *
  * القواعد المفروضة (§١):
  *   ق١  core/**          لا يستورد من domain · ai · integrations · api
- *   ق٢  integrations/**  لا يستورد core/db.js ولا domain ولا services ولا api
- *   ق٣  domain/** و services/**  لا يستوردان core/respond.js
+ *   ق٢  integrations/**  لا يستورد core/db.js ولا domain ولا api
+ *   ق٣  domain/**        لا يستورد core/respond.js
  *        (المجال يرمي DomainError ويترجمها withApi — لا يعرف HTTP)
  *   ق٤  api/**           لا يحوي `.prepare(` (SQL خام بطبقة تنسيق)
  *   ق٥  api/**           لا يبني system prompt (دالة `build*System*` أو
  *        `PERSONA_SYSTEM_PROMPT` داخل template literal)
+ *   ق٦  api/**           لا يستورد integrations/** مباشرة — يمرّ بـdomain/
+ *        (أُضيفت بالمرحلة ٦: النداء على محوّل خارجي قرار مجال لا تنسيق؛ وبقاؤه
+ *         بـapi كان يعيد بناء منطق القناة بكل نقطة نهاية)
  *
  * قائمة سماح مؤرَّخة بـ`ملف:سطر` لكل مخالفة قائمة اليوم، وعددها `EXPECTED_ALLOWLIST`
  * يتقلّص كل مرحلة ولا يكبر. لأن الأسطر تتحرك مع أي تعديل، المفتاح `ملف#قاعدة`
@@ -32,33 +35,22 @@ const ROOT = process.env.AUDIT_LAYER_ROOT ? join(process.cwd(), process.env.AUDI
 // ── قائمة السماح ────────────────────────────────────────────────────────────
 // المفتاح: "<مسار الملف>#<رقم القاعدة>" → سبب + الموضع يوم التسجيل + مرحلة الإزالة.
 const ALLOWLIST = new Map([
-  // 2026-09-09 (أُنجز بالمرحلة ٣) · اقتران المحوّل بـ`core/db.js` **زال**: التوكن
-  // والتشفير وقفل التجديد صاروا بـ`domain/salla.js`، والمحوّل HTTP خالص.
-  // ما بقي: كتلة shim بآخر الملف تحفظ توقيع `(env, merchantId, …)` لمستوردي
-  // `api/**` الأربعة (store/overview · store/publish · store/review/decide ·
-  // webhooks/salla) — تعديل `api/**` خارج نطاق المرحلة ٣ عمداً (القاعدة الذهبية:
-  // صفر تعديل على المستوردين). الكتلة تستورد `domain/salla.js` فتقع تحت ق٢.
-  // الإزالة: **المرحلة ٤** (إفراغ `api/*`) — عندها يعود الملف HTTP خالصاً تماماً.
-  ["functions/_lib/integrations/salla.js#ق٢", "shim توقيعات (env, merchantId, …) يستورد domain/salla.js — بعد المرحلة ٤ صار مستوردوه ملفات domain لا api (publish · storeOverview · salla نفسه)؛ إزالته تعني تمرير التوكن بكل نداء، يُحذف بالمرحلة ٦ مع shim db.js"],
-
-  // 2026-09-09 (جديد بالمرحلة ٣) · `core/db.js` صار **shim إعادة تصدير** فقط
-  // (كان ١٣٥٠ سطراً و٨٤ تصديراً). يعيد تصدير `domain/*` حتى لا يتغيّر أي من
-  // الأربعين مستورداً بهذه المرحلة، فيستورد core من domain (خرق ق١ بالشكل، لا
-  // بالمضمون: صفر منطق). الإزالة: **المرحلة ٦** («إزالة shim db.js»).
-  ["functions/_lib/core/db.js#ق١", "shim إعادة تصدير مؤقت لـdomain/* — يُزال بالمرحلة ٦"],
-
-  // 2026-09-09 · ق٤ — **صفر استثناء**: أُنجز بالمرحلة ٤ (النصفان أ وب). كل
-  // `.prepare(` خرج من `api/**` إلى `domain/*` (auth · accounts · booking ·
-  // bulk · bulkTick · health · analytics · platforms · salla · catalogSync ·
-  // storeOverview · publish · persona · auraAgent)، ونقاط الدخول صارت
-  // «تنسيق فقط»: withApi/withApi.raw ← تحقق مدخل ← استدعاء domain ← json.
-
-  // 2026-09-09 · ق٥ — **صفر استثناء**: أُنجز بالمرحلة ٤ (النصف ب). كل بناء
-  // system prompt خرج من `api/**` إلى `_lib/ai/prompts/*.js`
-  // (seo · chat · support · whatsapp · instagram)، والشخصية تبقى مصدراً واحداً
-  // بـ`ai/persona.js` تستوردها كتل البرومبت.
+  // 2026-09-09 · **صفر استثناء** بعد المرحلة ٦ (ARCHITECTURE.md §٣: «كل الحراس
+  // بلا قوائم سماح»). ما زال هنا للتوثيق فقط، وقاعدة القائمة البيضاء (§٤) تمنع
+  // إضافة أي مدخل: `EXPECTED_ALLOWLIST = 0`، وأي إضافة تفشل الحارس.
+  //
+  // ما سقط بالمرحلة ٦:
+  //  · `core/db.js#ق١` — الملف **حُذف**. كان shim إعادة تصدير لـdomain/*؛ كل
+  //    مستورديه (٢٥ ملفاً بـapi/ وtests/ وcore/session.js) صاروا يستوردون من
+  //    `domain/*` مباشرة. قراءتا الهوية (`getMerchant`/`getAccountEmail`) اللتان
+  //    يحتاجهما `core/session.js` انتقلتا إلى `core/identity.js` (قراءة صف
+  //    بمفتاحه، صفر منطق) فلم يعد core يستورد domain إطلاقاً.
+  //  · `integrations/salla.js#ق٢` — كتلة الـshim **حُذفت**. المحوّل صار HTTP
+  //    خالصاً: كل دالة تأخذ توكناً جاهزاً، والمجال (`domain/salla.js` عبر
+  //    `getValidSallaToken`) هو من يجلبه ويمرّره.
+  // كذلك حُذف مجلد `services/*` بالكامل (خمسة shims إعادة تصدير).
 ]);
-const EXPECTED_ALLOWLIST = 2;
+const EXPECTED_ALLOWLIST = 0;
 
 const SKIP_DIRS = new Set(["node_modules", "dist", "archive", ".git", "backups", "graphify-out", ".wrangler"]);
 function walk(dir, out = []) {
@@ -109,7 +101,7 @@ for (const f of libFiles) {
   const specs = importSpecs(f, src);
   const inCore = r.startsWith("functions/_lib/core/");
   const inIntegrations = r.startsWith("functions/_lib/integrations/");
-  const inDomain = r.startsWith("functions/_lib/domain/") || r.startsWith("functions/_lib/services/");
+  const inDomain = r.startsWith("functions/_lib/domain/");
 
   for (const { resolved } of specs) {
     // ق١ — core لا يعرف ما فوقه
@@ -133,14 +125,24 @@ for (const f of libFiles) {
     }
     // ق٣ — المجال لا يعرف HTTP
     if (inDomain && resolved === "functions/_lib/core/respond.js") {
-      record(r, "ق٣", "domain/services يستورد core/respond.js — المجال يرمي DomainError ويترجمها withApi (§١)");
+      record(r, "ق٣", "domain يستورد core/respond.js — المجال يرمي DomainError ويترجمها withApi (§١)");
     }
   }
 }
 
 for (const f of apiFiles) {
   const r = rel(f);
-  const lines = readFileSync(f, "utf8").split("\n");
+  const src = readFileSync(f, "utf8");
+  const lines = src.split("\n");
+
+  // ق٦ — طبقة التنسيق لا تنادي محوّلاً خارجياً بنفسها. المجال هو من يقرر
+  // «هل القناة مضبوطة؟ ماذا نرسل؟ ماذا نسجّل؟»، وapi يستدعيه ويصيغ الرد.
+  for (const { resolved } of importSpecs(f, src)) {
+    if (resolved.startsWith("functions/_lib/integrations/")) {
+      record(r, "ق٦", `api يستورد ${resolved} مباشرة — النداء على المحوّل يعيش بـdomain/ (§١)`);
+    }
+  }
+
   let sawPrepare = false;
   let sawPrompt = null;
   lines.forEach((line, i) => {
@@ -178,4 +180,4 @@ if (failures.length) {
   for (const x of failures) console.error("  " + x);
   process.exit(1);
 }
-console.log(`✔ تدقيق الطبقات: ق١ ق٢ ق٣ ق٤ ق٥ سليمة، ${ALLOWLIST.size} استثناءً مؤرَّخاً.`);
+console.log(`✔ تدقيق الطبقات: ق١ ق٢ ق٣ ق٤ ق٥ ق٦ سليمة، ${ALLOWLIST.size} استثناءً مؤرَّخاً.`);

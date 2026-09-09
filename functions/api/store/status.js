@@ -3,7 +3,9 @@
 // has landed after the merchant installs the app from the Salla store.
 // Returns the canonical merchant id so the frontend can persist hala_store_id.
 import { withApi } from "../../_lib/core/respond.js";
-import { getMerchant, getMerchantBySalla, getTokens, getPlatformConnection, getAccountEmail } from "../../_lib/core/db.js";
+import { getMerchant, getAccountEmail } from "../../_lib/core/identity.js";
+import { getPlatformConnection } from "../../_lib/domain/platforms.js";
+import { getMerchantBySalla, getTokens } from "../../_lib/domain/salla.js";
 import { getSessionMerchantId } from "../../_lib/core/session.js";
 
 async function statusHandler(body, env, request) {

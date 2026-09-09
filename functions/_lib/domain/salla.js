@@ -5,7 +5,7 @@ import { encryptSecret, decryptSecret } from "../core/crypto.js";
 import { sanitizeInput } from "../core/security.js";
 import { refreshSallaToken, getStoreInfo } from "../integrations/salla.js";
 import { timingSafeEqualStr } from "../core/crypto.js";
-import { saveAbandonedCart } from "./platforms.js";
+import { saveAbandonedCart, logWebhook } from "./platforms.js";
 
 const REFRESH_MARGIN_S = 24 * 3600; // renew when less than a day remains
 
@@ -15,7 +15,9 @@ export async function getMerchantBySalla(env, sallaMerchantId) {
     .first();
 }
 
-export async function upsertMerchantFromSalla(env, { sallaMerchantId, storeName }) {
+// المرحلة ٦: لم تعد مصدَّرة — كان الـshim `core/db.js` (المحذوف) يعيد تصديرها
+// بلا مستورد واحد. تُستخدم داخل هذا الملف فقط؛ لا سطح تعديل زائف (لا كود ميت).
+async function upsertMerchantFromSalla(env, { sallaMerchantId, storeName }) {
   // A merchant controls their own Salla store name; it renders in the admin
   // accounts table (SECURITY_AUDIT C3). Escaping at the sink is the primary
   // fix — this strips tags at the source as defence in depth.
@@ -38,7 +40,9 @@ export async function upsertMerchantFromSalla(env, { sallaMerchantId, storeName 
   return id;
 }
 
-export async function saveTokens(env, { merchantId, platform, accessToken, refreshToken, expiresAt }) {
+// المرحلة ٦: لم تعد مصدَّرة — كان الـshim `core/db.js` (المحذوف) يعيد تصديرها
+// بلا مستورد واحد. تُستخدم داخل هذا الملف فقط؛ لا سطح تعديل زائف (لا كود ميت).
+async function saveTokens(env, { merchantId, platform, accessToken, refreshToken, expiresAt }) {
   const encAccess = await encryptSecret(env, accessToken);
   const encRefresh = await encryptSecret(env, refreshToken);
   await env.DB.prepare(
@@ -86,7 +90,9 @@ export async function acquireRefreshLock(env, merchantId, platform) {
   return result.meta.changes > 0;
 }
 
-export async function releaseRefreshLock(env, merchantId, platform) {
+// المرحلة ٦: لم تعد مصدَّرة — كان الـshim `core/db.js` (المحذوف) يعيد تصديرها
+// بلا مستورد واحد. تُستخدم داخل هذا الملف فقط؛ لا سطح تعديل زائف (لا كود ميت).
+async function releaseRefreshLock(env, merchantId, platform) {
   await env.DB.prepare(
     "UPDATE oauth_tokens SET refresh_lock = 0 WHERE merchant_id = ? AND platform = ?"
   )
@@ -223,7 +229,8 @@ async function clearDisconnectedStamp(env, merchantId) {
  * `onFirstSync` و`onLog` منفذا حقن من نقطة الدخول: الأول يبدأ أول سحب كتالوج
  * والثاني يسجّل فشلاً غير قاتل — كلاهما يُبقي هذا الملف بلا اعتماد على api/**.
  */
-export async function handleSallaEvent(env, event, payload, { onFirstSync = async () => {}, onLog = () => {} } = {}) {
+// المرحلة ٦: داخلية — مستدعيها الوحيد `processVerifiedSallaEvent` أدناه.
+async function handleSallaEvent(env, event, payload, { onFirstSync = async () => {}, onLog = () => {} } = {}) {
   const data = payload.data || {};
   const sallaMerchantId = payload.merchant || data.merchant || null;
 
@@ -246,7 +253,7 @@ export async function handleSallaEvent(env, event, payload, { onFirstSync = asyn
       const grantedScope = String(data.scope || "");
       if (/\bsettings\.read(_write)?\b/.test(grantedScope) || grantedScope === "") {
         try {
-          const info = await getStoreInfo(env, merchantId);
+          const info = await getStoreInfo(await getValidSallaToken(env, merchantId));
           if (info.name) await upsertMerchantFromSalla(env, { sallaMerchantId, storeName: info.name });
         } catch (err) {
           onLog("SALLA_STORE_INFO_FAILED", merchantId, String(err?.message || err).slice(0, 300));
@@ -331,4 +338,28 @@ export async function exchangeSallaCode(env, { code, redirectUri, clientId, clie
     expiresAt: Math.floor(Date.now() / 1000) + (Number(tokenData.expires_in) || 14 * 24 * 3600)
   });
   return merchantId;
+}
+
+// ── ما بعد التوقيع: التصريف + السجل ────────────────────────────────────────
+//
+// نُقل من `api/webhooks/salla.js` بالمرحلة ٦ بلا أي تغيير سلوكي: نفس الترتيب،
+// نفس أكواد السجل، ونفس **حجب التوكنات** قبل الكتابة. سبب النقل: النقطة تجاوزت
+// سقف الـ٨٠ سطراً (آخر استثناء بـaudit-file-size)، والقرار «ماذا يُسجَّل وماذا
+// يُحجب» قرار مجال لا تنسيق HTTP.
+//
+// يُستدعى داخل `waitUntil` — لا يرمي إطلاقاً؛ كل فشل يُسجَّل ويُبتلع.
+export async function processVerifiedSallaEvent(env, { event, payload, onFirstSync, onLog }) {
+  let merchantId = null;
+  let handlerError = null;
+  try {
+    merchantId = await handleSallaEvent(env, event, payload, { onFirstSync, onLog });
+  } catch (err) {
+    onLog("SALLA_EVENT_FAILED", merchantId, `${event}: ${err?.message || err}`);
+    handlerError = String((err && err.message) || err).slice(0, 300);
+  }
+  // لا تُخزَّن التوكنات بالسجل إطلاقاً — تُحجب قبل الكتابة.
+  const safePayload = event === "app.store.authorize"
+    ? { event, merchant: payload.merchant, data: { scope: payload.data && payload.data.scope, redacted: true }, handlerError }
+    : { ...payload, handlerError };
+  await logWebhook(env, { platform: "salla", event, merchantId, payload: safePayload, signatureOk: true }).catch(() => {});
 }

@@ -71,7 +71,7 @@ async function main() {
   assert(kv.store.size === kvBefore, "a call without storeId writes nothing to the shared cache");
 
   // Omnichannel session must be scoped by merchant, not by phone alone
-  const { getOmnichannelSession } = await import("../../functions/_lib/core/db.js");
+  const { getOmnichannelSession } = await import("../../functions/_lib/domain/conversation.js");
   const sessionRow = { merchant_id: "m_aaa", phone: "966500000001", last_product: "عباية متجر أ" };
   const dbEnv = {
     DB: {

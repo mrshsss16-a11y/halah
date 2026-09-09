@@ -110,7 +110,7 @@ async function main() {
 
     // التوجيه: وظيفة catalog_sync لا تُرى كصف توليد، والمسار الحالي سليم.
     const { claimNextCatalogSyncJob, getActiveJobByKind } = await import(
-      "../../functions/_lib/core/db.js"
+      "../../functions/_lib/domain/bulk.js"
     );
     const routeLog = [];
     const routeDb = {
@@ -226,7 +226,7 @@ async function main() {
   {
     const { readFileSync } = await import("node:fs");
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
-    const { revokeSallaConnection, getSallaConnectionState } = await import("../../functions/_lib/core/db.js");
+    const { revokeSallaConnection, getSallaConnectionState } = await import("../../functions/_lib/domain/salla.js");
     const hookSrc = read("../../functions/_lib/domain/salla.js"); // المرحلة ٤: تصريف الأحداث بالمجال
     const dash = await readComposedPage("dashboard");
 

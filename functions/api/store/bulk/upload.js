@@ -5,7 +5,7 @@
 // .claude/skills/salla-integration/SKILL.md — so this can't run inline).
 import { withApi } from "../../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../../_lib/core/session.js";
-import { createBulkJob } from "../../../_lib/core/db.js";
+import { createBulkJob } from "../../../_lib/domain/bulk.js";
 import { getMonthlyUsage } from "../../../_lib/core/meter.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
 

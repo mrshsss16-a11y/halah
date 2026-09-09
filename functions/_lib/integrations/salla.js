@@ -81,24 +81,22 @@ async function sallaFetch(token, path, opts = {}) {
   return res.json();
 }
 
-// ── shim مؤقت — يُزال بالمرحلة ٤؛ الاستيرادات الجديدة من domain/salla.js ──────
+// ── واجهة المحوّل: كل دالة تأخذ **توكناً جاهزاً** ─────────────────────────────
 //
-// الأربع دوال أدناه تحفظ توقيع `(env, merchantId, …)` الذي تستدعيه `api/**`
-// اليوم (store/overview · store/publish · store/review/decide · webhooks/salla)
-// حتى لا تتغيّر طبقة التنسيق بهذه المرحلة (القاعدة الذهبية للمرحلة ٣). هي
-// **الموضع الوحيد** الذي يبقى فيه استيراد من `domain/` داخل المحوّل، ومسجَّل
-// كاستثناء ق٢ واحد بـscripts/audit-layering.mjs. بالمرحلة ٤ تنتقل استيرادات
-// `api/**` إلى `domain/salla.js` وتُحذف هذه الكتلة، فيصبح الملف HTTP خالصاً تماماً.
-import { getValidSallaToken } from "../domain/salla.js";
+// المرحلة ٦ حذفت كتلة الـshim التي كانت تستورد `getValidSallaToken` من
+// `domain/salla.js` وتحفظ توقيع `(env, merchantId, …)`. الاستيراد ذاك كان
+// الخرق الوحيد الباقي لقاعدة الاتجاه ق٢ (المحوّل لا يعرف المجال ولا D1).
+// الآن: المستدعي (كله بـ`domain/*`) يجلب التوكن ويمرّره. صفر تغيير سلوكي —
+// نفس المسارات ونفس المعاملات ونفس تصنيف الأخطاء.
 
-export async function listProducts(env, merchantId, page = 1) {
+export async function listProducts(token, page = 1) {
   // 60 is Salla's documented max per_page — cuts full-catalog sync requests
   // to a third versus the old default of 20 (docs/ROADMAP.md B3 design notes).
-  return sallaFetch(await getValidSallaToken(env, merchantId), `/products?page=${page}&per_page=60`);
+  return sallaFetch(token, `/products?page=${page}&per_page=60`);
 }
 
-export async function updateProduct(env, merchantId, productId, fields) {
-  return sallaFetch(await getValidSallaToken(env, merchantId), `/products/${productId}`, {
+export async function updateProduct(token, productId, fields) {
+  return sallaFetch(token, `/products/${productId}`, {
     method: "PUT",
     body: JSON.stringify(fields)
   });
@@ -108,8 +106,8 @@ export async function updateProduct(env, merchantId, productId, fields) {
 // versus list-then-update-by-id for bulk jobs (B3). Salla's real limit is a
 // 1 req/sec leak bucket across all plan tiers, not the advertised per-minute
 // numbers — callers MUST space these out themselves (see cron/bulk_process.js).
-export async function updateProductBySku(env, merchantId, sku, fields) {
-  return sallaFetch(await getValidSallaToken(env, merchantId), `/products/sku/${encodeURIComponent(sku)}`, {
+export async function updateProductBySku(token, sku, fields) {
+  return sallaFetch(token, `/products/sku/${encodeURIComponent(sku)}`, {
     method: "PUT",
     body: JSON.stringify(fields)
   });
@@ -118,12 +116,12 @@ export async function updateProductBySku(env, merchantId, sku, fields) {
 // GET /store/info — يُستدعى مرة عقب app.store.authorize: حمولة الويبهوك نفسها
 // لا تحمل اسم المتجر (access_token/refresh_token/expires/scope فقط)، ولذلك كان
 // store_name فارغاً لكل تاجر بالقاعدة الحية والرأس يعرض عنواناً عاماً للجميع.
-export async function getStoreInfo(env, merchantId) {
-  const res = await sallaFetch(await getValidSallaToken(env, merchantId), "/store/info");
+export async function getStoreInfo(token) {
+  const res = await sallaFetch(token, "/store/info");
   const d = res?.data || {};
   return { name: d.name || null, domain: d.domain || null };
 }
 
-export async function listOrders(env, merchantId, page = 1) {
-  return sallaFetch(await getValidSallaToken(env, merchantId), `/orders?page=${page}&per_page=10`);
+export async function listOrders(token, page = 1) {
+  return sallaFetch(token, `/orders?page=${page}&per_page=10`);
 }

@@ -97,7 +97,8 @@ async function main() {
     assert(/UPDATE email_verifications SET attempts = attempts \+ 1/.test(verifyDomainSrc) && /RETURNING code_hash, attempts/.test(verifyDomainSrc) && /row\.attempts > MAX_ATTEMPTS/.test(verifySrc) && /DELETE FROM email_verifications/.test(verifyDomainSrc),
       "P38-L2-1: verify_email يعدّ المحاولة ذرّياً قبل المقارنة ويحرق الرمز بعد ٥");
     const sendSrc = read("../../functions/api/auth/send_verification.js");
-    assert(/EMAIL_NOT_CONFIGURED/.test(sendSrc) && /emailConfigured\(env\)/.test(sendSrc), "P38-L2-2: بلا مزوّد بريد = 503 صريح، لا ادعاء إرسال");
+    // المرحلة ٦ (ق٦): النقطة لا تستورد المحوّل — القناة تُسأل عبر `domain/auth.js`.
+    assert(/EMAIL_NOT_CONFIGURED/.test(sendSrc) && /verificationChannelReady\(env\)/.test(sendSrc) && /emailConfigured\(env\)/.test(verifyDomainSrc), "P38-L2-2: بلا مزوّد بريد = 503 صريح، لا ادعاء إرسال");
     const emailMod = await import("../../functions/_lib/integrations/email.js");
     assert(emailMod.isConfigured({}) === false && emailMod.isConfigured({ RESEND_API_KEY: "k" }) === false && emailMod.isConfigured({ RESEND_API_KEY: "k", EMAIL_FROM: "x@y" }) === true, "P38-L2-3: محوّل البريد fail-closed بلا السرّين");
     let emailThrew = false;
@@ -107,8 +108,9 @@ async function main() {
     assert(/ADD COLUMN session_version/.test(mig23) && /ADD COLUMN email_verified_at/.test(mig23) && /LIKE 'm_g_%'/.test(mig23) && /CREATE TABLE IF NOT EXISTS audit_log/.test(mig23), "P38-L2-5: هجرة 0023 — نسخة الجلسة + تحقق البريد (Google متحقَّق سلفاً) + audit_log");
 
     // P21 — الويبهوك بحد معدل بعد التوقيع.
+    // المرحلة ٦ (ق٦): التحقق يمرّ بـ`domain/whatsappInbound.js` لا بالمحوّل مباشرة.
     const waSrc = read("../../functions/api/whatsapp/webhook.js");
-    const sigIdx = waSrc.indexOf("verifyWaSignature(");
+    const sigIdx = waSrc.indexOf("verifyInboundSignature(");
     const rlIdx = waSrc.indexOf('checkRateLimit(env, clientIp(request), "wa_webhook"');
     assert(sigIdx > 0 && rlIdx > sigIdx && /WA_WEBHOOK_RATE_LIMITED/.test(waSrc), "P21: حد معدل على الويبهوك الموقّع (٦٠٠/دقيقة) بعد التحقق من التوقيع");
 
@@ -154,7 +156,7 @@ async function main() {
     const { readFileSync } = await import("node:fs");
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
     const { touchLastActive } = await import("../../functions/_lib/core/session.js");
-    const { launchStats, saveMerchantFeedback } = await import("../../functions/_lib/core/db.js");
+    const { launchStats, saveMerchantFeedback } = await import("../../functions/_lib/domain/analytics.js");
 
     // LAUNCH-1 — last_active_at مخنوق بـKV: مفتاح موجود = صفر كتابة D1؛ غيابه = كتابة واحدة + وضع المفتاح.
     let writes = 0; let kvPuts = 0;
