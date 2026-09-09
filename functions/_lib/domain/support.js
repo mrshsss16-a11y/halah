@@ -16,7 +16,7 @@ import { sanitizeInput, verifyTurnstileToken, turnstileRequired } from "../core/
 import { checkRateLimit, clientIp } from "../core/rateLimit.js";
 import { checkAndConsumeMonthly } from "../core/meter.js";
 import { RESERVED_STORE_IDS } from "../core/session.js";
-import { stripFabricatedPricing } from "../ai/guards.js";
+import { stripFabricatedPricing, stripArchivedClaims } from "../ai/guards.js";
 import { logError } from "../core/errorLog.js";
 import { saveOmnichannelSession } from "./conversation.js";
 import { getWaConnectionByMerchant } from "./whatsapp.js";
@@ -149,6 +149,23 @@ export async function replyToWidget(env, request, body) {
   }
 
   const wantsWhatsApp = reply.includes(CTA_MARKER);
+  // حارس الميزات المؤرشفة (خط هالة فقط): النموذج يجامل الزائر ويؤكد ميزة غير
+  // موجودة (فحص، سلات متروكة، منصات ثانية، تجربة ٣٠ يوم) رغم البرومبت والذاكرة —
+  // الرد الحتمي هو ما لا يجامل. تاجر بمتجره الخاص لا يمر هنا (قد يقدّم فحصاً فعلياً).
+  if (isAuraLine) {
+    const archived = stripArchivedClaims(reply);
+    if (archived.stripped) {
+      reply = archived.text;
+      logError({ env }, {
+        requestId: null,
+        path: "api/support",
+        code: "ARCHIVED_CLAIM_STRIPPED",
+        internal: `topic=${archived.topic}`,
+        storeId: merchantId
+      });
+    }
+  }
+
   reply = reply.replace(CTA_MARKER, "").trim();
 
   // Route the handoff to the RIGHT WhatsApp number: Aura's own line for the

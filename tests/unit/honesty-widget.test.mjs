@@ -80,4 +80,29 @@ assert(/ممنوع تمنعاً باتاً/.test(HALA_SUPPORT_PROMPT) && /\[WHAT
   assert(!/9665\d{8}/.test(src), "HON-12: صفر رقم جوال حرفي بـdomain/health.js");
 }
 
+// ── حارس الميزات المؤرشفة: حتمي، لا يجامل ──────────────────────────────────
+{
+  const { stripArchivedClaims } = await import("../../functions/_lib/ai/guards.js");
+  const cases = [
+    ["أكيد، تقدر تحجز فحص مجاني للمتجر مع فريق أورا.", "scan"],
+    ["أكيد، تقدر تحجز فحص لمتجرك، قولي الوقت المناسب.", "scan"],
+    ["نعم، نقدر نساعد في استرجاع السلات المتروكة.", "cart"],
+    ["نعم، هالة يتكامل مع سلة وتريندول، ودعم منصة زد قادم قريباً.", "platform"],
+    ["تجربة مجانية ٣٠ يوم بدون بطاقة.", "trial"]
+  ];
+  for (const [text, topic] of cases) {
+    const r = stripArchivedClaims(text);
+    assert(r.stripped && r.topic === topic && !/فحص مجاني|تريندول|٣٠ يوم مجان/.test(r.text) && r.text.length > 20, `HON-13: مجاملة "${topic}" تُستبدل برد صادق حتمي`);
+  }
+  for (const ok of [
+    "هالة تعمل مع متاجر سلة فقط حالياً.",
+    "الباقة المجانية شهرية: ٦٠ وصف + ٣٠٠ رسالة + ٢٠ صورة.",
+    "تقدر تحجز استشارة مجانية مع فريق أورا من صفحة الاستشارة."
+  ]) {
+    assert(!stripArchivedClaims(ok).stripped, `HON-14: رد صادق لا يُمسّ: "${ok.slice(0, 30)}"`);
+  }
+  const supportSrc = await import("node:fs").then((fs) => fs.readFileSync(new URL("../../functions/_lib/domain/support.js", import.meta.url), "utf8"));
+  assert(/if \(isAuraLine\) \{\s*\n\s*const archived = stripArchivedClaims\(reply\)/.test(supportSrc) && /ARCHIVED_CLAIM_STRIPPED/.test(supportSrc), "HON-15: الحارس مطبَّق على خط هالة فقط بعد التوليد ويُسجَّل بلا نص");
+}
+
 done();
