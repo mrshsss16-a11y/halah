@@ -112,6 +112,11 @@ export function postCompleteAccount(email, password) {
   return postRaw("/api/auth/complete_account", { email, password });
 }
 
+/** دخول بحساب أُنشئ من الموقع وربط متجر جلسة سلة الحالية به. */
+export function postClaimStore(email, password) {
+  return postRaw("/api/auth/claim_store", { email, password });
+}
+
 export function postSallaEmbedded(token) {
   return postStrict("/api/auth/salla_embedded", { token });
 }

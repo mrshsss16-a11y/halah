@@ -1,10 +1,13 @@
-  <!-- إكمال الحساب: يظهر عند أول عملية حقيقية لتاجر سلة دخل بلا تسجيل عندنا -->
+  <!-- إكمال الحساب: يظهر عند أول عملية حقيقية لتاجر سلة دخل بلا تسجيل عندنا.
+       وضعان (2026-09-10): «إنشاء» حساب جديد لصفّ المتجر، أو «دخول» بحساب أُنشئ
+       من موقعنا فيُربط المتجر به. قبل الوضع الثاني، صاحب حساب الموقع يصطدم بـ
+       «هذا البريد مسجّل مسبقاً» بلا أي طريق لربط متجره بحسابه. -->
   <div id="acctModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-sm p-6 space-y-4">
       <div class="space-y-1">
         <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
           <span class="material-symbols-outlined text-base">lock_person</span>
-          <span>أكمل حسابك</span>
+          <span id="acctTitle">أكمل حسابك</span>
         </h3>
         <p id="acctModalMsg" class="text-xs text-slate-600 font-medium leading-relaxed">
           متجرك مربوط تمام. باقي بس بريدك وكلمة مرور عشان تقدر تستخدم مميزات هالة.
@@ -14,6 +17,10 @@
              class="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-slate-400" />
       <input id="acctPassword" type="password" placeholder="كلمة المرور (٨ أحرف على الأقل)"
              class="w-full px-3.5 py-3 rounded-xl border border-slate-200 text-xs font-medium focus:outline-none focus:border-slate-400" />
+      <button id="acctModeToggle" type="button" onclick="toggleAccountMode()"
+              class="w-full text-[11px] font-bold text-slate-600 underline underline-offset-4 hover:text-slate-900 transition text-center">
+        عندك حساب بموقعنا؟ سجّل دخول واربط هذا المتجر به
+      </button>
       <div id="acctError" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-medium"></div>
       <div class="flex gap-2">
         <button id="acctSubmit" onclick="submitCompleteAccount()"

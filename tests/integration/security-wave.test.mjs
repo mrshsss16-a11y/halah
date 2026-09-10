@@ -227,7 +227,7 @@ async function runTests() {
     for (let i = 0; i < 3; i++) last = await checkRateLimit(env, "2.2.2.2", "login_attempt", 2, 60, { failClosed: true });
     assert(last.allowed === false, "N3-7: تجاوز الحد يرفض كالمعتاد مع failClosed");
 
-    // كل مسارات المصادقة الثمانية مُطبَّق عليها
+    // كل مسارات المصادقة التسعة مُطبَّق عليها (claim_store أُضيف 2026-09-10)
     const authFiles = {
       "login.js": "login_attempt",
       "signup.js": "signup",
@@ -235,6 +235,7 @@ async function runTests() {
       "reset_password.js": "reset_password",
       "google.js": "google_auth",
       "complete_account.js": "complete_account",
+      "claim_store.js": "claim_store",
       "verify_email.js": "verify_email",
       "send_verification.js": "send_verification"
     };
