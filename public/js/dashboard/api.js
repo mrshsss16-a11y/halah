@@ -81,19 +81,6 @@ export function postFeedback(score, comment, context) {
   return postStrict("/api/store/feedback", { score, comment, context });
 }
 
-// ── إعدادات الوكيل والمحادثة ────────────────────────────────────────
-export function postAgentContextGet() {
-  return postSoft("/api/store/context", {}, null);
-}
-
-export function postAgentContextSave(dialect, instructions) {
-  return postSoft("/api/store/context", { dialect, instructions }, null);
-}
-
-export function postChat(messages) {
-  return postStrict("/api/chat", { messages });
-}
-
 // ── المتجر والحصة ───────────────────────────────────────────────────
 export function postStoreOverview() {
   return postSoft("/api/store/overview", {}, null);

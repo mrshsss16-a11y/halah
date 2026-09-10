@@ -86,9 +86,12 @@ async function main() {
       /ما قدرنا نفتح لوحتك من داخل سلة/.test(dash),
       "SILENT-1: فشل جلسة إطار سلة يقول كلمة قبل الإغلاق"
     );
+    // SILENT-2/SILENT-5 كانتا تحرسان صدق رسائل «إعدادات الوكيل». التبويب
+    // أُزيل (2026-09-10) فلا سطح لهما؛ يعودان مع الميزة من git لا يُعاد
+    // كتابتهما من الصفر. ما يُحرس اليوم: ألا تبقى واجهة تَعِد بردٍّ معطَّل.
     assert(
-      /خطأ خادم بلا حقل error كان يُعرض "تم الحفظ ✅"/.test(dash) && /if \(!res\.ok \|\| data\?\.error\) \{\s*showMsg\((['"])agentFeedback\1/.test(dash),
-      "SILENT-2: حفظ إعدادات الوكيل لا يعرض نجاحاً كاذباً"
+      !/id="sectionAgent"/.test(dash) && !/id="chatLog"/.test(dash),
+      "SILENT-2/5 (منقولة): لا تبويب وكيل ولا سجل محادثة بالواجهة"
     );
     assert(
       /const emptyResult = !data \|\| \(!data\.copywriting && !data\.result\)/.test(dash),
@@ -97,10 +100,6 @@ async function main() {
     assert(
       /pollFailures >= 3/.test(dash) && /توقّف تتبّع التقدّم مؤقتاً/.test(dash),
       "SILENT-4: شريط الجملة لا يتجمّد بصمت"
-    );
-    assert(
-      /لا تحفظ شي الحين لين يرجع الاتصال/.test(dash),
-      "SILENT-5: فشل تحميل الإعدادات يحذّر من الكتابة فوق الأصل"
     );
     assert(
       /هذا لا يعني أن الربط انقطع/.test(dash),
@@ -205,7 +204,7 @@ main()
     // نداء قديم لا يُخفي كل شيء.
     assert(
       /if \(tab === "studio"\) tab = "catalog";/.test(tabs) &&
-        /const tabs = \["catalog", "agent", "store"\]/.test(tabs),
+        /const tabs = \["catalog", "store"\]/.test(tabs),
       "MERGE-8: switchTab(\"studio\") القديم يُحوَّل لا يكسر"
     );
     // المراجعة تُحمَّل مع نفس التبويب.

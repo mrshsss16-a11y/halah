@@ -96,17 +96,6 @@ export function showPublishError(msg, code) {
   fb.classList.remove("hidden");
 }
 
-export function appendChat(role, text) {
-  const log = document.getElementById("chatLog");
-  const div = document.createElement("div");
-  div.className = role === "user"
-    ? "p-2.5 rounded-xl bg-slate-100 border border-slate-200 text-black"
-    : "p-2.5 rounded-xl bg-black text-white";
-  div.innerText = text;
-  log.appendChild(div);
-  log.scrollTop = log.scrollHeight;
-}
-
 export async function copyToClipboard(id) {
   const el = document.getElementById(id);
   if (!el) return;

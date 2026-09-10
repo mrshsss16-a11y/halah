@@ -21,7 +21,6 @@ import {
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback
 } from "./review.js";
-import { saveAgentContext, sendChat } from "./agent.js";
 import { loadStore, loadUsage, handleMerchantLogout } from "./store.js";
 import { copyToClipboard, renderIdentityLine } from "./render.js";
 
@@ -45,8 +44,6 @@ Object.assign(window, {
   // المراجعة والتغذية الراجعة
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback,
-  // الوكيل
-  saveAgentContext, sendChat,
   // إكمال الحساب
   submitCompleteAccount, closeAccountModal
 });
