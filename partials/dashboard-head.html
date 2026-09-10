@@ -59,7 +59,11 @@
     /* ── الوضع الداكن داخل سلة فقط (onThemeChange ⇒ html.salla-dark) ──
        ألوان سلة الداكنة من دليل التصميم: الخلفية #1d1e20، الأساسي #baefe3.
        مقصورة على الصنف كي لا تتغيّر زيارة halah.aura.sa المباشرة. */
-    .salla-dark body { background: #1d1e20; color: #eceeee; }
+    /* body يحمل صنف Tailwind `bg-white`، فقاعدة `.salla-dark .bg-white` أدناه كانت
+       تلوّن الصفحة نفسها بلون البطاقات فتذوب البطاقات في الخلفية (قيس حياً).
+       `body.bg-white` يرفع الأولوية فوقها. */
+    .salla-dark body,
+    .salla-dark body.bg-white { background: #1d1e20 !important; color: #eceeee; }
     .salla-dark .bg-white,
     .salla-dark .sleek-card,
     .salla-dark .sleek-card-darkborder,

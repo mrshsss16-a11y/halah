@@ -125,6 +125,12 @@ async function main() {
       assert(new RegExp(`\\.salla-dark \\.${cls}\\b`).test(head), `EMB-16/${cls}: مغطّى بالوضع الداكن`);
     }
     assert(/\.salla-dark input,/.test(head), "EMB-16/inputs: الحقول مقروءة بالوضع الداكن");
+    // body يحمل bg-white: بدون أولوية أعلى تلوّنه قاعدة البطاقات فتذوب البطاقات
+    // في الخلفية (رُصد بالقياس الحي 2026-09-10).
+    assert(
+      /\.salla-dark body\.bg-white \{ background: #1d1e20 !important;/.test(head),
+      "EMB-16/body: خلفية الصفحة الداكنة تتفوّق على قاعدة bg-white — البطاقات تبقى منفصلة عنها"
+    );
     assert(
       /const \{ layout \} = await window\.salla\.embedded\.init/.test(main) && /onEmbeddedInit\(layout\)/.test(main),
       "EMB-17: الوضع من init يصل لـembedded.js"
