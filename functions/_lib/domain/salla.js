@@ -7,6 +7,7 @@ import { refreshSallaToken, getStoreInfo } from "../integrations/salla.js";
 import { timingSafeEqualStr } from "../core/crypto.js";
 import { saveAbandonedCart, logWebhook } from "./platforms.js";
 import { purgeMerchantData } from "./merchantPurge.js";
+import { handleProductEvent } from "./sallaProductEvents.js";
 import { logError } from "../core/errorLog.js";
 
 const REFRESH_MARGIN_S = 24 * 3600; // renew when less than a day remains
@@ -297,6 +298,15 @@ async function handleSallaEvent(env, event, payload, { onFirstSync = async () =>
       if (!sallaMerchantId) return null;
       const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
       await revokeSallaConnection(env, merchantId);
+      return merchantId;
+    }
+    // أحداث المنتجات — المعالج بـ`sallaProductEvents.js` (سقف ٤٠٠ سطر).
+    case "product.created":
+    case "product.updated":
+    case "product.deleted": {
+      if (!sallaMerchantId) return null;
+      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
+      await handleProductEvent(env, { merchantId, event, data });
       return merchantId;
     }
     case "abandoned.cart": {

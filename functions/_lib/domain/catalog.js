@@ -103,7 +103,7 @@ function normalizeVariants(product) {
   return out.length ? JSON.stringify(out).slice(0, 2000) : null;
 }
 
-function toRow(product) {
+export function toCatalogRow(product) {
   const sku = text(product?.sku, 100);
   const name = text(product?.name, 200);
   if (!sku || !name) return null;
@@ -149,7 +149,7 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = f
   const rows = [];
   let skippedNoSku = 0;
   for (const product of products) {
-    const row = toRow(product);
+    const row = toCatalogRow(product);
     if (!row) {
       skippedNoSku++;
       continue;

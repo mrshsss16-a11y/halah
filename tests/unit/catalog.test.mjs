@@ -185,3 +185,74 @@ main()
       "GAP-5: القراءة والكتابة بالكتالوج تمرّان بالحارس"
     );
   }
+
+  // ── أحداث منتجات سلة: الكتالوج يتحدّث بلا ضغطة (2026-09-10) ──────────
+  {
+    const { handleProductEvent } = await import("../../functions/_lib/domain/sallaProductEvents.js");
+    const { upsertCatalogProduct, deleteCatalogProduct } =
+      await import("../../functions/_lib/domain/catalogProduct.js");
+
+    const calls = [];
+    const env = {
+      DB: {
+        prepare: (q) => ({
+          bind: (...b) => { calls.push({ q: q.replace(/\s+/g, " ").trim(), b }); return { run: async () => ({ meta: { changes: 1 } }) }; }
+        })
+      }
+    };
+    const product = { id: 991, sku: "SKU-1", name: "فستان", price: { amount: 149, currency: "SAR" }, description: "وصف" };
+
+    calls.length = 0;
+    const up = await handleProductEvent(env, { merchantId: "m_1", event: "product.created", data: product });
+    assert(
+      up.handled === true && calls.length === 1 && /INSERT INTO store_products/.test(calls[0].q) &&
+        calls[0].b[0] === "m_1" && calls[0].b[1] === "SKU-1",
+      "PEV-1: إنشاء منتج يُكتب بالكتالوج مباشرة من الحمولة"
+    );
+    // صفر نداء لسلة: الحمولة تكفي، فلا استهلاك من حدّ الطلب/الثانية.
+    assert(
+      !/api\.salla\.dev/.test(JSON.stringify(calls)),
+      "PEV-2: لا نداء لسلة — الحمولة تحمل المنتج كاملاً"
+    );
+
+    calls.length = 0;
+    await handleProductEvent(env, { merchantId: "m_1", event: "product.updated", data: product });
+    assert(/ON CONFLICT\(merchant_id, sku\) DO UPDATE/.test(calls[0].q), "PEV-3: التحديث يكتب فوق الصف نفسه لا يكرّره");
+    // «التراجع» يبقى صادقاً: الأصل يُكتب مرة واحدة.
+    assert(
+      /original_description = COALESCE\(store_products\.original_description/.test(calls[0].q),
+      "PEV-4: الوصف الأصلي محفوظ — التراجع بعد نشر هالة يبقى ممكناً"
+    );
+
+    calls.length = 0;
+    const del = await handleProductEvent(env, { merchantId: "m_1", event: "product.deleted", data: { id: 991, sku: "SKU-1" } });
+    assert(
+      del.handled === true && /DELETE FROM store_products WHERE merchant_id = \? AND sku = \?/.test(calls[0].q) &&
+        calls[0].b[0] === "m_1",
+      "PEV-5: الحذف مقيَّد بالتاجر — SKU ليس فريداً بين المتاجر"
+    );
+
+    // حمولة بلا sku: يسقط بهدوء لا برمي (المفتاح الأساسي يتطلبه).
+    calls.length = 0;
+    const noSku = await handleProductEvent(env, { merchantId: "m_1", event: "product.created", data: { id: 5, name: "بلا رمز" } });
+    assert(noSku.upserted === false && calls.length === 0, "PEV-6: منتج بلا SKU لا يُدرَج ولا يرمي");
+
+    // الفشل يُسجَّل ولا يُسقط الويبهوك.
+    const badEnv = { DB: { prepare: () => { throw new Error("D1 down"); } } };
+    const failed = await handleProductEvent(badEnv, { merchantId: "m_1", event: "product.updated", data: product });
+    assert(failed.handled === false && failed.error === true, "PEV-7: فشل الكتابة لا يُسقط الويبهوك");
+
+    assert(
+      (await handleProductEvent(env, {})).handled === false,
+      "PEV-8: بلا تاجر أو حمولة لا عمل ولا رمي"
+    );
+
+    // موصول فعلاً بمعالج الأحداث.
+    const { readFileSync } = await import("node:fs");
+    const dom = readFileSync(new URL("../../functions/_lib/domain/salla.js", import.meta.url), "utf8");
+    assert(
+      /case "product\.created":/.test(dom) && /case "product\.updated":/.test(dom) &&
+        /case "product\.deleted":/.test(dom) && /handleProductEvent\(env, \{ merchantId, event, data \}\)/.test(dom),
+      "PEV-9: الأحداث الثلاثة موصولة بمعالج سلة"
+    );
+  }
