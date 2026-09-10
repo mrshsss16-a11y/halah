@@ -203,6 +203,17 @@ async function main() {
       /res\.status === 409 && \/مسجّل مسبقاً\//.test(js) && /setAccountMode\("login"\)/.test(js),
       "CLAIM-27: بريد مسجّل بوضع الإنشاء ⇒ تنتقل النافذة للدخول بدل رسالة بلا طريق"
     );
+    // «أضغط المنتج ما يفتح شي» (رُصد 2026-09-10): جلسة ضاعت داخل إطار سلة ⇒
+    // 401 لا 403، فلا نافذة، والخطأ يُكتب تحت الشبكة خارج الشاشة.
+    assert(
+      /res\.status === 401 && inSallaFrame/.test(js) && /"LOGIN_REQUIRED" && inSallaFrame\) notifyFrameSessionLost\(\)/.test(js),
+      "CLAIM-28: جلسة مفقودة داخل إطار سلة تُظهر إشعاراً — لا ضغطة صامتة"
+    );
+    const studio = read("../../public/js/dashboard/studio.js");
+    assert(
+      /showMsg\("copyFeedback"[\s\S]{0,400}getElementById\("copyFeedback"\)\?\.scrollIntoView/.test(studio),
+      "CLAIM-29: خطأ التوليد يُمرَّر إلى مجال الرؤية — لا رسالة تحت عشرين بطاقة"
+    );
   }
 }
 

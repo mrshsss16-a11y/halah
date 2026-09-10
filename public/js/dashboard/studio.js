@@ -37,6 +37,9 @@ export async function generateCopy() {
     const emptyResult = !data || (!data.copywriting && !data.result);
     if (!res.ok || data?.error || emptyResult) {
       showMsg("copyFeedback", data?.error || "ما قدرنا نولّد الوصف هالمرة — جرّب تضغط «اكتب الوصف الآن» مرة ثانية.", "error");
+      // اللوحة تحت شبكة المنتجات: بعشرين بطاقة تُكتب الرسالة بعيداً عن مكان
+      // الضغطة، وحالة الانتظار التي مرّرنا إليها اختفت للتو — فيرى التاجر «لا شي».
+      document.getElementById("copyFeedback")?.scrollIntoView({ behavior: "smooth", block: "center" });
     } else {
       S.lastCopy = data;
       renderCopy(data);

@@ -60,14 +60,31 @@ export function closeAccountModal() {
   if (el) el.classList.add("hidden");
 }
 
+// جلسة ضاعت داخل إطار سلة (2026-09-10). رُصد: تاجر يضغط منتجاً فلا يحدث
+// «شي»، والخادم لم يرَ أي نشاط بجلسة لساعة ونصف. بلا جلسة يرد `/api/copy`
+// بـ401 LOGIN_REQUIRED لا 403، فلا تفتح نافذة الحساب، ورسالة الخطأ تُكتب تحت
+// الشبكة بعيداً عن الضغطة. داخل الإطار لا يوجد مخرج «سجّل دخول» (login.html
+// يرفض التأطير)، فالمخرج الوحيد الصادق: أعد تحميل هالة لتُنشأ جلسة جديدة.
+const inSallaFrame = window.self !== window.top;
+let frameSessionToastAt = 0;
+function notifyFrameSessionLost() {
+  if (Date.now() - frameSessionToastAt < 30000) return; // مرة كل ٣٠ث — لا سيل إشعارات
+  frameSessionToastAt = Date.now();
+  window.showToast?.(
+    "انقطعت جلستك داخل سلة — أعد تحميل صفحة هالة. لو تكرر: لا تستخدم التصفح الخفي، واسمح بملفات تعريف الارتباط لـ halah.aura.sa.",
+    "error"
+  );
+}
+
 export function installAccountGate() {
   const nativeFetch = window.fetch.bind(window);
   window.fetch = async function (...args) {
     const res = await nativeFetch(...args);
-    if (res.status === 403) {
+    if (res.status === 403 || (res.status === 401 && inSallaFrame)) {
       // clone(): لا نستهلك الجسم — المستدعي الأصلي لازم يقرأه بنفسه.
       const peek = await res.clone().json().catch(() => null);
       if (peek && peek.code === "ACCOUNT_REQUIRED") openAccountModal(peek.error);
+      if (peek && peek.code === "LOGIN_REQUIRED" && inSallaFrame) notifyFrameSessionLost();
     }
     return res;
   };
