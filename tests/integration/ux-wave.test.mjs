@@ -101,7 +101,11 @@ async function runTests() {
     assert(!/AES-256/.test(src), "U3: index.html لا يدّعي AES-256");
     assert(!/ربط رسمي مع سلة وزد/.test(src), "U3: index.html لا يدّعي ربط رسمي مع زد (مؤرشف)");
     assert(!/مجاني 100% وبدون أي تكلفة/.test(src), "U3: index.html لا يدّعي 'مجاني 100% وبدون أي تكلفة' المبهم");
-    assert(src.includes("٦٠") && src.includes("٣٠٠"), "U3: index.html يذكر حدود الباقة المجانية الحقيقية (٦٠ وصفاً/٣٠٠ رسالة)");
+    // حصة الرسائل (٣٠٠) سقطت من الادعاء 2026-09-10 مع إزالة تبويب الوكيل:
+    // ما عاد للتاجر سبيل لصرفها، وذكرها يصير وعداً بما لا يُستعمل. الباقيان
+    // مأخوذان حرفياً من `MONTHLY_BUCKET_LIMITS`.
+    assert(src.includes("٦٠") && src.includes("٢٠"), "U3: index.html يذكر حدود الباقة القابلة للوصول فعلاً (٦٠ وصفاً/٢٠ صورة)");
+    assert(!/٣٠٠ رسالة/.test(src), "U3: لا وعد بحصة رسائل بلا واجهة تصرفها");
   }
 
   // ---- U4: publish.js — revertAvailable صادق + catalog.findCatalogBySallaProductId ----
