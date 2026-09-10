@@ -351,3 +351,80 @@ main()
     console.error(e);
     process.exit(1);
   });
+
+  // ── الحذف النهائي عند إزالة التطبيق (وعد فيديو الاستخدام) 2026-09-10 ──
+  {
+    const { readFileSync, readdirSync } = await import("node:fs");
+    const readT = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
+    const { purgeMerchantData, PURGE_TABLES, PURGE_EXEMPT } =
+      await import("../../functions/_lib/domain/merchantPurge.js");
+
+    // الحارس الأهم: كل جدول فيه merchant_id إمّا يُمحى أو له إعفاء موثّق.
+    const migDir = new URL("../../migrations/", import.meta.url);
+    const tenant = new Set();
+    for (const f of readdirSync(migDir).sort()) {
+      const sql = readFileSync(new URL(f, migDir), "utf8");
+      const re = /CREATE TABLE(?: IF NOT EXISTS)?\s+([a-z_]+)\s*\(([\s\S]*?)\n\);/gi;
+      let m;
+      while ((m = re.exec(sql))) if (/merchant_id/i.test(m[2])) tenant.add(m[1]);
+      const alt = /ALTER TABLE\s+([a-z_]+)\s+ADD COLUMN\s+merchant_id/gi;
+      while ((m = alt.exec(sql))) tenant.add(m[1]);
+    }
+    const covered = new Set([...PURGE_TABLES, ...Object.keys(PURGE_EXEMPT)]);
+    const escaped = [...tenant].filter((t) => !covered.has(t));
+    assert(
+      escaped.length === 0,
+      `PURGE-1: كل جدول تاجر يُمحى أو له إعفاء موثّق (الهارب: ${escaped.join(", ") || "لا شيء"})`
+    );
+
+    // لا جدول بالقائمة غير موجود أصلاً — قائمة ميتة تعني حذفاً وهمياً.
+    const ghost = PURGE_TABLES.filter((t) => !tenant.has(t));
+    assert(ghost.length === 0, `PURGE-2: لا جدول بالقائمة بلا هجرة (${ghost.join(", ") || "لا شيء"})`);
+
+    // كل حذف مشروط بالتاجر — لا مسح عابر للمتاجر.
+    const sql = [];
+    const env = {
+      DB: {
+        prepare: (q) => ({
+          bind: (...b) => { sql.push({ q: q.replace(/\s+/g, " ").trim(), b }); return { run: async () => ({}) }; },
+          run: async () => ({})
+        })
+      }
+    };
+    const out = await purgeMerchantData(env, "m_x");
+    const deletes = sql.filter((c) => /^DELETE FROM/.test(c.q));
+    assert(
+      out.purged === true && deletes.length === PURGE_TABLES.length &&
+        deletes.every((c) => /WHERE merchant_id = \?/.test(c.q) && c.b[0] === "m_x"),
+      "PURGE-3: كل حذف مقيَّد بـmerchant_id — لا مسح عابر للمتاجر"
+    );
+    assert(
+      sql.some((c) => /UPDATE merchants SET store_name = NULL/.test(c.q) && c.b[0] === "m_x"),
+      "PURGE-4: صف التاجر يُفرَّغ ولا يُحذف — إعادة الربط تبقى ممكنة"
+    );
+    assert(
+      (await purgeMerchantData({}, "m")).purged === false &&
+        (await purgeMerchantData(env, "")).purged === false,
+      "PURGE-5: بلا DB أو بلا تاجر لا حذف ولا رمي"
+    );
+
+    // الحذف على app.uninstalled وحده — انتهاء الاشتراك ليس طلب حذف.
+    const dom = readT("../../functions/_lib/domain/salla.js");
+    const uninstallBlock = dom.slice(dom.indexOf('case "app.uninstalled"'), dom.indexOf('case "abandoned.cart"'));
+    assert(
+      /purgeMerchantData\(env, merchantId\)/.test(uninstallBlock) &&
+        uninstallBlock.indexOf("purgeMerchantData") < uninstallBlock.indexOf('case "app.subscription.expired"'),
+      "PURGE-6: الحذف على app.uninstalled فقط، لا على انتهاء الاشتراك"
+    );
+    assert(
+      /MERCHANT_PURGE_PARTIAL/.test(dom),
+      "PURGE-7: فشل جزئي بالحذف يُسجَّل — لا ادعاء حذف كامل بلا دليل"
+    );
+    // الواجهة تقول ما يحدث فعلاً.
+    const store = readT("../../partials/dashboard-store.html");
+    assert(
+      /تُحذف[\s\S]{0,40}بياناتك كلها من عندنا نهائياً/.test(store) &&
+        !/أوصافك المولَّدة تبقى محفوظة هنا/.test(store),
+      "PURGE-8: بطاقة اللوحة تطابق السلوك الجديد — لا وعد متناقض"
+    );
+  }

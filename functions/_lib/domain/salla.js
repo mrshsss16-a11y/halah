@@ -6,6 +6,8 @@ import { sanitizeInput } from "../core/security.js";
 import { refreshSallaToken, getStoreInfo } from "../integrations/salla.js";
 import { timingSafeEqualStr } from "../core/crypto.js";
 import { saveAbandonedCart, logWebhook } from "./platforms.js";
+import { purgeMerchantData } from "./merchantPurge.js";
+import { logError } from "../core/errorLog.js";
 
 const REFRESH_MARGIN_S = 24 * 3600; // renew when less than a day remains
 
@@ -269,7 +271,27 @@ async function handleSallaEvent(env, event, payload, { onFirstSync = async () =>
         sallaMerchantId,
         storeName: (data.store && data.store.name) || data.store_name || null
       });
-    case "app.uninstalled":
+    case "app.uninstalled": {
+      if (!sallaMerchantId) return null;
+      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
+      await revokeSallaConnection(env, merchantId);
+      // الوعد بفيديو الاستخدام: «بمجرد ما تحذف هالة، نحذف بياناتك نهائياً».
+      // الحذف الفوري مقبول لأن الأوصاف المعتمَدة منشورة على سلة أصلاً — ما
+      // نمحوه نسخة عمل تُعاد بضغطة سحب. ادعاء عن البيانات يُقال ويُنفَّذ.
+      const purge = await purgeMerchantData(env, merchantId);
+      if (purge.failed?.length) {
+        logError({ env }, {
+          requestId: null,
+          path: "domain/salla:uninstall",
+          code: "MERCHANT_PURGE_PARTIAL",
+          storeId: merchantId,
+          internal: purge.failed.join(" | ").slice(0, 300)
+        });
+      }
+      return merchantId;
+    }
+    // انتهاء الاشتراك/التجربة **ليس حذفاً**: التاجر لم يطلب إزالة التطبيق،
+    // وقد يجدّد غداً. يُقطع الوصول فقط، وتبقى بياناته.
     case "app.subscription.expired":
     case "app.trial.expired": {
       if (!sallaMerchantId) return null;
