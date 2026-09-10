@@ -103,15 +103,6 @@ export function postUsage() {
   return postStrict("/api/usage", {});
 }
 
-// ── واتساب (Embedded Signup) ────────────────────────────────────────
-export function postWaStatus() {
-  return postStrict("/api/whatsapp/status", {});
-}
-
-export function postWaConnect(payload) {
-  return postStrict("/api/whatsapp/connect", payload);
-}
-
 // ── المصادقة ────────────────────────────────────────────────────────
 // هذان النداءان بلا ترويسة Content-Type بالأصل (بوابة CSRF تسمح لهما) —
 // إضافتها هنا تغيير سلوكي غير مطلوب، فبقيا كما كانا حرفياً.

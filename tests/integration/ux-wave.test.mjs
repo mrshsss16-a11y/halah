@@ -142,14 +142,20 @@ async function runTests() {
     assert(src.includes("عدّلهما من لوحة سلة"), "U7: رسالة التراجع توجّه التاجر لتعديلها من سلة");
   }
 
-  // ---- U5: تبويب الوكيل — صدق الحالة + بطاقة تركيب الودجت الفعلية ----
+  // ---- U5: تبويب الوكيل لا يعرض باباً لا يُفتح (2026-09-10) ----
+  //
+  // البطاقتان السابقتان («ربط واتساب» و«تركيب المساعد بموقعك») أُزيلتا: الأولى
+  // زرّها معطّل دائماً حتى اعتماد Meta كـTech Provider، والثانية تعطي التاجر
+  // كوداً يُحجب بـCORS على دومينه لأن `WIDGET_ALLOWED_ORIGINS` متغيّر بيئة واحد.
+  // صياغة صادقة عن ميزة معطّلة أفضل من ادعاء، لكن **عدم عرضها** أصدق من كليهما.
+  // هذي التأكيدات تمنع رجوعهما سهواً قبل أن تعمل الميزتان فعلاً.
   {
     const dash = await readSrc("dashboard.html");
     const widget = await readSrc("widget.js");
-    assert(widget.includes('getAttribute("data-store-id")'), "U5: widget.js يقرأ data-store-id فعلاً (شرط عرض سطر التركيب)");
-    assert(dash.includes("widgetSnippet"), "U5: dashboard.html فيه بطاقة كود تركيب الودجت (widgetSnippet)");
-    assert(dash.includes('data-store-id="'), "U5: سطر التركيب المعروض يستخدم data-store-id الحقيقي لا data-store الوهمي");
-    assert(dash.includes("يحتاجان اعتماد ميتا وتطوير إضافي"), "U5: صياغة صادقة أن ربط واتساب بضغطة وتركيب الودجت الآلي قريباً لا الآن");
+    assert(widget.includes('getAttribute("data-store-id")'), "U5: widget.js يقرأ data-store-id فعلاً (تبقى الآلية سليمة للودجت المستضاف)");
+    assert(!dash.includes("widgetSnippet"), "U5: لا بطاقة كود تركيب ودجت — الأصل الوحيد المسموح aura.sa، فدومين التاجر يُحجب");
+    assert(!dash.includes("waConnectBtn") && !dash.includes("ربط واتساب بضغطة واحدة"), "U5: لا زر ربط واتساب — يحتاج اعتماد Meta كـTech Provider");
+    assert(!/launchWhatsAppSignup/.test(dash), "U5: لا معالج onclick معلّق لدالة أُزيلت — لا خطأ صامت بالكونسول");
   }
 
   // ---- U9: شريط الجملة يذكر مدة بدء المعالجة ----

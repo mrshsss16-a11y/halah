@@ -22,13 +22,11 @@ import {
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback
 } from "./review.js";
 import { saveAgentContext, sendChat } from "./agent.js";
-import { launchWhatsAppSignup, installWaSignupListener } from "./whatsapp.js";
 import { loadStore, loadUsage, handleMerchantLogout } from "./store.js";
 import { copyToClipboard, renderIdentityLine } from "./render.js";
 
 // لفّ fetch أولاً: بوابة ACCOUNT_REQUIRED لازم تسبق أي نداء شبكة.
 installAccountGate();
-installWaSignupListener();
 
 // ── الدوال التي تستدعيها سمات onclick/onchange/onkeydown بالـHTML ──
 // وحدات ES لها نطاقها الخاص، والسمات المضمّنة تُقيَّم بالنطاق العام — فالنشر
@@ -47,8 +45,8 @@ Object.assign(window, {
   // المراجعة والتغذية الراجعة
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback,
-  // الوكيل وواتساب
-  saveAgentContext, sendChat, launchWhatsAppSignup,
+  // الوكيل
+  saveAgentContext, sendChat,
   // إكمال الحساب
   submitCompleteAccount, closeAccountModal
 });
@@ -91,7 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       // login.html refuses to be framed by design. Exit the embedded view
       // instead of leaving the merchant on a stuck loading screen —
       // لكن بكلمة أولاً: إغلاق صامت = "التطبيق خرب" في نظر التاجر.
-      window.showToast("ما قدرنا نفتح لوحتك من داخل سلة. أعد تحميل الصفحة، وإذا تكرر افتحها مباشرة من hala-ai-os.pages.dev", "error");
+      window.showToast("ما قدرنا نفتح لوحتك من داخل سلة. أعد تحميل الصفحة، وإذا تكرر افتحها مباشرة من halah.aura.sa", "error");
       window.salla?.embedded?.destroy?.();
       return;
     }
@@ -111,10 +109,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("merchantHeroHeader").innerText = storeLabel;
     window.__accountEmail = data?.email || "";
     renderIdentityLine();
-    const snippetEl = document.getElementById("widgetSnippet");
-    if (snippetEl && data?.storeId) {
-      snippetEl.innerText = '<script src="https://hala-ai-os.pages.dev/widget.js" data-store-id="' + data.storeId + '"><' + "/script>";
-    }
     if (data?.isAdmin) document.getElementById("adminPortalBtn").classList.remove("hidden");
   } catch (e) {}
 

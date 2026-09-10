@@ -1,66 +1,13 @@
     <!-- ── 2. Store customer-service agent ────────────────────── -->
     <section id="sectionAgent" class="hidden space-y-5">
 
-      <!-- WhatsApp connection (Embedded Signup) -->
-      <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
-        <div class="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-          <div class="space-y-1">
-            <h2 class="text-lg font-black text-black flex items-center gap-2">
-              <span class="material-symbols-outlined text-xl text-emerald-600">chat</span>
-              <span>ربط واتساب متجرك</span>
-            </h2>
-            <p class="text-xs text-slate-600 font-medium">
-              اربط رقم واتساب متجرك بضغطة وحدة — يرد الوكيل على عملاءك باسم متجرك،
-              وتقدر ترد يدوياً من تطبيق واتساب بزنس بنفس الوقت بدون ما تفقد محادثاتك.
-            </p>
-          </div>
-          <span id="waConnBadge" class="shrink-0 text-[11px] font-black px-3 py-1.5 rounded-full bg-slate-100 text-slate-600">جاري الفحص…</span>
-        </div>
-
-        <!-- connected -->
-        <div id="waConnActive" class="hidden">
-          <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-            <span class="material-symbols-outlined text-emerald-600">verified</span>
-            <div class="text-xs">
-              <p class="font-black text-black" id="waConnName">—</p>
-              <p class="text-slate-600 font-medium" id="waConnPhone" dir="ltr">—</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- not connected -->
-        <div id="waConnIdle" class="hidden space-y-3">
-          <button id="waConnectBtn" onclick="launchWhatsAppSignup()" type="button"
-            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition disabled:opacity-50">
-            <span class="material-symbols-outlined text-base">link</span>
-            <span>ربط واتساب بضغطة واحدة</span>
-          </button>
-          <p id="waConnNote" class="text-[11px] text-slate-500 text-center font-medium"></p>
-        </div>
-
-        <div id="waConnError" class="hidden text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 rounded-2xl p-3"></div>
-      </div>
-
-      <!-- تركيب المساعد بموقعك — يعمل فعلاً (widget.js يقرأ data-store-id) -->
-      <div class="sleek-card rounded-3xl p-6 space-y-3 shadow-sm">
-        <div class="space-y-1 border-b border-slate-200 pb-4">
-          <h2 class="text-lg font-black text-black flex items-center gap-2">
-            <span class="material-symbols-outlined text-xl text-slate-700">widgets</span>
-            <span>تركيب المساعد بموقعك</span>
-          </h2>
-          <p class="text-xs text-slate-600 font-medium">
-            انسخ السطر التالي وألصقه قبل إغلاق <span dir="ltr">&lt;/body&gt;</span> بموقعك — يظهر ودجت
-            المحادثة فوراً لزوار موقعك.
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <code id="widgetSnippet" dir="ltr" class="flex-1 block bg-slate-900 text-emerald-300 text-[11px] p-3 rounded-xl overflow-x-auto whitespace-nowrap"></code>
-          <button onclick="copyToClipboard('widgetSnippet')" class="sleek-btn-white px-3 py-2 rounded-xl text-[11px] shrink-0">نسخ</button>
-        </div>
-        <p class="text-[11px] text-slate-500 font-medium">
-          ربط واتساب التاجر بضغطة واحدة وتركيب الودجت آلياً داخل متجر سلة قريباً — يحتاجان اعتماد ميتا وتطوير إضافي.
-        </p>
-      </div>
+      <!-- بطاقتا «ربط واتساب» و«تركيب المساعد بموقعك» مخفيّتان عمداً (2026-09-10).
+           كلتاهما تعرض على التاجر باباً لا يُفتح اليوم:
+             - ربط واتساب: يحتاج اعتماد Meta كـTech Provider، فالزر معطّل دائماً.
+             - كود الودجت: مسموح المصادر `WIDGET_ALLOWED_ORIGINS` متغيّر بيئة واحد
+               (aura.sa)، فالنسخ على دومين التاجر يُحجب بـCORS — ميزة تبدو جاهزة
+               وتفشل صامتة.
+           الشيفرة الخلفية باقية كما هي؛ الترميز يعود من git حين تُعتمد الميزتان. -->
 
       <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
         <div class="space-y-1 border-b border-slate-200 pb-4">

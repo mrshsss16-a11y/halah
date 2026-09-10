@@ -62,9 +62,9 @@ Hala — AI Product Descriptions
 
 | الحقل | القيمة |
 |---|---|
-| App URL | `https://hala-ai-os.pages.dev/dashboard` |
-| Callback / Redirect URL | `https://hala-ai-os.pages.dev/api/webhooks/salla` |
-| Webhook URL | `https://hala-ai-os.pages.dev/api/webhooks/salla` |
+| App URL | `https://halah.aura.sa/dashboard` |
+| Callback / Redirect URL | `https://halah.aura.sa/api/webhooks/salla` |
+| Webhook URL | `https://halah.aura.sa/api/webhooks/salla` |
 | نوع المصادقة | **Easy Mode** |
 
 **أحداث الويبهوك المطلوبة:**
@@ -161,9 +161,9 @@ marketing.read_write    ← كوبونات حصرية (مرحلة لاحقة)
 | البريد | `info@aura.sa` |
 | بريد الدعم الفني | `aurateam3@gmail.com` |
 | الموقع | `https://aura.sa` |
-| سياسة الخصوصية | `https://hala-ai-os.pages.dev/privacy` |
-| الشروط والأحكام | `https://hala-ai-os.pages.dev/terms` |
-| حذف البيانات | `https://hala-ai-os.pages.dev/data-deletion` |
+| سياسة الخصوصية | `https://halah.aura.sa/privacy` |
+| الشروط والأحكام | `https://halah.aura.sa/terms` |
+| حذف البيانات | `https://halah.aura.sa/data-deletion` |
 
 > الثلاثة الأخيرة **متحقَّقة حية اليوم (200)**.
 

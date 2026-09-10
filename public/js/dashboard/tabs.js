@@ -3,7 +3,6 @@ import { S } from "./state.js";
 import { loadCatalog } from "./catalog.js";
 import { loadReview } from "./review.js";
 import { loadAgentContext } from "./agent.js";
-import { loadWaStatus } from "./whatsapp.js";
 import { loadStore } from "./store.js";
 
 export function switchTab(tab) {
@@ -16,7 +15,7 @@ export function switchTab(tab) {
     if (btn) btn.className = (t === tab ? "tab-on" : "tab-off") + " text-xs font-bold px-4 py-2.5 rounded-xl transition flex items-center gap-2" + (t === tab ? " shadow-sm" : "");
     if (sec) sec.classList.toggle("hidden", t !== tab);
   });
-  if (tab === "agent") { loadAgentContext(); loadWaStatus(); }
+  if (tab === "agent") loadAgentContext();
   if (tab === "store") loadStore();
   if (tab === "catalog") {
     if (!S.catalogLoadedOnce) loadCatalog(0);

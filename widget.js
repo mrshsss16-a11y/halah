@@ -3,7 +3,7 @@
  *
  * التركيب: سطر واحد قبل </body> بأي موقع (أورا اليوم، أي متجر لاحقاً):
  *
- *   <script src="https://hala-ai-os.pages.dev/widget.js" data-store-id="hala"></script>
+ *   <script src="https://halah.aura.sa/widget.js" data-store-id="hala"></script>
  *
  * data-store-id عام (معرّف، مو سر) — نفس منطق Google Analytics tracking id.
  * التحكم الفعلي بالوصول عبر:
