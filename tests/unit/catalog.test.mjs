@@ -45,12 +45,19 @@ async function main() {
       "CATUI-6: تبويب «منتجاتي» وقسمه موجودان بلوحة التاجر"
     );
     const useFn = dashSrc.slice(dashSrc.indexOf("function useCatalogItem"));
+    // حدّ الدالة لا عدد أحرف ثابت (2026-09-10): نافذة الـ١٤٠٠ حرف كانت تقيس
+    // «generateCopy داخل useCatalogItem» بمسطرة خاطئة — تغيّر في تركيب الصفحة
+    // دفع بداية النداء إلى الحرف ١٣٩١ فخرج آخره عن النافذة والدالة لم تتغيّر. نهاية
+    // جسم الدالة (أول سطر «}» بلا إزاحة) هي المعنى المقصود، ومستقلة عن نهايات الأسطر.
+    const NL = String.fromCharCode(10);
+    const useFnEndIdx = useFn.indexOf(NL + "}");
+    const useFnEnd = useFnEndIdx > 0 ? useFnEndIdx : useFn.length;
     // بعد التقسيم public/js/dashboard/catalog.js يستخدم اقتباساً مزدوجاً — نفس المعنى.
     assert(
       /pName["']\)\.value = it\.name/.test(useFn) &&
         /pImageUrl["']\)\.value = it\.imageUrl/.test(useFn) &&
         /pExistingDescription["']\)\.value = it\.currentDescription/.test(useFn) &&
-        /generateCopy\(\);/.test(useFn.slice(0, 1400)),
+        /generateCopy\(\);/.test(useFn.slice(0, useFnEnd)),
       "CATUI-7: الضغط على بطاقة يعبّي الحقول (اسم/صورة/وصف حالي) ويشغّل التوليد فوراً"
     );
     assert(
@@ -88,7 +95,7 @@ async function main() {
         // المسموح بلا escHtml: قِطَع HTML مبنيّة داخلياً (img/badge) وأعلام
         // ثابتة لا تحمل نصاً من سلة. أي شيء غير ذلك لازم يمرّ بـescHtml.
         interpolations.every((s) =>
-          /escHtml\(/.test(s) || /^\$\{(img|badge|skuBadge|it\.imageUrl \? (['"])hidden\2 : \2\2)\}$/.test(s)
+          /escHtml\(/.test(s) || /^\$\{(img|badge|skuBadge|noImageIcon|it\.imageUrl \? (['"])hidden\2 : \2\2)\}$/.test(s)
         ),
       "CATUI-12: كل محتوى سلة داخل بطاقة المنتج يمرّ بـescHtml — ثغرة XSS لا تُعاد"
     );

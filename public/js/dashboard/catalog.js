@@ -5,6 +5,7 @@
 // أسماء/أوصاف/روابط سلة كلها من محتوى التاجر ⇒ كل إدراج بـinnerHTML يمرّ
 // بـescHtml (ثغرة XSS أُغلقت بهذا المسار — لا تُعاد).
 import { S } from "./state.js";
+import { iconSvg, setIcon } from "./icons.js";
 import { fetchCatalogList, postCatalogSync, postBulkGenerateSelected } from "./api.js";
 import { renderIdentityLine } from "./render.js";
 import { setPublishTarget, generateCopy } from "./studio.js";
@@ -85,16 +86,16 @@ export async function loadCatalog(offset = 0) {
       const hint = document.getElementById("catalogEmptyHint");
       const icon = document.getElementById("catalogEmptyIcon");
       if (data.syncing) {
-        icon.innerText = "sync";
+        setIcon(icon, "sync");
         title.innerText = "جاري سحب منتجاتك من سلة…";
         hint.innerText = "أول دفعة توصل خلال ثوانٍ. الصفحة تتحدّث لحالها.";
         scheduleCatalogRefresh();
       } else if (data.synced) {
-        icon.innerText = "inventory_2";
+        setIcon(icon, "inventory_2");
         title.innerText = "متجرك مربوط، لكن ما لقينا منتجات نقدر نحفظها.";
         hint.innerText = "تأكد أن منتجاتك منشورة بسلة ولها رموز SKU، ثم اضغط «اسحب منتجاتي».";
       } else {
-        icon.innerText = "inventory_2";
+        setIcon(icon, "inventory_2");
         title.innerText = 'ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"';
         hint.innerText = "تظهر أول دفعة منتجات فوراً، وإن كان متجرك كبير يوصل الباقي خلال دقائق.";
       }
@@ -147,12 +148,15 @@ export function catalogCard(it, key) {
   const skuBadge = it.sku
     ? ""
     : '<span class="absolute top-2 right-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">بلا SKU — لا يدخل التوليد الجماعي</span>';
+  // أيقونة «بلا صورة» قطعة مبنيّة داخلياً من ثوابت (لا نص من سلة) — تُسمّى كمتغيّر
+  // مثل img/badge ليبقى حارس CATUI-12 صارماً على كل ما عداها.
+  const noImageIcon = iconSvg("image_not_supported", "text-3xl text-slate-400");
 
   card.innerHTML =
     `<div class="relative">
        ${img}
        <div class="img-fallback ${it.imageUrl ? "hidden" : ""} w-full h-28 bg-slate-100 flex items-center justify-center">
-         <span class="material-symbols-outlined text-3xl text-slate-400">image_not_supported</span>
+         ${noImageIcon}
        </div>
        ${badge}
        ${skuBadge}

@@ -2,7 +2,7 @@
            تلقائياً. يبقى مفتوحاً للمسار اليدوي (منتج غير مسحوب من سلة). -->
       <details id="studioManual" class="sleek-card rounded-3xl p-5 shadow-sm">
         <summary class="cursor-pointer select-none flex items-center gap-2 text-xs font-black text-black">
-          <span class="material-symbols-outlined text-base">edit_note</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M15.5 2V5M6.5 2V5M11 2V5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M19 12V10.5C19 7.20017 19 5.55025 17.9749 4.52512C16.9497 3.5 15.2998 3.5 12 3.5H10C6.70017 3.5 5.05025 3.5 4.02513 4.52513C3 5.55025 3 7.20017 3 10.5V15C3 18.2998 3 19.9497 4.02513 20.9749C5.05025 22 6.70017 22 10 22H11" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M7 15H11M7 11H15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M15.7367 21.6527L14 22L14.3473 20.2633C14.4179 19.9106 14.5913 19.5866 14.8456 19.3323L18.9111 15.2668C19.2668 14.9111 19.8437 14.9111 20.1995 15.2668L20.7332 15.8005C21.0889 16.1563 21.0889 16.7332 20.7332 17.0889L16.6677 21.1544C16.4134 21.4087 16.0894 21.5821 15.7367 21.6527Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
           <span>أو اكتب منتجاً يدوياً — لمنتج مو بسلة بعد</span>
         </summary>
         <div class="space-y-4 pt-4">
@@ -23,7 +23,7 @@
         <!-- المسار الأساسي: هذين الحقلين يُعبّآن آلياً من بطاقة "منتجاتي".
              يبقيان ظاهرين وقابلين للتعديل للمسار اليدوي (منتج مو بسلة بعد). -->
         <div id="studioSourceBanner" class="hidden p-3 rounded-xl bg-slate-50 border border-slate-300 text-[11px] font-bold text-black flex items-center gap-2">
-          <span class="material-symbols-outlined text-base">inventory_2</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M2.5 7.5V13.5C2.5 17.2712 2.5 19.1569 3.67157 20.3284C4.84315 21.5 6.72876 21.5 10.5 21.5H13.5C17.2712 21.5 19.1569 21.5 20.3284 20.3284C21.5 19.1569 21.5 17.2712 21.5 13.5V7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M3.86909 5.31461L2.5 7.5H21.5L20.2478 5.41303C19.3941 3.99021 18.9673 3.2788 18.2795 2.8894C17.5918 2.5 16.7621 2.5 15.1029 2.5H8.95371C7.32998 2.5 6.51812 2.5 5.84013 2.8753C5.16215 3.2506 4.73113 3.93861 3.86909 5.31461Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M12 7.5V2.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M10 10.5H14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
           <span id="studioSourceText"></span>
         </div>
 
@@ -40,7 +40,7 @@
         </details>
 
         <button id="genBtn" onclick="generateCopy()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-base">auto_awesome</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M15 2L15.5387 4.39157C15.9957 6.42015 17.5798 8.00431 19.6084 8.46127L22 9L19.6084 9.53873C17.5798 9.99569 15.9957 11.5798 15.5387 13.6084L15 16L14.4613 13.6084C14.0043 11.5798 12.4202 9.99569 10.3916 9.53873L8 9L10.3916 8.46127C12.4201 8.00431 14.0043 6.42015 14.4613 4.39158L15 2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M7 12L7.38481 13.7083C7.71121 15.1572 8.84275 16.2888 10.2917 16.6152L12 17L10.2917 17.3848C8.84275 17.7112 7.71121 18.8427 7.38481 20.2917L7 22L6.61519 20.2917C6.28879 18.8427 5.15725 17.7112 3.70827 17.3848L2 17L3.70827 16.6152C5.15725 16.2888 6.28879 15.1573 6.61519 13.7083L7 12Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg>
           <span id="genBtnText">اكتب الوصف الآن</span>
         </button>
 
@@ -52,7 +52,7 @@
       <!-- حالة الانتظار — تظهر مكان اللوحة فور الضغط على منتج، فلا يحسّ التاجر
            أن شيئاً يجري "بالخلفية" بلا أثر مرئي. -->
       <div id="copyPending" class="hidden sleek-card rounded-3xl p-6 shadow-sm flex items-center gap-3">
-        <span class="material-symbols-outlined text-2xl text-black animate-spin">progress_activity</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-2xl text-black animate-spin" aria-hidden="true" focusable="false"><path d="M12 3V6" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M12 18V21" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M21 12L18 12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M6 12L3 12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M18.3635 5.63672L16.2422 7.75804" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M7.75804 16.2422L5.63672 18.3635" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M18.3635 18.3635L16.2422 16.2422" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M7.75804 7.75804L5.63672 5.63672" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/></svg>
         <div>
           <p id="copyPendingStage" class="text-sm font-black text-black">الخطوة ١ من ٢ — تحليل صورة المنتج…</p>
           <p id="copyPendingName" class="text-[11px] text-slate-600 font-medium"></p>
@@ -70,7 +70,7 @@
               </div>
             </div>
             <button onclick="closeCopyPanel()" class="text-slate-400 hover:text-black" title="إغلاق">
-              <span class="material-symbols-outlined text-base">close</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M18 6L6.00081 17.9992M17.9992 18L6 6.00085" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
             </button>
             <span id="copyNoImageNote" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">بلا صورة — الوصف مبني على الاسم والوصف الحالي فقط</span>
             <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
@@ -79,7 +79,7 @@
                التصنيف يُغيَّر من سلة بيد التاجر. -->
           <div id="categoryMismatchNote" class="hidden p-3.5 rounded-xl bg-amber-50 border border-amber-300 space-y-1">
             <p class="text-xs font-black text-amber-900">
-              <span class="material-symbols-outlined text-sm align-middle">label_important</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-sm align-middle" aria-hidden="true" focusable="false"><circle cx="1.5" cy="1.5" r="1.5" transform="matrix(1 0 0 -1 16 8.00024)" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M2.77423 11.1439C1.77108 12.2643 1.7495 13.9546 2.67016 15.1437C4.49711 17.5033 6.49674 19.5029 8.85633 21.3298C10.0454 22.2505 11.7357 22.2289 12.8561 21.2258C15.8979 18.5022 18.6835 15.6559 21.3719 12.5279C21.6377 12.2187 21.8039 11.8397 21.8412 11.4336C22.0062 9.63798 22.3452 4.46467 20.9403 3.05974C19.5353 1.65481 14.362 1.99377 12.5664 2.15876C12.1603 2.19608 11.7813 2.36233 11.472 2.62811C8.34412 5.31646 5.49781 8.10211 2.77423 11.1439Z" stroke="currentColor" stroke-width="1.5"/><path d="M7.00002 14.0002L10 17.0002" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
               <span id="categoryMismatchText"></span>
             </p>
             <p class="text-[11px] text-amber-800 font-medium">
@@ -87,7 +87,7 @@
             </p>
             <div class="flex items-center gap-2 flex-wrap">
               <button id="applyCategoryBtn" onclick="applySuggestedCategory()" class="sleek-btn-black px-3.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
-                <span class="material-symbols-outlined text-sm">check_circle</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-sm" aria-hidden="true" focusable="false"><path d="M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M8 12.5L10.5 15L16 9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
                 <span id="applyCategoryBtnText">طبّق التصنيف على سلة</span>
               </button>
               <span id="applyCategoryMsg" class="text-[11px] font-bold text-amber-900"></span>
@@ -96,7 +96,7 @@
 
           <div class="space-y-1.5">
             <label for="outDescription" class="flex items-center gap-1.5 text-[11px] font-bold text-black">
-              <span class="material-symbols-outlined text-sm">edit</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-sm" aria-hidden="true" focusable="false"><path d="M15.2141 5.98239L16.6158 4.58063C17.39 3.80646 18.6452 3.80646 19.4194 4.58063C20.1935 5.3548 20.1935 6.60998 19.4194 7.38415L18.0176 8.78591M15.2141 5.98239L6.98023 14.2163C5.93493 15.2616 5.41226 15.7842 5.05637 16.4211C4.70047 17.058 4.3424 18.5619 4 20C5.43809 19.6576 6.94199 19.2995 7.57889 18.9436C8.21579 18.5877 8.73844 18.0651 9.78375 17.0198L18.0176 8.78591M15.2141 5.98239L18.0176 8.78591" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M11 20H17" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/></svg>
               تقدر تعدّل هنا
             </label>
             <textarea id="outDescription" rows="7" class="w-full text-xs leading-relaxed text-black whitespace-pre-wrap bg-white border-2 border-slate-400 rounded-xl p-3 focus:outline-none focus:border-black"></textarea>
@@ -115,11 +115,11 @@
           <select id="publishProduct" onchange="onPublishProductChange()" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></select>
           <div class="grid grid-cols-2 gap-2">
             <button id="publishBtn" onclick="publishToSalla()" class="sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined text-base">check_circle</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M8 12.5L10.5 15L16 9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
               <span id="publishBtnText">اعتمد وانشر على سلة</span>
             </button>
             <button id="regenBtn" onclick="regenerateCopy()" class="sleek-btn-white py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-              <span class="material-symbols-outlined text-base">refresh</span>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M20.0092 2V5.13219C20.0092 5.42605 19.6418 5.55908 19.4537 5.33333C17.6226 3.2875 14.9617 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
               <span>أعد التوليد</span>
             </button>
           </div>
@@ -131,7 +131,7 @@
              صار ملاصقاً للنص الذي يراجعه. -->
         <details class="sleek-card rounded-3xl p-5 shadow-sm">
           <summary class="cursor-pointer select-none flex items-center gap-2 text-xs font-black text-black">
-            <span class="material-symbols-outlined text-base">tune</span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M3 7H6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M3 17H9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M18 17L21 17" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M15 7L21 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M6 7C6 6.06812 6 5.60218 6.15224 5.23463C6.35523 4.74458 6.74458 4.35523 7.23463 4.15224C7.60218 4 8.06812 4 9 4C9.93188 4 10.3978 4 10.7654 4.15224C11.2554 4.35523 11.6448 4.74458 11.8478 5.23463C12 5.60218 12 6.06812 12 7C12 7.93188 12 8.39782 11.8478 8.76537C11.6448 9.25542 11.2554 9.64477 10.7654 9.84776C10.3978 10 9.93188 10 9 10C8.06812 10 7.60218 10 7.23463 9.84776C6.74458 9.64477 6.35523 9.25542 6.15224 8.76537C6 8.39782 6 7.93188 6 7Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 17C12 16.0681 12 15.6022 12.1522 15.2346C12.3552 14.7446 12.7446 14.3552 13.2346 14.1522C13.6022 14 14.0681 14 15 14C15.9319 14 16.3978 14 16.7654 14.1522C17.2554 14.3552 17.6448 14.7446 17.8478 15.2346C18 15.6022 18 16.0681 18 17C18 17.9319 18 18.3978 17.8478 18.7654C17.6448 19.2554 17.2554 19.6448 16.7654 19.8478C16.3978 20 15.9319 20 15 20C14.0681 20 13.6022 20 13.2346 19.8478C12.7446 19.6448 12.3552 19.2554 12.1522 18.7654C12 18.3978 12 17.9319 12 17Z" stroke="currentColor" stroke-width="1.5"/></svg>
             <span>حقول السيو ونسخة واتساب — تُنشر مع الوصف تلقائياً</span>
           </summary>
           <div class="space-y-4 pt-4">
@@ -170,7 +170,7 @@
           </p>
         </div>
         <button id="bulkGenerateBtn" onclick="startCatalogGenerate()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
-          <span class="material-symbols-outlined text-base">auto_awesome</span><span>ولّد أوصاف منتجاتي المسحوبة</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M15 2L15.5387 4.39157C15.9957 6.42015 17.5798 8.00431 19.6084 8.46127L22 9L19.6084 9.53873C17.5798 9.99569 15.9957 11.5798 15.5387 13.6084L15 16L14.4613 13.6084C14.0043 11.5798 12.4202 9.99569 10.3916 9.53873L8 9L10.3916 8.46127C12.4201 8.00431 14.0043 6.42015 14.4613 4.39158L15 2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M7 12L7.38481 13.7083C7.71121 15.1572 8.84275 16.2888 10.2917 16.6152L12 17L10.2917 17.3848C8.84275 17.7112 7.71121 18.8427 7.38481 20.2917L7 22L6.61519 20.2917C6.28879 18.8427 5.15725 17.7112 3.70827 17.3848L2 17L3.70827 16.6152C5.15725 16.2888 6.28879 15.1573 6.61519 13.7083L7 12Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg><span>ولّد أوصاف منتجاتي المسحوبة</span>
         </button>
         <div class="text-[11px] text-slate-500 font-bold text-center">— أو —</div>
         <textarea id="bulkRows" rows="5" placeholder="عباية سوداء مطرزة,350,عبايات,SKU-001&#10;عطر عود ملكي 100مل,220,عطور,SKU-002" dir="auto" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono focus:outline-none focus:border-black"></textarea>
