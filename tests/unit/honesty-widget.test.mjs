@@ -108,6 +108,19 @@ assert(/ممنوع تمنعاً باتاً/.test(HALA_SUPPORT_PROMPT) && /\[WHAT
   ]) {
     assert(!stripArchivedClaims(ok).stripped, `HON-14: رد صادق لا يُمسّ: "${ok.slice(0, 30)}"`);
   }
+  // HON-16 (2026-09-10): باقة سلة فيها فترة تجربة، فالرد الحتمي لا يجوز أن ينفيها —
+  // كان يقول «ما فيه تجربة محدودة بعدد أيام»، أي أن الحارس يستبدل الصدق بادعاء.
+  {
+    const trialReply = stripArchivedClaims("تجربة مجانية ٣٠ يوم بدون بطاقة.").text;
+    assert(
+      !/ما فيه تجربة/.test(trialReply) && /سلة/.test(trialReply) && !/\d|[٠-٩]+\s*يوم/.test(trialReply.replace(/٦٠/g, "")),
+      "HON-16: رد التجربة الحتمي لا ينفي تجربة سلة ولا يثبّت عدد أيام"
+    );
+    assert(
+      !/ما فيه تجربة محدودة/.test(HALA_SUPPORT_PROMPT) && /التثبيت من متجر تطبيقات سلة/.test(HALA_SUPPORT_PROMPT),
+      "HON-16b: البرومبت يفرّق التسجيل المباشر عن التثبيت من سلة"
+    );
+  }
   const supportSrc = await import("node:fs").then((fs) => fs.readFileSync(new URL("../../functions/_lib/domain/support.js", import.meta.url), "utf8"));
   assert(/if \(isAuraLine\) \{\s*\n\s*const archived = stripArchivedClaims\(reply\)/.test(supportSrc) && /ARCHIVED_CLAIM_STRIPPED/.test(supportSrc), "HON-15: الحارس مطبَّق على خط هالة فقط بعد التوليد ويُسجَّل بلا نص");
 }

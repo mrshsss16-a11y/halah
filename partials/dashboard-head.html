@@ -110,4 +110,22 @@
     .salla-dark .text-emerald-800 { color: #8fd6ac !important; }
     .salla-dark .border-emerald-300 { border-color: #2d6446 !important; }
     .salla-dark .skel { background: #34373b; }
+
+    /* ── ألوان سلة بالوضع الفاتح داخل الإطار (دليل التصميم: الأساسي #004d5b للعناوين
+       والهوية، الخلفية #f8f8f8). مقصورة على الإطار — الزيارة المباشرة لـhalah.aura.sa
+       بهوية هالة كما هي. الأحمر/الأخضر للإجراءات تُركت لتباينها: أحمر سلة #f5434a
+       مع نص أبيض أقل من ٤.٥:١. ── */
+    .in-salla-frame:not(.salla-dark) body,
+    .in-salla-frame:not(.salla-dark) body.bg-white { background: #f8f8f8 !important; }
+    .in-salla-frame:not(.salla-dark) .bg-black,
+    .in-salla-frame:not(.salla-dark) .sleek-btn-black,
+    .in-salla-frame:not(.salla-dark) .tab-on { background: #004d5b !important; color: #ffffff !important; }
+    .in-salla-frame:not(.salla-dark) .sleek-btn-black:hover { background: #003a44 !important; }
+    .in-salla-frame:not(.salla-dark) .border-black,
+    .in-salla-frame:not(.salla-dark) .sleek-card-darkborder,
+    .in-salla-frame:not(.salla-dark) .sleek-btn-white { border-color: #004d5b !important; }
+    .in-salla-frame:not(.salla-dark) h1,
+    .in-salla-frame:not(.salla-dark) h2,
+    .in-salla-frame:not(.salla-dark) h3 { color: #004d5b !important; }
+    .in-salla-frame:not(.salla-dark) .tab-off:hover { background: #e6f4f1; color: #004d5b; }
   </style>

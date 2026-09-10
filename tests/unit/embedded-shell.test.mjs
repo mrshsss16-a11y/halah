@@ -131,6 +131,13 @@ async function main() {
       /\.salla-dark body\.bg-white \{ background: #1d1e20 !important;/.test(head),
       "EMB-16/body: خلفية الصفحة الداكنة تتفوّق على قاعدة bg-white — البطاقات تبقى منفصلة عنها"
     );
+    // ألوان سلة الفاتحة داخل الإطار فقط (دليل التصميم · Brand Color Adherence).
+    assert(
+      /\.in-salla-frame:not\(\.salla-dark\) body\.bg-white \{ background: #f8f8f8 !important; \}/.test(head) &&
+        /\.in-salla-frame:not\(\.salla-dark\) \.tab-on \{ background: #004d5b !important;/.test(head) &&
+        /\.in-salla-frame:not\(\.salla-dark\) h1,/.test(head),
+      "EMB-21: الوضع الفاتح داخل سلة بألوان سلة الرسمية (#004d5b · #f8f8f8)، ومقصور على الإطار"
+    );
     assert(
       /const \{ layout \} = await window\.salla\.embedded\.init/.test(main) && /onEmbeddedInit\(layout\)/.test(main),
       "EMB-17: الوضع من init يصل لـembedded.js"
