@@ -1,12 +1,19 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>هالة | لوحة تحكم التاجر - Hala AI OS</title>
-  <meta name="description" content="لوحة تحكم هالة: وصف منتجات مثالي بالسيو، وكيل خدمة عملاء بلهجة سعودية، وربط متجر سلة"/>
+  <meta name="description" content="لوحة تحكم هالة: أوصاف منتجات من صورها جاهزة للسيو، بمراجعتك واعتمادك قبل النشر على متجرك في سلة"/>
 
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Readex+Pro:wght@300;400;500;600;700&family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+
+  <script>
+    // داخل إطار لوحة سلة: وسم الجذر **قبل أول رسم** كي لا يومض شريطنا ثم يختفي.
+    // دليل تصميم التطبيقات المضمّنة يمنع شريطاً علوياً خاصاً بالتطبيق (2026-09-10).
+    try { if (window.self !== window.top) document.documentElement.classList.add("in-salla-frame"); }
+    catch (e) { document.documentElement.classList.add("in-salla-frame"); }
+  </script>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -22,8 +29,11 @@
   <!-- Salla Embedded App SDK — required when this page is opened inside a
        merchant's Salla dashboard iframe (docs.salla.dev/embedded-sdk). Loaded
        unconditionally; the bootstrap logic below only uses it when actually
-       running inside a Salla-hosted iframe. -->
-  <script src="https://unpkg.com/@salla.sa/embedded-sdk/dist/umd/index.js"></script>
+       running inside a Salla-hosted iframe.
+       الإصدار مثبّت (2026-09-10): الرابط غير المثبّت كان يجلب «آخر إصدار» من
+       unpkg عند كل تحميل، فتحديث من سلة قد يغيّر أشكال الدوال التي يعتمد عليها
+       embedded.js بصمت. 0.2.6 هو الإصدار الذي تحققنا من دواله فعلياً. -->
+  <script src="https://unpkg.com/@salla.sa/embedded-sdk@0.2.6/dist/umd/index.js"></script>
   <style>
     body { font-family: 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', sans-serif; background: #FFFFFF; color: #000000; }
     /* .sleek-card / .sleek-btn-black / .sleek-btn-white من /style.css (styles/08-shared-components.css). */
@@ -39,4 +49,61 @@
       animation: skel-pulse 1.3s ease-in-out infinite;
     }
     @keyframes skel-pulse { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+    /* ── داخل إطار سلة: لا شريط ولا تذييل خاص بنا، والمحتوى يبدأ من الأعلى ──
+       العنوان ينتقل لشريط سلة الأصلي (embedded.js · page.setTitle). */
+    .in-salla-frame #dashNav,
+    .in-salla-frame #dashFooter { display: none !important; }
+    .in-salla-frame main { padding-top: 1.5rem !important; }
+
+    /* ── الوضع الداكن داخل سلة فقط (onThemeChange ⇒ html.salla-dark) ──
+       ألوان سلة الداكنة من دليل التصميم: الخلفية #1d1e20، الأساسي #baefe3.
+       مقصورة على الصنف كي لا تتغيّر زيارة halah.aura.sa المباشرة. */
+    .salla-dark body { background: #1d1e20; color: #eceeee; }
+    .salla-dark .bg-white,
+    .salla-dark .sleek-card,
+    .salla-dark .sleek-card-darkborder,
+    .salla-dark .sleek-white-card,
+    .salla-dark .sleek-white-card-darkborder { background: #26282b !important; }
+    .salla-dark .bg-slate-50,
+    .salla-dark .bg-slate-100 { background: #2e3034 !important; }
+    .salla-dark .text-black,
+    .salla-dark .text-slate-900 { color: #eceeee !important; }
+    .salla-dark .text-slate-700,
+    .salla-dark .text-slate-600,
+    .salla-dark .text-slate-500 { color: #a6abaf !important; }
+    .salla-dark .text-slate-400,
+    .salla-dark .text-slate-300 { color: #7d8387 !important; }
+    .salla-dark .border-slate-200,
+    .salla-dark .border-slate-300,
+    .salla-dark .border-slate-400,
+    .salla-dark .sleek-card,
+    .salla-dark .sleek-white-card { border-color: #3a3d42 !important; }
+    .salla-dark .border-black,
+    .salla-dark .sleek-card-darkborder,
+    .salla-dark .sleek-white-card-darkborder { border-color: #5a5e63 !important; }
+    .salla-dark .bg-black,
+    .salla-dark .sleek-btn-black,
+    .salla-dark .tab-on { background: #baefe3 !important; color: #1d1e20 !important; }
+    .salla-dark .sleek-btn-black:hover { background: #a3e4d6 !important; }
+    .salla-dark .sleek-btn-white { background: #26282b !important; color: #eceeee !important; border-color: #5a5e63 !important; }
+    .salla-dark .sleek-btn-white:hover { background: #2e3034 !important; }
+    .salla-dark .tab-off { color: #a6abaf; }
+    .salla-dark .tab-off:hover { background: #2e3034; color: #eceeee; }
+    .salla-dark input,
+    .salla-dark textarea,
+    .salla-dark select { background: #1d1e20 !important; color: #eceeee !important; border-color: #3a3d42 !important; }
+    .salla-dark .bg-amber-50 { background: #3a2c14 !important; }
+    .salla-dark .text-amber-800,
+    .salla-dark .text-amber-900 { color: #f0c27a !important; }
+    .salla-dark .border-amber-200,
+    .salla-dark .border-amber-300 { border-color: #6b4f1f !important; }
+    .salla-dark .bg-rose-50 { background: #3d1d1a !important; }
+    .salla-dark .text-rose-800,
+    .salla-dark .text-rose-700 { color: #f29a92 !important; }
+    .salla-dark .border-rose-300 { border-color: #6e2e29 !important; }
+    .salla-dark .bg-emerald-50 { background: #173424 !important; }
+    .salla-dark .text-emerald-800 { color: #8fd6ac !important; }
+    .salla-dark .border-emerald-300 { border-color: #2d6446 !important; }
+    .salla-dark .skel { background: #34373b; }
   </style>

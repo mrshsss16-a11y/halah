@@ -23,6 +23,7 @@ import {
 } from "./review.js";
 import { loadStore, loadUsage, handleMerchantLogout, onDeleteConfirmInput, requestDeletion } from "./store.js";
 import { copyToClipboard, renderIdentityLine } from "./render.js";
+import { onEmbeddedInit, setEmbeddedTitle, TAB_TITLES } from "./embedded.js";
 
 // لفّ fetch أولاً: بوابة ACCOUNT_REQUIRED لازم تسبق أي نداء شبكة.
 installAccountGate();
@@ -60,7 +61,9 @@ const inSallaFrame = window.self !== window.top;
 async function establishSallaEmbeddedSession() {
   if (!window.salla?.embedded) return false;
   try {
-    await window.salla.embedded.init({ debug: false });
+    // init يرجّع الوضع الحالي (فاتح/داكن) — يُطبَّق فوراً ويُتابَع تغيّره.
+    const { layout } = await window.salla.embedded.init({ debug: false });
+    onEmbeddedInit(layout);
     const token = window.salla.embedded.auth.getToken();
     if (!token) return false;
 
@@ -108,6 +111,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("merchantHeroHeader").innerText = storeLabel;
     window.__accountEmail = data?.email || "";
     renderIdentityLine();
+    // داخل سلة: التبويب الافتراضي يُعنوَن بشريط سلة (خارجها لا أثر).
+    setEmbeddedTitle(TAB_TITLES.catalog);
     if (data?.isAdmin) document.getElementById("adminPortalBtn").classList.remove("hidden");
   } catch (e) {}
 

@@ -1,6 +1,7 @@
 // public/js/dashboard/review.js — طابور المراجعة البشرية (الـAI يقترح، التاجر
 // يقرر) + بطاقة التغذية الراجعة. لا شيء يُنشر على سلة قبل قرار التاجر.
 import { S } from "./state.js";
+import { confirmAction } from "./embedded.js";
 import { postReviewList, postReviewDecide, postFeedback } from "./api.js";
 
 const escHtml = window.escHtml;
@@ -185,7 +186,14 @@ export async function retryReview(id) {
 }
 
 export async function revertReview(sku) {
-  if (!confirm("نرجّع الوصف الأصلي لهذا المنتج على سلة؟")) return;
+  const confirmed = await confirmAction({
+    title: "التراجع عن الوصف",
+    message: "نرجّع الوصف الأصلي لهذا المنتج على سلة؟",
+    confirmText: "رجّع الأصلي",
+    cancelText: "إلغاء",
+    variant: "warning"
+  });
+  if (!confirmed) return;
   try {
     const data = await postReviewDecide({ action: "revert", sku });
     showMsg("reviewFeedback", data?.ok ? data.message : (data?.error || "تعذر التراجع."), "error");

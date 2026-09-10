@@ -1,6 +1,7 @@
 // public/js/dashboard/store.js — تبويب «متجري» (حالة الربط، المنتجات، الطلبات)
 // وعدّادات الحصة الشهرية بالشريط العلوي، والخروج.
 import { S } from "./state.js";
+import { confirmAction } from "./embedded.js";
 import { postStoreOverview, postUsage, postLogout, postStoreDelete } from "./api.js";
 import { setPublishTarget, onPublishProductChange } from "./studio.js";
 
@@ -118,7 +119,15 @@ export async function requestDeletion(mode) {
   const warn = mode === "account"
     ? "سيُحذف حسابك وكل بياناتك نهائياً. لا يمكن التراجع. متأكد؟"
     : "سيُفكّ ربط سلة وتُحذف بيانات متجرك نهائياً. لا يمكن التراجع. متأكد؟";
-  if (!window.confirm(warn)) return;
+  // نافذة سلة داخل الإطار (window.confirm قد يُحجب هناك فيتعطّل الحذف بصمت).
+  const confirmed = await confirmAction({
+    title: mode === "account" ? "حذف الحساب نهائياً" : "فكّ ربط سلة وحذف البيانات",
+    message: warn,
+    confirmText: mode === "account" ? "احذف حسابي" : "فكّ الربط واحذف",
+    cancelText: "إلغاء",
+    variant: "danger"
+  });
+  if (!confirmed) return;
 
   deleteButtons().forEach((b) => { if (b) b.disabled = true; });
   try {

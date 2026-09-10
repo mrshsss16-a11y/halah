@@ -172,9 +172,12 @@ async function main() {
       /data\.partial/.test(store) && /بقيت أجزاء تعذّر محوها/.test(store),
       "DEL-21: الحذف الجزئي يُقال للتاجر كما هو"
     );
+    // DEL-22 عُدّل 2026-09-10: window.confirm قد يُحجب داخل إطار سلة المعزول
+    // فيرجع false فوراً ويتعطّل الحذف بصمت. التأكيد الآن عبر confirmAction
+    // (نافذة سلة داخل الإطار، ونافذة المتصفح خارجه) بمتغيّر danger.
     assert(
-      /window\.confirm\(warn\)/.test(store),
-      "DEL-22: تأكيد ثانٍ قبل النداء — العبارة وحدها لا تكفي لفعل نهائي"
+      /await confirmAction\(\{[\s\S]{0,300}message: warn[\s\S]{0,200}variant: "danger"/.test(store) && !/window\.confirm\(/.test(store),
+      "DEL-22: تأكيد ثانٍ قبل النداء بنافذة تعمل داخل سلة — العبارة وحدها لا تكفي لفعل نهائي"
     );
   }
 }
