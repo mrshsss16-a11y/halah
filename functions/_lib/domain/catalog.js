@@ -10,6 +10,7 @@
 // **صفحة واحدة فقط** لكل استدعاء، والـcron يستدعيها مرة كل تِك.
 import { DomainError } from "../core/errors.js";
 import { listProducts } from "../integrations/salla.js";
+import { withVariantsFallback, VCOL } from "./migrationGap.js";
 import { getValidSallaToken } from "./salla.js";
 
 // المرحلة ٦: المحوّل صار HTTP خالصاً (يأخذ توكناً جاهزاً، ق٢). المجال يجلب
@@ -80,6 +81,7 @@ function normalizeImage(product) {
  * منتج بلا SKU **لا يُدرَج** — المفتاح الأساسي (merchant_id, sku) يتطلبه.
  * المستدعي يعدّه ويُبلغ عنه (المخاطرة ٧ بالخطة) بدل إسقاطه صامتاً.
  */
+
 /**
  * خيارات المنتج (لون، مقاس…) بصيغة مضغوطة للبرومبت.
  *
@@ -158,10 +160,10 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = f
   if (rows.length) {
     // العزل: merchant_id بكل صف مُدرَج، ومفتاح التعارض (merchant_id, sku)
     // يمنع أي كتابة فوق صف تاجر ثانٍ حتى لو تكرر SKU بين متجرين.
-    const stmt = db.prepare(
+    const buildStmt = (v) => db.prepare(
       `INSERT INTO store_products
-         (merchant_id, sku, salla_product_id, name, price, category, current_description, original_description, image_url, variants, synced_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+         (merchant_id, sku, salla_product_id, name, price, category, current_description, original_description, image_url${VCOL(v)}, synced_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?${v ? ", ?" : ""}, datetime('now'))
        ON CONFLICT(merchant_id, sku) DO UPDATE SET
          salla_product_id = excluded.salla_product_id,
          name = excluded.name,
@@ -171,16 +173,21 @@ export async function syncCatalogPage(env, { merchantId, page = 1, fetchPage = f
          -- الأصل يُكتب مرة واحدة فقط (migrations/0022) — السحب لا يمحو ما
          -- يحتاجه "التراجع" بعد نشر هالة.
          original_description = COALESCE(store_products.original_description, excluded.current_description),
-         image_url = excluded.image_url,
-         variants = excluded.variants,
+         image_url = excluded.image_url,${v ? " variants = excluded.variants," : ""}
          synced_at = datetime('now')`
     );
-    const batch = rows.map((r) =>
-      stmt.bind(mid, r.sku, r.sallaProductId, r.name, r.price, r.category, r.currentDescription, r.currentDescription, r.imageUrl, r.variants)
-    );
-    for (let i = 0; i < batch.length; i += UPSERT_CHUNK) {
-      await db.batch(batch.slice(i, i + UPSERT_CHUNK));
-    }
+    // نفس تحمّل فجوة الهجرة على الكتابة: سحب المنتجات لا يتوقف لأن عموداً
+    // جديداً لم يُطبَّق بعد — يُكتب الصف بلا الخيارات، وتصل بأول سحب بعدها.
+    await withVariantsFallback(async (v) => {
+      const stmt = buildStmt(v);
+      const batch = rows.map((r) => (v
+        ? stmt.bind(mid, r.sku, r.sallaProductId, r.name, r.price, r.category, r.currentDescription, r.currentDescription, r.imageUrl, r.variants)
+        : stmt.bind(mid, r.sku, r.sallaProductId, r.name, r.price, r.category, r.currentDescription, r.currentDescription, r.imageUrl)));
+      for (let i = 0; i < batch.length; i += UPSERT_CHUNK) {
+        await db.batch(batch.slice(i, i + UPSERT_CHUNK));
+      }
+      return true;
+    });
   }
 
   const more = hasMorePages(payload, pageNum, products.length);
@@ -207,23 +214,23 @@ export async function listCatalog(env, { merchantId, limit = CATALOG_LIST_LIMITS
   const off = Math.max(0, Math.floor(Number(offset) || 0));
   const cat = text(category, 60);
 
-  const { results } = cat
-    ? await db
+  const { results } = await withVariantsFallback((v) => (cat
+    ? db
         .prepare(
-          `SELECT sku, salla_product_id, name, price, category, current_description, image_url, variants, synced_at
+          `SELECT sku, salla_product_id, name, price, category, current_description, image_url${VCOL(v)}, synced_at
            FROM store_products WHERE merchant_id = ? AND category = ?
            ORDER BY synced_at DESC, sku ASC LIMIT ? OFFSET ?`
         )
         .bind(mid, cat, lim, off)
         .all()
-    : await db
+    : db
         .prepare(
-          `SELECT sku, salla_product_id, name, price, category, current_description, image_url, variants, synced_at
+          `SELECT sku, salla_product_id, name, price, category, current_description, image_url${VCOL(v)}, synced_at
            FROM store_products WHERE merchant_id = ?
            ORDER BY synced_at DESC, sku ASC LIMIT ? OFFSET ?`
         )
         .bind(mid, lim, off)
-        .all();
+        .all()));
 
   return results || [];
 }
@@ -235,13 +242,15 @@ export async function getCatalogItem(env, { merchantId, sku } = {}) {
   const key = text(sku, 100);
   if (!key) throw invalid("رمز المنتج (SKU) غير محدد.", "catalog: missing sku");
 
-  return db
-    .prepare(
-      `SELECT sku, salla_product_id, name, price, category, current_description, original_description, hala_published_at, image_url, variants, synced_at
-       FROM store_products WHERE merchant_id = ? AND sku = ?`
-    )
-    .bind(mid, key)
-    .first();
+  return withVariantsFallback((v) =>
+    db
+      .prepare(
+        `SELECT sku, salla_product_id, name, price, category, current_description, original_description, hala_published_at, image_url${VCOL(v)}, synced_at
+         FROM store_products WHERE merchant_id = ? AND sku = ?`
+      )
+      .bind(mid, key)
+      .first()
+  );
 }
 
 /**
@@ -285,7 +294,7 @@ export async function listPriorityCatalog(env, { merchantId, limit = 500 } = {})
   const cap = Math.min(Math.max(Number(limit) || 1, 1), 500);
   const { results } = await db
     .prepare(
-      `SELECT sku, name, price, category, current_description, image_url, variants, hala_published_at
+      `SELECT sku, name, price, category, current_description, image_url, hala_published_at
          FROM store_products
         WHERE merchant_id = ?
         ORDER BY (hala_published_at IS NOT NULL) ASC,

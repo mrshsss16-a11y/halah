@@ -146,3 +146,42 @@ main()
     console.error(e);
     process.exit(1);
   });
+
+  // ── فجوة الهجرة: عمود جديد لا يُسقط ميزة قائمة (2026-09-10) ──────────
+  {
+    const { withVariantsFallback, VCOL, __resetVariantsFallback } =
+      await import("../../functions/_lib/domain/migrationGap.js");
+
+    __resetVariantsFallback();
+    assert(VCOL(true) === ", variants" && VCOL(false) === "", "GAP-1: جزء العمود يظهر أو يختفي حسب توفّره");
+
+    // أول نداء يفشل بعمود مفقود ⇒ يُعاد بلا العمود، ولا يُرمى للمستدعي.
+    const seen = [];
+    const out = await withVariantsFallback(async (v) => {
+      seen.push(v);
+      if (v) throw new Error("D1_ERROR: no such column: variants at offset 42");
+      return "ok";
+    });
+    assert(out === "ok" && seen.join(",") === "true,false", `GAP-2: فشل العمود المفقود يُعاد بلا العمود (${seen})`);
+
+    // بعدها لا محاولة ثانية بالعمود — لا فشل متكرر لكل طلب.
+    const seen2 = [];
+    await withVariantsFallback(async (v) => { seen2.push(v); return 1; });
+    assert(seen2.join(",") === "false", "GAP-3: بعد أول فشل يُسقط العمود لبقية عمر الـWorker");
+
+    // أخطاء أخرى تُرمى كما هي — لا ابتلاع لخطأ حقيقي.
+    __resetVariantsFallback();
+    let threw = null;
+    try {
+      await withVariantsFallback(async () => { throw new Error("D1_ERROR: database is locked"); });
+    } catch (e) { threw = e.message; }
+    assert(/database is locked/.test(threw || ""), "GAP-4: خطأ غير متعلق بالعمود يُرمى ولا يُبتلع");
+
+    // القراءة والكتابة كلاهما محميّان.
+    const { readFileSync } = await import("node:fs");
+    const cat = readFileSync(new URL("../../functions/_lib/domain/catalog.js", import.meta.url), "utf8");
+    assert(
+      (cat.match(/withVariantsFallback/g) || []).length >= 3 && /VCOL\(v\)/.test(cat),
+      "GAP-5: القراءة والكتابة بالكتالوج تمرّان بالحارس"
+    );
+  }
