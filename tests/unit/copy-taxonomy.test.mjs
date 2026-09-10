@@ -434,7 +434,8 @@ main()
   // ── إزالة الخطوة الزايدة: النشر ملاصق للوصف + مؤشر مرحلتين ──────────
   {
     const dashV = await readComposedPage("dashboard");
-    const catV = read("../../public/js/dashboard/catalog.js");
+    const { readFileSync } = await import("node:fs");
+    const catV = readFileSync(new URL("../../public/js/dashboard/catalog.js", import.meta.url), "utf8");
     const iDesc = dashV.indexOf('id="outDescription"');
     const iPub = dashV.indexOf('id="publishBox"');
     const iSeo = dashV.indexOf("حقول السيو (SEO)");
