@@ -86,7 +86,9 @@ async function runTests() {
   {
     const src = await readSrc("login.html");
     assert(!src.includes("data.otpCode"), "U2: login.html لا يعرض data.otpCode أبداً");
-    assert(src.includes("إن كان البريد مسجلاً وصلك الرمز على واتساب"), "U2: رسالة نجاح صادقة بدل عرض الرمز");
+    // القناة صارت البريد (2026-09-10): واتساب كان يشترط صفّاً بـ`whatsapp_contacts`
+    // فتعذّرت الاستعادة **بصمت** على كل من سجّل ببريده ولم يربط رقمه.
+    assert(src.includes("إن كان البريد مسجلاً وصلك الرمز على بريدك"), "U2: رسالة نجاح صادقة بدل عرض الرمز، وتسمّي القناة الحقيقية");
     assert(!/sleek-btn-black/.test(src), "U3: login.html لا يستخدم صنف sleek-btn-black غير المعرَّف");
     assert(src.includes(".wire-btn"), "U3: login.html يعرّف صنف wire-btn البديل");
   }

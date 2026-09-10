@@ -2,11 +2,11 @@
 // نُقل من core/db.js + من `integrations/salla.js` بالمرحلة ٣ (ARCHITECTURE §٢):
 // **المحوّل لم يعد يقرأ قاعدة البيانات** — التوكن يُجلَب هنا ويُمرَّر له.
 import { encryptSecret, decryptSecret } from "../core/crypto.js";
-import { sanitizeInput } from "../core/security.js";
 import { refreshSallaToken, getStoreInfo } from "../integrations/salla.js";
 import { timingSafeEqualStr } from "../core/crypto.js";
 import { saveAbandonedCart, logWebhook } from "./platforms.js";
 import { purgeMerchantData } from "./merchantPurge.js";
+import { linkSallaToAccount } from "./sallaAccountLink.js";
 import { handleProductEvent } from "./sallaProductEvents.js";
 import { logError } from "../core/errorLog.js";
 
@@ -20,27 +20,12 @@ export async function getMerchantBySalla(env, sallaMerchantId) {
 
 // المرحلة ٦: لم تعد مصدَّرة — كان الـshim `core/db.js` (المحذوف) يعيد تصديرها
 // بلا مستورد واحد. تُستخدم داخل هذا الملف فقط؛ لا سطح تعديل زائف (لا كود ميت).
-async function upsertMerchantFromSalla(env, { sallaMerchantId, storeName }) {
-  // A merchant controls their own Salla store name; it renders in the admin
-  // accounts table (SECURITY_AUDIT C3). Escaping at the sink is the primary
-  // fix — this strips tags at the source as defence in depth.
-  storeName = storeName ? sanitizeInput(String(storeName), 100) : storeName;
-  const existing = await getMerchantBySalla(env, sallaMerchantId);
-  if (existing) {
-    if (storeName && storeName !== existing.store_name) {
-      await env.DB.prepare("UPDATE merchants SET store_name = ? WHERE id = ?")
-        .bind(storeName, existing.id)
-        .run();
-    }
-    return existing.id;
-  }
-  const id = `m_${crypto.randomUUID().slice(0, 12)}`;
-  await env.DB.prepare(
-    "INSERT INTO merchants (id, salla_merchant_id, store_name) VALUES (?, ?, ?)"
-  )
-    .bind(id, String(sallaMerchantId), storeName || null)
-    .run();
-  return id;
+// مسار الويبهوك: بلا جلسة، فصفّ المتجر هو الهوية. نفس منطق `linkSallaToAccount`
+// بلا `sessionMerchantId` — مصدر واحد للإدراج وتنظيف اسم المتجر بدل نسختين
+// تتباعدان. (اسم المتجر يملكه التاجر ويُعرض بجدول الأدمن — يُنظَّف بالمصدر
+// دفاعاً بالعمق فوق الهروب عند العرض، SECURITY_AUDIT C3.)
+function upsertMerchantFromSalla(env, { sallaMerchantId, storeName }) {
+  return linkSallaToAccount(env, { sallaMerchantId, storeName, sessionMerchantId: null });
 }
 
 // المرحلة ٦: لم تعد مصدَّرة — كان الـshim `core/db.js` (المحذوف) يعيد تصديرها
@@ -340,7 +325,7 @@ const SALLA_USERINFO_URL = "https://accounts.salla.sa/oauth2/user/info";
  * يبادل الرمز بتوكن، يقرأ هوية المتجر، ويحفظ الصف والتوكنات.
  * @returns {Promise<string>} معرّف التاجر الداخلي.
  */
-export async function exchangeSallaCode(env, { code, redirectUri, clientId, clientSecret }) {
+export async function exchangeSallaCode(env, { code, redirectUri, clientId, clientSecret, sessionMerchantId = null }) {
   const tokenResponse = await fetch(SALLA_TOKEN_URL, {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
@@ -358,9 +343,13 @@ export async function exchangeSallaCode(env, { code, redirectUri, clientId, clie
   const userData = await userResponse.json();
 
   // صفّ التاجر الداخلي أولاً: مفتاح oauth_tokens.merchant_id هو معرّفنا لا معرّف سلة.
-  const merchantId = await upsertMerchantFromSalla(env, {
+  // ومع جلسة قائمة، **حساب الجلسة هو الوجهة** لا صفّ يُشتقّ من معرّف سلة —
+  // وإلا خرج التاجر بحسابين: حسابه فاضياً ومتجره تحت هوية أخرى (رُصد حياً
+  // 2026-09-10). التفصيل والحالات بـ`domain/sallaAccountLink.js`.
+  const merchantId = await linkSallaToAccount(env, {
     sallaMerchantId: userData.data.merchant.id.toString(),
-    storeName: userData.data.merchant.name || null
+    storeName: userData.data.merchant.name || null,
+    sessionMerchantId
   });
   await saveTokens(env, {
     merchantId,

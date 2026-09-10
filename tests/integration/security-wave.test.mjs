@@ -362,7 +362,11 @@ async function runTests() {
     const env = { SESSION_SECRET: "s3cr3t", HALA_CACHE: { get: async () => "0", put: async () => {} } };
     const token = await createSessionToken(env, "m_abc");
     assert((await verifySessionToken(env, token)) === "m_abc", "Q1-6: توقيع الجلسة سليم بعد التوحيد");
-    assert((await verifySessionToken(env, token.slice(0, -1) + "0")) === null, "Q1-7: توقيع معطوب مرفوض");
+    // الحرف البديل يُختار **مخالفاً** للأصلي: `+ "0"` الثابت كان يُنتج نفس
+    // التوكن حرفياً كلما انتهى التوقيع بـ"0" (≈١ من ٦٤)، فيمرّ التحقق ويفشل
+    // التأكيد بلا سبب حقيقي — اختبار متذبذب يُدرَّب المرء على تجاهله.
+    const flipped = token.slice(0, -1) + (token.endsWith("0") ? "1" : "0");
+    assert((await verifySessionToken(env, flipped)) === null, "Q1-7: توقيع معطوب مرفوض");
   }
 
   // ── Q3: hashOtp وEMAIL_RE موحّدتان ────────────────────────────────────────

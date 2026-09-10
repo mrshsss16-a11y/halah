@@ -44,9 +44,9 @@ async function forgotPasswordHandler(body, env, request) {
   const otpCode = generateOtp();
   await issuePasswordReset(env, { email, otpHash: await hashOtp(email, otpCode) });
 
-  // Out-of-band delivery. WhatsApp is the only channel wired up today.
+  // Out-of-band delivery: بريد التاجر أولاً، وواتساب احتياطاً لمن ربطه.
   // ق٦: النداء على المحوّل يعيش بـ`domain/auth.js` — التنسيق يسأل «هل سُلّم؟».
-  const delivered = await deliverResetOtp(env, merchantId, otpCode);
+  const delivered = await deliverResetOtp(env, merchantId, otpCode, email);
 
   if (!delivered) {
     // N8 — التسجيل المهيكل يوثّق غياب قناة التسليم بلا ذكر أي بريد أو رمز (PII).

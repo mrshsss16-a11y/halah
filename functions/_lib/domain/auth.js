@@ -307,13 +307,27 @@ export async function verifyGoogleIdToken(env, credential) {
 
 // ── المرحلة ٦ (ق٦): `api/**` لا يستورد `integrations/**` ────────────────────
 /**
- * تسليم رمز استعادة كلمة المرور خارج النطاق. واتساب هي القناة الوحيدة
- * الموصولة اليوم. نُقل من `api/auth/forgot_password.js` بلا تغيير سلوكي:
- * غياب القناة أو الرقم أو فشل الإرسال ⇒ `false` (ونقطة النهاية تسجّل ذلك
- * ولا تدّعي إرسالاً لم يحدث — §١١ الصدق).
+ * تسليم رمز استعادة كلمة المرور خارج النطاق: **البريد أولاً**، وواتساب
+ * احتياطاً لمن ربط رقمه. غياب القناتين معاً ⇒ `false` (ونقطة النهاية تسجّل
+ * ذلك ولا تدّعي إرسالاً لم يحدث — §١١ الصدق).
  * @returns {Promise<boolean>} هل خرجت الرسالة فعلاً؟
  */
-export async function deliverResetOtp(env, merchantId, otpCode) {
+export async function deliverResetOtp(env, merchantId, otpCode, email = null) {
+  // البريد أولاً: هو الهوية التي كتبها التاجر بالنموذج، والقناة الوحيدة
+  // المضمونة لكل حساب. كان واتساب القناة الوحيدة، وهي تشترط أن يكون التاجر
+  // **راسل متجره من واتساب** من قبل (صفّ بـ`whatsapp_contacts`) — شرطٌ لا
+  // يتحقق أبداً لمن سجّل ببريده ولم يربط واتساب، فكانت استعادة كلمة المرور
+  // مستحيلة عليه **بصمت** (رُصد 2026-09-10). واتساب يبقى احتياطاً لا بديلاً.
+  if (email && emailConfigured(env)) {
+    const sent = await sendEmail(env, {
+      to: email,
+      subject: "رمز استعادة كلمة المرور — هالة",
+      text: `رمز استعادة كلمة المرور: ${otpCode}\nصالح ١٥ دقيقة. لا تشاركه مع أحد.`
+    })
+      .then(() => true)
+      .catch(() => false);
+    if (sent) return true;
+  }
   if (!waConfigured(env)) return false;
   const phone = await resetDeliveryPhone(env, merchantId);
   if (!phone) return false;

@@ -3,8 +3,9 @@
 import { verifyOAuthState, oauthStateCookieHeader } from "../../../_lib/core/oauthState.js";
 import { generateRequestId } from "../../../_lib/core/respond.js";
 import { logError } from "../../../_lib/core/errorLog.js";
-import { createSessionToken, sessionCookieHeader } from "../../../_lib/core/session.js";
+import { createSessionToken, sessionCookieHeader, getSessionMerchantId } from "../../../_lib/core/session.js";
 import { exchangeSallaCode } from "../../../_lib/domain/salla.js";
+import { SallaLinkConflictError, linkConflictMessage } from "../../../_lib/domain/sallaAccountLink.js";
 
 const fail = (status, error, code, requestId, extraHeaders = {}) =>
   new Response(JSON.stringify({ ok: false, error, ...(code ? { code } : {}), ...(requestId ? { requestId } : {}) }), {
@@ -39,11 +40,16 @@ export async function onRequestGet(context) {
   }
 
   try {
+    // من هو المسجَّل دخوله الآن؟ وجودُه يجعل حسابه وجهةَ الربط بدل صفّ يُشتقّ
+    // من معرّف سلة — وإلا بدّلناه لحساب آخر بصمت وتركنا حسابه فاضياً.
+    const sessionMerchantId = await getSessionMerchantId(request, env).catch(() => null);
+
     const merchantId = await exchangeSallaCode(env, {
       code,
       redirectUri: `${url.origin}${url.pathname}`,
       clientId,
-      clientSecret
+      clientSecret,
+      sessionMerchantId
     });
 
     // جلستنا نحن (نفس نمط auth/salla_embedded.js) ثم تحويل التاجر للوحة مباشرة
@@ -53,6 +59,13 @@ export async function onRequestGet(context) {
     headers.append("Set-Cookie", oauthStateCookieHeader("", { clear: true }));
     return new Response(null, { status: 302, headers });
   } catch (error) {
+    // تعارض ربط ليس عطلاً: المتجر مرتبط بحساب آخر. رسالة تشرح المخرج، و409
+    // لا 502 — ولا نكشف أي شيء عن الصفّ الآخر (بريده أو معرّفه).
+    if (error instanceof SallaLinkConflictError) {
+      return fail(409, linkConflictMessage(error.reason), "SALLA_ALREADY_LINKED", requestId, {
+        "Set-Cookie": oauthStateCookieHeader("", { clear: true })
+      });
+    }
     // `error.message` هنا نصّنا المصنَّف ("token_exchange_failed:…") لا نص سلة
     // الخام. ما يراه التاجر ثابت وعربي، والتفصيل للسجل فقط.
     logError(context, { requestId, path: "auth/salla/callback", code: "SALLA_OAUTH_FAILED", internal: error.message });
