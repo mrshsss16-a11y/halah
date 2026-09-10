@@ -51,22 +51,52 @@
           </p>
         </div>
 
-        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-          <span class="text-xs font-black text-black block">حذف بياناتك نهائياً</span>
+        <!-- حذف ذاتي فعلي (2026-09-10). التاجر الذي ربط متجره من خارج متجر
+             تطبيقات سلة لا يملك زر «إزالة التطبيق» الذي يُشغّل app.uninstalled،
+             فمساره الوحيد كان بريداً يدوياً. زرّان هنا ينفّذان الحذف نفسه فوراً. -->
+        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+          <span class="text-xs font-black text-black block">احذف بياناتك من هنا مباشرة</span>
           <p class="text-[11px] text-slate-600 font-medium leading-relaxed">
-            الحذف نهائي ولا يمكن التراجع عنه.
+            الحذف <span class="font-black">فوري ونهائي ولا تراجع فيه</span>. الأوصاف التي
+            اعتمدتها ونُشرت تبقى على متجرك بسلة — هي ملكك هناك لا عندنا.
           </p>
-          <a href="/data-deletion" target="_blank" rel="noopener"
-             class="inline-flex items-center gap-2 sleek-btn-white px-4 py-2.5 rounded-xl text-xs font-black">
+
+          <label class="block text-[11px] font-black text-black">
+            اكتب <span class="font-mono bg-white border border-slate-300 rounded px-1.5 py-0.5">احذف بياناتي</span> للتأكيد:
+          </label>
+          <input id="deleteConfirmInput" type="text" autocomplete="off" placeholder="احذف بياناتي"
+                 oninput="onDeleteConfirmInput()"
+                 class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-bold focus:outline-none focus:border-black"/>
+
+          <button id="deleteSallaBtn" type="button" disabled onclick="requestDeletion('salla')"
+            class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed">
+            <span class="material-symbols-outlined text-base">link_off</span>
+            <span>فكّ ربط سلة واحذف بيانات متجري</span>
+          </button>
+          <p class="text-[11px] text-slate-500 font-medium leading-relaxed">
+            يمحو مفاتيح الوصول ومنتجاتك المسحوبة والأوصاف وطابور المراجعة.
+            <span class="font-black">حسابك يبقى</span> وتقدر تربط متجرك من جديد بضغطة.
+          </p>
+
+          <button id="deleteAccountBtn" type="button" disabled onclick="requestDeletion('account')"
+            class="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-3 px-4 rounded-2xl text-xs flex items-center justify-center gap-2 transition disabled:opacity-40 disabled:cursor-not-allowed">
             <span class="material-symbols-outlined text-base">delete_forever</span>
-            <span>صفحة طلب حذف البيانات</span>
-          </a>
+            <span>احذف حسابي نهائياً</span>
+          </button>
+          <p class="text-[11px] text-slate-500 font-medium leading-relaxed">
+            كل ما سبق، <span class="font-black">إضافةً لحسابك نفسه</span> — بريدك وكلمة مرورك.
+            يتحرّر بريدك ويصلح للتسجيل من جديد كحساب فارغ.
+          </p>
+
+          <div id="deleteFeedback" class="hidden p-3 rounded-xl text-xs font-bold"></div>
         </div>
 
         <p class="text-[11px] text-slate-500 font-medium">
           <a href="/privacy" target="_blank" rel="noopener" class="underline">سياسة الخصوصية</a>
           ·
           <a href="/terms" target="_blank" rel="noopener" class="underline">الشروط</a>
+          ·
+          <a href="/data-deletion" target="_blank" rel="noopener" class="underline">سياسة حذف البيانات</a>
         </p>
       </div>
     </section>

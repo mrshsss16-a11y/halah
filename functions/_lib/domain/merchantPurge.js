@@ -70,13 +70,18 @@ export const PURGE_EXEMPT = {
  * لا يرمي: الحذف يُنادى من مسار ويبهوك، وفشل جدول واحد يجب ألا يمنع محو
  * الباقي. يرجّع ما نجح وما فشل ليُسجَّل بصدق.
  */
-export async function purgeMerchantData(env, merchantId) {
+export async function purgeMerchantData(env, merchantId, { keepAccount = false } = {}) {
   if (!env?.DB || !merchantId) return { purged: false, tables: 0, failed: [] };
 
   const failed = [];
   let purged = 0;
 
-  for (const table of PURGE_TABLES) {
+  // `keepAccount`: التاجر طلب فكّ ربط سلة ومحو بيانات متجره، **لا** حذف حسابه.
+  // بدون هذا الاستثناء كان `accounts` ضمن المحو فيضيع بريده وكلمة مروره معه —
+  // وهو ليس ما طلبه، ويمنعه من إعادة الربط بنفس الحساب بضغطة.
+  const tables = keepAccount ? PURGE_TABLES.filter((t) => t !== "accounts") : PURGE_TABLES;
+
+  for (const table of tables) {
     try {
       // اسم الجدول من ثابت داخلي لا من مدخل — لا حقن ممكن.
       await env.DB.prepare(`DELETE FROM ${table} WHERE merchant_id = ?`).bind(merchantId).run();

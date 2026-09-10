@@ -81,6 +81,11 @@ export function postFeedback(score, comment, context) {
   return postStrict("/api/store/feedback", { score, comment, context });
 }
 
+// ── الحذف الذاتي ────────────────────────────────────────────────────
+export function postStoreDelete(mode, confirm) {
+  return postStrict("/api/store/delete", { mode, confirm });
+}
+
 // ── المتجر والحصة ───────────────────────────────────────────────────
 export function postStoreOverview() {
   return postSoft("/api/store/overview", {}, null);

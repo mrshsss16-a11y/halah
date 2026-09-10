@@ -1,7 +1,7 @@
 // public/js/dashboard/store.js — تبويب «متجري» (حالة الربط، المنتجات، الطلبات)
 // وعدّادات الحصة الشهرية بالشريط العلوي، والخروج.
 import { S } from "./state.js";
-import { postStoreOverview, postUsage, postLogout } from "./api.js";
+import { postStoreOverview, postUsage, postLogout, postStoreDelete } from "./api.js";
 import { setPublishTarget, onPublishProductChange } from "./studio.js";
 
 const escHtml = window.escHtml;
@@ -98,4 +98,49 @@ export async function loadUsage() {
 export async function handleMerchantLogout() {
   try { await postLogout(); } catch (e) {}
   window.location.href = "/login";
+}
+
+// ── الحذف الذاتي ────────────────────────────────────────────────────
+//
+// الزرّان معطّلان حتى تُكتب العبارة حرفياً. البوابة الحقيقية بالخادم — هذي
+// تمنع الضغطة العابرة لا الخصم.
+const DELETE_CONFIRM_PHRASE = "احذف بياناتي";
+
+const deleteButtons = () => [
+  document.getElementById("deleteSallaBtn"),
+  document.getElementById("deleteAccountBtn")
+];
+
+export function onDeleteConfirmInput() {
+  const typed = (document.getElementById("deleteConfirmInput").value || "").trim();
+  const ok = typed === DELETE_CONFIRM_PHRASE;
+  deleteButtons().forEach((b) => { if (b) b.disabled = !ok; });
+}
+
+export async function requestDeletion(mode) {
+  const confirm = (document.getElementById("deleteConfirmInput").value || "").trim();
+  const warn = mode === "account"
+    ? "سيُحذف حسابك وكل بياناتك نهائياً. لا يمكن التراجع. متأكد؟"
+    : "سيُفكّ ربط سلة وتُحذف بيانات متجرك نهائياً. لا يمكن التراجع. متأكد؟";
+  if (!window.confirm(warn)) return;
+
+  deleteButtons().forEach((b) => { if (b) b.disabled = true; });
+  try {
+    const { res, data } = await postStoreDelete(mode, confirm);
+    // خطأ خادم بلا حقل error كان يُعرض كنجاح بأماكن أخرى — لا يتكرر هنا.
+    if (!res.ok || data?.error) {
+      window.showMsg("deleteFeedback", data?.error || "ما قدرنا نكمل الحذف. حاول مرة ثانية.", "error");
+      onDeleteConfirmInput();
+      return;
+    }
+    // حذف جزئي يُقال كما هو: ادعاء «تم بالكامل» عن محو ناقص أسوأ من الناقص.
+    const text = data.partial
+      ? data.message + " (بقيت أجزاء تعذّر محوها — سجّلناها ونكملها، راسلنا لو حبيت تأكيداً.)"
+      : data.message;
+    window.showMsg("deleteFeedback", text, data.partial ? "error" : "success");
+    setTimeout(() => { window.location.href = data.accountDeleted ? "/" : "/login"; }, 4000);
+  } catch (e) {
+    window.showMsg("deleteFeedback", "تعذّر الاتصال. ما انحذف شي — حاول مرة ثانية.", "error");
+    onDeleteConfirmInput();
+  }
 }

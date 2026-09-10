@@ -21,7 +21,7 @@ import {
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback
 } from "./review.js";
-import { loadStore, loadUsage, handleMerchantLogout } from "./store.js";
+import { loadStore, loadUsage, handleMerchantLogout, onDeleteConfirmInput, requestDeletion } from "./store.js";
 import { copyToClipboard, renderIdentityLine } from "./render.js";
 
 // لفّ fetch أولاً: بوابة ACCOUNT_REQUIRED لازم تسبق أي نداء شبكة.
@@ -44,6 +44,8 @@ Object.assign(window, {
   // المراجعة والتغذية الراجعة
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback,
+  // الحذف الذاتي
+  onDeleteConfirmInput, requestDeletion,
   // إكمال الحساب
   submitCompleteAccount, closeAccountModal
 });
