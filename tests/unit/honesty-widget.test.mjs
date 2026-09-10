@@ -125,4 +125,18 @@ assert(/ممنوع تمنعاً باتاً/.test(HALA_SUPPORT_PROMPT) && /\[WHAT
   assert(/if \(isAuraLine\) \{\s*\n\s*const archived = stripArchivedClaims\(reply\)/.test(supportSrc) && /ARCHIVED_CLAIM_STRIPPED/.test(supportSrc), "HON-15: الحارس مطبَّق على خط هالة فقط بعد التوليد ويُسجَّل بلا نص");
 }
 
+// ── HON-17: صفحة الأسئلة الشائعة مرتبطة بملف تقديم سلة — لا وعد بحصة لا تُصرف ──
+// (2026-09-10) كانت تسرد «٣٠٠ رسالة مساعد» و«٢٠ صورة» بوسوم <strong> فأفلتت من
+// فحص نصي بسيط. يُفحص النص الظاهر بعد تجريد الوسوم والتعليقات.
+{
+  const fs = await import("node:fs");
+  const faq = fs.readFileSync(new URL("../../faq.html", import.meta.url), "utf8")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ");
+  assert(/٦٠ وصف منتج/.test(faq), "HON-17a: الأسئلة الشائعة تذكر حصة الأوصاف الحقيقية (٦٠)");
+  assert(!/٣٠٠ رسالة|رسالة مساعد/.test(faq), "HON-17b: لا حصة رسائل مساعد بالأسئلة الشائعة");
+  assert(!/٢٠ صورة/.test(faq), "HON-17c: لا حصة صور منفصلة بالأسئلة الشائعة");
+}
+
 done();
