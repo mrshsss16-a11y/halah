@@ -105,6 +105,20 @@ async function main() {
     );
   }
 
+  // ── تحرير معرّف متجر سلة ─────────────────────────────────────────────
+  //
+  // العمود UNIQUE: إبقاؤه بعد محوٍ كامل يحتجز المتجر عند صفّ فارغ فلا يُربط
+  // بأي حساب آخر أبداً. رُصد عملياً حين تعذّر ربط المتجر بحساب المراجعة.
+  {
+    const db = fakeDb();
+    await deleteMerchantAccount(envWith(db), "m_5", "salla");
+    const upd = db.sqls.find((s) => /UPDATE merchants/.test(s.sql) && /store_name = NULL/.test(s.sql));
+    assert(
+      upd && /salla_merchant_id = NULL/.test(upd.sql),
+      "DEL-23: المحو يحرّر معرّف متجر سلة — وإلا بقي المتجر محتجزاً بصفّ فارغ"
+    );
+  }
+
   // ── مدخلات غير صالحة ─────────────────────────────────────────────────
   {
     const bad = await deleteMerchantAccount(envWith(fakeDb()), "m_4", "everything");

@@ -104,12 +104,21 @@ export async function purgeMerchantData(env, merchantId, { keepAccount = false }
   }
 
   // الصف يبقى، ويُفرَّغ مما يُعرّف التاجر أو متجره.
+  //
+  // `salla_merchant_id = NULL` مقصود ومضاف 2026-09-10: العمود UNIQUE، فإبقاؤه
+  // بعد محوٍ كامل يحتجز المتجر عند صفّ فارغ — التاجر لا يقدر يربطه بحساب آخر
+  // (ولا بحساب مراجعة أو حساب فريق) لأن `linkSallaToAccount` يراه «مرتبطاً».
+  // بعد أن طلب المحو صراحةً، احتجازُ المعرّف عقوبة بلا فائدة. إعادة التثبيت
+  // تُنشئ صفاً جديداً بدل استئناف صفّ لم يبقَ فيه شيء يُستأنف.
+  //
+  // لا ينطبق على انتهاء الاشتراك/التجربة: ذاك المسار ينادي
+  // `revokeSallaConnection` وحدها ولا يمرّ من هنا، فبياناته ومعرّفه يبقيان.
   try {
     await env.DB
       .prepare(
         `UPDATE merchants
             SET store_name = NULL, catalog_synced_at = NULL, last_active_at = NULL,
-                salla_disconnected_at = datetime('now')
+                salla_merchant_id = NULL, salla_disconnected_at = datetime('now')
           WHERE id = ?`
       )
       .bind(merchantId)
