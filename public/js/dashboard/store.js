@@ -80,18 +80,18 @@ export async function loadStore() {
 
 export async function loadUsage() {
   const descEl = document.getElementById("kpiUsageDesc");
-  const msgEl = document.getElementById("kpiUsageMsg");
+  const imgEl = document.getElementById("kpiUsageImg");
   try {
     const { data } = await postUsage();
     descEl.innerText = data?.description ? `${data.description.remaining}/${data.description.limit}` : "—";
-    msgEl.innerText = data?.message ? `${data.message.remaining}/${data.message.limit}` : "—";
+    imgEl.innerText = data?.image ? `${data.image.remaining}/${data.image.limit}` : "—";
   } catch (e) {
     // فشل صامت غير مقبول (M5) — تعذر الجلب يظهر كخط، لا يبقى الهيكل يدور للأبد.
     descEl.innerText = "—";
-    msgEl.innerText = "—";
+    imgEl.innerText = "—";
   } finally {
     descEl.classList.remove("skel");
-    msgEl.classList.remove("skel");
+    imgEl.classList.remove("skel");
   }
 }
 
