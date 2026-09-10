@@ -27,13 +27,20 @@ for (const [needle, label] of banned) {
   assert(!HALA_SUPPORT_PROMPT.includes(needle), `HON-1: برومبت الودجت بلا ادعاء "${label}" (ميزة مؤرشفة أو رقم قديم)`);
 }
 const toArabicDigits = (n) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+// HON-2 عُدّل 2026-09-10: كان يطلب ذكر الدلاء الثلاثة (٦٠/٣٠٠/٢٠). لكن دلو
+// message بلا سطح صرف للتاجر منذ إزالة تبويب الوكيل، ودلو image يُستهلك بتوليد
+// الصور من الأدمن فقط — فذكرهما للزائر وعدٌ بما لا يُستعمل. الحارس الآن: رقم
+// الأوصاف مطابق لـmeter.js، ورقما الرسائل والصور **غائبان**.
 assert(
   HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(MONTHLY_BUCKET_LIMITS.description)} وصف`) &&
-    HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(MONTHLY_BUCKET_LIMITS.message)} رسالة`) &&
-    HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(MONTHLY_BUCKET_LIMITS.image)} صورة`),
-  "HON-2: أرقام الباقة المجانية بالبرومبت = حدود meter.js الفعلية (٦٠/٣٠٠/٢٠)"
+    !HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(MONTHLY_BUCKET_LIMITS.message)} رسالة`) &&
+    !HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(MONTHLY_BUCKET_LIMITS.image)} صورة`),
+  "HON-2: البرومبت يذكر حد الأوصاف الحقيقي (٦٠) ولا يعد بحصة رسائل أو صور لا يصرفها التاجر"
 );
-assert(/سلة فقط/.test(HALA_SUPPORT_PROMPT) && /قيد الاعتماد من ميتا/.test(HALA_SUPPORT_PROMPT), "HON-3: المنصة سلة فقط، وربط واتساب التاجر موصوف كقيد اعتماد لا كميزة قائمة");
+assert(
+  /سلة فقط/.test(HALA_SUPPORT_PROMPT) && /واتساب التاجر: \*\*غير\s+متوفرة للتجار حالياً/.test(HALA_SUPPORT_PROMPT),
+  "HON-3: المنصة سلة فقط، وربط واتساب التاجر ضمن قائمة «غير متوفرة حالياً» لا كميزة قائمة"
+);
 assert(/ممنوع تمنعاً باتاً/.test(HALA_SUPPORT_PROMPT) && /\[WHATSAPP_CTA\]/.test(HALA_SUPPORT_PROMPT), "HON-4: قاعدة منع الأسعار وCTA الواتساب باقيتان");
 
 // ── مزامنة RAG: تعديل الجدول يُعاد تضمينه، وبلا تغيير صفر نداء ───────────
@@ -96,7 +103,7 @@ assert(/ممنوع تمنعاً باتاً/.test(HALA_SUPPORT_PROMPT) && /\[WHAT
   }
   for (const ok of [
     "هالة تعمل مع متاجر سلة فقط حالياً.",
-    "الباقة المجانية شهرية: ٦٠ وصف + ٣٠٠ رسالة + ٢٠ صورة.",
+    "الباقة المجانية شهرية: ٦٠ وصف منتج كل شهر.",
     "تقدر تحجز استشارة مجانية مع فريق أورا من صفحة الاستشارة."
   ]) {
     assert(!stripArchivedClaims(ok).stripped, `HON-14: رد صادق لا يُمسّ: "${ok.slice(0, 30)}"`);

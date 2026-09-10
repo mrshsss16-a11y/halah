@@ -1,9 +1,8 @@
 // POST /api/usage — body: { storeId }
 // Returns the merchant's real remaining monthly quota so the dashboard shows
-// real numbers instead of a placeholder. الدلاء الثلاثة من
-// `MONTHLY_BUCKET_LIMITS`: description 60 · message 300 · image 20.
-// `image` كان يُحسب بالعدّاد ولا يُرجَّع هنا — أُضيف 2026-09-10 لأن اللوحة
-// صارت تعرضه بدل عدّاد الرسائل الذي لم يبقَ له سطح صرف.
+// real numbers instead of a placeholder. اللوحة تعرض دلو `description` وحده:
+// `image` يُستهلك بتوليد الصور من الأدمن فقط لا بتحليل صورة المنتج، و`message`
+// بلا سطح صرف منذ إزالة تبويب الوكيل (2026-09-10).
 import { withApi } from "../_lib/core/respond.js";
 import { getMonthlyUsage } from "../_lib/core/meter.js";
 import { resolveStoreId } from "../_lib/core/session.js";
@@ -25,7 +24,6 @@ async function usageHandler(body, env, request) {
     ok: true,
     description: monthly.description,
     message: monthly.message,
-    image: monthly.image,
     // Back-compat shape for existing callers reading a single {used,remaining,limit} —
     // "message" is the closer analogue to the old blended daily credit pool.
     used: monthly.message.used,

@@ -22,6 +22,25 @@ const MONTHLY_FREE_LIMIT = 1000; // Meta's WhatsApp service-conversation free ti
 export const MONTHLY_BUCKET_LIMITS = { description: 60, message: 300, image: 20 };
 const UNMETERED_MERCHANT_IDS = new Set(["hala"]);
 
+/**
+ * معفى من الحصة الشهرية؟ `hala` ثابت بالكود (خط أورا التشغيلي). وفوقه قائمة
+ * مؤقتة بمتغيّر البيئة `UNMETERED_MERCHANT_IDS` (معرّفات مفصولة بفواصل) —
+ * أُضيفت 2026-09-10 لمتجر مراجعة سلة: مراجع يجرّب التوليد بالجملة على عشرين
+ * منتجاً ويكرّر يصطدم بسقف ٦٠ وسط التقييم. بمتغيّر لا بالكود: يُزال بسطر بعد
+ * القبول بلا نشر، ولا يبقى معرّف تاجر إنتاجي محفوراً بالمصدر.
+ *
+ * الإعفاء للحصة الشهرية **وحدها**: حدود المعدل (checkRateLimit) وحدّ سلة
+ * (طلب/ثانية) لا تمرّ من هنا وتبقى سارية. المطابقة تامة بعد التشذيب — لا
+ * `includes` على النص كي لا يُعفى `m_ab` لأن `m_abc` مُدرج.
+ */
+function isUnmetered(env, merchantId) {
+  if (!merchantId) return false;
+  if (UNMETERED_MERCHANT_IDS.has(merchantId)) return true;
+  const extra = String(env?.UNMETERED_MERCHANT_IDS || "");
+  if (!extra) return false;
+  return extra.split(",").map((s) => s.trim()).filter(Boolean).includes(merchantId);
+}
+
 const METER_TTL_SECONDS = 25 * 60 * 60; // 25h — expires after UTC day rolls over
 const MONTHLY_TTL_SECONDS = 32 * 24 * 60 * 60; // 32d — always outlives the calendar month it caches
 
@@ -91,7 +110,7 @@ export async function checkAndConsumeMonthly(env, merchantId, bucket, cost = 1) 
   const limit = MONTHLY_BUCKET_LIMITS[bucket];
   if (!limit) throw new Error(`checkAndConsumeMonthly: unknown bucket "${bucket}"`);
 
-  if (UNMETERED_MERCHANT_IDS.has(merchantId) || !env.DB) {
+  if (isUnmetered(env, merchantId) || !env.DB) {
     return { ok: true, remaining: limit, used: 0, limit, bucket };
   }
 
@@ -165,7 +184,7 @@ export async function getMonthlyUsage(env, merchantId) {
 
   for (const bucket of buckets) {
     const limit = MONTHLY_BUCKET_LIMITS[bucket];
-    if (UNMETERED_MERCHANT_IDS.has(merchantId) || !env.DB) {
+    if (isUnmetered(env, merchantId) || !env.DB) {
       result[bucket] = { used: 0, remaining: limit, limit };
       continue;
     }

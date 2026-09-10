@@ -103,9 +103,11 @@ async function main() {
       !/kpiUsageMsg/.test(dashVisible) && !/رسائل الشهر/.test(dashVisible),
       "KPI-1: لا عدّاد رسائل — حصة بلا سطح صرف لا تُعرض"
     );
+    // KPI-2 قُلب 2026-09-10: «صور الشهر» كان خطأً — دلو image يُستهلك بتوليد
+    // الصور من الأدمن فقط، لا بتحليل صورة المنتج، فكان عدّاداً لا يتحرك أبداً.
     assert(
-      /id="kpiUsageImg"/.test(dash) && /صور الشهر/.test(dash),
-      "KPI-2: عدّاد الصور معروض — يُستهلك مع كل وصف من صورة"
+      !/kpiUsageImg/.test(dashVisible) && !/صور الشهر/.test(dashVisible),
+      "KPI-2: لا عدّاد صور — دلو image لا يُصرف من لوحة التاجر"
     );
     assert(
       !/وكيل خدمة عملاء سعودي/.test(dash),
