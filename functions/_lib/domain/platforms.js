@@ -28,14 +28,6 @@ export async function saveAbandonedCart(env, { id, merchantId, customerName, cus
     .run();
 }
 
-export async function listAbandonedCarts(env, merchantId, status = "open") {
-  const { results } = await env.DB.prepare(
-    "SELECT * FROM abandoned_carts WHERE merchant_id = ? AND status = ? ORDER BY created_at DESC LIMIT 50"
-  )
-    .bind(merchantId, status)
-    .all();
-  return results || [];
-}
 
 // platform_connections.api_key/api_secret are encrypted at rest (see
 // functions/_lib/core/crypto.js) — decrypt on the way out so callers keep
@@ -70,16 +62,4 @@ export async function savePlatformConnection(env, { merchantId, platform, seller
     .run();
 }
 
-// ── المرحلة ٤: SQL كان بـ`api/store/overview.js` ────────────────────────────
 
-/** منتجات متجر مُزامَنة من منصة خارجية (Trendyol اليوم) — الأحدث أولاً. */
-export async function listSyncedProducts(env, merchantId, platform, limit = 20) {
-  const { results } = await env.DB.prepare(
-    `SELECT external_id, title, price, stock, sync_status, last_sync_at
-       FROM product_sync WHERE merchant_id = ? AND platform = ?
-       ORDER BY last_sync_at DESC LIMIT ?`
-  )
-    .bind(merchantId, platform, limit)
-    .all();
-  return results || [];
-}

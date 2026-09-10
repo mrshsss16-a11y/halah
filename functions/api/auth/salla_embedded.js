@@ -18,7 +18,8 @@ const INTROSPECT_URL = "https://api.salla.dev/exchange-authority/v1/introspect";
 
 async function sallaEmbeddedHandler(body, env, request) {
   const ip = clientIp(request);
-  const rate = await checkRateLimit(env, ip, "salla_embedded_auth", 20, 60);
+  // fail-closed كبقية api/auth/*: تُصدر كوكي جلسة كاملاً — لا نافذة تخمين عند سقوط KV.
+  const rate = await checkRateLimit(env, ip, "salla_embedded_auth", 20, 60, { failClosed: true });
   if (!rate.allowed) {
     return json({ ok: false, error: "محاولات كثيرة، حاول بعد شوي." }, 429);
   }

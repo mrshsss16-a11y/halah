@@ -196,7 +196,8 @@ export async function revertReview(sku) {
   if (!confirmed) return;
   try {
     const data = await postReviewDecide({ action: "revert", sku });
-    showMsg("reviewFeedback", data?.ok ? data.message : (data?.error || "تعذر التراجع."), "error");
+    // كانت "error" دائماً — تراجع ناجح يظهر أحمر فيظنه التاجر فشلاً.
+    showMsg("reviewFeedback", data?.ok ? data.message : (data?.error || "تعذر التراجع."), data?.ok ? "success" : "error");
     loadReview("published");
   } catch (e) { showMsg("reviewFeedback", "تعذر الاتصال.", "error"); }
 }

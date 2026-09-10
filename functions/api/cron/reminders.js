@@ -16,7 +16,9 @@ async function remindersHandler(request, env, requestId, context) {
 
   try {
     const targetSlot = targetSlotLabel();
-    if (!targetSlot) return { ok: true, msg: "No slots on this day/time" };
+    // شكل ردّ واحد بكل الحالات: بلا فتحة مستحقة الآن = صفر تذكيرات، لا جسم مختلف.
+    // (REM-7 كان يفشل فقط بالساعات التي لا فتحة فيها — اختبار يعتمد على ساعة الجدار.)
+    if (!targetSlot) return { ok: true, targetSlot: null, remindersChecked: 0, remindersSent: 0, msg: "No slots on this day/time" };
 
     const bookings = await dueReminders(env, targetSlot);
     let sent = 0;

@@ -135,6 +135,3 @@ export async function getProduct(token, productId) {
   return sallaFetch(token, `/products/${encodeURIComponent(productId)}`);
 }
 
-export async function listOrders(token, page = 1) {
-  return sallaFetch(token, `/orders?page=${page}&per_page=10`);
-}

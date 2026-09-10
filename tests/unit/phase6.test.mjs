@@ -60,7 +60,7 @@ async function main() {
     assert(!/domain\//.test(code), "P6-7: المحوّل لا يذكر domain/ بأي كود");
     assert(!/getValidSallaToken/.test(code), "P6-8: كتلة الـshim (getValidSallaToken) محذوفة");
     assert(!/\.prepare\(/.test(src) && !/env\.DB/.test(src), "P6-9: صفر D1 بالمحوّل");
-    for (const fn of ["listProducts", "updateProduct", "updateProductBySku", "getStoreInfo", "listOrders"]) {
+    for (const fn of ["listProducts", "updateProduct", "updateProductBySku", "getStoreInfo"]) {
       assert(
         new RegExp(`export async function ${fn}\\(token`).test(src),
         `P6-10 (${fn}): التوقيع يبدأ بتوكن جاهز — المحوّل لا يجلبه`

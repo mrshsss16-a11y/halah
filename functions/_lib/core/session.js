@@ -170,7 +170,10 @@ export function sessionCookieHeader(token, { clear = false } = {}) {
   // was only ever protecting against a scenario (cross-site top-level GET
   // navigation carrying the cookie) that doesn't apply to an API cookie like
   // this one.
-  return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAge}`;
+  // Partitioned (CHIPS): داخل إطار سلة الكوكي «طرف ثالث»، والمتصفحات التي تقسّم
+  // كوكيز الطرف الثالث تسقطه بلا هذي السمة فتضيع الجلسة بصمت. المتصفحات التي لا
+  // تعرف السمة تتجاهلها (2026-09-11).
+  return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned; Max-Age=${maxAge}`;
 }
 
 export async function getSessionMerchantId(request, env) {

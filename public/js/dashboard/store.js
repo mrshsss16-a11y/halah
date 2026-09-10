@@ -1,4 +1,4 @@
-// public/js/dashboard/store.js — تبويب «متجري» (حالة الربط، المنتجات، الطلبات)
+// public/js/dashboard/store.js — تبويب «متجري» (حالة الربط، المنتجات)
 // وعدّادات الحصة الشهرية بالشريط العلوي، والخروج.
 import { S } from "./state.js";
 import { confirmAction } from "./embedded.js";
@@ -12,7 +12,13 @@ export async function loadStore() {
     const { res, data } = await postStoreOverview();
     // خطأ خادم (401/500) كان يُعرض "متجرك غير مرتبط" + زر ربط — تفسير خاطئ لعطل مؤقت.
     if (!res.ok) {
-      document.getElementById("storeLinkState").innerText = "تعذّر جلب حالة متجرك الآن — هذا لا يعني أن الربط انقطع، حدّث الصفحة بعد قليل.";
+      const msg = "تعذّر جلب حالة متجرك الآن — هذا لا يعني أن الربط انقطع، حدّث الصفحة بعد قليل.";
+      document.getElementById("storeLinkState").innerText = msg;
+      // الرسالة بالشريط العلوي وحدها كانت تترك التبويب نفسه فارغاً (كلا الحالتين
+      // hidden افتراضياً) — تُعرض أيضاً بمكان النظر داخل التبويب.
+      const errBox = document.getElementById("storeErrors");
+      errBox.innerText = msg;
+      errBox.classList.remove("hidden");
       return;
     }
 
@@ -44,29 +50,12 @@ export async function loadStore() {
       if (keep && keep.productId) setPublishTarget(keep.productId, keep.name);
       else onPublishProductChange();
 
-      const orderList = document.getElementById("orderList");
-      orderList.innerHTML = "";
-      const orders = data.orders || [];
-      if (!orders.length) {
-        const empty = document.createElement("div");
-        empty.className = "p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500";
-        empty.innerText = "لا توجد طلبات بعد";
-        orderList.appendChild(empty);
-      } else {
-        orders.forEach((o) => {
-          const row = document.createElement("div");
-          row.className = "p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-black flex justify-between gap-2";
-          // reference/status come straight from the Salla Orders API.
-          row.innerHTML = `<span>${escHtml(o.reference || o.id)}</span><span class="text-slate-500">${escHtml(o.status || "")}</span>`;
-          orderList.appendChild(row);
-        });
-      }
     }
 
     const errBox = document.getElementById("storeErrors");
     const errKeys = Object.keys(data.errors || {});
     if (linked && errKeys.length) {
-      const labels = { sallaProducts: "المنتجات", sallaOrders: "الطلبات", trendyol: "ترندايول", carts: "السلات المتروكة" };
+      const labels = { sallaProducts: "المنتجات" };
       errBox.innerText = "تعذر تحديث: " + errKeys.map((k) => labels[k] || k).join("، ") + " — سنعيد المحاولة تلقائياً.";
       errBox.classList.remove("hidden");
     } else {

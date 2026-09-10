@@ -12,7 +12,7 @@
     "verify:dist": "node scripts/verify-dist.mjs",
     "backup": "node scripts/backup-db.mjs",
     "smoke": "node scripts/smoke-test.mjs",
-    "deploy": "npm run build && npm run verify:dist && wrangler pages deploy dist --project-name hala-ai-os --branch=main && npm run smoke"
+    "deploy": "npm test && npm run build && npm run verify:dist && wrangler pages deploy dist --project-name hala-ai-os --branch=main && npm run smoke"
   },
   "devDependencies": {
     "wrangler": "^3.90.0"
