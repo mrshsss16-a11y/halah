@@ -341,6 +341,21 @@
       gsap.from("#heroTextContainer h1", { y: 30, opacity: 0, duration: 1, ease: "power3.out", delay: 0.2 });
       gsap.from("#heroTextContainer p", { y: 20, opacity: 0, duration: 0.8, ease: "power3.out", delay: 0.4 });
 
+      // شبكة أمان لعنوان الصفحة ونصّها (2026-09-10): `gsap.from` يكتب
+      // opacity:0 **فوراً**، ثم يرفعها بإطارات requestAnimationFrame. فإن لم
+      // تعمل الإطارات — تبويب مُستعاد بالخلفية، توفير طاقة، أو أي بيئة تخنق
+      // rAF — يبقى نصّ البطل مخفياً **إلى الأبد**، وهو أهم سطر بالصفحة.
+      // رُصد عملياً أثناء معاينة النسخة الحية: ticker متجمّد عند 0.339ث.
+      // ثانيتان أطول من أي مدخل هنا (0.4 + 0.8)، فلا تقطع حركة تعمل.
+      setTimeout(() => {
+        document.querySelectorAll("#heroTextContainer div, #heroTextContainer h1, #heroTextContainer p")
+          .forEach((el) => {
+            if (getComputedStyle(el).opacity !== "0") return;
+            el.style.opacity = "1";
+            el.style.transform = "none";
+          });
+      }, 2000);
+
       // Dedicated ScrollTrigger timeline controlling both beats and ambient blue aura glow motion
       const pinTimeline = gsap.timeline({
         scrollTrigger: {
