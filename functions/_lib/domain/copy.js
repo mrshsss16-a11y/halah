@@ -292,7 +292,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       const text = readFocusedText(raw);
       const candidate = { ...parsed, copywriting: { ...parsed.copywriting, description: text } };
       const candidateIssues = allIssues(candidate);
-      if (text && !candidateIssues.some((i) => i.code === "TOO_SHORT") && candidateIssues.length <= issues.length) {
+      const accepted = Boolean(text) && !candidateIssues.some((i) => i.code === "TOO_SHORT") && candidateIssues.length <= issues.length;
+      logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_FOCUSED_RESULT", internal: `accepted=${accepted} words=${text.split(/\s+/).filter(Boolean).length} ${candidateIssues.map((i) => i.code).join(",")}`, storeId: merchantId });
+      if (accepted) {
         parsed = candidate;
         issues = candidateIssues;
       }

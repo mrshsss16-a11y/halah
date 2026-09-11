@@ -85,6 +85,8 @@ async function main() {
     const realDress = "فستان أسود بلا أكمام، يتميز بكسرات تزيد من جماله وأناقته. قصته ميدي مما يجعله مناسبًا للعديد من المناسبات.";
     assert(publishedFieldIssues({ copywriting: { description: realDress } }, { sourceText: "" }).some((i) => i.code === "FIELD_UNSOURCED_JUDGMENT"), "PL-26: «جماله وأناقته» بضمير متصل تُمسك (كانت تفلت)");
     const dressClean = cleanDescription(realDress, { sourceText: "", productName: "فستان" });
+    const styled = cleanDescription("فستان أسود بحمالات وطبقات متتالية. يُلبس مع صندل رفيع وحقيبة صغيرة لإطلالة مسائية أنيقًا ومريحةً.", { sourceText: "", productName: "فستان" });
+    assert(/يُلبس مع صندل رفيع وحقيبة صغيرة لإطلالة مسائية/.test(styled) && !/أنيق|مريح/.test(styled), `PL-29: الصفة المنوّنة («أنيقًا»، «مريحةً») تُزال وتبقى جملة التنسيق («${styled}»)`);
     const touch = cleanDescription("فستان أسود بحمالات رفيعة. يُنسَّق مع حقيبة يد صغيرة لإضافة لمسة أنيقة.", { sourceText: "", productName: "فستان" });
     assert(touch === "فستان أسود بحمالات رفيعة. يُنسَّق مع حقيبة يد صغيرة.", `PL-28: «لإضافة لمسة أنيقة» تُزال كاملة لا صفتها وحدها («${touch}»)`);
     assert(/^فستان أسود بلا أكمام، يتميز بكسرات\./.test(dressClean) && /قصته ميدي/.test(dressClean) && !/جمال|[أا]ناق/.test(dressClean), `PL-27: «تزيد من جماله وأناقته» تُزال وتبقى الجملة («${dressClean}»)`);
@@ -97,6 +99,7 @@ async function main() {
     assert(!/تلبسها العارضة/.test(buildSeoSystem(base)), "PL-12: بلا اسم منتج لا تُحقن القاعدة (سلوك سابق محفوظ)");
     const { VISION_PROMPT } = await import("../../functions/_lib/ai/prompts/seo.js");
     assert(/لا وضعية العارضة ولا يديها/.test(VISION_PROMPT) && /أي دانتيل أو تطريز/.test(VISION_PROMPT), "PL-21: توجيه الرؤية يحصر الوصف بالقطعة المعروضة ويفحص الياقة والأكمام والتفاصيل بالترتيب");
+    assert(/«الكتفان والحمالات: …»/.test(VISION_PROMPT), "PL-30: الحمالات سطر مستقل — ملاحظة «الياقة: دائرية بحمالات» صارت «فستان دائري»");
     assert(/«الياقة: …»/.test(VISION_PROMPT) && /«التفاصيل: …»/.test(VISION_PROMPT) && /ولا يتناقض سطران/.test(VISION_PROMPT) && !/المرئية: …/.test(VISION_PROMPT), "PL-25: ملاحظات الرؤية منظّمة بسطر لكل جانب (ملاحظات حقيقية سابقة تناقضت: «قصيرة وبدون أكمام ظاهرة»)");
   }
 
