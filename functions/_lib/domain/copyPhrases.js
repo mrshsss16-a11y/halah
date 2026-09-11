@@ -15,6 +15,8 @@ const NOUN = "(?:ال)?(?:[أا]ناقة|فخامة|رقي|راحة)";
 const PATTERNS = [
   // «تعطيها لمسة من الأناقة» · «يمنحها طابعاً من الفخامة»
   new RegExp(`\\s*،?\\s*(?:و)?(?:ت|ي)?(?:عطي|منح|ضفي)(?:ها|ه|ك)?\\s+(?:لمسة|طابع(?:اً|ا)?|إطلالة|اطلالة)\\s+(?:من\\s+)?${NOUN}`, "g"),
+  // «تعطي مظهراً أنيقاً» · «تمنحها إطلالة فاخرة» — وبقاياها «تعطي مظهراً.»
+  new RegExp(`\\s*،?\\s*(?:و)?(?:ت|ي)(?:عطي|منح|ضفي)(?:ها|ه|ك)?\\s+(?:مظهر(?:اً|ًا|ا)?|إطلالة|اطلالة|لمسة|طابع(?:اً|ًا|ا)?)(?:\\s+${ADJ})?(?=\\s*[.،؟!]|$)`, "gu"),
   // «تزيد من جماله وأناقته» · «تضيف إلى أناقتها»
   new RegExp(`\\s*،?\\s*(?:و)?(?:ت|ي)(?:زيد|ضيف|برز|عزز)\\s+(?:من\\s+|إلى\\s+|الى\\s+)?${OWN}(?:\\s+و${OWN})?`, "g"),
   // «لإضافة لمسة أنيقة» · «لإضفاء لمسة من الأناقة» — وبقاياها «لإضافة لمسة» (مخرج حقيقي 2026-09-11 23:08)
@@ -34,4 +36,15 @@ export function stripJudgments(sentence) {
   const words = s.split(/\s+/).filter(Boolean).length;
   if (words < 4 || /^(هذه|هذا|هذي)(?=\s)/.test(s)) return "";
   return s;
+}
+
+// الوصف يُنشر فقرات (composeDescriptionHtml: كل سطر فارغ = <p>). التنظيف كان يقسم إلى جمل
+// ويعيد وصلها بمسافة، فكل وصف نُظّف نُشر كتلة واحدة بلا فقرات (كُشف باختبار PL-15).
+export function splitSentencesKeep(text) {
+  return String(text || "").trim().split(/\n\s*\n/).flatMap((para, p) => para.split(/(?<=[.!؟\n])\s+/).map((s) => ({ s: s.trim(), p })));
+}
+export function joinSentences(items) {
+  const paras = new Map();
+  for (const { s, p } of items) if (s) paras.set(p, [...(paras.get(p) || []), s]);
+  return [...paras.values()].map((a) => a.join(" ")).join("\n\n").trim();
 }

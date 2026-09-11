@@ -289,7 +289,8 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
         ttlKind: "copy",
         skipCache: true
       });
-      const text = readFocusedText(raw);
+      // يُنظَّف قبل التقييم: النص المقبول هو نفسه ما يُنشر، لا نسخة يقصّها التنظيف لاحقاً.
+      const text = cleanDescription(readFocusedText(raw), { sourceText, productName: name });
       const candidate = { ...parsed, copywriting: { ...parsed.copywriting, description: text } };
       const candidateIssues = allIssues(candidate);
       const accepted = Boolean(text) && !candidateIssues.some((i) => i.code === "TOO_SHORT") && candidateIssues.length <= issues.length;

@@ -87,6 +87,13 @@ async function main() {
     const dressClean = cleanDescription(realDress, { sourceText: "", productName: "فستان" });
     const styled = cleanDescription("فستان أسود بحمالات وطبقات متتالية. يُلبس مع صندل رفيع وحقيبة صغيرة لإطلالة مسائية أنيقًا ومريحةً.", { sourceText: "", productName: "فستان" });
     assert(/يُلبس مع صندل رفيع وحقيبة صغيرة لإطلالة مسائية/.test(styled) && !/أنيق|مريح/.test(styled), `PL-29: الصفة المنوّنة («أنيقًا»، «مريحةً») تُزال وتبقى جملة التنسيق («${styled}»)`);
+    const hanging = cleanDescription("فستان أسود بحمالات رفيعة وتجميع طبقات تعطي مظهراً أنيقاً. قصته ميدي تناسب المناسبات المسائية.", { sourceText: "", productName: "فستان" });
+    assert(hanging === "فستان أسود بحمالات رفيعة وتجميع طبقات. قصته ميدي تناسب المناسبات المسائية.", `PL-31: «تعطي مظهراً أنيقاً» تُزال كاملة بلا بقايا معلّقة («${hanging}»)`);
+    const { stripJudgments } = await import("../../functions/_lib/domain/copyPhrases.js");
+    const leftover = stripJudgments("فستان أسود بحمالات رفيعة وتجميع طبقات تعطي مظهراً.");
+    assert(leftover === "فستان أسود بحمالات رفيعة وتجميع طبقات.", `PL-32: بقايا «تعطي مظهراً.» تُزال بأداة العبارات («${leftover}»)`);
+    const paras = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية.\n\nتُنسَّق مع تنورة زرقاء وتُلبس في الدوام والزيارات.\n\nراجعي جدول المقاسات قبل الطلب.";
+    assert(cleanDescription(paras, { sourceText: "", productName: "بلوزة" }) === paras, "PL-35: التنظيف يحفظ الفقرات — كان يصل كل الجمل بمسافة فيُنشر الوصف كتلة واحدة");
     const touch = cleanDescription("فستان أسود بحمالات رفيعة. يُنسَّق مع حقيبة يد صغيرة لإضافة لمسة أنيقة.", { sourceText: "", productName: "فستان" });
     assert(touch === "فستان أسود بحمالات رفيعة. يُنسَّق مع حقيبة يد صغيرة.", `PL-28: «لإضافة لمسة أنيقة» تُزال كاملة لا صفتها وحدها («${touch}»)`);
     assert(/^فستان أسود بلا أكمام، يتميز بكسرات\./.test(dressClean) && /قصته ميدي/.test(dressClean) && !/جمال|[أا]ناق/.test(dressClean), `PL-27: «تزيد من جماله وأناقته» تُزال وتبقى الجملة («${dressClean}»)`);
@@ -99,6 +106,7 @@ async function main() {
     assert(!/تلبسها العارضة/.test(buildSeoSystem(base)), "PL-12: بلا اسم منتج لا تُحقن القاعدة (سلوك سابق محفوظ)");
     const { VISION_PROMPT } = await import("../../functions/_lib/ai/prompts/seo.js");
     assert(/لا وضعية العارضة ولا يديها/.test(VISION_PROMPT) && /أي دانتيل أو تطريز/.test(VISION_PROMPT), "PL-21: توجيه الرؤية يحصر الوصف بالقطعة المعروضة ويفحص الياقة والأكمام والتفاصيل بالترتيب");
+    assert(/«ميدي» ينتهي بين الركبة والكاحل/.test(VISION_PROMPT) && /«ماكسي» يصل الكاحل/.test(VISION_PROMPT), "PL-33: توجيه الرؤية يعرّف الأطوال بالنسبة للجسم (Qwen سمّى نفس الفستان ميدي ثم ماكسي)");
     assert(/«الكتفان والحمالات: …»/.test(VISION_PROMPT), "PL-30: الحمالات سطر مستقل — ملاحظة «الياقة: دائرية بحمالات» صارت «فستان دائري»");
     assert(/«الياقة: …»/.test(VISION_PROMPT) && /«التفاصيل: …»/.test(VISION_PROMPT) && /ولا يتناقض سطران/.test(VISION_PROMPT) && !/المرئية: …/.test(VISION_PROMPT), "PL-25: ملاحظات الرؤية منظّمة بسطر لكل جانب (ملاحظات حقيقية سابقة تناقضت: «قصيرة وبدون أكمام ظاهرة»)");
   }
@@ -110,6 +118,14 @@ async function main() {
     assert(ai.seen.vision >= 1 && ai.seen.text === 3, `PL-13: قصير بعد الإعادة العامة ⇒ كاتب وصف مركّز ثالث (نصية: ${ai.seen.text})`);
     assert(/اكتبي وصف «بلوزة» فقط/.test(ai.seen.systems[2]) && !/specsTable/.test(ai.seen.systems[2]) && ai.seen.systems[2].length < 2000, "PL-14: الكاتب المركّز برومبت قصير مستقل لحقل الوصف وحده، بلا مخطط JSON");
     assert(out.copywriting.description === LONG_GOOD, "PL-15: النسخة الطويلة السليمة تُعتمد");
+  }
+  {
+    // الكاتب المركّز يعيد نصاً طويلاً فيه حكم: يُنظَّف قبل القبول، والمنشور = المقبول.
+    const withJudgment = LONG_GOOD.replace("مع تفصيل دانتيل ظاهر على الكتف والكم.", "مع تفصيل دانتيل ظاهر على الكتف والكم تعطيها مظهراً أنيقاً.");
+    const ai = mockAi([copyJson(REAL_BLOUSE), copyJson(REAL_BLOUSE), withJudgment]);
+    const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
+    const d = out.copywriting.description;
+    assert(!/أنيق|مظهراً/.test(d) && /^بلوزة بيضاء/.test(d) && d.split(/\s+/).filter(Boolean).length >= 35, `PL-34: نص الكاتب المركّز يُنظَّف قبل قبوله فلا يقصّه التنظيف لاحقاً تحت حد الطول (${d.split(/\s+/).length} كلمة)`);
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
