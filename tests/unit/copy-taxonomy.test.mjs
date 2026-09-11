@@ -40,14 +40,14 @@ async function main() {
       "TAX-7: الكتيب بلا خامات ولا أحكام جودة — تسمية فقط"
     );
 
-    // فئة غير مغطاة أو غائبة ⇒ التوجيه القديم حرفياً (نمط SP-12).
+    // فئة غير مغطاة أو غائبة ⇒ التوجيه القديم حرفياً (نمط SP-12). («عطور» صارت مغطاة بمكتبة 2026-09-11.)
     assert(
-      taxonomyForCategory("عطور") === "" && taxonomyForCategory("") === "" &&
+      taxonomyForCategory("سيارات") === "" && taxonomyForCategory("") === "" &&
         taxonomyForCategory(undefined) === "" && taxonomyForCategory(null) === "",
       "TAX-8: فئة غير مغطاة أو غائبة ترجّع كتيباً فارغاً لا كتيباً مخترعاً"
     );
     assert(
-      visionPromptFor("عطور") === VISION_PROMPT && visionPromptFor("") === VISION_PROMPT &&
+      visionPromptFor("سيارات") === VISION_PROMPT && visionPromptFor("") === VISION_PROMPT &&
         visionPromptFor(undefined) === VISION_PROMPT,
       "TAX-9: بلا كتيب، توجيه الرؤية مطابق حرفياً للسلوك السابق"
     );
@@ -135,7 +135,7 @@ async function main() {
       "TAX-24: كل كتيب فئة مختصر (<700 حرف)"
     );
     assert(
-      taxonomyForCategory("عباية") === abayas && taxonomyForCategory("اكسسوارات") === jewelry &&
+      taxonomyForCategory("عباية") === abayas && taxonomyForCategory("خواتم") === jewelry &&
         taxonomyForCategory("Jewelry") === jewelry && taxonomyForCategory("ازياء") === apparel,
       "TAX-25: مرادفات الفئات الجديدة تُطبَّع"
     );
@@ -159,8 +159,8 @@ async function main() {
     );
     // البحث الجزئي بالاسم هو ما أُغلقت القائمة لمنعه — الكلمة الأولى فقط.
     assert(
-      taxonomyForProduct({ category: "شنط", name: "شنطة تناسب الفساتين" }) === "" &&
-        taxonomyForProduct({ category: "", name: "حزام يناسب الفساتين" }) === "",
+      taxonomyForProduct({ category: "سيارات", name: "معطر سيارة يناسب الفساتين" }) === "" &&
+        taxonomyForProduct({ category: "", name: "علّاقة تناسب الفساتين" }) === "",
       "TAX-29: اسم يذكر فئة أخرى عرضاً لا يحقن معجمها"
     );
     assert(
@@ -219,6 +219,27 @@ async function main() {
     // lastCopy صار S.lastCopy بحالة مشتركة state.js بعد التقسيم.
     const dash = await readComposedPage("dashboard");
     assert(/copywriting:\s*S\.lastCopy\.copywriting \|\| null/.test(dash) && /function publishExtras/.test(dash), "SALLA-11: النشر المفرد يرسل النقاط/الأسئلة، وشاشة المراجعة تعرض ما يُنشر مع الوصف");
+  }
+
+  {
+    const { taxonomyForCategory, taxonomyForProduct, COVERED_CATEGORIES } = await import("../../functions/_lib/ai/productTaxonomy.js");
+    // ── الثماني من مكتبة أوصاف المنتجات السعودية (2026-09-11) ──
+    const LIB = ["ملابس رجالية", "ملابس أطفال", "أحذية", "حقائب", "إكسسوارات", "عناية وجمال", "منزل وهدايا", "إلكترونيات"];
+    assert(LIB.every((c) => COVERED_CATEGORIES.includes(c) && taxonomyForCategory(c).length > 0), "TAX-40: الفئات الثماني من المكتبة مغطاة");
+    assert(LIB.every((c) => taxonomyForCategory(c).length < 700), "TAX-41: كل كتيب من المكتبة مختصر (<700 حرف)");
+    assert(
+      LIB.every((c) => !/(فاخر|أنيق|عالي الجودة|جودة عالية|مريح|شيفون|كريب|ساتان|قطن|حرير|جلد|ذهب|فضة|كتان|مخمل|دانتيل|لؤلؤ|زركون)/.test(taxonomyForCategory(c))),
+      "TAX-42: كتيبات المكتبة بلا خامات ولا معادن ولا أحكام جودة — المكتبة نفسها تقول إنها «تحتاج إثباتاً»"
+    );
+    assert(
+      taxonomyForCategory("شنط") === taxonomyForCategory("حقائب") && taxonomyForCategory("Shoes") === taxonomyForCategory("أحذية") &&
+        taxonomyForCategory("عطور") === taxonomyForCategory("عناية وجمال") && taxonomyForCategory("الكترونيات") === taxonomyForCategory("إلكترونيات"),
+      "TAX-43: مرادفات التاجر الشائعة (شنط/Shoes/عطور/الكترونيات) تصل لكتيب المكتبة"
+    );
+    assert(taxonomyForCategory("إكسسوارات") !== taxonomyForCategory("مجوهرات") && /نظارة شمسية/.test(taxonomyForCategory("إكسسوارات")), "TAX-44: «إكسسوارات» صارت كتيباً مستقلاً (أحزمة/نظارات/شالات) لا مجوهرات");
+    assert(taxonomyForProduct({ category: "جديد", name: "حذاء رياضي أبيض" }) === taxonomyForCategory("أحذية"), "TAX-45: الكلمة الأولى من الاسم توصل لكتيب المكتبة عند فئة غير مطابقة");
+    assert(taxonomyForProduct({ category: "", name: "قميص رجالي" }) === "" && taxonomyForProduct({ category: "", name: "غطاء هاتف" }) === "", "TAX-46: الكلمات المشتركة بين فئتين (قميص/غطاء) لا تُوجَّه — تحويل خاطئ أسوأ من لا كتيب");
+    assert(/الأداء يحتاج إثباتاً/.test(taxonomyForCategory("أحذية")) && /ممنوع استنتاجها من الصورة/.test(taxonomyForCategory("إلكترونيات")), "TAX-47: كتيبات الفئات غير المرئية تحمل تحذير المصدر (I004/I008/I010)");
   }
 }
 

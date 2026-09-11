@@ -58,6 +58,23 @@ async function main() {
     assert(!descriptionQualityIssues({ description: "تنورة بطول 95 سم بقصّة كلوش وخصر مرتفع مع انسدال ناعم." }).some((i) => i.code === "PRICE_IN_PROSE"), "CQ-8: رقم قياس (سم) ليس سعراً — لا إنذار كاذب");
   }
 
+  // ── ادعاءات محظورة (مكتبة الأوصاف السعودية — نواهي N001/N003/N010، مقومات C005) ──
+  {
+    const bad = (t) => descriptionQualityIssues({ description: t, excerpt: "", whatsapp: "" }).some((i) => i.code === "PROHIBITED_CLAIM");
+    assert(bad("تنورة سوداء طويلة. بعد تحليل الصورة نجد أنها بقصّة كلوش."), "CQ-28: «بعد تحليل الصورة» ادعاء محظور — العميل لا يهمّه كيف كُتب الوصف");
+    assert(bad("فستان ماكسي أسود يناسب كل الأجسام ويخفي العيوب."), "CQ-29: حكم على الجسد («يناسب كل الأجسام») يُمسك");
+    assert(bad("سماعة لاسلكية سوداء، منتج أصلي 100%."), "CQ-30: «منتج أصلي» بلا شهادة يُمسك");
+    assert(bad("عباية كلوش سوداء. الكمية محدودة سارعي بالطلب!"), "CQ-31: ندرة مصطنعة تُمسك");
+    assert(descriptionQualityIssues({ description: "الوصف سليم", excerpt: "", whatsapp: "أصلي 100% ومضمون" }).some((i) => i.code === "PROHIBITED_CLAIM"), "CQ-32: الادعاء بنسخة الواتساب يُمسك أيضاً");
+    assert(!bad(GOOD_DESC) && !bad("تنورة بقصّة كلوش تناسب الإطلالات المسائية. راجعي جدول المقاسات قبل الطلب."), "CQ-33: «تناسب الإطلالات» ودعوة جدول المقاسات ليستا ادعاءً — لا إنذار كاذب");
+    const cleaned = cleanDescription("تنورة سوداء طويلة بقصّة كلوش. يناسب كل الأجسام ويخفي العيوب. مناسبة للسهرات.");
+    assert(cleaned === "تنورة سوداء طويلة بقصّة كلوش. مناسبة للسهرات.", `CQ-34: جملة الادعاء تُحذف كاملة والباقي يبقى («${cleaned}»)`);
+    const sys = buildSeoSystem({ recent: [], keywords: [], existingDescription: "", visionNotes: "", visionLanguage: "ar", variants: [], styleExamples: [], profileBlock: "", taxonomyBlock: "" });
+    assert(/ادعاءات محظورة/.test(sys) && /يناسب كل الأجسام/.test(sys) && /الكمية محدودة/.test(sys), "CQ-35: قاعدة الادعاءات المحظورة بالبرومبت الرئيسي");
+    const { VISION_PROMPT } = await import("../../functions/_lib/ai/prompts/seo.js");
+    assert(/جسم العارضة/.test(VISION_PROMPT) && /أداة تصوير لا جزءاً من المنتج/.test(VISION_PROMPT), "CQ-36: توجيه الرؤية يمنع المقاس من العارضة وعدّ الإكسسوار التصويري كمرفق (I006/I007)");
+  }
+
   // ── التنظيف الحتمي ───────────────────────────────────────────────────────
   {
     const cleaned = cleanDescription(REAL_BAD);

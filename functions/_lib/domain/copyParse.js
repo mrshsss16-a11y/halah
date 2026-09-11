@@ -168,6 +168,13 @@ const BAD_OPENERS = /^(هذي|هذه|هذا|هاذي|هاذا|هذول|هذيك|
 /** ذكر سعر داخل النثر: رقم مع ريال/ر.س/SAR، أو كلمة «السعر». */
 const PRICE_IN_PROSE = /(السعر|بسعر|سعره|سعرها)\s*[:：]?\s*[\d٠-٩]|[\d٠-٩][\d٠-٩.,]*\s*(ريال|ر\.?س\.?|SAR|﷼)/;
 const MIN_WORDS_WITH_VISION = 45;
+/**
+ * ادعاءات محظورة — من مكتبة أوصاف المنتجات السعودية التي زوّدها المالك
+ * (docs/sources/…xlsx، ورقة «نواهي_الوصف» N001/N003/N010 وورقة «مقومات_الوصف»
+ * C005): ذكر آلية التحليل، أحكام ملاءمة الجسد، الأصالة/الضمان بلا مصدر،
+ * والندرة المصطنعة. كلها تصل عميلاً كوعد لا يملكه التاجر.
+ */
+const PROHIBITED_CLAIMS = /(حلل(?:ت|نا) الصورة|بعد تحليل الصورة|من خلال (?:تحليل )?الصورة|بناءً على الصورة|يناسب (?:كل|جميع) الأجسام|يناسب (?:كل|جميع) أشكال الجسم|يخفي (?:العيوب|عيوب الجسم)|منتج أصلي|أصلي ١٠٠|أصلي 100|مضمون(?:ة)? ١٠٠|مضمون(?:ة)? 100|الكمية محدودة|لفترة محدودة|قبل نفاد الكمية|سارع(?:ي)? بالطلب)/;
 
 /**
  * يرجّع قائمة عيوب الوصف (فارغة = مقبول). كل عيب يحمل رمزاً ثابتاً للاختبار
@@ -184,6 +191,10 @@ export function descriptionQualityIssues(copywriting, { hasVision = false } = {}
   if (PRICE_IN_PROSE.test(desc) || PRICE_IN_PROSE.test(excerpt) || PRICE_IN_PROSE.test(wa)) {
     issues.push({ code: "PRICE_IN_PROSE", text: "نص الوصف/النبذة/الواتساب يذكر سعراً — المتجر يعرض السعر بنفسه، والرقم يتغيّر ويبقى النص كاذباً. احذفي أي سعر." });
   }
+  const claim = [desc, excerpt, wa].map((t) => t.match(PROHIBITED_CLAIMS)?.[0]).find(Boolean);
+  if (claim) {
+    issues.push({ code: "PROHIBITED_CLAIM", text: `النص يحمل ادعاءً محظوراً («${claim}»): لا ذكر لآلية تحليل الصورة، ولا حكم على ملاءمة الجسد، ولا أصالة أو ضمان بلا مصدر، ولا ندرة مصطنعة. احذفيه واكتفي بالمرئي والمثبت.` });
+  }
   const words = desc ? desc.split(/\s+/).filter(Boolean).length : 0;
   if (hasVision && words < MIN_WORDS_WITH_VISION) {
     issues.push({ code: "TOO_SHORT", text: `الوصف ${words} كلمة فقط رغم توفّر ملاحظات صورة — اكتبي ٦٠–١٢٠ كلمة من المرئيات المذكورة (اللون، القصّة، الطول، التفاصيل) واقتراح استخدام مشتق منها.` });
@@ -193,12 +204,12 @@ export function descriptionQualityIssues(copywriting, { hasVision = false } = {}
 
 /**
  * تنظيف حتمي بحدّ أدنى حين يُصرّ النموذج بعد إعادة المحاولة: يُسقط الافتتاحية
- * الإشارية ويحذف الجمل التي تذكر سعراً. لا يخترع نصاً — يحذف فقط.
+ * الإشارية ويحذف الجمل التي تذكر سعراً أو ادعاءً محظوراً. لا يخترع نصاً — يحذف فقط.
  */
 export function cleanDescription(text) {
   let t = String(text || "").trim();
   t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
   // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
-  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s)).join(" ").trim();
+  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s)).join(" ").trim();
   return t;
 }
