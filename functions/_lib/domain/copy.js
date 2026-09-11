@@ -5,6 +5,7 @@ import { askWorkersAI, COPY_MODEL } from "../ai/gateway.js";
 import { askVisionDetailed } from "../ai/vision.js";
 import { buildSeoSystem, visionPromptFromTaxonomy } from "../ai/prompts/seo.js";
 import { recallStyleExamples } from "../ai/memory.js";
+import { fenceUntrusted, UNTRUSTED_DATA_NOTICE } from "../ai/guards.js";
 import { getProfile, profileToPromptBlock } from "./storeProfile.js";
 import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
@@ -80,11 +81,48 @@ async function saveCopy(env, { merchantId, productName, opening, keywords }) {
 // جمل عن العارضة أو عن قطعة غير المنتج تُحذف من ملاحظات الصورة **قبل** الكاتب. السجل الحي
 // (2026-09-11، بلوزة متجر المراجعة) أثبت أن النموذج أصرّ على «التنورة…» عبر ثلاث محاولات
 // لأن الملاحظات نفسها تصفها — الحارس بعد الكتابة كان يحذف، والمصدر يعيد الإغراء كل مرة.
-const MODEL_PERSON = /(العارضة|عارضة الأزياء|(?<!\p{L})model(?!\p{L})|wearing|paired with)/iu;
+// ووضعية العارضة أيضاً: «اليد اليمنى في الجيب» وصل وصف بلوزة حقيقي (2026-09-11 22:42 UTC).
+const MODEL_PERSON = /(العارضة|عارضة الأزياء|(?<!\p{L})(?:اليد|يدها|يديها|اليدين|ذراعها|تقف|واقفة|وضعية|شعرها|وجهها|الخلفية)(?!\p{L})|(?<!\p{L})model(?!\p{L})|wearing|paired with|pocket|background)/iu;
 function productOnlyNotes(notes, name) {
   return splitSentences(notes).filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name)).join(" ").trim();
 }
 const descWords = (p) => String(p?.copywriting?.description || "").split(/\s+/).filter(Boolean).length;
+
+/**
+ * كاتب وصف مركّز: نداء قصير مستقل لحقل الوصف وحده، نصاً عادياً.
+ *
+ * السجل الحي (بلوزة متجر المراجعة، ثلاثة توليدات) أثبت أن إعادة المحاولة بنفس البرومبت
+ * الضخم — الشخصية، ١٢ قاعدة، الأمثلة، المعجم، ١٥ حقل JSON — تُرجع نفس الوصف القصير حرفياً
+ * كل مرة. النموذج يحمل تعليمات أكثر مما يلتزم به. هنا مهمة واحدة ببرومبت قصير.
+ */
+function focusedDescriptionSystem(name, notes, variantsText) {
+  return [
+    "أنتِ كاتبة أوصاف منتجات لمتاجر سعودية بالعربية البيضاء.",
+    `اكتبي وصف «${name}» فقط، نصاً عادياً بلا JSON وبلا عناوين وبلا علامات تنصيص.`,
+    "الطول: من ٦٠ إلى ٩٠ كلمة في ثلاث فقرات قصيرة يفصل بينها سطر فارغ:",
+    `١) ابدئي بكلمة «${name}» ثم صفي ما في ملاحظات الصورة بالتفصيل: اللون، القصّة، الياقة، الأكمام، الطول، وكل تفصيل ورد فيها.`,
+    "٢) متى وكيف تُلبس، مع قطعة تنسيق مقترحة.",
+    "٣) جملة هادئة تدعو لمراجعة جدول المقاسات قبل الطلب.",
+    "ممنوع: السعر، الشحن والإرجاع والدفع، أي خامة لم ترد، أحكام الجودة (مريح، أنيق، فاخر، مثالي)، ذكر العارضة أو الصورة، وأي تفصيل لم يرد بالملاحظات.",
+    variantsText ? `الخيارات المتوفرة فعلاً: ${variantsText}` : "",
+    UNTRUSTED_DATA_NOTICE,
+    fenceUntrusted("ملاحظات الصورة", notes, 1500)
+  ].filter(Boolean).join("\n");
+}
+
+/** مخرج الكاتب المركّز نصاً؛ لو أعاد JSON رغم التعليمة نأخذ حقل الوصف منه. */
+function readFocusedText(raw) {
+  let text = String(raw || "").trim().replace(/^["«]|["»]$/g, "").trim();
+  if (/^[{[]/.test(text)) {
+    try {
+      const j = JSON.parse(text);
+      text = String(j?.copywriting?.description || j?.description || "");
+    } catch {
+      text = "";
+    }
+  }
+  return text.trim();
+}
 
 export async function generateProductCopy({ env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, variants, keywordsExtra }) {
   const keywords = seedKeywords(name, category, keywordsExtra);
@@ -153,8 +191,6 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // فاخترع خامة وجودة على منتج لم يره. اللغة تُعالَج بالبرومبت لا بالحذف.
   const classified = classifyVisionNotes(rawVisionNotes);
   const visionNotes = productOnlyNotes(classified?.text || "", name);
-  // تشخيص مؤقت حتى قبول سلة — سجل Cloudflare الحي فقط، لا D1: وصف بصري للمنتج، بلا بيانات عميل.
-  console.log("[copy-diag] vision", JSON.stringify({ rawChars: (classified?.text || "").length, keptChars: visionNotes.length, notes: visionNotes.slice(0, 400) }));
   const visionLanguage = classified?.language || null;
   if (classified?.language === "en") {
     logError({ env }, {
@@ -218,7 +254,6 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // تُنشر مع الوصف على صفحة المنتج (sallaProductPayload.js).
   const allIssues = (p) => [...descriptionQualityIssues(p.copywriting, { hasVision, sourceText, productName: name }), ...publishedFieldIssues(p, { sourceText, productName: name })];
   let issues = allIssues(parsed);
-  console.log("[copy-diag] attempt1", descWords(parsed), issues.map((i) => i.code).join(","));
   if (issues.length) {
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
@@ -228,24 +263,39 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     try {
       const again = parseSeoResponse(await ask(strictQuality, true), name, price);
       const againIssues = allIssues(again);
-      console.log("[copy-diag] attempt2", descWords(again), againIssues.map((i) => i.code).join(","));
       if (againIssues.length < issues.length) { parsed = again; issues = againIssues; }
     } catch (err) {
       if (!(err instanceof CopyParseError)) throw err; // المخرج الأول صالح — نبقيه
     }
   }
-  // القِصَر لا يُصلحه التنظيف (حذف فقط). بلوزة حقيبية على متجر المراجعة خرجت ٢٧ كلمة بعد
-  // إعادة المحاولة العامة (2026-09-11). محاولة ثانية مخصصة للطول وحده، بصورة فقط، مرة واحدة.
+  // القِصَر لا يُصلحه التنظيف (حذف فقط). الوصف القصير مع صورة يُعاد بكاتب مركّز مستقل
+  // (نداء واحد) بدل تكرار البرومبت الضخم الذي أعاد نفس النص حرفياً ثلاث مرات.
   if (issues.some((i) => i.code === "TOO_SHORT")) {
-    logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_LENGTH_RETRY", internal: issues.map((i) => i.code).join(","), storeId: merchantId });
-    const lengthOnly = `\n\n## الوصف ما زال قصيراً — أعيدي كتابته كاملاً\nاكتبي وصف «${name}» بين ٦٠ و٩٠ كلمة في ثلاث فقرات قصيرة: (١) المرئيات كما وردت بملاحظات الصورة بالتفصيل — اللون، القصّة، الياقة، الأكمام، وكل تفصيل ورد فعلاً بالملاحظات. (٢) متى وكيف يُلبس، مع قطعة تنسيق مقترحة. (٣) دعوة هادئة لمراجعة جدول المقاسات. عن «${name}» وحده، بلا سعر ولا شحن ولا حكم جودة، ولا تفصيل لم يرد بالملاحظات.`;
+    // الملاحظات (مقتطف) وعدد الكلمات تُحفظ بالسجل: البث الحي انقطع مرتين، والتشخيص يحتاجها.
+    const diag = `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`;
+    logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_LENGTH_RETRY", internal: diag, storeId: merchantId });
     try {
-      const again = parseSeoResponse(await ask(lengthOnly, true), name, price);
-      const againIssues = allIssues(again);
-      console.log("[copy-diag] attempt3", descWords(again), againIssues.map((i) => i.code).join(","));
-      if (!againIssues.some((i) => i.code === "TOO_SHORT") && againIssues.length <= issues.length) { parsed = again; issues = againIssues; }
+      const variantsText = parsedVariants.map((v) => `${v.name}: ${(v.values || []).join("، ")}`).join(" · ");
+      const raw = await askWorkersAI({
+        env,
+        system: focusedDescriptionSystem(name, visionNotes, variantsText),
+        messages: [{ role: "user", content: `اكتبي وصف «${name}» الآن.` }],
+        maxTokens: 500,
+        temperature: 0.4,
+        model: COPY_MODEL,
+        storeId: merchantId,
+        ttlKind: "copy",
+        skipCache: true
+      });
+      const text = readFocusedText(raw);
+      const candidate = { ...parsed, copywriting: { ...parsed.copywriting, description: text } };
+      const candidateIssues = allIssues(candidate);
+      if (text && !candidateIssues.some((i) => i.code === "TOO_SHORT") && candidateIssues.length <= issues.length) {
+        parsed = candidate;
+        issues = candidateIssues;
+      }
     } catch (err) {
-      if (!(err instanceof CopyParseError)) throw err;
+      logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_FOCUSED_FAILED", internal: String(err?.message || err).slice(0, 200), storeId: merchantId });
     }
   }
   if (issues.length) {
@@ -256,7 +306,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     cleanPublishedFields(parsed, { sourceText, name });
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_FORCED",
-      internal: issues.map((i) => i.code).join(","), storeId: merchantId
+      internal: `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)}`, storeId: merchantId
     });
   }
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});

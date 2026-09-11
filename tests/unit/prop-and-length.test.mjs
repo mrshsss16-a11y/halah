@@ -14,7 +14,7 @@ const { assert, done } = createRunner("prop-and-length");
 
 const REAL_BLOUSE = "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية. التنورة مصنوعة من طبقات لونية: أبيض وأزرق فاتح وأزرق غامق. هذه البلوزة مثالية للمناسبات الصيفية والنهارية.";
 const LONG_GOOD = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية واسعة تتجمع بكسرات خفيفة عند خط الصدر، مع تفصيل دانتيل ظاهر على الكتف والكم. قصّتها مستقيمة تنزل حتى الخصر، فتدخل تحت التنورة أو تُلبس فوقها بحرية.\n\nتُنسَّق مع تنورة بطبقات زرقاء أو بنطال بيج واسع للإطلالات الصيفية والنهارية، وتناسب الدوام والزيارات العائلية.\n\nراجعي جدول المقاسات قبل الطلب لمطابقة عرض الكتفين وطول القطعة.";
-const VISION_NOTES = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية مع كسرات عند الصدر، وتفصيل دانتيل على الكتف والكم. العارضة تلبس تنورة بطبقات بيضاء وزرقاء.";
+const VISION_NOTES = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية مع كسرات عند الصدر، وتفصيل دانتيل على الكتف والكم. العارضة تلبس تنورة بطبقات بيضاء وزرقاء. اليد اليمنى في الجيب.";
 
 const codes = (arr) => arr.map((i) => i.code);
 const copyJson = (description) => JSON.stringify({
@@ -80,21 +80,24 @@ async function main() {
     const base = { recent: [], keywords: [], existingDescription: "", visionNotes: VISION_NOTES, visionLanguage: "ar", variants: [], styleExamples: [], profileBlock: "", taxonomyBlock: "" };
     assert(/اكتبي عن «بلوزة» وحده/.test(buildSeoSystem({ ...base, productName: "بلوزة" })), "PL-11: البرومبت يسمّي المنتج ويجعل قطع العارضة تنسيقاً فقط");
     assert(!/تلبسها العارضة/.test(buildSeoSystem(base)), "PL-12: بلا اسم منتج لا تُحقن القاعدة (سلوك سابق محفوظ)");
+    const { VISION_PROMPT } = await import("../../functions/_lib/ai/prompts/seo.js");
+    assert(/لا وضعية العارضة ولا يديها/.test(VISION_PROMPT) && /أي دانتيل أو تطريز/.test(VISION_PROMPT), "PL-21: توجيه الرؤية يحصر الوصف بالقطعة المعروضة ويفحص الياقة والأكمام والتفاصيل بالترتيب");
   }
 
   // ── التكامل: إعادة الطول مع صورة ─────────────────────────────────────────
   {
-    const ai = mockAi([copyJson(REAL_BLOUSE), copyJson(REAL_BLOUSE), copyJson(LONG_GOOD)]);
+    const ai = mockAi([copyJson(REAL_BLOUSE), copyJson(REAL_BLOUSE), LONG_GOOD]);
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
-    assert(ai.seen.vision >= 1 && ai.seen.text === 3, `PL-13: قصير بعد الإعادة العامة ⇒ محاولة طول مخصصة ثالثة (نصية: ${ai.seen.text})`);
-    assert(/ما زال قصيراً/.test(ai.seen.systems[2]) && /«بلوزة» وحده/.test(ai.seen.systems[2]), "PL-14: تعليمة الطول تسمّي المنتج وتحصر الكتابة فيه");
+    assert(ai.seen.vision >= 1 && ai.seen.text === 3, `PL-13: قصير بعد الإعادة العامة ⇒ كاتب وصف مركّز ثالث (نصية: ${ai.seen.text})`);
+    assert(/اكتبي وصف «بلوزة» فقط/.test(ai.seen.systems[2]) && !/specsTable/.test(ai.seen.systems[2]) && ai.seen.systems[2].length < 2000, "PL-14: الكاتب المركّز برومبت قصير مستقل لحقل الوصف وحده، بلا مخطط JSON");
     assert(out.copywriting.description === LONG_GOOD, "PL-15: النسخة الطويلة السليمة تُعتمد");
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
+    assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
   {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
-    assert(ai.seen.text === 3, "PL-16: الإصرار ⇒ ثلاث محاولات نصية فقط لا حلقة");
+    assert(ai.seen.text === 3, "PL-16: الإصرار ⇒ ثلاث محاولات نصية فقط لا حلقة (والكاتب المركّز إن أعاد JSON يُقرأ وصفه ويُرفض لقِصَره)");
     assert(out.copywriting.description === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية." && !/تنورة|مثالية/.test(out.copywriting.description), "PL-17: عند الإصرار لا تصل التنورة ولا «مثالية» صفحة المتجر");
   }
   {
