@@ -106,11 +106,14 @@ export async function deleteHalaFaqEmbedding(env, id) {
 // تختلط أبداً بذاكرة تاجر حقيقي (معرّفات التجار "m_..." أو "hala").
 const STYLE_LIBRARY_STORE_ID = "style_library";
 
-export async function storeStyleExample({ env, category, text, note }) {
+export async function storeStyleExample({ env, category, text, note, refKey = null }) {
   if (!category || !text) return null;
   return upsertVector(env, {
     storeId: STYLE_LIBRARY_STORE_ID,
     kind: "style_example",
+    // مفتاح المصدر (مثل P001 بمكتبة الأوصاف السعودية) ⇒ معرّف متجه ثابت، فإعادة
+    // الزرع بعد تنقيح تستبدل الصف ولا تكرره. بلا مفتاح يبقى السلوك القديم (عشوائي).
+    id: refKey ? vectorIdFor("style_example", STYLE_LIBRARY_STORE_ID, String(refKey)) : null,
     // الملاحظة جزء من نص المثال: لا حقل خاص بها بالشكل الموحَّد، وإسقاطها
     // صامتاً يفقد سبب اختيار المثال.
     text: note ? `${text}\n\n(ملاحظة: ${note})` : String(text),

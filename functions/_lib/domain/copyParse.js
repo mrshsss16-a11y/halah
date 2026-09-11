@@ -167,7 +167,12 @@ export function parseSeoResponse(raw, name, price) {
 const BAD_OPENERS = /^(هذي|هذه|هذا|هاذي|هاذا|هذول|هذيك|هذاك|منتجنا|منتجك|إليك|اليك|نقدم لك|نقدّم لك)(?=[\s،,:.!؟]|$)/;
 /** ذكر سعر داخل النثر: رقم مع ريال/ر.س/SAR، أو كلمة «السعر». */
 const PRICE_IN_PROSE = /(السعر|بسعر|سعره|سعرها)\s*[:：]?\s*[\d٠-٩]|[\d٠-٩][\d٠-٩.,]*\s*(ريال|ر\.?س\.?|SAR|﷼)/;
-const MIN_WORDS_WITH_VISION = 45;
+// ٣٥ = حد مكتبة الأوصاف السعودية المنقّحة (أمثلة الأسلوب ٣٥–٤٧ كلمة). حدّ أعلى
+// يجعل كل وصف يقلّد الأمثلة يفشل ويُعاد توليده. «هذي تنورة…» الأصلي يبقى ممسوكاً
+// بالافتتاحية والسعر لا بالطول.
+const MIN_WORDS_WITH_VISION = 35;
+/** معقوف بالمخرج = عنصر نائب منقول من أمثلة الأسلوب ({الخامة}) — لا يصل صفحة متجر. */
+const PLACEHOLDER = /[{}]/;
 /**
  * ادعاءات محظورة — من مكتبة أوصاف المنتجات السعودية التي زوّدها المالك
  * (docs/sources/…xlsx، ورقة «نواهي_الوصف» N001/N003/N010 وورقة «مقومات_الوصف»
@@ -208,6 +213,9 @@ export function descriptionQualityIssues(copywriting, { hasVision = false, sourc
   if (PRICE_IN_PROSE.test(desc) || PRICE_IN_PROSE.test(excerpt) || PRICE_IN_PROSE.test(wa)) {
     issues.push({ code: "PRICE_IN_PROSE", text: "نص الوصف/النبذة/الواتساب يذكر سعراً — المتجر يعرض السعر بنفسه، والرقم يتغيّر ويبقى النص كاذباً. احذفي أي سعر." });
   }
+  if ([desc, excerpt, wa].some((t) => PLACEHOLDER.test(t))) {
+    issues.push({ code: "PLACEHOLDER_LEAK", text: "النص يحوي عنصراً نائباً بين معقوفين (مثل {الخامة}) منقولاً من أمثلة الأسلوب. اذكري الحقيقة فقط إن وردت ببيانات التاجر، وإلا احذفي الجملة كاملة. ممنوع أي معقوف بالمخرج." });
+  }
   const claim = [desc, excerpt, wa].map((t) => t.match(PROHIBITED_CLAIMS)?.[0]).find(Boolean);
   if (claim) {
     issues.push({ code: "PROHIBITED_CLAIM", text: `النص يحمل ادعاءً محظوراً («${claim}»): لا ذكر لآلية تحليل الصورة، ولا حكم على ملاءمة الجسد، ولا أصالة أو ضمان بلا مصدر، ولا ندرة مصطنعة. احذفيه واكتفي بالمرئي والمثبت.` });
@@ -219,7 +227,7 @@ export function descriptionQualityIssues(copywriting, { hasVision = false, sourc
   }
   const words = desc ? desc.split(/\s+/).filter(Boolean).length : 0;
   if (hasVision && words < MIN_WORDS_WITH_VISION) {
-    issues.push({ code: "TOO_SHORT", text: `الوصف ${words} كلمة فقط رغم توفّر ملاحظات صورة — اكتبي ٦٠–١٢٠ كلمة من المرئيات المذكورة (اللون، القصّة، الطول، التفاصيل) واقتراح استخدام مشتق منها.` });
+    issues.push({ code: "TOO_SHORT", text: `الوصف ${words} كلمة فقط رغم توفّر ملاحظات صورة — اكتبي ٤٠–٨٠ كلمة من المرئيات المذكورة (اللون، القصّة، الطول، التفاصيل) واقتراح استخدام مشتق منها.` });
   }
   return issues;
 }
@@ -232,6 +240,6 @@ export function cleanDescription(text, { sourceText } = {}) {
   let t = String(text || "").trim();
   t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
   // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
-  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !(sourceText !== undefined && unsourcedMaterial(s, sourceText))).join(" ").trim();
+  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !(sourceText !== undefined && unsourcedMaterial(s, sourceText))).join(" ").trim();
   return t;
 }

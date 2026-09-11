@@ -48,7 +48,8 @@ async function main() {
     const codes = descriptionQualityIssues({ description: REAL_BAD, excerpt: "", whatsapp: "" }, { hasVision: true }).map((i) => i.code);
     assert(codes.includes("BAD_OPENER"), "CQ-1: «هذي تنورة…» تُمسك كافتتاحية إشارية");
     assert(codes.includes("PRICE_IN_PROSE"), "CQ-2: «السعر: 83 ريال» داخل الوصف يُمسك");
-    assert(codes.includes("TOO_SHORT"), "CQ-3: وصف ٣٥ كلمة رغم توفّر صورة يُمسك كقصير");
+    assert(codes.includes("BAD_OPENER") && codes.includes("PRICE_IN_PROSE"), `CQ-3: «هذي تنورة…» (${REAL_BAD.split(/\s+/).length} كلمة) يُمسك بالافتتاحية والسعر مهما كان طوله`);
+    assert(descriptionQualityIssues({ description: "تنورة سوداء طويلة بقصّة كلوش وخصر مرتفع.", excerpt: "", whatsapp: "" }, { hasVision: true }).some((i) => i.code === "TOO_SHORT"), "CQ-3b: وصف أقصر من ٣٥ كلمة رغم الصورة يُمسك كقصير");
     assert(descriptionQualityIssues({ description: GOOD_DESC, excerpt: "نبذة", whatsapp: "واتساب" }, { hasVision: true }).length === 0, "CQ-4: وصف سليم يمرّ بلا إنذار كاذب");
     assert(descriptionQualityIssues({ description: "وصف قصير صادق.", excerpt: "", whatsapp: "" }, { hasVision: false }).length === 0, "CQ-5: بلا صورة لا يُعاقَب القِصَر — قاعدة «أقصر وأصدق» باقية");
     for (const opener of ["هذه عباية", "هذا فستان", "منتجنا المميز", "إليك تنورة", "نقدم لك"]) {
@@ -95,6 +96,20 @@ async function main() {
     const ai2 = mockAi([copyJson(silky)]);
     const out2 = await generateProductCopy({ env: { ...ai2 }, merchantId: "m_1", name: "تنورة", price: "", tone: "white", category: "", features: "حرير طبيعي 100%", existingDescription: "", imageUrl: "", keywordsExtra: [] });
     assert(ai2.seen.calls === 1 && out2.copywriting.description === silky, "CQ-45: التاجر ذكر «حرير طبيعي» بالمزايا ⇒ لا إعادة ولا حذف");
+  }
+
+  // ── أمثلة الأسلوب المنقّحة تحمل عناصر نائبة {الخامة} — لا تصل صفحة متجر ──
+  {
+    const leak = (c) => descriptionQualityIssues(c).some((i) => i.code === "PLACEHOLDER_LEAK");
+    assert(leak({ description: "تنورة كلوش سوداء. خامتها {الخامة}.", excerpt: "", whatsapp: "" }) && leak({ description: "سليم", excerpt: "", whatsapp: "تنورة {الخامة}" }), "CQ-46: معقوف بالوصف أو الواتساب يُمسك كتسرّب عنصر نائب");
+    assert(!leak({ description: GOOD_DESC, excerpt: "نبذة", whatsapp: "واتساب" }), "CQ-47: وصف بلا معقوفات لا إنذار");
+    assert(cleanDescription("تنورة كلوش سوداء طويلة. خامتها {الخامة}، وراجعي جدول المقاسات. مناسبة للسهرات.") === "تنورة كلوش سوداء طويلة. مناسبة للسهرات.", "CQ-48: التنظيف يحذف جملة العنصر النائب كاملة");
+    const sys = buildSeoSystem({ recent: [], keywords: [], existingDescription: "", visionNotes: "", visionLanguage: "ar", variants: [], styleExamples: [{ text: "عباية كلوش… خامتها {الخامة}." }], profileBlock: "", taxonomyBlock: "" });
+    assert(/عنصر نائب لا نص/.test(sys) && /ممنوع أي معقوف بالمخرج/.test(sys) && /أمثلة أسلوب مرجعية/.test(sys) && !/أمثلة أسلوب حقيقية ناجحة/.test(sys), "CQ-49: الأمثلة موسومة «مرجعية» لا «حقيقية ناجحة»، ومعها قاعدة المعقوفات");
+    const leaky = GOOD_DESC.replace("متوفرة بمقاسات من XS إلى XL،", "خامتها {الخامة}.");
+    const ai = mockAi([copyJson(leaky), copyJson(GOOD_DESC)]);
+    const out = await generateProductCopy({ env: { ...ai }, merchantId: "m_1", name: "تنورة", price: "", tone: "white", category: "", features: "", existingDescription: "", imageUrl: "", keywordsExtra: [] });
+    assert(ai.seen.calls === 2 && /معقوف/.test(ai.seen.systems[1]) && !/[{}]/.test(out.copywriting.description), "CQ-50: عنصر نائب بالمخرج ⇒ إعادة محاولة، والمنشور بلا معقوفات");
   }
 
   // ── التنظيف الحتمي ───────────────────────────────────────────────────────
