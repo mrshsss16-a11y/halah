@@ -12,13 +12,15 @@
 import { handleInboundBatch, verifyInboundSignature, parseInboundPayload } from "../../_lib/domain/whatsappInbound.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
+import { timingSafeEqualStr } from "../../_lib/core/crypto.js";
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
   const mode = url.searchParams.get("hub.mode");
   const token = url.searchParams.get("hub.verify_token");
   const challenge = url.searchParams.get("hub.challenge");
-  if (mode === "subscribe" && token && token === context.env.WHATSAPP_VERIFY_TOKEN) {
+  const expected = context.env.WHATSAPP_VERIFY_TOKEN;
+  if (mode === "subscribe" && expected && timingSafeEqualStr(token, expected)) {
     return new Response(challenge, { status: 200 });
   }
   return new Response("forbidden", { status: 403 });

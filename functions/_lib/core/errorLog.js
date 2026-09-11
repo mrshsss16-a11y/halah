@@ -14,8 +14,39 @@
 // note at wrangler.toml:32) + D1 (queryable by /api/admin/errors).
 // The D1 write is fire-and-forget: a logging failure must never break the
 // response the caller is already returning to the merchant.
+
+// ٣.١٠ — `internal` هنا ليس دائماً نصاً كتبه هذا المشروع: رسائل خطأ من Graph
+// API (واتساب/إنستغرام) وغيرها من SDKs تُرجع أحياناً التوكن المرفوض داخل
+// نص الخطأ نفسه، و`err.stack` الكامل قد يحمل ترويسة Authorization ضمن رسالة
+// استثناء HTTP. هذا يُطبَّق قبل أي كتابة (console أو D1) على كل `internal`.
+const TOKEN_PATTERNS = [
+  // "Authorization: Bearer <token>" أو "Bearer <token>" وحدها.
+  /Bearer\s+\S+/gi,
+  // توكنات ميتا طويلة العمر تبدأ حرفياً بـ"EAA".
+  /EAA[A-Za-z0-9]+/g,
+  // access_token=... / token=... / secret=... بأي استعلام أو رسالة خطأ —
+  // سلسلة ≥٣٢ حرفاً من [A-Za-z0-9_-] بعدها تُعامَل كسر مهما كان مصدرها.
+  /((?:access_token|token|secret)=)[A-Za-z0-9_-]{32,}/gi
+];
+
+/**
+ * ينقّي نص خطأ داخلي قبل الكتابة: يستبدل أي شيء يشبه توكناً بـ`[redacted]`،
+ * ويقصّ قيمة متعددة الأسطر (`err.stack`) لأول ٣ أسطر — الأسطر التالية نادراً
+ * ما تضيف تشخيصاً وتُطيل الصف بلا داعٍ.
+ */
+export function sanitizeInternal(internal) {
+  if (internal === null || internal === undefined) return null;
+  let s = String(internal);
+  s = s.replace(TOKEN_PATTERNS[0], "Bearer [redacted]");
+  s = s.replace(TOKEN_PATTERNS[1], "[redacted]");
+  s = s.replace(TOKEN_PATTERNS[2], "$1[redacted]");
+  const lines = s.split("\n");
+  if (lines.length > 3) s = lines.slice(0, 3).join("\n");
+  return s;
+}
+
 export function logError(context, { requestId, path, code, internal, storeId = null }) {
-  const truncatedInternal = internal ? String(internal).slice(0, 2000) : null;
+  const truncatedInternal = internal ? sanitizeInternal(internal).slice(0, 2000) : null;
   const entry = { requestId, path, code, storeId, internal: truncatedInternal, ts: new Date().toISOString() };
   console.error("[hala-error]", JSON.stringify(entry));
 

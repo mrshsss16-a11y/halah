@@ -13,6 +13,7 @@
 // review_queue بحالة pending، ولا يُرسل إلا بعد approve() بشرية.
 import { processIgEvents, receiveIgEvents } from "../../_lib/domain/instagram.js";
 import { logError } from "../../_lib/core/errorLog.js";
+import { timingSafeEqualStr } from "../../_lib/core/crypto.js";
 
 function requestId(context) {
   return context?.request?.headers?.get("cf-ray") || crypto.randomUUID().slice(0, 12);
@@ -30,7 +31,7 @@ export async function onRequestGet(context) {
   const challenge = url.searchParams.get("hub.challenge");
 
   const expected = context.env.INSTAGRAM_VERIFY_TOKEN;
-  if (!expected || mode !== "subscribe" || token !== expected || !challenge) {
+  if (!expected || mode !== "subscribe" || !timingSafeEqualStr(token, expected) || !challenge) {
     return new Response("Forbidden", { status: 403 });
   }
   return new Response(challenge, {

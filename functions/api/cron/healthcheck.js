@@ -10,6 +10,7 @@ import {
 } from "../../_lib/domain/health.js";
 import { refreshExpiringIgTokens } from "../../_lib/domain/instagram.js";
 import { syncHalaFaqEmbeddings } from "../../_lib/domain/faqSync.js";
+import { pruneOldLogs } from "../../_lib/domain/retention.js";
 import { logError } from "../../_lib/core/errorLog.js";
 import { recordHeartbeat } from "../../_lib/core/heartbeat.js";
 
@@ -57,8 +58,12 @@ async function healthcheckHandler(request, env, requestId, context) {
     logError(context, { requestId, path: "cron/healthcheck", code: "FAQ_EMBED_SYNC_FAILED", internal: String(err?.message || err).slice(0, 250) });
   }
 
+  // ٣.٣ — تقليم دوري لسجلات error_log/webhook_log (٩٠ يوماً) وig_processed_events
+  // (٤٨ ساعة)؛ التفاصيل والدفعات المحدودة بـ`domain/retention.js`.
+  const retention = await pruneOldLogs(env, context);
+
   await recordHeartbeat(env, { job: "healthcheck", ok: healthy, note: healthy ? null : critical.map(([k]) => k).join(",") });
-  return { ok: true, healthy, checks, waTokenCheck, sallaTokenExpiring: sallaExpiry.expiring.length, igTokens, faqSync };
+  return { ok: true, healthy, checks, waTokenCheck, sallaTokenExpiring: sallaExpiry.expiring.length, igTokens, faqSync, retention };
 }
 
 export const onRequestGet = withApi.raw(healthcheckHandler, {
