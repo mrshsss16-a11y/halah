@@ -200,7 +200,10 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // بوابة جودة حتمية بعد التحليل: افتتاحية إشارية / سعر بالنثر / قصر رغم صورة.
   // إعادة محاولة واحدة بتعليمة تسمّي العيب وبتجاوز الكاش، ثم تنظيف مضمون.
   const hasVision = Boolean(visionNotes);
-  let issues = descriptionQualityIssues(parsed.copywriting, { hasVision });
+  // مصدر الخامات = بيانات التاجر وحدها. ملاحظات الصورة **ليست** مصدراً: الصورة
+  // لا تثبت ذهباً ولا حريراً (قاعدة المعرفة السعودية F005/F006).
+  const sourceText = [name, features, existingDescription, JSON.stringify(parsedVariants)].join(" ");
+  let issues = descriptionQualityIssues(parsed.copywriting, { hasVision, sourceText });
   if (issues.length) {
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
@@ -209,7 +212,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     const strictQuality = "\n\n## إعادة كتابة مطلوبة — عيوب بالمخرج السابق\n" + issues.map((i) => `- ${i.text}`).join("\n");
     try {
       const again = parseSeoResponse(await ask(strictQuality, true), name, price);
-      const againIssues = descriptionQualityIssues(again.copywriting, { hasVision });
+      const againIssues = descriptionQualityIssues(again.copywriting, { hasVision, sourceText });
       if (againIssues.length < issues.length) { parsed = again; issues = againIssues; }
     } catch (err) {
       if (!(err instanceof CopyParseError)) throw err; // المخرج الأول صالح — نبقيه
@@ -217,9 +220,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   }
   if (issues.length) {
     // النموذج أصرّ: تنظيف حتمي (حذف فقط، لا اختراع) ويُسجَّل أنه قُسر.
-    parsed.copywriting.description = cleanDescription(parsed.copywriting.description);
-    parsed.copywriting.excerpt = cleanDescription(parsed.copywriting.excerpt).slice(0, 250);
-    parsed.copywriting.whatsapp = cleanDescription(parsed.copywriting.whatsapp);
+    parsed.copywriting.description = cleanDescription(parsed.copywriting.description, { sourceText });
+    parsed.copywriting.excerpt = cleanDescription(parsed.copywriting.excerpt, { sourceText }).slice(0, 250);
+    parsed.copywriting.whatsapp = cleanDescription(parsed.copywriting.whatsapp, { sourceText });
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_FORCED",
       internal: issues.map((i) => i.code).join(","), storeId: merchantId

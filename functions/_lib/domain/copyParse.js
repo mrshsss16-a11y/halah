@@ -174,13 +174,30 @@ const MIN_WORDS_WITH_VISION = 45;
  * C005): ذكر آلية التحليل، أحكام ملاءمة الجسد، الأصالة/الضمان بلا مصدر،
  * والندرة المصطنعة. كلها تصل عميلاً كوعد لا يملكه التاجر.
  */
-const PROHIBITED_CLAIMS = /(حلل(?:ت|نا) الصورة|بعد تحليل الصورة|من خلال (?:تحليل )?الصورة|بناءً على الصورة|يناسب (?:كل|جميع) الأجسام|يناسب (?:كل|جميع) أشكال الجسم|يخفي (?:العيوب|عيوب الجسم)|منتج أصلي|أصلي ١٠٠|أصلي 100|مضمون(?:ة)? ١٠٠|مضمون(?:ة)? 100|الكمية محدودة|لفترة محدودة|قبل نفاد الكمية|سارع(?:ي)? بالطلب)/;
+const PROHIBITED_CLAIMS = /(حلل(?:ت|نا) الصورة|بعد تحليل الصورة|من خلال (?:تحليل )?الصورة|بناءً على الصورة|يناسب (?:كل|جميع) الأجسام|يناسب (?:كل|جميع) أشكال الجسم|يخفي (?:العيوب|عيوب الجسم)|منتج أصلي|أصلي ١٠٠|أصلي 100|مضمون(?:ة)? ١٠٠|مضمون(?:ة)? 100|الكمية محدودة|لفترة محدودة|قبل نفاد الكمية|سارع(?:ي)? بالطلب|آخر قطعة|أرخص سعر|أرخص من السوق|لا تفو[ّ]?ت(?:ي)? الفرصة|نضمن لك|كل العملاء يحبونه|أكيد يناسبك|يوصل(?:ك)? (?:بكرة|غداً|غدا|اليوم)|توصيل (?:سريع )?خلال)/;
+
+/**
+ * خامة/معدن/حجر بلا مصدر — من قاعدة معرفة الدعم السعودية (docs/sources/
+ * saudi_white_arabic_support_marketing_kb.xlsx، ورقة «الممنوعات» F005/F006) ومكتبة
+ * الأوصاف (I004/I008): الصورة لا تثبت المادة. الكلمة مسموحة **فقط** إن وردت
+ * ببيانات التاجر (الاسم/المزايا/الوصف الحالي/الخيارات) — ملاحظات الصورة ليست مصدراً.
+ * «ذهبي»/«فضي»/«حريري» ألوان وملمس لا مواد، فحدّ الكلمة يستثنيها.
+ */
+const SOURCED_MATERIALS = ["الماس", "حرير", "ذهب", "فضه", "جلد طبيعي", "لولو", "كشمير", "عيار", "زركون"];
+const normAr = (t) => String(t || "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ؤ/g, "و");
+function unsourcedMaterial(text, sourceText) {
+  const body = normAr(text);
+  const src = normAr(sourceText);
+  return SOURCED_MATERIALS.find((m) =>
+    new RegExp(`(?<!\\p{L})(?:و|ب|ف|ل|ك)?(?:ال)?${m}(?!\\p{L})`, "u").test(body) && !src.includes(m)
+  ) || null;
+}
 
 /**
  * يرجّع قائمة عيوب الوصف (فارغة = مقبول). كل عيب يحمل رمزاً ثابتاً للاختبار
  * والسجل، ونصاً عربياً يُلقَّم للنموذج بإعادة المحاولة.
  */
-export function descriptionQualityIssues(copywriting, { hasVision = false } = {}) {
+export function descriptionQualityIssues(copywriting, { hasVision = false, sourceText } = {}) {
   const issues = [];
   const desc = String(copywriting?.description || "").trim();
   const excerpt = String(copywriting?.excerpt || "").trim();
@@ -195,6 +212,11 @@ export function descriptionQualityIssues(copywriting, { hasVision = false } = {}
   if (claim) {
     issues.push({ code: "PROHIBITED_CLAIM", text: `النص يحمل ادعاءً محظوراً («${claim}»): لا ذكر لآلية تحليل الصورة، ولا حكم على ملاءمة الجسد، ولا أصالة أو ضمان بلا مصدر، ولا ندرة مصطنعة. احذفيه واكتفي بالمرئي والمثبت.` });
   }
+  // بلا sourceText (نداء قديم/اختبار) لا فحص مادة — لا نحكم بلا معرفة المصدر.
+  const material = sourceText === undefined ? null : [desc, excerpt, wa].map((t) => unsourcedMaterial(t, sourceText)).find(Boolean);
+  if (material) {
+    issues.push({ code: "UNSOURCED_MATERIAL", text: `النص يذكر خامة أو معدناً أو حجراً («${material}») لم يرد في بيانات التاجر — الصورة لا تثبت المادة. احذفيه وصفي المظهر فقط («لون ذهبي» لا «ذهب»، «لمعة ناعمة» لا «حرير»).` });
+  }
   const words = desc ? desc.split(/\s+/).filter(Boolean).length : 0;
   if (hasVision && words < MIN_WORDS_WITH_VISION) {
     issues.push({ code: "TOO_SHORT", text: `الوصف ${words} كلمة فقط رغم توفّر ملاحظات صورة — اكتبي ٦٠–١٢٠ كلمة من المرئيات المذكورة (اللون، القصّة، الطول، التفاصيل) واقتراح استخدام مشتق منها.` });
@@ -206,10 +228,10 @@ export function descriptionQualityIssues(copywriting, { hasVision = false } = {}
  * تنظيف حتمي بحدّ أدنى حين يُصرّ النموذج بعد إعادة المحاولة: يُسقط الافتتاحية
  * الإشارية ويحذف الجمل التي تذكر سعراً أو ادعاءً محظوراً. لا يخترع نصاً — يحذف فقط.
  */
-export function cleanDescription(text) {
+export function cleanDescription(text, { sourceText } = {}) {
   let t = String(text || "").trim();
   t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
   // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
-  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s)).join(" ").trim();
+  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !(sourceText !== undefined && unsourcedMaterial(s, sourceText))).join(" ").trim();
   return t;
 }

@@ -75,6 +75,28 @@ async function main() {
     assert(/جسم العارضة/.test(VISION_PROMPT) && /أداة تصوير لا جزءاً من المنتج/.test(VISION_PROMPT), "CQ-36: توجيه الرؤية يمنع المقاس من العارضة وعدّ الإكسسوار التصويري كمرفق (I006/I007)");
   }
 
+  // ── قاعدة معرفة الدعم السعودية: الممنوعات F001–F009/F015 + خامات بلا مصدر ──
+  {
+    const claim = (t) => descriptionQualityIssues({ description: t, excerpt: "", whatsapp: "" }).some((i) => i.code === "PROHIBITED_CLAIM");
+    assert(claim("عباية كلوش سوداء. آخر قطعة بالمتجر!") && claim("سماعة لاسلكية بأرخص سعر.") && claim("لا تفوّتي الفرصة واطلبيها.") && claim("نضمن لك إطلالة مختلفة.") && claim("فستان يوصل بكرة لباب بيتك."), "CQ-37: ندرة/مقارنة سوق/ضغط/ضمان/موعد توصيل من «الممنوعات» تُمسك");
+    const mat = (t, src) => descriptionQualityIssues({ description: t, excerpt: "", whatsapp: "" }, { sourceText: src }).some((i) => i.code === "UNSOURCED_MATERIAL");
+    assert(mat("خاتم ذهب بفص دائري لامع.", "خاتم نسائي") && mat("قلادة مرصعة بالألماس.", "قلادة") && mat("شال حرير طبيعي بلون زيتي.", "شال زيتي"), "CQ-38: ذهب/ألماس/حرير بلا ذكر ببيانات التاجر يُمسك (F005/F006)");
+    assert(!mat("خاتم ذهب عيار ٢١ بفص دائري.", "خاتم ذهب عيار ٢١") && !mat("قلادة مرصعة بالألماس.", "قلادة ألماس طبيعي"), "CQ-39: الخامة الواردة ببيانات التاجر مسموحة — المصدر يثبتها");
+    assert(!mat("خاتم بلون ذهبي ولمعة فضية وملمس حريري.", "خاتم"), "CQ-40: «ذهبي/فضية/حريري» ألوان وملمس لا مواد — لا إنذار كاذب");
+    assert(!mat("خاتم ذهب.", undefined), "CQ-41: بلا sourceText لا فحص مادة — نداء قديم لا يُحكم عليه بلا مصدر");
+    assert(cleanDescription("خاتم بفص دائري لامع. مصنوع من الذهب الخالص. مناسب للهدايا.", { sourceText: "خاتم" }) === "خاتم بفص دائري لامع. مناسب للهدايا.", "CQ-42: التنظيف يحذف جملة الخامة غير المثبتة كاملة");
+    const sys = buildSeoSystem({ recent: [], keywords: [], existingDescription: "", visionNotes: "", visionLanguage: "ar", variants: [], styleExamples: [], profileBlock: "", taxonomyBlock: "" });
+    assert(/آخر قطعة/.test(sys) && /«لون ذهبي» لا «ذهب»/.test(sys), "CQ-43: قواعد «الممنوعات» بالبرومبت الرئيسي");
+
+    const silky = GOOD_DESC.replace("تنورة سوداء طويلة", "تنورة حرير طبيعي سوداء طويلة");
+    const ai = mockAi([copyJson(silky), copyJson(GOOD_DESC)]);
+    const out = await generateProductCopy({ env: { ...ai }, merchantId: "m_1", name: "تنورة", price: "", tone: "white", category: "", features: "", existingDescription: "", imageUrl: "", keywordsExtra: [] });
+    assert(ai.seen.calls === 2 && /حرير/.test(ai.seen.systems[1]) && out.copywriting.description === GOOD_DESC, "CQ-44: وصف يذكر «حرير» والتاجر لم يذكره ⇒ إعادة محاولة تسمّي الخامة وتُعتمد النسخة السليمة");
+    const ai2 = mockAi([copyJson(silky)]);
+    const out2 = await generateProductCopy({ env: { ...ai2 }, merchantId: "m_1", name: "تنورة", price: "", tone: "white", category: "", features: "حرير طبيعي 100%", existingDescription: "", imageUrl: "", keywordsExtra: [] });
+    assert(ai2.seen.calls === 1 && out2.copywriting.description === silky, "CQ-45: التاجر ذكر «حرير طبيعي» بالمزايا ⇒ لا إعادة ولا حذف");
+  }
+
   // ── التنظيف الحتمي ───────────────────────────────────────────────────────
   {
     const cleaned = cleanDescription(REAL_BAD);
