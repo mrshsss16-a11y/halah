@@ -12,7 +12,7 @@
 import { withApi, ApiError } from "../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../_lib/core/session.js";
 import { listMerchantFaqs, saveMerchantFaq, deleteMerchantFaq } from "../../_lib/domain/faq.js";
-import { storeVectorMemory } from "../../_lib/ai/memory.js";
+import { storeVectorMemory, storeMerchantFaqVector, deleteMerchantFaqVector } from "../../_lib/ai/memory.js";
 import { sanitizeInput } from "../../_lib/core/security.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 
@@ -40,18 +40,17 @@ async function faqHandler(body, env, request) {
       throw new ApiError(400, "السؤال والجواب مطلوبين.", "MISSING_FIELDS");
     }
     const id = await saveMerchantFaq(env, merchantId, { id: body.id || null, question, answer });
-    await storeVectorMemory({
-      env,
-      storeId: merchantId,
-      text: `س: ${question}\nج: ${answer}`,
-      metadata: { kind: "merchant_faq", faqId: String(id ?? "") }
-    }).catch(() => {});
+    // معرّف حتمي: تعديل نفس السؤال يستبدل متجهه بدل أن يضيف نسخة ثانية تبقى
+    // تردّ بالجواب القديم إلى الأبد.
+    await storeMerchantFaqVector({ env, merchantId, faqId: id, question, answer }).catch(() => {});
     return { ok: true, id };
   }
 
   if (action === "delete") {
     if (!body.id) throw new ApiError(400, "معرّف السؤال مفقود.", "MISSING_ID");
     await deleteMerchantFaq(env, merchantId, body.id);
+    // الحذف من D1 وحده كان يترك المتجه يردّ بجواب لم يعد موجوداً.
+    await deleteMerchantFaqVector({ env, merchantId, faqId: body.id }).catch(() => {});
     return { ok: true };
   }
 

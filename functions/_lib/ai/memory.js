@@ -1,119 +1,136 @@
-// Episodic memory for the marketer persona on Cloudflare Vectorize — the
-// Workers-native equivalent of the old Upstash Vector integration. Vectorize
-// (unlike Upstash) needs pre-computed embedding vectors, not raw text, so
-// every insert/query goes through embedText() first (functions/_lib/workersAI.js).
-// Store isolation uses a metadata filter instead of a namespace.
-import { embedText } from "./gateway.js";
+// ذاكرة RAG على Vectorize — الواجهة المجالية فوق `vectorStore.js`.
+//
+// هذا الملف كان يلمس `env.VECTORIZE_INDEX` مباشرة بستة مواضع بشكل metadata
+// مختلف لكل واحد، وبلا أي سجل يسمح بالحذف. صار كله يمرّ بالمالك الوحيد
+// (`vectorStore.js`): شكل موحَّد `{storeId, kind, text, refId, ts}`، عزل
+// إلزامي بالـstoreId، وسجل `vector_refs` يجعل المحو النهائي ممكناً فعلاً.
+import { upsertVector, queryVectors, deleteVectorIds, vectorIdFor } from "./vectorStore.js";
+
+/**
+ * نص المقتطف المسترجع كما يدخل البرومبت.
+ *
+ * الباغ الذي يغلقه: برومبتات الاسترجاع الثلاثة (`prompts/support.js`،
+ * `prompts/chat.js`، `domain/whatsappAutoReply.js`) كانت تبني `m.question` و
+ * `m.reply` دائماً، بينما متجهات التاجر تحمل `{text}` فقط — فكل مقتطف تاجر
+ * كان يصل النموذج بالنص الحرفي «س: undefined ج: undefined». الآن: النص إن
+ * وُجد، وإلا الشكل القديم (متجهات أورا المخزَّنة سلفاً بالمؤشر الحي ما زالت
+ * تحمل question/reply حتى تُعاد فهرستها)، وإلا يُسقَط المقتطف بلا ضجيج.
+ * @returns {string} نص جاهز للبرومبت، أو "" لمقتطف بلا محتوى.
+ */
+export function formatMemory(m) {
+  const text = String(m?.text ?? "").trim();
+  if (text) return text;
+  const question = String(m?.question ?? "").trim();
+  const reply = String(m?.reply ?? "").trim();
+  if (!question && !reply) return "";
+  return `س: ${question}\nج: ${reply}`;
+}
 
 export async function storeVectorMemory({ env, storeId, text, metadata = {} }) {
-  if (!env?.VECTORIZE_INDEX) return null;
-  const values = await embedText({ env, text });
-  const id = `${storeId}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-  await env.VECTORIZE_INDEX.insert([
-    {
-      id,
-      values,
-      metadata: { text, storeId, ...metadata, ts: Date.now() }
-    }
-  ]);
-  return id;
+  return upsertVector(env, {
+    storeId,
+    kind: metadata.kind || "memory",
+    text,
+    refId: metadata.faqId ?? metadata.refId ?? ""
+  });
 }
 
 export async function recallSimilar({ env, storeId, question, topK = 5 }) {
-  if (!env.VECTORIZE_INDEX) return [];
-  const values = await embedText({ env, text: question });
-  const result = await env.VECTORIZE_INDEX.query(values, {
-    topK,
-    returnMetadata: "all",
-    filter: { storeId: { $eq: storeId } }
+  return queryVectors(env, { storeId, text: question, topK });
+}
+
+// ── أسئلة التاجر الشائعة: معرّف حتمي ──────────────────────────────────────────
+// قبل هذا، كل حفظ فوق نفس `faqId` كان يُنتج متجهاً **إضافياً** (معرّف عشوائي مع
+// `insert`)، فالسؤال المعدَّل يبقى بنسخته القديمة بالذاكرة إلى الأبد، والحذف من
+// D1 لا يزيل متجهه إطلاقاً. المعرّف الحتمي يجعل الحفظ استبدالاً والحذف ممكناً.
+const MERCHANT_FAQ_KIND = "merchant_faq";
+
+function merchantFaqVectorId(merchantId, faqId) {
+  return vectorIdFor(MERCHANT_FAQ_KIND, merchantId, faqId);
+}
+
+export async function storeMerchantFaqVector({ env, merchantId, faqId, question, answer }) {
+  if (!faqId) return null;
+  return upsertVector(env, {
+    storeId: merchantId,
+    kind: MERCHANT_FAQ_KIND,
+    text: `س: ${question}\nج: ${answer}`,
+    refId: String(faqId),
+    id: merchantFaqVectorId(merchantId, faqId)
   });
-  const matches = result?.matches ?? [];
-  return matches
-    .map((m) => m?.metadata)
-    .filter((m) => m && (m?.score === undefined || m?.score >= 6));
+}
+
+export async function deleteMerchantFaqVector({ env, merchantId, faqId }) {
+  if (!faqId) return 0;
+  return deleteVectorIds(env, { storeId: merchantId, ids: [merchantFaqVectorId(merchantId, faqId)] });
 }
 
 /**
- * Re-embeds every row in D1's hala_faq table into Vectorize under
- * storeId="hala", so the WhatsApp/support personas can recallSimilar()
- * against it exactly like a merchant's memory. Deterministic ids
- * (hala_faq_<row id>) mean a re-run overwrites in place — no separate
- * delete pass needed.
+ * يعيد تضمين كل صف بـ`hala_faq` تحت storeId="hala". المعرّفات حتمية
+ * (`hala_faq:hala:<id>`) فإعادة التشغيل استبدال بمكانه، لا تراكم.
  */
+const HALA_STORE_ID = "hala";
+const HALA_FAQ_KIND = "hala_faq";
+// المعرّف يبقى بصيغته القديمة `hala_faq_<id>` عمداً: المؤشر الحي يحمل متجهات
+// بهذه الصيغة الآن، وتغييرها يجعل كل واحد منها يتيماً لا يُستبدَل ولا يُحذف —
+// فيظهر جواب قديم بجانب الجديد. الاستبدال بمكانه أهم من اتساق شكل المعرّف.
+const halaFaqVectorId = (id) => `hala_faq_${id}`;
+
 export async function reembedHalaFaq(env, faqRows) {
-  if (!env.VECTORIZE_INDEX) return 0;
+  if (!env?.VECTORIZE_INDEX) return 0;
   let count = 0;
   for (const row of faqRows) {
-    const values = await embedText({ env, text: row.question });
-    await env.VECTORIZE_INDEX.upsert([
-      {
-        id: `hala_faq_${row.id}`,
-        values,
-        metadata: {
-          question: row.question,
-          reply: row.answer,
-          score: 10,
-          dialect: "saudi_najdi",
-          storeId: "hala",
-          ts: Date.now()
-        }
-      }
-    ]);
+    await upsertVector(env, {
+      storeId: HALA_STORE_ID,
+      kind: HALA_FAQ_KIND,
+      text: `س: ${row.question}\nج: ${row.answer}`,
+      refId: String(row.id),
+      id: halaFaqVectorId(row.id)
+    });
     count++;
   }
   return count;
 }
 
-// ── Style library: real successful product descriptions, cross-merchant ──
-// Not tied to any single storeId — this is reference material for HOW a
-// good description reads in a given category (عبايات, عطور, ...), used to
-// steer copy.js's tone/structure toward proven real writing instead of
-// generic AI phrasing. Lives in the same Vectorize index under a fixed
-// pseudo-store id so it never collides with a real merchant's memory
-// (storeId values for real merchants are "m_..." or "hala").
+/**
+ * يزيل متجه صف hala_faq محذوف حتى يتوقف الاسترجاع عن عرض جواب لم يعد موجوداً
+ * بـD1. لازم لأن `reembedHalaFaq` يستبدل الحاضر ولا يقلّم الغائب.
+ */
+export async function deleteHalaFaqEmbedding(env, id) {
+  await deleteVectorIds(env, { storeId: HALA_STORE_ID, ids: [halaFaqVectorId(id)] });
+}
+
+// ── مكتبة الأسلوب: أوصاف منتجات حقيقية ناجحة، عابرة للتجار ──────────────────
+// ليست ذاكرة متجر: مرجع لـ«كيف يُكتب وصف جيد» بفئة معيّنة (عبايات، عطور…)
+// يوجّه نبرة وبنية `copy.js`. تعيش بنفس المؤشر تحت معرّف متجر وهمي ثابت فلا
+// تختلط أبداً بذاكرة تاجر حقيقي (معرّفات التجار "m_..." أو "hala").
 const STYLE_LIBRARY_STORE_ID = "style_library";
 
 export async function storeStyleExample({ env, category, text, note }) {
-  if (!env?.VECTORIZE_INDEX || !category || !text) return null;
-  const values = await embedText({ env, text });
-  const id = `style:${category}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-  await env.VECTORIZE_INDEX.insert([
-    {
-      id,
-      values,
-      metadata: { storeId: STYLE_LIBRARY_STORE_ID, category: String(category), text, note: note || "", ts: Date.now() }
-    }
-  ]);
-  return id;
+  if (!category || !text) return null;
+  return upsertVector(env, {
+    storeId: STYLE_LIBRARY_STORE_ID,
+    kind: "style_example",
+    // الملاحظة جزء من نص المثال: لا حقل خاص بها بالشكل الموحَّد، وإسقاطها
+    // صامتاً يفقد سبب اختيار المثال.
+    text: note ? `${text}\n\n(ملاحظة: ${note})` : String(text),
+    refId: String(category)
+  });
 }
 
 /**
- * Top-k real examples ranked by similarity to the current product's
- * category+name+features. Deliberately NOT filtered by an exact category
- * match — a merchant's free-typed category ("عطور رجالية") will rarely
- * string-match the library's category label ("عطور") exactly, so semantic
- * similarity across the whole library (still scoped to storeId so it never
- * mixes with a real merchant's own memory) does the matching instead.
+ * أقرب أمثلة حقيقية لفئة+اسم+مزايا المنتج الحالي. عمداً **بلا** مطابقة فئة
+ * حرفية: فئة التاجر الحرة ("عطور رجالية") نادراً تطابق تسمية المكتبة ("عطور")،
+ * فالتشابه الدلالي عبر المكتبة كلها (وهي معزولة بمعرّفها الوهمي) هو المطابِق.
  */
 export async function recallStyleExamples({ env, category, productContext, topK = 3 }) {
-  if (!env?.VECTORIZE_INDEX || !category) return [];
-  const values = await embedText({ env, text: `${category} ${productContext || ""}`.trim() });
-  const result = await env.VECTORIZE_INDEX.query(values, {
+  if (!category) return [];
+  return queryVectors(env, {
+    storeId: STYLE_LIBRARY_STORE_ID,
+    text: `${category} ${productContext || ""}`.trim(),
     topK,
-    returnMetadata: "all",
-    filter: { storeId: { $eq: STYLE_LIBRARY_STORE_ID } }
+    // المكتبة مرجع أسلوب لا إجابة: عتبة الذاكرة تُفرغها من أقرب مثال متاح
+    // بفئة لم تُغطَّ بعد، وذلك أسوأ من مثال بعيد نسبياً يُستلهم منه الشكل.
+    minScore: 0
   });
-  const matches = result?.matches ?? [];
-  return matches.map((m) => m?.metadata).filter(Boolean);
-}
-
-/**
- * Removes the Vectorize embedding for a single deleted hala_faq row so
- * recallSimilar() stops surfacing an answer that no longer exists in D1.
- * Must be called whenever a row is deleted, since reembedHalaFaq only
- * upserts current rows and never prunes stale ones.
- */
-export async function deleteHalaFaqEmbedding(env, id) {
-  if (!env.VECTORIZE_INDEX) return;
-  await env.VECTORIZE_INDEX.deleteByIds([`hala_faq_${id}`]);
 }

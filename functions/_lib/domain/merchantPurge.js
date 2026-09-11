@@ -21,6 +21,10 @@
 //     خطأً بأول نسخة من هذي القائمة.)
 //
 // الحذف **نهائي ولا تراجع فيه** — يُنادى من ويبهوك موقَّع فقط، لا من نقطة عامة.
+import { listVectorRefs, deleteVectorIds } from "../ai/vectorStore.js";
+
+/** دفعة حذف المتجهات — نفس حد الدفعة داخل `vectorStore.js`. */
+const VECTOR_DELETE_BATCH = 50;
 
 /**
  * جداول بيانات التاجر التي تُمحى بالكامل. مستخرجة من الهجرات: كل جدول فيه
@@ -55,7 +59,11 @@ export const PURGE_TABLES = [
   "store_products",
   "store_profiles",
   "agent_profiles",
-  "merchant_feedback"
+  "merchant_feedback",
+  // سجل معرّفات متجهات التاجر. صفوفه تسقط هنا **بعد** أن تُحذف المتجهات نفسها
+  // بخطوة `purgeMerchantVectors` أدناه — الترتيب مقصود: الصف هو الدليل الوحيد
+  // على وجود المتجه، فمحوه أولاً يترك نص التاجر بالمؤشر بلا سبيل لحذفه.
+  "vector_refs"
 ];
 
 /** جداول تاجر لا تُمحى — كل واحد بسببه. يقرؤها الحارس ليتأكد أن الترك واعٍ. */
@@ -63,6 +71,26 @@ export const PURGE_EXEMPT = {
   merchants: "الصف يبقى مفرَّغاً؛ حذفه يكسر إعادة الربط بنفس المعرّف",
   audit_log: "سجل مساءلة لأفعال الأدمن، لا بيانات تاجر (P9)"
 };
+
+/**
+ * يحذف كل متجهات التاجر من Vectorize اعتماداً على سجل `vector_refs`.
+ *
+ * بلا ربط Vectorize لا خطوة أصلاً: `vectorStore.upsertVector` لا يكتب سجلاً إلا
+ * بعد التأكد من الربط، فغيابه يعني أنه لم يُكتب متجه ولا صف — لا محو صامت
+ * يُدّعى نجاحه. الفشل يُدرَج بـ`failed` كما تفعل الجداول، لا يُبتلع.
+ */
+async function purgeMerchantVectors(env, merchantId, failed) {
+  if (!env?.VECTORIZE_INDEX) return;
+  try {
+    const ids = await listVectorRefs(env, merchantId);
+    for (let i = 0; i < ids.length; i += VECTOR_DELETE_BATCH) {
+      await deleteVectorIds(env, { storeId: merchantId, ids: ids.slice(i, i + VECTOR_DELETE_BATCH) });
+    }
+  } catch (err) {
+    const msg = String(err?.message || err);
+    if (!/no such table/i.test(msg)) failed.push(`vector_refs: ${msg.slice(0, 80)}`);
+  }
+}
 
 /**
  * يمحو كل بيانات التاجر، ويُفرّغ صف `merchants` مما يُعرّفه.
@@ -75,6 +103,11 @@ export async function purgeMerchantData(env, merchantId, { keepAccount = false }
 
   const failed = [];
   let purged = 0;
+
+  // ذاكرة المتجهات أولاً: `vector_refs` نفسه ضمن الجداول أدناه، ومحو صفوفه قبل
+  // حذف المتجهات يفقد المعرّفات إلى الأبد (Vectorize لا يحذف بفلتر metadata)،
+  // فيبقى نص التاجر الخام بالمؤشر بينما نقول له إن بياناته مُحيت.
+  await purgeMerchantVectors(env, merchantId, failed);
 
   // `keepAccount`: التاجر طلب فكّ ربط سلة ومحو بيانات متجره، **لا** حذف حسابه.
   // بدون هذا الاستثناء كان `accounts` ضمن المحو فيضيع بريده وكلمة مروره معه —

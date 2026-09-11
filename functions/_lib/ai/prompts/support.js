@@ -10,15 +10,21 @@
  */
 import { HALA_SUPPORT_PROMPT, PERSONA_SYSTEM_PROMPT, buildAgentPrompt } from "../persona.js";
 import { fenceUntrusted, UNTRUSTED_DATA_NOTICE } from "../guards.js";
+import { formatMemory } from "../memory.js";
 
 /**
  * كتلة المعرفة المسترجعة (RAG) مسوّرة كبيانات لا تعليمات.
  * A2 — المقتطفات نصوص كتبها زوار سابقون (سؤال + رد محفوظ).
+ *
+ * `formatMemory` بدل `m.question`/`m.reply`: متجهات التاجر تحمل `{text}` فقط،
+ * فكان كل مقتطف تاجر يدخل البرومبت «س: undefined ج: undefined».
  */
 export function buildSupportRagContext(memories) {
-  const ragBody = memories.length
-    ? memories.map((m) => `- س: ${m.question}\n  ج: ${m.reply}`).join("\n")
-    : "";
+  const ragBody = (memories || [])
+    .map((m) => formatMemory(m))
+    .filter(Boolean)
+    .map((t) => `- ${t.replace(/\n/g, "\n  ")}`)
+    .join("\n");
   const ragFenced = fenceUntrusted("معرفة مسترجعة", ragBody, 3000);
   return ragFenced
     ? `\n\n${UNTRUSTED_DATA_NOTICE}\n\n## معرفة ذات صلة (استخدميها لو تساعد بالإجابة، تجاهليها لو مو مرتبطة)\n${ragFenced}`

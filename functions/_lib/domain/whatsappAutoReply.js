@@ -10,7 +10,7 @@
 // Replies only within the 24h service window (free-form allowed there).
 import { askWorkersAI, TEXT_MODEL } from "../ai/gateway.js";
 import { buildWhatsappSystem } from "../ai/prompts/whatsapp.js";
-import { recallSimilar } from "../ai/memory.js";
+import { recallSimilar, formatMemory } from "../ai/memory.js";
 import { checkAndConsumeMonthly } from "../core/meter.js";
 import { matchAuraGreeting, matchFastIntent } from "../ai/intents.js";
 import { logError } from "../core/errorLog.js";
@@ -167,9 +167,16 @@ export async function autoReply(env, { merchantId, isAuraLine, phone, incomingTe
   const memories =
     isAuraLine ? [] : await recallSimilar({ env, storeId: merchantId, question: incomingText }).catch(() => []);
   // A2 — المقتطفات المسترجعة نصوص كتبها عملاء سابقون؛ داخل محدِّدات صريحة.
+  // `formatMemory` بدل `m.question`/`m.reply`: متجهات التاجر تحمل `{text}` فقط،
+  // فكانت ذاكرة كل تاجر تصل النموذج «س: undefined ج: undefined» — أي أن مسار
+  // RAG بواتساب كان يضيف ضجيجاً بدل معرفة.
   const ragFenced = fenceUntrusted(
     "معرفة مسترجعة",
-    memories.map((m) => `- س: ${m.question}\n  ج: ${m.reply}`).join("\n"),
+    memories
+      .map((m) => formatMemory(m))
+      .filter(Boolean)
+      .map((t) => `- ${t.replace(/\n/g, "\n  ")}`)
+      .join("\n"),
     3000
   );
   const ragContext = ragFenced

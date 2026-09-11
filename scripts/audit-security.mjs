@@ -249,9 +249,26 @@ for (const f of secretFiles) {
   }
 }
 
+// ── ح١٠ ─────────────────────────────────────────────────────────────────────
+// لماذا: ذاكرة المتجهات تحمل **نص التاجر الخام** بـmetadata. نداء مباشر على
+// `env.VECTORIZE_INDEX` من أي ملف يعني: (أ) استعلام قد ينسى `filter.storeId`
+// فيقرأ ذاكرة تاجر آخر، (ب) كتابة بلا صف بـ`vector_refs` فيصير النص غير قابل
+// للحذف ووعد «الحذف نهائي» كاذباً. المالك الوحيد `ai/vectorStore.js` يفرض
+// الاثنين. فحص وجود الربط (`env?.VECTORIZE_INDEX ? ... : ...`) ليس نداءً ويمرّ.
+const VECTOR_OWNER = "functions/_lib/ai/vectorStore.js";
+const VECTOR_CALL = /VECTORIZE_INDEX\s*\.\s*(query|upsert|insert|deleteByIds|getByIds)\s*\(/;
+for (const f of fnFiles) {
+  const r = rel(f);
+  if (r === VECTOR_OWNER) continue;
+  readFileSync(f, "utf8").split("\n").forEach((line, i) => {
+    const m = VECTOR_CALL.exec(line);
+    if (m) fail("ح١٠", `${r}:${i + 1}`, `نداء VECTORIZE_INDEX.${m[1]}( خارج ${VECTOR_OWNER} — العزل بـstoreId وسجل vector_refs يعيشان هناك وحدهما`);
+  });
+}
+
 if (failures.length) {
   console.error("✖ تدقيق الأمن: ارتداد مكتشف —");
   for (const x of failures) console.error("  " + x);
   process.exit(1);
 }
-console.log("✔ تدقيق الأمن: ح٢ ح٥ ح٦ ح٧ ح٨ ح٩ سليمة.");
+console.log("✔ تدقيق الأمن: ح٢ ح٥ ح٦ ح٧ ح٨ ح٩ ح١٠ سليمة.");
