@@ -159,7 +159,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
     : [];
 
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock });
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock, productName: name });
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
   // السعر لا يُمرَّر للنموذج (2026-09-11): كان يعود داخل نص الوصف («السعر: 83
   // ريال») فيتقادم مع أول تعديل سعر بالمتجر. يبقى لـJSON-LD فقط عبر parseSeoResponse.
@@ -205,7 +205,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   const sourceText = [name, features, existingDescription, JSON.stringify(parsedVariants)].join(" ");
   // الحارس على كل ما يُنشر، لا الوصف وحده: النقاط والأسئلة الشائعة والعنوان والميتا
   // تُنشر مع الوصف على صفحة المنتج (sallaProductPayload.js).
-  const allIssues = (p) => [...descriptionQualityIssues(p.copywriting, { hasVision, sourceText }), ...publishedFieldIssues(p, { sourceText })];
+  const allIssues = (p) => [...descriptionQualityIssues(p.copywriting, { hasVision, sourceText, productName: name }), ...publishedFieldIssues(p, { sourceText, productName: name })];
   let issues = allIssues(parsed);
   if (issues.length) {
     logError({ env }, {
@@ -221,11 +221,24 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       if (!(err instanceof CopyParseError)) throw err; // المخرج الأول صالح — نبقيه
     }
   }
+  // القِصَر لا يُصلحه التنظيف (حذف فقط). بلوزة حقيبية على متجر المراجعة خرجت ٢٧ كلمة بعد
+  // إعادة المحاولة العامة (2026-09-11). محاولة ثانية مخصصة للطول وحده، بصورة فقط، مرة واحدة.
+  if (issues.some((i) => i.code === "TOO_SHORT")) {
+    logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_LENGTH_RETRY", internal: issues.map((i) => i.code).join(","), storeId: merchantId });
+    const lengthOnly = `\n\n## الوصف ما زال قصيراً — أعيدي كتابته كاملاً\nاكتبي وصف «${name}» بين ٦٠ و٩٠ كلمة في ثلاث فقرات قصيرة: (١) المرئيات كما وردت بملاحظات الصورة بالتفصيل — اللون، القصّة، الياقة، الأكمام، وكل تفصيل ورد فعلاً بالملاحظات. (٢) متى وكيف يُلبس، مع قطعة تنسيق مقترحة. (٣) دعوة هادئة لمراجعة جدول المقاسات. عن «${name}» وحده، بلا سعر ولا شحن ولا حكم جودة، ولا تفصيل لم يرد بالملاحظات.`;
+    try {
+      const again = parseSeoResponse(await ask(lengthOnly, true), name, price);
+      const againIssues = allIssues(again);
+      if (!againIssues.some((i) => i.code === "TOO_SHORT") && againIssues.length <= issues.length) { parsed = again; issues = againIssues; }
+    } catch (err) {
+      if (!(err instanceof CopyParseError)) throw err;
+    }
+  }
   if (issues.length) {
     // النموذج أصرّ: تنظيف حتمي (حذف فقط، لا اختراع) ويُسجَّل أنه قُسر.
-    parsed.copywriting.description = cleanDescription(parsed.copywriting.description, { sourceText });
-    parsed.copywriting.excerpt = cleanDescription(parsed.copywriting.excerpt, { sourceText }).slice(0, 250);
-    parsed.copywriting.whatsapp = cleanDescription(parsed.copywriting.whatsapp, { sourceText });
+    parsed.copywriting.description = cleanDescription(parsed.copywriting.description, { sourceText, productName: name });
+    parsed.copywriting.excerpt = cleanDescription(parsed.copywriting.excerpt, { sourceText, productName: name }).slice(0, 250);
+    parsed.copywriting.whatsapp = cleanDescription(parsed.copywriting.whatsapp, { sourceText, productName: name });
     cleanPublishedFields(parsed, { sourceText, name });
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_FORCED",

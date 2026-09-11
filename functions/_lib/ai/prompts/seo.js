@@ -86,7 +86,7 @@ function variantsBlock(variants) {
   ].join("\n");
 }
 
-export function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants, styleExamples, profileBlock, taxonomyBlock }) {
+export function buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants, styleExamples, profileBlock, taxonomyBlock, productName }) {
   const avoid = recent.length
     ? `\n\n## لا تكرري هذه الافتتاحيات السابقة لنفس المتجر:\n${recent.map((r, i) => `${i + 1}. "${r.opening}"`).join("\n")}`
     : "";
@@ -160,7 +160,7 @@ export function buildSeoSystem({ recent, keywords, existingDescription, visionNo
     ? `\n\n**ملاحظات الصورة أدناه بالإنجليزية:** افهميها وترجمي معناها للعربية بمصطلحات عربية طبيعية. ممنوع نقل أي كلمة لاتينية حرفياً للوصف. المعنى مصدر حقيقة، واللغة مخرجها عربي بالكامل.`
     : "";
   const visionOutputRule = visionNotes
-    ? `\n11. **الوصف والنبذة يجب أن يذكرا صراحةً** اللون ونوع القصّة (كما وردا بملاحظات صورة المنتج أعلاه)، مع اقتراح استخدام معقول (مناسبة/موسم/إطلالة) مشتق من هذي المرئيات وحدها. تجاهل هذي التفاصيل مع توفرها = وصف ناقص مرفوض.`
+    ? `\n11. **الوصف والنبذة يجب أن يذكرا صراحةً** اللون ونوع القصّة (كما وردا بملاحظات صورة المنتج أعلاه)، مع اقتراح استخدام معقول (مناسبة/موسم/إطلالة) مشتق من هذي المرئيات وحدها. تجاهل هذي التفاصيل مع توفرها = وصف ناقص مرفوض.${productName ? ` **ملاحظات الصورة قد تصف قطعاً أخرى تلبسها العارضة (تنورة، حذاء، حقيبة…): اكتبي عن «${productName}» وحده، وأي قطعة أخرى تُذكر كتنسيق مقترح فقط («تُنسَّق مع…») لا كجزء من المنتج.**` : ""}`
     : "";
 
   // اتساق المصطلح عبر الدفعة: ملاحظات الرؤية صارت تُسمّي بمعجم مغلق، فلو

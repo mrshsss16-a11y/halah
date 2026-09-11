@@ -202,7 +202,7 @@ function unsourcedMaterial(text, sourceText) {
  * يرجّع قائمة عيوب الوصف (فارغة = مقبول). كل عيب يحمل رمزاً ثابتاً للاختبار
  * والسجل، ونصاً عربياً يُلقَّم للنموذج بإعادة المحاولة.
  */
-export function descriptionQualityIssues(copywriting, { hasVision = false, sourceText } = {}) {
+export function descriptionQualityIssues(copywriting, { hasVision = false, sourceText, productName } = {}) {
   const issues = [];
   const desc = String(copywriting?.description || "").trim();
   const excerpt = String(copywriting?.excerpt || "").trim();
@@ -225,6 +225,12 @@ export function descriptionQualityIssues(copywriting, { hasVision = false, sourc
   if (material) {
     issues.push({ code: "UNSOURCED_MATERIAL", text: `النص يذكر خامة أو معدناً أو حجراً («${material}») لم يرد في بيانات التاجر — الصورة لا تثبت المادة. احذفيه وصفي المظهر فقط («لون ذهبي» لا «ذهب»، «لمعة ناعمة» لا «حرير»).` });
   }
+  // قطعة تلبسها العارضة وُصفت كأنها المنتج («التنورة مصنوعة من طبقات لونية» بوصف بلوزة) —
+  // رُصد على متجر المراجعة بالنسخة الحالية 2026-09-11.
+  const prop = productName ? splitSentences(desc).map((s) => propItemIn(s, productName)).find(Boolean) : null;
+  if (prop) {
+    issues.push({ code: "PROP_ITEM", text: `الوصف يصف «${prop}» كأنها جزء من المنتج، وهي قطعة تلبسها العارضة في الصورة. اكتبي عن «${productName}» وحده، واذكري غيره كتنسيق مقترح فقط («تُنسَّق مع ${prop}…»).` });
+  }
   const words = desc ? desc.split(/\s+/).filter(Boolean).length : 0;
   if (hasVision && words < MIN_WORDS_WITH_VISION) {
     issues.push({ code: "TOO_SHORT", text: `الوصف ${words} كلمة فقط رغم توفّر ملاحظات صورة — اكتبي ٤٠–٨٠ كلمة من المرئيات المذكورة (اللون، القصّة، الطول، التفاصيل) واقتراح استخدام مشتق منها.` });
@@ -236,11 +242,11 @@ export function descriptionQualityIssues(copywriting, { hasVision = false, sourc
  * تنظيف حتمي بحدّ أدنى حين يُصرّ النموذج بعد إعادة المحاولة: يُسقط الافتتاحية
  * الإشارية ويحذف الجمل التي تذكر سعراً أو ادعاءً محظوراً. لا يخترع نصاً — يحذف فقط.
  */
-export function cleanDescription(text, { sourceText } = {}) {
+export function cleanDescription(text, { sourceText, productName } = {}) {
   let t = String(text || "").trim();
   t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
   // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
-  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !MECHANISM_LEAK.test(s) && !(sourceText !== undefined && (unsourcedMaterial(s, sourceText) || unsourcedJudgment(s, sourceText)))).join(" ").trim();
+  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !MECHANISM_LEAK.test(s) && !(productName && propItemIn(s, productName)) && !(sourceText !== undefined && (unsourcedMaterial(s, sourceText) || unsourcedJudgment(s, sourceText)))).join(" ").trim();
   return t;
 }
 
@@ -263,7 +269,8 @@ const STORE_POLICY = /(مدة الشحن|الشحن خلال|يتم الشحن|�
 /** كشف آلية قراءة الصورة في نص منشور: «لا يوجد حزام مرئي»، «يبدو أن الفستان…». */
 const MECHANISM_LEAK = /(غير مرئي|يبدو أن|ملاحظات الصورة|(?<!\p{L})مرئي(?:ة|ه)?(?!\p{L}))/u;
 /** أحكام جودة (قاعدة ٥ بالبرومبت) — مسموحة فقط إن وردت ببيانات التاجر. مطبَّعة بـnormAr. */
-const JUDGMENTS = ["مريح", "انيق", "فاخر", "متين", "عالي الجوده", "جوده عاليه"];
+// «مثالي» أُضيفت 2026-09-11: «هذه البلوزة مثالية للمناسبات» بمخرج حقيقي على متجر المراجعة.
+const JUDGMENTS = ["مريح", "انيق", "فاخر", "متين", "مثالي", "عالي الجوده", "جوده عاليه"];
 function unsourcedJudgment(text, sourceText) {
   const body = normAr(text);
   const src = normAr(sourceText);
@@ -297,7 +304,8 @@ const FIELD_ISSUE_TEXT = {
   STORE_POLICY: "سياسة متجر لا نعرفها (شحن، توصيل، إرجاع، استبدال، دفع، ضمان) — احذفي أي سؤال أو نقطة عنها",
   UNSOURCED_MATERIAL: "خامة أو معدن أو حجر لم يرد ببيانات التاجر",
   UNSOURCED_JUDGMENT: "حكم جودة بلا مصدر («مريح»، «أنيق»، «فاخر») — صفي التفصيل بدل الحكم",
-  THIN_HIGHLIGHT: "نقطة من كلمة أو كلمتين — كل نقطة فائدة ملموسة مرتبطة بتفصيل"
+  THIN_HIGHLIGHT: "نقطة من كلمة أو كلمتين — كل نقطة فائدة ملموسة مرتبطة بتفصيل",
+  PROP_ITEM: "نقطة تصف قطعة أخرى تلبسها العارضة لا المنتج نفسه"
 };
 
 /**
@@ -305,7 +313,7 @@ const FIELD_ISSUE_TEXT = {
  * الميتا — ومن الوصف نفسه الفحصان الجديدان فقط (كشف الآلية وحكم الجودة)، لأن
  * `descriptionQualityIssues` تغطي بقيته. عيب واحد لكل رمز مع قائمة الحقول.
  */
-export function publishedFieldIssues(parsed, { sourceText } = {}) {
+export function publishedFieldIssues(parsed, { sourceText, productName } = {}) {
   const found = new Map();
   const note = (codes, field) => codes.forEach((c) => {
     if (!found.has(c)) found.set(c, new Set());
@@ -316,6 +324,7 @@ export function publishedFieldIssues(parsed, { sourceText } = {}) {
   for (const h of Array.isArray(cw.highlights) ? cw.highlights : []) {
     note(textProblems(h, sourceText), "النقاط");
     if (words(h) < MIN_HIGHLIGHT_WORDS) note(["THIN_HIGHLIGHT"], "النقاط");
+    if (productName && propItemIn(h, productName)) note(["PROP_ITEM"], "النقاط");
   }
   for (const f of Array.isArray(parsed?.faqs) ? parsed.faqs : []) {
     note([...textProblems(f?.q, sourceText), ...textProblems(f?.a, sourceText)], "الأسئلة الشائعة");
@@ -336,10 +345,10 @@ export function cleanPublishedFields(parsed, { sourceText, name = "" } = {}) {
   const bad = (t) => textProblems(t, sourceText).length > 0;
   const cw = parsed.copywriting || (parsed.copywriting = {});
   cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
-    .filter((h) => !bad(h) && words(h) >= MIN_HIGHLIGHT_WORDS);
+    .filter((h) => !bad(h) && words(h) >= MIN_HIGHLIGHT_WORDS && !(name && propItemIn(h, name)));
   parsed.faqs = (Array.isArray(parsed.faqs) ? parsed.faqs : [])
     .filter((f) => f && String(f.q || "").trim() && String(f.a || "").trim() && !bad(f.q) && !bad(f.a));
-  cw.description = cleanDescription(cw.description, { sourceText });
+  cw.description = cleanDescription(cw.description, { sourceText, productName: name });
   const seo = parsed.seo || (parsed.seo = {});
   if (bad(seo.title)) seo.title = truncateAtWord(String(name || ""), 60);
   if (bad(seo.seoTitle)) seo.seoTitle = truncateAtWord(seo.title || String(name || ""), 65);
@@ -348,4 +357,38 @@ export function cleanPublishedFields(parsed, { sourceText, name = "" } = {}) {
     if (seo.jsonLdSchema) seo.jsonLdSchema.description = seo.metaDescription;
   }
   return parsed;
+}
+
+
+// ── قطع العارضة (2026-09-11) ──────────────────────────────────────────────
+//
+// صورة المنتج غالباً على عارضة تلبس قطعاً أخرى. مخرج حقيقي بالنسخة الحالية لمنتج
+// «بلوزة»: «التنورة مصنوعة من طبقات لونية: أبيض وأزرق فاتح وأزرق غامق» — التنورة
+// ليست ما يبيعه التاجر. الفحص محافظ عمداً: نوع المنتج = أول كلمة من اسمه، ولا فحص
+// إن لم تكن في القائمة (مسبحة، عطر…)؛ والمحظور جملة **تبدأ** بقطعة أخرى، فعبارة
+// التنسيق «تُنسَّق مع تنورة…» مسموحة.
+const ITEM_GROUPS = [
+  ["فستان", "فساتين"], ["تنوره", "تنانير"], ["بلوزه", "بلايز", "بلوزات"], ["قميص", "قمصان"],
+  ["بنطال", "بنطلون", "بناطيل"], ["جاكيت", "جاكت", "جاكيتات"], ["عبايه", "عبايات"],
+  ["حذاء", "احذيه", "جزمه", "صندل"], ["حقيبه", "حقائب", "شنطه", "شنط"], ["قبعه"],
+  ["نظاره", "نظارات"], ["حزام"], ["طرحه", "حجاب", "شال", "وشاح"], ["قلاده", "سلسال"],
+  ["سوار", "اساور"], ["خاتم"], ["اقراط", "حلق"], ["شورت"], ["جينز"], ["كنزه", "سويتر", "هودي"], ["تيشيرت"]
+];
+function itemGroup(word) {
+  const w = normAr(word).replace(/^ال/, "");
+  return ITEM_GROUPS.findIndex((g) => g.includes(w));
+}
+function splitSentences(text) {
+  return String(text || "").split(/(?<=[.!؟\n])\s+/).filter((s) => s.trim());
+}
+/** اسم القطعة الأخرى إن بدأت بها الجملة، وإلا null. */
+function propItemIn(sentence, productName) {
+  const productGroup = itemGroup(String(productName || "").trim().split(/\s+/)[0] || "");
+  if (productGroup < 0) return null;
+  const first = normAr(sentence).trim().replace(/^[\s،:,\-–—]+/, "").split(/\s+/)[0] || "";
+  for (const candidate of [first, first.replace(/^و/, "")]) {
+    const g = itemGroup(candidate);
+    if (g >= 0) return g !== productGroup ? candidate.replace(/^ال/, "") : null;
+  }
+  return null;
 }
