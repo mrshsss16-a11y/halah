@@ -18,7 +18,13 @@ async function remindersHandler(request, env, requestId, context) {
     const targetSlot = targetSlotLabel();
     // شكل ردّ واحد بكل الحالات: بلا فتحة مستحقة الآن = صفر تذكيرات، لا جسم مختلف.
     // (REM-7 كان يفشل فقط بالساعات التي لا فتحة فيها — اختبار يعتمد على ساعة الجدار.)
-    if (!targetSlot) return { ok: true, targetSlot: null, remindersChecked: 0, remindersSent: 0, msg: "No slots on this day/time" };
+    if (!targetSlot) {
+      // النبض يُسجَّل هنا أيضاً: بلا فتحة مستحقة الوظيفة **عملت** ولم تجد ما ترسله.
+      // بدونه بقي آخر نبض من مساء الأمس فصنّفت `/api/health` الـcron «error»
+      // معظم اليوم رغم أنه يعمل كل ١٠ دقائق (رُصد حياً 2026-09-11).
+      await recordHeartbeat(env, { job: "reminders", ok: true, note: "no-slot" });
+      return { ok: true, targetSlot: null, remindersChecked: 0, remindersSent: 0, msg: "No slots on this day/time" };
+    }
 
     const bookings = await dueReminders(env, targetSlot);
     let sent = 0;

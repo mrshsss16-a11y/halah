@@ -382,12 +382,16 @@ async function runTests() {
       CRON_SECRET: "s3cr3t",
       DB: mockDb([
         { match: /FROM consultation_bookings\s/, all: () => [] },
-        { match: /UPDATE consultation_bookings SET reminder_sent_at/, run: (b) => marked.push(b) }
+        { match: /UPDATE consultation_bookings SET reminder_sent_at/, run: (b) => marked.push(b) },
+        { match: /INSERT INTO cron_heartbeat/, run: (b) => heartbeats.push(b) }
       ])
     };
+    const heartbeats = [];
     const res = await reminders(ctx(new Request("https://x.test/api/cron/reminders", { headers: { Authorization: "Bearer s3cr3t" } }), env));
     const body = await res.json();
     assert(res.status === 200 && body.ok === true && body.remindersSent === 0, "REM-7: لا حجوزات مستحقة ⇒ ٢٠٠ بصفر تذكيرات (لا خطأ)");
+    // بفتحة أو بدونها الوظيفة عملت — النبض يُكتب دائماً، وإلا صنّفت /api/health الـcron «error» معظم اليوم.
+    assert(heartbeats.length === 1 && heartbeats[0][0] === "reminders" && heartbeats[0][1] === 1, "REM-8: نبض reminders يُسجَّل حتى بلا فتحة مستحقة (كان يُسقَط ⇒ cron:error حياً)");
   }
 
   // ── stats — أرقام حقيقية فقط، والجدول الناقص لا يُسقط النقطة ──────────────
