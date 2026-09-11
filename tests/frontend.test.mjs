@@ -159,11 +159,16 @@ async function runTests() {
   }
 
   // ---- تقرير #9: كل <script src="https://…"> بناتج dist/ يحمل integrity+crossorigin ----
-  // استثناء وحيد موثَّق (scripts/audit-frontend.mjs فحص هـ): accounts.google.com/gsi/client
-  // — Cache-Control: private بلا كاش وسيط وجوجل توثّق تحديثه الصامت بلا إصدار ثابت.
+  // استثناءان موثَّقان (scripts/audit-frontend.mjs فحص هـ):
+  //   - accounts.google.com/gsi/client: Cache-Control: private بلا كاش وسيط وجوجل توثّق
+  //     تحديثه الصامت بلا إصدار ثابت.
+  //   - cdn.tailwindcss.com: تحقّق حيّ (2026-09-11) أثبت أن هذا المضيف لا يرسل
+  //     Access-Control-Allow-Origin إطلاقاً — integrity على سكربت عابر الأصل يفرض
+  //     crossorigin (طلب CORS)، وبلا ACAO يرفضه المتصفح قبل التنفيذ، فيسقط Tailwind
+  //     من كل صفحة. SRI مستحيلة تقنياً على هذا المضيف بلا استضافة ذاتية للملف.
   {
     const distDir = join(ROOT, "dist");
-    const SRI_SKIP_HOSTS = ["accounts.google.com/gsi/client"];
+    const SRI_SKIP_HOSTS = ["accounts.google.com/gsi/client", "cdn.tailwindcss.com"];
     const distHtmlFiles = existsSync(distDir) ? readdirSync(distDir).filter((n) => n.endsWith(".html")) : [];
     assert(distHtmlFiles.length > 0, "dist/ يحوي صفحات HTML لفحص SRI (شغّل npm run build أولاً)");
     let checkedTags = 0;

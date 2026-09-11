@@ -246,7 +246,13 @@ for (const f of rootHtmlFiles) {
 // Cache-Control: private (لا كاش وسيط، محتوى قد يتغيّر لكل طلب) وجوجل توثّق تحديثه
 // الصامت بلا إصدار ثابت — بصمة هنا تُسقط تسجيل الدخول بجوجل عند أول تحديث. لا رابط
 // بإصدار محدد متاح لهذا الملف تحديداً؛ راجع login.html للتعليق الكامل عند التعديل.
-const SRI_SKIP_HOSTS = ["accounts.google.com/gsi/client"];
+//
+// استثناء ثانٍ (2026-09-11، بعد مراجعة commit bffde08): cdn.tailwindcss.com — تحقّق حيّ
+// (GET/HEAD مع Origin وSec-Fetch-Mode: cors وUA متصفح) أثبت أن هذا المضيف لا يرسل
+// Access-Control-Allow-Origin إطلاقاً. integrity على سكربت عابر الأصل يفرض crossorigin
+// (طلب CORS)، وبلا ACAO يرفضه المتصفح قبل التنفيذ — SRI مستحيلة تقنياً على هذا المضيف
+// بلا استضافة ذاتية للملف. البصمة نفسها (sha384-igm5Bei…) صحيحة؛ المشكلة CORS لا الهاش.
+const SRI_SKIP_HOSTS = ["accounts.google.com/gsi/client", "cdn.tailwindcss.com"];
 const SCRIPT_SRC_RE = /<script\b[^>]*\bsrc="(https:\/\/[^"]+)"[^>]*>/g;
 for (const f of [...rootHtmlFiles, ...partialFiles]) {
   const html = readFileSync(f, "utf8");

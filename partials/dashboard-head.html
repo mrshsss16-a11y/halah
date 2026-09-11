@@ -15,7 +15,9 @@
     catch (e) { document.documentElement.classList.add("in-salla-frame"); }
   </script>
 
-  <script src="https://cdn.tailwindcss.com/3.4.17" integrity="sha384-igm5BeiBt36UU4gqwWS7imYmelpTsZlQ45FZf+XBn9MuJbn4nQr7yx1yFydocC/K" crossorigin="anonymous"></script>
+  <!-- لا integrity هنا عمداً: cdn.tailwindcss.com بلا Access-Control-Allow-Origin —
+       راجع partials/head-common.html للتعليق الكامل. -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script>
     // @salla.sa/embedded-sdk's UMD bundle (dist/umd/index.js) references the
     // Node.js `process` global somewhere in its init path — confirmed live via
