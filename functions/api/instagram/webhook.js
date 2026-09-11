@@ -50,13 +50,16 @@ export async function onRequestPost(context) {
     const rawBody = await request.text();
     events = await receiveIgEvents(rawBody, request.headers.get("x-hub-signature-256"), env);
   } catch (err) {
+    // ٤١٣ = سقف الحجم/الدفعة (٣.٣، domain/instagram.js) — قبل أي تحليل.
+    const status = err?.status === 413 ? 413 : err?.status === 400 ? 400 : 401;
     logError(context, {
       requestId: rid,
       path: "instagram/webhook",
-      code: err?.status === 401 ? "IG_BAD_SIGNATURE" : "IG_BAD_PAYLOAD",
+      code: status === 413 ? "IG_PAYLOAD_TOO_LARGE" : status === 400 ? "IG_BAD_PAYLOAD" : "IG_BAD_SIGNATURE",
       internal: err?.message
     });
-    return new Response("Unauthorized", { status: err?.status === 400 ? 400 : 401 });
+    const body = status === 413 ? "Payload Too Large" : status === 400 ? "Bad Request" : "Unauthorized";
+    return new Response(body, { status });
   }
 
   // 2) نردّ 200 فوراً (شرط Meta)، والمعالجة تكمل بالخلفية.

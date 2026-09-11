@@ -59,6 +59,23 @@ async function claimIgEvent(env, { eventId, merchantId, kind }) {
   return Boolean(row);
 }
 
+/**
+ * إلغاء مطالبة حدث بعد فشل عابر لاحق (قبل نجاح enqueue) — يجعل الحدث قابلاً
+ * للقبول مرة أخرى إن أعادت Meta إرساله. لا يُستخدم لتخطي الحصة أو [SKIP]:
+ * تلك قرارات نهائية عمداً (انظر تعليق "fail closed هنا عمداً" أدناه)، لا فشلاً
+ * عابراً يستحق إعادة محاولة. أفضل جهد: فشل الحذف نفسه لا يُرمى (يُبتلع) — أسوأ
+ * أثر عندها هو رجوع الوضع الحالي (فقدان حدث واحد نادر)، لا كسر معالجة البقية.
+ */
+async function unclaimIgEvent(env, { eventId, merchantId }) {
+  if (!env.DB || !eventId || !merchantId) return;
+  await env.DB.prepare(
+    `DELETE FROM ig_processed_events WHERE event_id = ? AND merchant_id = ?`
+  )
+    .bind(String(eventId), merchantId)
+    .run()
+    .catch(() => {});
+}
+
 // نوافذ Meta الزمنية — تُخزَّن مع كل عنصر بالطابور ليعرف المراجع كم بقي له.
 // Private Reply: ٧ أيام من التعليق، ومرة واحدة فقط لكل معلّق.
 // رسالة مباشرة: ٢٤ ساعة من رسالة العميل. لا مبادرة إطلاقاً.
@@ -150,37 +167,49 @@ export async function processIgEvents(context, events, rid) {
       // (كل شيء يمر بمراجعة بشرية أصلاً)، فتخطي الحصة بلا داعٍ يحرق رصيد التاجر.
       if (!quota || quota.ok === false) continue;
 
-      // 6) المسودة
-      const draft = await draftReply(env, {
-        kind: event.kind,
-        text: event.text,
-        merchantId,
-        context,
-        rid
-      });
-      if (!draft) continue; // [SKIP] أو نص فارغ
+      // 6) المسودة و7) الطابور: كتلة قابلة للتراجع. حجزنا المطالبة أعلاه *قبل*
+      // هذه الكتلة (لا بعد نجاحها) لأن draftReply ينادي شبكة الذكاء الاصطناعي
+      // وقد يستغرق ثوانٍ — حجز متأخر يوسّع نافذة السباق بين تسليمين متزامنين
+      // لنفس الحدث فيدخل رَدّان الطابور. بما أن claimIgEvent ذرّي (ON CONFLICT
+      // DO NOTHING) فالحجز المبكر آمن من السباق؛ الثمن الوحيد هو فشل عابر هنا
+      // يترك الحدث "مُطالَباً" بلا رد — فنعالجه صراحة بالتراجع أدناه بدل تركه
+      // يُسقط الحدث نهائياً (إعادة محاولة Meta كانت سترفضه كمكرر).
+      try {
+        const draft = await draftReply(env, {
+          kind: event.kind,
+          text: event.text,
+          merchantId,
+          context,
+          rid
+        });
+        if (!draft) continue; // [SKIP] أو نص فارغ — قرار نهائي، لا فشل عابر
 
-      // 7) الطابور — نقطة النهاية الوحيدة. لا إرسال من هنا إطلاقاً.
-      const now = Date.now();
-      await enqueue(env, {
-        merchantId,
-        kind: "social_reply",
-        payload: {
-          channel: "instagram",
-          mode: event.kind === "comment" ? "comment_reply" : "dm",
-          igId: event.igId,
-          commentId: event.commentId || null,
-          recipientId: event.fromId || null,
-          fromUsername: event.fromUsername || null,
-          sourceText: event.text,
-          draft,
-          // المراجع يحتاج يعرف كم بقي قبل ما تُغلق النافذة — بدون هذا يوافق
-          // على عنصر فات أوانه ويفشل الإرسال بلا سبب مفهوم (INSTAGRAM_PLAN §٢.٣).
-          expiresAt: new Date(
-            now + (event.kind === "comment" ? PRIVATE_REPLY_WINDOW_MS : DM_WINDOW_MS)
-          ).toISOString()
-        }
-      });
+        // 7) الطابور — نقطة النهاية الوحيدة. لا إرسال من هنا إطلاقاً.
+        const now = Date.now();
+        await enqueue(env, {
+          merchantId,
+          kind: "social_reply",
+          payload: {
+            channel: "instagram",
+            mode: event.kind === "comment" ? "comment_reply" : "dm",
+            igId: event.igId,
+            commentId: event.commentId || null,
+            recipientId: event.fromId || null,
+            fromUsername: event.fromUsername || null,
+            sourceText: event.text,
+            draft,
+            // المراجع يحتاج يعرف كم بقي قبل ما تُغلق النافذة — بدون هذا يوافق
+            // على عنصر فات أوانه ويفشل الإرسال بلا سبب مفهوم (INSTAGRAM_PLAN §٢.٣).
+            expiresAt: new Date(
+              now + (event.kind === "comment" ? PRIVATE_REPLY_WINDOW_MS : DM_WINDOW_MS)
+            ).toISOString()
+          }
+        });
+      } catch (err) {
+        // فشل عابر قبل تأكيد enqueue ⇒ حرّر المطالبة (IG-CLAIM-1).
+        await unclaimIgEvent(env, { eventId, merchantId });
+        throw err;
+      }
     } catch (err) {
       logError(context, {
         requestId: rid,
@@ -193,12 +222,32 @@ export async function processIgEvents(context, events, rid) {
 }
 
 // ── المرحلة ٦ (ق٦): `api/**` لا يستورد `integrations/**` ────────────────────
+//
+// حدّا الحماية أدناه (٣.٣): سقفان دفاعيان **قبل** أي تحليل — حجم الجسم قبل حتى
+// حساب HMAC/JSON.parse، وعدد الأحداث بالدفعة بعد التفكيك مباشرة وقبل أي حلقة
+// معالجة تستهلك الذكاء الاصطناعي. Meta توثّق دفعات حتى ١٠٠٠ تحديث؛ بلا سقف هنا
+// يُنفَّذ حتى ١٠٠٠ نداء ذكاء اصطناعي متسلسل من طلب واحد داخل waitUntil.
+const MAX_IG_BODY_BYTES = 256 * 1024;
+const MAX_IG_BATCH_EVENTS = 50;
+
 /**
  * تحقق التوقيع على الجسم الخام ثم تفكيك الأحداث. نُقل من الويبهوك بلا تغيير
- * سلوكي — يرمي بنفس `err.status` (٤٠١ توقيع، ٤٠٠ حمولة) الذي تترجمه النقطة.
+ * سلوكي — يرمي بنفس `err.status` (٤٠١ توقيع، ٤٠٠ حمولة، **٤١٣ سقف** جديد)
+ * الذي تترجمه النقطة.
  */
 export async function receiveIgEvents(rawBody, signatureHeader, env) {
-  return receive(rawBody, signatureHeader, env);
+  if (new TextEncoder().encode(String(rawBody || "")).length > MAX_IG_BODY_BYTES) {
+    const err = new Error("instagram: payload exceeds size cap");
+    err.status = 413;
+    throw err;
+  }
+  const events = await receive(rawBody, signatureHeader, env);
+  if (events.length > MAX_IG_BATCH_EVENTS) {
+    const err = new Error("instagram: batch exceeds event-count cap");
+    err.status = 413;
+    throw err;
+  }
+  return events;
 }
 
 // ── تجديد توكنات إنستغرام (INSTAGRAM_PLAN.md §٤.٢) ──────────────────────────

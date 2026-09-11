@@ -240,6 +240,127 @@ async function main() {
       "PUB-6: فشل النشر يعود كنتيجة مسجّلة، لا كاستثناء يُبطل الاعتماد"
     );
   }
+
+  // ── سلامة الويبهوك ٣.٣ — إزالة تكرار قابلة للتراجع + سقوف الحجم/الدفعة ───
+  {
+    const { processIgEvents, receiveIgEvents } = await import("../../functions/_lib/domain/instagram.js");
+
+    // D1 وهمي: ig_connections ثابت، ig_processed_events بمجموعة حقيقية (تحاكي
+    // ON CONFLICT DO NOTHING + DELETE)، وreview_queue يفشل مرة واحدة عمداً.
+    function makeIgDb({ failEnqueueOnce = false } = {}) {
+      const claimed = new Set();
+      const reviewRows = [];
+      let shouldFail = failEnqueueOnce;
+      return {
+        claimed,
+        reviewRows,
+        prepare(sql) {
+          return {
+            bind(...args) {
+              return {
+                first: async () => {
+                  if (/FROM ig_connections/.test(sql)) {
+                    return { merchant_id: "hala", ig_user_id: "ig1", access_token: "tok" };
+                  }
+                  if (/INSERT INTO ig_processed_events/.test(sql)) {
+                    const eventId = args[0];
+                    if (claimed.has(eventId)) return null; // مكرر — نفس ON CONFLICT DO NOTHING
+                    claimed.add(eventId);
+                    return { event_id: eventId };
+                  }
+                  if (/INSERT INTO review_queue/.test(sql)) {
+                    if (shouldFail) {
+                      shouldFail = false; // مرة واحدة فقط — يحاكي عطلاً عابراً لا دائماً
+                      throw new Error("D1 write failed (simulated)");
+                    }
+                    const row = { id: reviewRows.length + 1, merchant_id: args[0], kind: args[1] };
+                    reviewRows.push(row);
+                    return row;
+                  }
+                  return null;
+                },
+                run: async () => {
+                  if (/DELETE FROM ig_processed_events/.test(sql)) claimed.delete(args[0]);
+                  return { success: true, meta: { changes: 1 } };
+                },
+                all: async () => ({ results: [] })
+              };
+            }
+          };
+        }
+      };
+    }
+
+    // merchantId = "hala" يتجاوز فحص الحصة كلياً (UNMETERED_MERCHANT_IDS
+    // بـcore/meter.js) — يعزل الاختبار عن مسار الحصة تماماً، فالسلوك المفحوص
+    // هنا هو الحجز/التراجع فقط لا الحصة.
+    const aiOk = { AI: { run: async () => ({ response: "رد مقترح للمراجعة، بلا أي رقم." }) } };
+    const dupEvent = { kind: "comment", igId: "ig1", commentId: "dup1", text: "متوفر عندكم توصيل؟", fromId: "u1" };
+
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response("{}", { status: 200 });
+    try {
+      const db = makeIgDb({ failEnqueueOnce: true });
+      const env = { ...aiOk, DB: db };
+
+      await processIgEvents({ env }, [dupEvent], "rid1");
+      assert(db.reviewRows.length === 0, "IG-CLAIM-1: فشل enqueue الأول ⇒ لا صف يدخل review_queue");
+      assert(
+        !db.claimed.has("dup1"),
+        "IG-CLAIM-2: فشل enqueue يحذف صف ig_processed_events — الحدث لم يعد \"معالَجاً\""
+      );
+
+      // إعادة تسليم Meta لنفس الحدث (event_id واحد) بعد الفشل — يجب أن تُقبل
+      // من جديد لا أن تُرفض كمكرر، وتنتهي بصف واحد فقط بالطابور.
+      await processIgEvents({ env }, [dupEvent], "rid2");
+      assert(db.reviewRows.length === 1, "IG-CLAIM-3: إعادة المحاولة بعد الفشل تُقبل وتصل الطابور");
+      assert(db.claimed.has("dup1"), "IG-CLAIM-4: بعد النجاح الحدث يبقى مُطالَباً — لا رد مزدوج لاحقاً");
+
+      // ثالث تسليم لنفس event_id (تكرار حقيقي بعد نجاح فعلي) ⇒ يُتجاهل بصمت،
+      // بلا صف ثانٍ بالطابور وبلا محاولة حذف مطالبة ناجحة.
+      await processIgEvents({ env }, [dupEvent], "rid3");
+      assert(db.reviewRows.length === 1, "IG-CLAIM-5: تكرار بعد النجاح لا يضيف صفاً ثانياً");
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+
+    // سقف الحجم: جسم أكبر من ٢٥٦ كيلوبايت يُرفض بـ٤١٣ قبل أي تحقق توقيع/تحليل.
+    const secret2 = "ig-app-secret-test-2";
+    const sign = async (raw) => {
+      const k = await crypto.subtle.importKey(
+        "raw", new TextEncoder().encode(secret2), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+      );
+      const m = await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(raw));
+      return "sha256=" + [...new Uint8Array(m)].map((b) => b.toString(16).padStart(2, "0")).join("");
+    };
+
+    const hugeBody = JSON.stringify({ entry: [{ id: "ig1", field: "comments", value: { id: "c-huge", text: "س".repeat(300000) } }] });
+    let hugeErr = null;
+    try {
+      await receiveIgEvents(hugeBody, await sign(hugeBody), { INSTAGRAM_APP_SECRET: secret2 });
+    } catch (e) {
+      hugeErr = e;
+    }
+    assert(hugeErr?.status === 413, "IG-CAP-1: جسم > ٢٥٦ كيلوبايت يُرفض بـ٤١٣ قبل أي تحليل");
+
+    // سقف الدفعة: ٥١ تعليقاً بحدث واحد يتجاوز سقف ٥٠ حدثاً بالدفعة.
+    const manyEntries = Array.from({ length: 51 }, (_, i) => ({
+      id: "ig1", field: "comments", value: { id: `c${i}`, text: "مرحبا" }
+    }));
+    const bigBatchBody = JSON.stringify({ entry: manyEntries });
+    let batchErr = null;
+    try {
+      await receiveIgEvents(bigBatchBody, await sign(bigBatchBody), { INSTAGRAM_APP_SECRET: secret2 });
+    } catch (e) {
+      batchErr = e;
+    }
+    assert(batchErr?.status === 413, "IG-CAP-2: دفعة > ٥٠ حدثاً تُرفض بـ٤١٣ قبل حلقة المعالجة");
+
+    // دفعة عادية (حدث واحد) تحت السقفين ⇒ تمر بلا رفض.
+    const smallBody = JSON.stringify({ entry: [{ id: "ig1", field: "comments", value: { id: "c-ok", text: "شكراً" } }] });
+    const okEvents = await receiveIgEvents(smallBody, await sign(smallBody), { INSTAGRAM_APP_SECRET: secret2 });
+    assert(Array.isArray(okEvents) && okEvents.length === 1, "IG-CAP-3: دفعة تحت السقفين تمر بلا رفض");
+  }
 }
 
 main()
