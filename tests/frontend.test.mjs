@@ -158,6 +158,29 @@ async function runTests() {
     }
   }
 
+  // ---- تقرير #9: كل <script src="https://…"> بناتج dist/ يحمل integrity+crossorigin ----
+  // استثناء وحيد موثَّق (scripts/audit-frontend.mjs فحص هـ): accounts.google.com/gsi/client
+  // — Cache-Control: private بلا كاش وسيط وجوجل توثّق تحديثه الصامت بلا إصدار ثابت.
+  {
+    const distDir = join(ROOT, "dist");
+    const SRI_SKIP_HOSTS = ["accounts.google.com/gsi/client"];
+    const distHtmlFiles = existsSync(distDir) ? readdirSync(distDir).filter((n) => n.endsWith(".html")) : [];
+    assert(distHtmlFiles.length > 0, "dist/ يحوي صفحات HTML لفحص SRI (شغّل npm run build أولاً)");
+    let checkedTags = 0;
+    for (const name of distHtmlFiles) {
+      const html = readFileSync(join(distDir, name), "utf8");
+      for (const m of html.matchAll(/<script\b[^>]*\bsrc="(https:\/\/[^"]+)"[^>]*>/g)) {
+        const tag = m[0];
+        const src = m[1];
+        if (SRI_SKIP_HOSTS.some((h) => src.includes(h))) continue;
+        checkedTags++;
+        assert(/\bintegrity="sha(256|384|512)-[^"]+"/.test(tag), `dist/${name}: <script src="${src}"> يحمل integrity=`);
+        assert(/\bcrossorigin="anonymous"/.test(tag), `dist/${name}: <script src="${src}"> يحمل crossorigin="anonymous"`);
+      }
+    }
+    assert(checkedTags > 0, "يوجد سكربتات خارجية بناتج البناء لفحصها (الفحص غير فارغ)");
+  }
+
   console.log(`\n${passed}/${total} passed.`);
   if (passed !== total) process.exit(1);
 }

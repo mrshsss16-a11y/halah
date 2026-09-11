@@ -9,6 +9,8 @@
  *  (ج) audit-undef-css   : صنف CSS مخصص مستخدم بـclass="" وغير معرّف بـstyles/** ولا
  *                          بـ<style> الداخلي لنفس الصفحة (يستثني Tailwind utilities)
  *  (د) audit-page-size   : صفحة HTML بالجذر تجاوزت ٨٠٠ سطر إلا قائمة سماح مؤرَّخة
+ *  (هـ) audit-script-sri : <script src="https://…"> بلا integrity= (تقرير #9) — استثناء
+ *                          مؤرَّخ فقط لما يثبت عدم استقرار بصمته (انظر SRI_SKIP_HOSTS)
  */
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -236,9 +238,33 @@ for (const f of rootHtmlFiles) {
   if (lineCount > MAX_LINES) fail("د", name, `${lineCount} سطراً > الحد ${MAX_LINES} وغير موجودة بقائمة السماح`);
 }
 
+// ── (هـ) سكربتات خارجية بلا SRI ─────────────────────────────────────────────
+// تقرير #9: unpkg.com/@salla.sa/embedded-sdk وcdn.tailwindcss.com كانا يُحمَّلان
+// بلا integrity= ولا crossorigin — حقن أو تسميم كاش على المضيف الخارجي كان يُنفَّذ
+// مباشرة بصفحات التاجر. أي <script src="https://…"> جديد يجب أن يحمل بصمته.
+// استثناء ضيّق موثَّق (لا قائمة سماح مفتوحة): accounts.google.com/gsi/client يُخدَّم
+// Cache-Control: private (لا كاش وسيط، محتوى قد يتغيّر لكل طلب) وجوجل توثّق تحديثه
+// الصامت بلا إصدار ثابت — بصمة هنا تُسقط تسجيل الدخول بجوجل عند أول تحديث. لا رابط
+// بإصدار محدد متاح لهذا الملف تحديداً؛ راجع login.html للتعليق الكامل عند التعديل.
+const SRI_SKIP_HOSTS = ["accounts.google.com/gsi/client"];
+const SCRIPT_SRC_RE = /<script\b[^>]*\bsrc="(https:\/\/[^"]+)"[^>]*>/g;
+for (const f of [...rootHtmlFiles, ...partialFiles]) {
+  const html = readFileSync(f, "utf8");
+  let m;
+  const re = new RegExp(SCRIPT_SRC_RE);
+  while ((m = re.exec(html))) {
+    const tag = m[0];
+    const src = m[1];
+    if (SRI_SKIP_HOSTS.some((h) => src.includes(h))) continue;
+    if (!/\bintegrity="sha(256|384|512)-/.test(tag)) {
+      fail("هـ", rel(f), `<script src="${src}"> بلا integrity= — أضف بصمة sha384 (اقرأ CLAUDE.md)`);
+    }
+  }
+}
+
 if (failures.length) {
   console.error("✖ تدقيق الواجهة: ارتداد مكتشف —");
   for (const x of failures) console.error("  " + x);
   process.exit(1);
 }
-console.log("✔ تدقيق الواجهة: أ ب ج د سليمة.");
+console.log("✔ تدقيق الواجهة: أ ب ج د هـ سليمة.");
