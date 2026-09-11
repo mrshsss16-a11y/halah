@@ -216,7 +216,10 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 
 ### أسرار إلزامية (غيابها = رمي خطأ، لا قيمة افتراضية)
 - `SESSION_SECRET` — توقيع كوكي الجلسة (HMAC). بدونه `core/session.js`/`core/csrf.js` يرميان خطأ.
-- `ENCRYPTION_KEY` — تشفير `oauth_tokens.access_token/refresh_token` بالراحة (`core/crypto.js`).
+- `ENCRYPTION_KEY` — تشفير بيانات اعتماد الأطراف الثالثة بالراحة (`core/crypto.js`):
+  `oauth_tokens.access_token/refresh_token` · `platform_connections.api_key/api_secret` ·
+  `wa_connections.business_token` · `ig_connections.access_token`. غيابه = رمي عند الكتابة
+  (fail closed). حارس ح٩ بـ`audit-security.mjs` يمنع عودة أي عمود `*_token`/`*_secret` لنص صريح.
 - `ADMIN_EMAILS` — قائمة إيميلات مفصولة بفواصل يقارنها `requireAdmin`/`adminEmails.js` — لا عمود `is_admin`.
 - `SALLA_APP_ID`, `SALLA_CLIENT_ID`, `SALLA_CLIENT_SECRET` — تدفق OAuth Easy Mode لسلة.
 - `SALLA_WEBHOOK_SECRET` — تحقق `X-Salla-Signature` بـ`webhooks/salla.js` (401 عند الفشل).

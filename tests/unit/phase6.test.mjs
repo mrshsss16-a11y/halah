@@ -12,7 +12,7 @@
 // الأسلوب: سلوكي حيث أمكن (تشغيل الدالة على D1/fetch وهميين والتحقق من الأثر)،
 // وبنيوي فقط حيث يكون الادّعاء بنيوياً أصلاً (وجود ملف، اتجاه استيراد، رقم حارس).
 import { existsSync, readFileSync } from "node:fs";
-import { createRunner } from "../_helpers.mjs";
+import { createRunner, TEST_ENCRYPTION_KEY } from "../_helpers.mjs";
 
 const { assert, done } = createRunner("phase6");
 const root = new URL("../../", import.meta.url);
@@ -87,8 +87,13 @@ async function main() {
     const realFetch = globalThis.fetch;
     const nowS = Math.floor(Date.now() / 1000);
 
-    /** D1 وهمي: SELECT يرجّع الصفوف التي تحقق شرط `token_expires_at < ?`. */
+    /**
+     * D1 وهمي: SELECT يرجّع الصفوف التي تحقق شرط `token_expires_at < ?`.
+     * `ENCRYPTION_KEY` مضاف بعد تشفير توكنات القنوات بالراحة: التجديد صار
+     * يفكّ التوكن القديم ويشفّر الجديد، وبلا مفتاح يرمي (fail closed).
+     */
     const mkDb = (rows, log) => ({
+      ENCRYPTION_KEY: TEST_ENCRYPTION_KEY,
       DB: {
         prepare(sql) {
           return {
@@ -126,9 +131,16 @@ async function main() {
       assert(calls.length === 1 && /refresh_access_token/.test(calls[0]) && /ig_refresh_token/.test(calls[0]), "P6-13: نداء واحد على refresh_access_token بـgrant_type=ig_refresh_token");
       assert(!calls[0].includes("NEW_TOKEN") && calls[0].includes("OLD"), "P6-14: التجديد يُرسَل بالتوكن القديم (لا خلط)");
       const write = log.find((e) => /UPDATE ig_connections/.test(e.sql));
+      // المعنى الأصلي محفوظ (التوكن الجديد يُكتب مقيَّداً بالتاجر والحساب)،
+      // لكن القيمة صارت مشفَّرة بالراحة — فيُتحقَّق منها بفكّها لا بمساواتها.
+      const { decryptSecret } = await import("../../functions/_lib/core/crypto.js");
       assert(
-        write && write.args[0] === "NEW_TOKEN" && write.args[2] === "m_a" && write.args[3] === "IG_A",
-        "P6-15: التوكن الجديد يُكتب مقيَّداً بـmerchant_id + ig_user_id (عزل المستأجرين)"
+        write &&
+          String(write.args[0]).startsWith("enc:v1:") &&
+          (await decryptSecret({ ENCRYPTION_KEY: TEST_ENCRYPTION_KEY }, write.args[0])) === "NEW_TOKEN" &&
+          write.args[2] === "m_a" &&
+          write.args[3] === "IG_A",
+        "P6-15: التوكن الجديد يُكتب مشفَّراً ومقيَّداً بـmerchant_id + ig_user_id (عزل المستأجرين)"
       );
       assert(write && Number(write.args[1]) > nowS + 50 * 86400, "P6-16: انتهاء الصلاحية الجديد يُحسب من expires_in المعاد");
     }

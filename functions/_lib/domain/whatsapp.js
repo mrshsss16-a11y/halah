@@ -1,6 +1,7 @@
 // مجال واتساب: تسجيل الرسائل، نافذة الـ٢٤ ساعة، أثر الرد البشري، وربط أرقام
 // التجّار (`wa_connections`). نُقل من core/db.js بالمرحلة ٣ بلا تغيير سلوكي.
 import { logError } from "../core/errorLog.js";
+import { encryptSecret, decryptSecret } from "../core/crypto.js";
 import { sendWaText, sendWaTemplate, waConfigured } from "../integrations/whatsapp.js";
 
 export async function recordWaInbound(env, { merchantId, phone, name, body, waMessageId }) {
@@ -134,27 +135,41 @@ export async function recentWaConversations(env, merchantId, limit = 50) {
  */
 export async function getWaConnectionByPhoneId(env, phoneNumberId) {
   if (!env.DB || !phoneNumberId) return null;
-  return env.DB.prepare(
+  const row = await env.DB.prepare(
     `SELECT merchant_id, waba_id, phone_number_id, business_token, display_phone, verified_name
      FROM wa_connections WHERE phone_number_id = ? AND status = 'active'`
   )
     .bind(String(phoneNumberId))
     .first()
     .catch(() => null);
+  return withPlainBusinessToken(env, row);
 }
 
 export async function getWaConnectionByMerchant(env, merchantId) {
   if (!env.DB || !merchantId) return null;
-  return env.DB.prepare(
+  const row = await env.DB.prepare(
     `SELECT merchant_id, waba_id, phone_number_id, business_token, display_phone, verified_name, status, connected_at
      FROM wa_connections WHERE merchant_id = ?`
   )
     .bind(merchantId)
     .first()
     .catch(() => null);
+  return withPlainBusinessToken(env, row);
+}
+
+/**
+ * `wa_connections.business_token` مشفَّر بالراحة (`core/crypto.js`) — يُفكّ هنا
+ * بنقطة واحدة، فيبقى كل مستهلك (`integrations/whatsapp.js` وغيره) يتعامل مع
+ * توكن نصّي كما كان بالضبط. الصفوف المكتوبة قبل التشفير بلا البادئة
+ * `enc:v1:` تعود كما هي — تعمل بلا هجرة، وتُشفَّر عند أول `saveWaConnection`.
+ */
+async function withPlainBusinessToken(env, row) {
+  if (!row) return null;
+  return { ...row, business_token: await decryptSecret(env, row.business_token) };
 }
 
 export async function saveWaConnection(env, { merchantId, wabaId, phoneNumberId, businessToken, displayPhone, verifiedName }) {
+  const encBusinessToken = await encryptSecret(env, businessToken);
   await env.DB.prepare(
     `INSERT INTO wa_connections
        (merchant_id, waba_id, phone_number_id, business_token, display_phone, verified_name, status, updated_at)
@@ -168,7 +183,7 @@ export async function saveWaConnection(env, { merchantId, wabaId, phoneNumberId,
        status = 'active',
        updated_at = datetime('now')`
   )
-    .bind(merchantId, String(wabaId), String(phoneNumberId), businessToken, displayPhone || null, verifiedName || null)
+    .bind(merchantId, String(wabaId), String(phoneNumberId), encBusinessToken, displayPhone || null, verifiedName || null)
     .run();
 }
 

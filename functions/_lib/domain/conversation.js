@@ -9,6 +9,10 @@ import { getMarketingContext } from "./persona.js";
 
 
 export async function saveOmnichannelSession(env, { sessionToken, merchantId, phone, name, lastProduct, chatSummary, themeCategory }) {
+  // secret-plaintext-ok: `session_token` **مفتاح أساسي للبحث** لا اعتماد —
+  // معرّف جلسة ويدجت يولّده المتصفح ويُستعلَم به (`WHERE session_token = ?`).
+  // تشفيره بـAES-GCM يعطي ناتجاً مختلفاً كل مرة فيكسر البحث، ولا يحمي شيئاً:
+  // ليس بيانات اعتماد لطرف ثالث، والوصول للصف محروس بـmerchant_id أصلاً.
   await env.DB.prepare(
     `INSERT INTO omnichannel_sessions (session_token, merchant_id, phone, name, last_product, chat_summary, theme_category)
      VALUES (?, ?, ?, ?, ?, ?, ?)

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * حراس الارتداد الأمنية (docs/SECURITY_PLAN.md §٦ — ح٢ · ح٥ · ح٦ · ح٧ · ح٨).
- * ملف واحد بخمسة فحوص بدل خمسة ملفات: نفس نمط scripts/audit-isolation.mjs،
+ * حراس الارتداد الأمنية (docs/SECURITY_PLAN.md §٦ — ح٢ · ح٥ · ح٦ · ح٧ · ح٨ · ح٩).
+ * ملف واحد بستة فحوص بدل ستة ملفات: نفس نمط scripts/audit-isolation.mjs،
  * مربوط بـ`npm test`. كل حارس يمنع عودة فجوة أُغلقت — لا يكتشف فجوات جديدة.
  *
  *  ح٢ audit-client-ip     : أي ذكر لـ`x-forwarded-for` خارج core/rateLimit.js (P57)
@@ -10,8 +10,11 @@
  *  ح٦ audit-store-gates   : resolveStoreId بملف تاجر/AI بلا تعليق `store-gate-ok: <سبب>` (P48)
  *  ح٧ audit-html-sinks    : innerHTML مع قالب `${...}` غير ملفوف بـesc(/escHtml( بأي *.html (P43/P47)
  *  ح٨ audit-postmessage   : event.origin مع endsWith/includes/indexOf بدل مطابقة تامة (P55)
+ *  ح٩ audit-secret-columns: عمود D1 اسمه *_token أو *_secret يُكتب بقيمة لم تمرّ
+ *                           بـencryptSecret (core/crypto.js) بأي ملف تحت functions/**
  *
  * خروج غير صفري = ارتداد → يفشل npm test.
+ * متغير بيئة للاختبار: AUDIT_SECRET_DIR (شجرة وهمية لـح٩ — tests/unit/guards.test.mjs).
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -125,9 +128,130 @@ for (const f of [...ch7Files, join(ROOT, "widget.js")]) {
   } catch { /* widget.js may not exist */ }
 }
 
+// ── ح٩ ──────────────────────────────────────────────────────────────────────
+// لماذا: توكنات واتساب وإنستغرام كانت تُكتب بـD1 **نصاً صريحاً** بينما توكنات
+// سلة مشفَّرة بنفس المستودع (`encryptSecret`) — تسريب نسخة D1 واحدة كان يسلّم
+// خط واتساب كل تاجر وحساب إنستغرامه. القاعدة الآن آلية: كل `?` يملأ عموداً
+// اسمه *_token أو *_secret داخل INSERT/UPDATE لازم تكون قيمته مرّت بـ
+// `encryptSecret`. الاستثناء الوحيد تعليق `secret-plaintext-ok: <سبب>` فوق
+// الجملة أو داخلها (عمود ليس بيانات اعتماد — مفتاح بحث أو قيمة مجزَّأة).
+const SECRET_COL = /(_token|_secret)$/i;
+const SECRET_MARKER = /secret-plaintext-ok:\s*\S/;
+
+/** يقسّم على الفواصل العليا فقط (خارج الأقواس وعلامات الاقتباس) مع الإزاحة. */
+function splitTop(s) {
+  const out = [];
+  let depth = 0, quote = null, start = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (quote) { if (c === quote && s[i - 1] !== "\\") quote = null; continue; }
+    if (c === "'" || c === '"' || c === "`") { quote = c; continue; }
+    if (c === "(" || c === "[") depth++;
+    else if (c === ")" || c === "]") depth--;
+    else if (c === "," && depth === 0) { out.push({ text: s.slice(start, i), start }); start = i + 1; }
+  }
+  out.push({ text: s.slice(start), start });
+  return out;
+}
+
+/** فهرس القوس المُغلِق المقابل لقوس فُتح قبل `from` مباشرة (-1 لو ناقص). */
+function closeParen(s, from) {
+  let depth = 1, quote = null;
+  for (let i = from; i < s.length; i++) {
+    const c = s[i];
+    if (quote) { if (c === quote && s[i - 1] !== "\\") quote = null; continue; }
+    if (c === "'" || c === '"' || c === "`") { quote = c; continue; }
+    if (c === "(") depth++;
+    else if (c === ")" && --depth === 0) return i;
+  }
+  return -1;
+}
+
+/**
+ * لكل `?` يملأ عموداً سرّياً بجملة SQL: ترتيبه بين كل علامات `?` بالجملة (وهو
+ * بالضبط ترتيب وسيطه بـ`.bind(...)`) واسم العمود. يغطي INSERT ... VALUES
+ * وكل `SET col = ?` (بما فيها `ON CONFLICT ... DO UPDATE SET`؛ قيم
+ * `excluded.col` بلا `?` فلا تُحتسب — التشفير حصل بالـVALUES أصلاً).
+ */
+function secretSlots(sql) {
+  const qAt = [];
+  for (let i = 0; i < sql.length; i++) if (sql[i] === "?") qAt.push(i);
+  const slotOf = (pos) => qAt.indexOf(pos);
+  const slots = [];
+
+  const ins = /INSERT\s+(?:OR\s+\w+\s+)?INTO\s+[\w."`]+\s*\(/i.exec(sql);
+  if (ins) {
+    const colsStart = ins.index + ins[0].length;
+    const colsEnd = closeParen(sql, colsStart);
+    const vm = colsEnd > 0 ? /VALUES\s*\(/i.exec(sql.slice(colsEnd)) : null;
+    if (vm) {
+      const cols = splitTop(sql.slice(colsStart, colsEnd)).map((p) => p.text.trim().replace(/["`]/g, ""));
+      const valsStart = colsEnd + vm.index + vm[0].length;
+      const valsEnd = closeParen(sql, valsStart);
+      splitTop(sql.slice(valsStart, valsEnd < 0 ? sql.length : valsEnd)).forEach((p, i) => {
+        if (p.text.trim() !== "?") return;
+        if (cols[i] && SECRET_COL.test(cols[i])) {
+          slots.push({ slot: slotOf(valsStart + p.start + p.text.indexOf("?")), col: cols[i] });
+        }
+      });
+    }
+  }
+
+  const setRe = /\bSET\b([\s\S]*?)(?=\bWHERE\b|\bRETURNING\b|$)/gi;
+  let m;
+  while ((m = setRe.exec(sql))) {
+    const bodyStart = m.index + (m[0].length - m[1].length);
+    for (const p of splitTop(m[1])) {
+      const eq = p.text.indexOf("=");
+      if (eq < 0) continue;
+      const col = p.text.slice(0, eq).trim().replace(/["`]/g, "").replace(/^[\w]+\./, "");
+      const val = p.text.slice(eq + 1);
+      if (!SECRET_COL.test(col) || val.trim() !== "?") continue;
+      slots.push({ slot: slotOf(bodyStart + p.start + eq + 1 + val.indexOf("?")), col });
+    }
+  }
+  return slots;
+}
+
+/** القيمة مشفَّرة: نداء مباشر لـencryptSecret، أو متغيّر أُسند من ندائه. */
+function isEncryptedArg(arg, src) {
+  if (/encryptSecret\s*\(/.test(arg)) return true;
+  if (!/^[A-Za-z_$][\w$]*$/.test(arg)) return false;
+  return new RegExp(`\\b(?:const|let|var)\\s+${arg}\\s*=\\s*await\\s+encryptSecret\\s*\\(`).test(src);
+}
+
+const secretFiles = process.env.AUDIT_SECRET_DIR
+  ? walk(join(ROOT, process.env.AUDIT_SECRET_DIR), ".js")
+  : fnFiles;
+
+for (const f of secretFiles) {
+  const src = readFileSync(f, "utf8");
+  let i = -1;
+  while ((i = src.indexOf(".bind(", i + 1)) !== -1) {
+    const pIdx = src.lastIndexOf("prepare(", i);
+    const sqlEnd = src.lastIndexOf(")", i);
+    if (pIdx === -1 || sqlEnd <= pIdx) continue;
+    const slots = secretSlots(src.slice(pIdx + "prepare(".length, sqlEnd));
+    if (!slots.length) continue;
+    const argsStart = i + ".bind(".length;
+    const argsEnd = closeParen(src, argsStart);
+    if (argsEnd === -1) continue;
+    // التبرير يُقبل داخل الجملة أو بالأسطر الستة فوقها (موضع تعليق الدالة).
+    const region = src.slice(0, pIdx).split("\n").slice(-6).join("\n") + src.slice(pIdx, argsEnd);
+    if (SECRET_MARKER.test(region)) continue;
+    const args = splitTop(src.slice(argsStart, argsEnd)).map((p) => p.text.trim());
+    const line = src.slice(0, i).split("\n").length;
+    for (const { slot, col } of slots) {
+      const arg = args[slot] ?? "";
+      if (isEncryptedArg(arg, src)) continue;
+      fail("ح٩", `${rel(f)}:${line}`, `عمود \`${col}\` يُكتب بقيمة لم تمرّ بـencryptSecret (\`${arg.slice(0, 40)}\`) — شفّرها بـcore/crypto.js أو برّر بتعليق \`secret-plaintext-ok: <سبب>\``);
+    }
+  }
+}
+
 if (failures.length) {
   console.error("✖ تدقيق الأمن: ارتداد مكتشف —");
   for (const x of failures) console.error("  " + x);
   process.exit(1);
 }
-console.log("✔ تدقيق الأمن: ح٢ ح٥ ح٦ ح٧ ح٨ سليمة.");
+console.log("✔ تدقيق الأمن: ح٢ ح٥ ح٦ ح٧ ح٨ ح٩ سليمة.");

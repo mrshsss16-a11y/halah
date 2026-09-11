@@ -9,24 +9,31 @@ import { askWorkersAI } from "../ai/gateway.js";
 import { sanitizeInput } from "../core/security.js";
 import { buildInstagramSystem } from "../ai/prompts/instagram.js";
 import { stripFabricatedPricing } from "../ai/guards.js";
+import { encryptSecret, decryptSecret } from "../core/crypto.js";
 
 
 /**
  * توجيه الويبهوك الوارد: entry[].id (IG_ID) → التاجر المالك.
  * نظير getWaConnectionByPhoneId تماماً — وهو **المفتاح الوحيد** المسموح باستخدامه
  * لاختيار التاجر. لا from.id ولا username (كلاهما هوية المرسل، لا المستقبِل).
+ *
+ * `ig_connections.access_token` مشفَّر بالراحة (`core/crypto.js`) ويُفكّ هنا،
+ * فيبقى `integrations/instagram.js` يستقبل `conn.access_token` نصّياً كما كان.
+ * صف قديم بلا بادئة `enc:v1:` يعود كما هو (يعمل بلا هجرة).
  */
 export async function getIgConnectionByUserId(env, igUserId) {
   if (!env.DB || !igUserId) return null;
   // tenant-audit-ok: البحث بمفتاح التوجيه نفسه — هذا الاستعلام هو ما **يحدد**
   // merchant_id، فلا يمكن أن يشترط عليه. مطابق لنمط getWaConnectionByPhoneId.
-  return env.DB.prepare(
+  const row = await env.DB.prepare(
     `SELECT merchant_id, ig_user_id, username, access_token, token_expires_at
      FROM ig_connections WHERE ig_user_id = ?`
   )
     .bind(String(igUserId))
     .first()
     .catch(() => null);
+  if (!row) return null;
+  return { ...row, access_token: await decryptSecret(env, row.access_token) };
 }
 
 /**
@@ -238,13 +245,17 @@ export async function refreshExpiringIgTokens(env, context = null) {
   let failed = 0;
   for (const row of rows) {
     try {
-      const { accessToken, expiresIn } = await refreshLongLivedToken(row.access_token);
+      // الصف قد يكون قديماً (نصّاً صريحاً) أو مشفَّراً — `decryptSecret` يعيد
+      // الأول كما هو ويفكّ الثاني، فالتجديد يعمل على الحالتين بلا هجرة.
+      const currentToken = await decryptSecret(env, row.access_token);
+      const { accessToken, expiresIn } = await refreshLongLivedToken(currentToken);
+      const encAccessToken = await encryptSecret(env, accessToken);
       await env.DB.prepare(
         `UPDATE ig_connections
             SET access_token = ?, token_expires_at = ?, updated_at = datetime('now')
           WHERE merchant_id = ? AND ig_user_id = ?`
       )
-        .bind(accessToken, Math.floor(Date.now() / 1000) + expiresIn, row.merchant_id, row.ig_user_id)
+        .bind(encAccessToken, Math.floor(Date.now() / 1000) + expiresIn, row.merchant_id, row.ig_user_id)
         .run();
       refreshed++;
     } catch (err) {

@@ -80,6 +80,10 @@ export async function readSrc(relOrUrl) {
 // SESSION_SECRET الثابت المستخدَم بكل بيئات الاختبار.
 export const TEST_SESSION_SECRET = "test-secret-12345";
 
+// ENCRYPTION_KEY الثابت لاختبارات التشفير بالراحة (`core/crypto.js`): ٣٢ بايت
+// خام مرمَّزة base64 — نفس شكل السر بالإنتاج. قيمة اختبار فقط، لا تُستخدم حيّاً.
+export const TEST_ENCRYPTION_KEY = btoa("0123456789abcdef0123456789abcdef");
+
 // readComposedPage(name) — بعد تقسيم dashboard.html/admin.html إلى
 // partials/<name>-*.html + public/js/<name>/*.js (docs/ARCHITECTURE.md، تقسيم
 // 2026-09-09)، جذر <name>.html صار قالباً فارغاً (`<!--#include-->` فقط) —

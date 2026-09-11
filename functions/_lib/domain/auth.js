@@ -173,6 +173,10 @@ export async function clearResetOtpAttempts(env, email) {
  * ابتلاع الخطأ مقصود ومنقول كما كان: الرد للعميل موحّد بأي حال (منع التعداد).
  */
 export async function issuePasswordReset(env, { email, otpHash }) {
+  // secret-plaintext-ok: `reset_token` عمود أثري من تصميم «رابط استعادة» لم
+  // يُنفَّذ — يُكتب سلسلة فارغة دائماً ولا يُقرأ إطلاقاً، فلا سرّ فيه ليُشفَّر.
+  // السرّ الفعلي هنا `otp_code` ويُخزَّن **مجزَّأً** (otpHash) لا مشفَّراً:
+  // التجزئة أقوى — لا مسار لاستعادة الرمز حتى بمفتاح التشفير.
   await env.DB.prepare(
     `INSERT INTO password_resets (email, otp_code, reset_token, expires_at)
      VALUES (?, ?, ?, datetime('now', '+15 minutes'))

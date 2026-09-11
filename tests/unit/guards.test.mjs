@@ -190,7 +190,56 @@ try {
     assert(m4.code === 1, "G4-5: صفر جداول مقروءة = فشل، لا «✔ سليم» على فحص لم يحدث");
   }
 
-  // ── ٥. run-tests ─────────────────────────────────────────────────────────
+  // ── ٥. audit-security ح٩ (تشفير أعمدة الأسرار) ───────────────────────────
+  // الفجوة المغلقة: توكنات القنوات كانت تُكتب نصاً صريحاً بـD1. الحارس نصّي —
+  // فالمهم أن يمسك **إعادة السطر القديم**، لا أن «لا ينهار».
+  {
+    const real = runGuard("audit-security.mjs");
+    assert(real.code === 0, "G6-1: audit-security يمرّ على الشجرة الحالية (بعد التشفير)");
+
+    // (أ) INSERT بعمود *_token يأخذ التوكن خاماً — السطر الذي كان بالإنتاج.
+    resetFixture();
+    write("functions/wa.js", `export async function save(env, { merchantId, businessToken }) {
+  await env.DB.prepare(
+    \`INSERT INTO wa_connections (merchant_id, business_token, status)
+     VALUES (?, ?, 'active')\`
+  ).bind(merchantId, businessToken).run();
+}
+`);
+    const ins = runGuard("audit-security.mjs", { AUDIT_SECRET_DIR: `${FIXTURE}/functions` });
+    assert(ins.code === 1 && ins.out.includes("ح٩"), "G6-2: يفشل عند كتابة توكن خام بعمود *_token");
+    assert(ins.out.includes("business_token"), "G6-3: يسمّي العمود المخالف بالتحديد");
+
+    // (ب) UPDATE ... SET access_token = ? خاماً (مسار cron تجديد إنستغرام).
+    resetFixture();
+    write("functions/ig.js", `export async function refresh(env, row, accessToken) {
+  await env.DB.prepare(
+    \`UPDATE ig_connections SET access_token = ?, updated_at = datetime('now')
+      WHERE merchant_id = ? AND ig_user_id = ?\`
+  ).bind(accessToken, row.merchant_id, row.ig_user_id).run();
+}
+`);
+    const upd = runGuard("audit-security.mjs", { AUDIT_SECRET_DIR: `${FIXTURE}/functions` });
+    assert(upd.code === 1 && upd.out.includes("access_token"), "G6-4: يفشل عند UPDATE يعيد كتابة توكن خام");
+
+    // (ج) لا إنذار كاذب: قيمة مرّت بـencryptSecret، وعمود مبرَّر بتعليق.
+    resetFixture();
+    write("functions/ok.js", `export async function save(env, { merchantId, businessToken, sessionToken }) {
+  const encToken = await encryptSecret(env, businessToken);
+  await env.DB.prepare(
+    \`INSERT INTO wa_connections (merchant_id, business_token) VALUES (?, ?)\`
+  ).bind(merchantId, encToken).run();
+  // secret-plaintext-ok: مفتاح بحث لا بيانات اعتماد.
+  await env.DB.prepare(
+    \`INSERT INTO omnichannel_sessions (session_token, merchant_id) VALUES (?, ?)\`
+  ).bind(sessionToken, merchantId).run();
+}
+`);
+    const ok = runGuard("audit-security.mjs", { AUDIT_SECRET_DIR: `${FIXTURE}/functions` });
+    assert(ok.code === 0, "G6-5: القيمة المشفَّرة والعمود المبرَّر يمرّان بلا إنذار كاذب");
+  }
+
+  // ── ٦. run-tests ─────────────────────────────────────────────────────────
   // لا يُشغَّل عودياً (سيُعيد تشغيل نفسه)؛ نتحقق من العقد نصياً: يجمع عودياً،
   // لا يتوقف عند أول فشل، ويرجع exit 1.
   {
