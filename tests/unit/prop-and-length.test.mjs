@@ -73,6 +73,13 @@ async function main() {
   {
     const cleaned = cleanDescription(REAL_BLOUSE, { sourceText: "", productName: "بلوزة" });
     assert(cleaned === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية.", `PL-10: جملة التنورة وجملة «مثالية» تُحذفان والصحيحة تبقى («${cleaned}»)`);
+
+    // مخرج الكاتب المركّز الحقيقي (2026-09-11 22:49 UTC): الحكم داخل جملة صحيحة.
+    const realFocused = "بلوزة بيضاء بتصميم أنيق وياقة دائرية وأكمام قصيرة. القصّة مستقيمة تعطيها لمسة من الأناقة، والطول مناسب لمن يفضلون الإطلالات الكلاسيكية.";
+    assert(publishedFieldIssues({ copywriting: { description: "القصّة مستقيمة تعطيها لمسة من الأناقة، والطول مناسب." } }, { sourceText: "" }).some((i) => i.code === "FIELD_UNSOURCED_JUDGMENT"), "PL-22: «لمسة من الأناقة» حكم بلا مصدر يُمسك (كان يفلت)");
+    const kept = cleanDescription(realFocused, { sourceText: "", productName: "بلوزة" });
+    assert(/^بلوزة بيضاء/.test(kept) && /وياقة دائرية/.test(kept) && /القصّة مستقيمة/.test(kept) && !/[أا]ناق|أنيق/.test(kept), `PL-23: الحكم يُزال من الجملة وتبقى الجملتان وافتتاحية اسم المنتج («${kept}»)`);
+    assert(cleanDescription("بلوزة بيضاء بتصميم أنيق وياقة دائرية.", { sourceText: "بلوزة أنيقة للدوام", productName: "بلوزة" }) === "بلوزة بيضاء بتصميم أنيق وياقة دائرية.", "PL-24: «أنيق» ذكرها التاجر ⇒ لا تُمس");
   }
 
   // ── البرومبت ─────────────────────────────────────────────────────────────
@@ -82,6 +89,7 @@ async function main() {
     assert(!/تلبسها العارضة/.test(buildSeoSystem(base)), "PL-12: بلا اسم منتج لا تُحقن القاعدة (سلوك سابق محفوظ)");
     const { VISION_PROMPT } = await import("../../functions/_lib/ai/prompts/seo.js");
     assert(/لا وضعية العارضة ولا يديها/.test(VISION_PROMPT) && /أي دانتيل أو تطريز/.test(VISION_PROMPT), "PL-21: توجيه الرؤية يحصر الوصف بالقطعة المعروضة ويفحص الياقة والأكمام والتفاصيل بالترتيب");
+    assert(/«الياقة: …»/.test(VISION_PROMPT) && /«التفاصيل: …»/.test(VISION_PROMPT) && /ولا يتناقض سطران/.test(VISION_PROMPT) && !/المرئية: …/.test(VISION_PROMPT), "PL-25: ملاحظات الرؤية منظّمة بسطر لكل جانب (ملاحظات حقيقية سابقة تناقضت: «قصيرة وبدون أكمام ظاهرة»)");
   }
 
   // ── التكامل: إعادة الطول مع صورة ─────────────────────────────────────────

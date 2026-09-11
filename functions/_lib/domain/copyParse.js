@@ -2,6 +2,7 @@
 // نُقل من `api/copy.js` بالمرحلة ٤ (ARCHITECTURE §٢) بلا تغيير سلوكي —
 // انتزاع الـJSON نفسه صار بـ`ai/parseModelJson.js` ويشترك فيه `chat.js`.
 import { extractBalancedJson } from "../ai/parseModelJson.js";
+import { stripJudgments } from "./copyPhrases.js";
 
 /**
  * خطأ مصنَّف: تعذّر انتزاع JSON من مخرج النموذج بعد إعادة محاولة واحدة.
@@ -246,7 +247,7 @@ export function cleanDescription(text, { sourceText, productName } = {}) {
   let t = String(text || "").trim();
   t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
   // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
-  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !MECHANISM_LEAK.test(s) && !(productName && propItemIn(s, productName)) && !(sourceText !== undefined && (unsourcedMaterial(s, sourceText) || unsourcedJudgment(s, sourceText)))).join(" ").trim();
+  t = t.split(/(?<=[.!؟\n])\s+/).map((s) => (sourceText !== undefined && unsourcedJudgment(s, sourceText) ? stripJudgments(s) : s)).filter((s) => s && !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !MECHANISM_LEAK.test(s) && !(productName && propItemIn(s, productName)) && !(sourceText !== undefined && (unsourcedMaterial(s, sourceText) || unsourcedJudgment(s, sourceText)))).join(" ").trim();
   return t;
 }
 
@@ -270,7 +271,7 @@ const STORE_POLICY = /(مدة الشحن|الشحن خلال|يتم الشحن|�
 const MECHANISM_LEAK = /(غير مرئي|يبدو أن|ملاحظات الصورة|(?<!\p{L})مرئي(?:ة|ه)?(?!\p{L}))/u;
 /** أحكام جودة (قاعدة ٥ بالبرومبت) — مسموحة فقط إن وردت ببيانات التاجر. مطبَّعة بـnormAr. */
 // «مثالي» أُضيفت 2026-09-11: «هذه البلوزة مثالية للمناسبات» بمخرج حقيقي على متجر المراجعة.
-const JUDGMENTS = ["مريح", "انيق", "فاخر", "متين", "مثالي", "عالي الجوده", "جوده عاليه"];
+const JUDGMENTS = ["مريح", "انيق", "اناقه", "فاخر", "فخامه", "متين", "مثالي", "راقي", "عالي الجوده", "جوده عاليه"];
 function unsourcedJudgment(text, sourceText) {
   const body = normAr(text);
   const src = normAr(sourceText);
