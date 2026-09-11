@@ -89,6 +89,7 @@ async function main() {
     assert(ai.seen.vision >= 1 && ai.seen.text === 3, `PL-13: قصير بعد الإعادة العامة ⇒ محاولة طول مخصصة ثالثة (نصية: ${ai.seen.text})`);
     assert(/ما زال قصيراً/.test(ai.seen.systems[2]) && /«بلوزة» وحده/.test(ai.seen.systems[2]), "PL-14: تعليمة الطول تسمّي المنتج وتحصر الكتابة فيه");
     assert(out.copywriting.description === LONG_GOOD, "PL-15: النسخة الطويلة السليمة تُعتمد");
+    assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
   }
   {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);

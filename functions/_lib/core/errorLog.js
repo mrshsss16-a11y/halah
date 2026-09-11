@@ -47,7 +47,11 @@ export function sanitizeInternal(internal) {
 
 export function logError(context, { requestId, path, code, internal, storeId = null }) {
   const truncatedInternal = internal ? sanitizeInternal(internal).slice(0, 2000) : null;
-  const entry = { requestId, path, code, storeId, internal: truncatedInternal, ts: new Date().toISOString() };
+  // error_log.request_id عمود NOT NULL (migrations/0015). ٣٤ استدعاءً خارج مسار HTTP تمرّر
+  // requestId: null، فكان كل إدراج منها يفشل بـ«NOT NULL constraint failed» ويُبلع — لذلك لم
+  // يظهر بالجدول سطر COPY_QUALITY واحد قط (كُشف بالسجل الحي 2026-09-11). معرّف داخلي بدل الضياع.
+  const rid = requestId || `int-${crypto.randomUUID().slice(0, 12)}`;
+  const entry = { requestId: rid, path, code, storeId, internal: truncatedInternal, ts: new Date().toISOString() };
   console.error("[hala-error]", JSON.stringify(entry));
 
   const db = context?.env?.DB;
@@ -62,7 +66,7 @@ export function logError(context, { requestId, path, code, internal, storeId = n
       .prepare(
         `INSERT INTO error_log (request_id, store_id, code, path, internal) VALUES (?, ?, ?, ?, ?)`
       )
-      .bind(requestId, storeId, code, path, truncatedInternal)
+      .bind(rid, storeId, code, path, truncatedInternal)
       .run()
       .catch((e) => console.error("[hala-error-log-write-failed]", e?.message));
   } catch (e) {

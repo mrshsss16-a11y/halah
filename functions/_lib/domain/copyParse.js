@@ -378,11 +378,11 @@ function itemGroup(word) {
   const w = normAr(word).replace(/^ال/, "");
   return ITEM_GROUPS.findIndex((g) => g.includes(w));
 }
-function splitSentences(text) {
+export function splitSentences(text) {
   return String(text || "").split(/(?<=[.!؟\n])\s+/).filter((s) => s.trim());
 }
 /** اسم القطعة الأخرى إن بدأت بها الجملة، وإلا null. */
-function propItemIn(sentence, productName) {
+export function propItemIn(sentence, productName) {
   const productGroup = itemGroup(String(productName || "").trim().split(/\s+/)[0] || "");
   if (productGroup < 0) return null;
   const first = normAr(sentence).trim().replace(/^[\s،:,\-–—]+/, "").split(/\s+/)[0] || "";

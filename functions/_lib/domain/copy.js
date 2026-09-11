@@ -8,7 +8,7 @@ import { recallStyleExamples } from "../ai/memory.js";
 import { getProfile, profileToPromptBlock } from "./storeProfile.js";
 import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
-import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields } from "./copyParse.js";
+import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields, splitSentences, propItemIn } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
@@ -77,6 +77,15 @@ async function saveCopy(env, { merchantId, productName, opening, keywords }) {
 // below AND by cron/bulk_process.js (B3), which calls this directly instead
 // of self-fetching over HTTP to avoid an extra round-trip per product in a
 // job that's already rate-limited to ~1/sec by Salla.
+// جمل عن العارضة أو عن قطعة غير المنتج تُحذف من ملاحظات الصورة **قبل** الكاتب. السجل الحي
+// (2026-09-11، بلوزة متجر المراجعة) أثبت أن النموذج أصرّ على «التنورة…» عبر ثلاث محاولات
+// لأن الملاحظات نفسها تصفها — الحارس بعد الكتابة كان يحذف، والمصدر يعيد الإغراء كل مرة.
+const MODEL_PERSON = /(العارضة|عارضة الأزياء|(?<!\p{L})model(?!\p{L})|wearing|paired with)/iu;
+function productOnlyNotes(notes, name) {
+  return splitSentences(notes).filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name)).join(" ").trim();
+}
+const descWords = (p) => String(p?.copywriting?.description || "").split(/\s+/).filter(Boolean).length;
+
 export async function generateProductCopy({ env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, variants, keywordsExtra }) {
   const keywords = seedKeywords(name, category, keywordsExtra);
   const recent = await recentCopy(env, merchantId, RECENT_OPENINGS_WINDOW).catch(() => []);
@@ -143,7 +152,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // الملاحظات الإنجليزية تُستخدم ولا تُهدر — إهدارها ترك النموذج بلا حقائق
   // فاخترع خامة وجودة على منتج لم يره. اللغة تُعالَج بالبرومبت لا بالحذف.
   const classified = classifyVisionNotes(rawVisionNotes);
-  const visionNotes = classified?.text || "";
+  const visionNotes = productOnlyNotes(classified?.text || "", name);
+  // تشخيص مؤقت حتى قبول سلة — سجل Cloudflare الحي فقط، لا D1: وصف بصري للمنتج، بلا بيانات عميل.
+  console.log("[copy-diag] vision", JSON.stringify({ rawChars: (classified?.text || "").length, keptChars: visionNotes.length, notes: visionNotes.slice(0, 400) }));
   const visionLanguage = classified?.language || null;
   if (classified?.language === "en") {
     logError({ env }, {
@@ -207,6 +218,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // تُنشر مع الوصف على صفحة المنتج (sallaProductPayload.js).
   const allIssues = (p) => [...descriptionQualityIssues(p.copywriting, { hasVision, sourceText, productName: name }), ...publishedFieldIssues(p, { sourceText, productName: name })];
   let issues = allIssues(parsed);
+  console.log("[copy-diag] attempt1", descWords(parsed), issues.map((i) => i.code).join(","));
   if (issues.length) {
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
@@ -216,6 +228,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     try {
       const again = parseSeoResponse(await ask(strictQuality, true), name, price);
       const againIssues = allIssues(again);
+      console.log("[copy-diag] attempt2", descWords(again), againIssues.map((i) => i.code).join(","));
       if (againIssues.length < issues.length) { parsed = again; issues = againIssues; }
     } catch (err) {
       if (!(err instanceof CopyParseError)) throw err; // المخرج الأول صالح — نبقيه
@@ -229,6 +242,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     try {
       const again = parseSeoResponse(await ask(lengthOnly, true), name, price);
       const againIssues = allIssues(again);
+      console.log("[copy-diag] attempt3", descWords(again), againIssues.map((i) => i.code).join(","));
       if (!againIssues.some((i) => i.code === "TOO_SHORT") && againIssues.length <= issues.length) { parsed = again; issues = againIssues; }
     } catch (err) {
       if (!(err instanceof CopyParseError)) throw err;
