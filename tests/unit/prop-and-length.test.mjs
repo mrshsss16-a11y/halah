@@ -85,6 +85,8 @@ async function main() {
     const realDress = "فستان أسود بلا أكمام، يتميز بكسرات تزيد من جماله وأناقته. قصته ميدي مما يجعله مناسبًا للعديد من المناسبات.";
     assert(publishedFieldIssues({ copywriting: { description: realDress } }, { sourceText: "" }).some((i) => i.code === "FIELD_UNSOURCED_JUDGMENT"), "PL-26: «جماله وأناقته» بضمير متصل تُمسك (كانت تفلت)");
     const dressClean = cleanDescription(realDress, { sourceText: "", productName: "فستان" });
+    const touch = cleanDescription("فستان أسود بحمالات رفيعة. يُنسَّق مع حقيبة يد صغيرة لإضافة لمسة أنيقة.", { sourceText: "", productName: "فستان" });
+    assert(touch === "فستان أسود بحمالات رفيعة. يُنسَّق مع حقيبة يد صغيرة.", `PL-28: «لإضافة لمسة أنيقة» تُزال كاملة لا صفتها وحدها («${touch}»)`);
     assert(/^فستان أسود بلا أكمام، يتميز بكسرات\./.test(dressClean) && /قصته ميدي/.test(dressClean) && !/جمال|[أا]ناق/.test(dressClean), `PL-27: «تزيد من جماله وأناقته» تُزال وتبقى الجملة («${dressClean}»)`);
   }
 

@@ -131,7 +131,11 @@ async function main() {
       out === "فستان ماكسي أسود بقصّة A." && seen.model === "@cf/qwen/qwen3.8-27b" &&
         Array.isArray(part) && part[0].type === "text" && part[0].text === "صف" &&
         part[1].type === "image_url" && /^data:image\/jpeg;base64,/.test(part[1].image_url.url),
-      "MDL-4: الرؤية تستدعي سكاوت بصيغة أجزاء + data URI"
+      "MDL-4: الرؤية تستدعي نموذج التفاصيل بصيغة أجزاء + data URI"
+    );
+    assert(
+      seen.input.chat_template_kwargs?.enable_thinking === false,
+      "MDL-4b: التفكير معطّل لنماذج الرؤية الاستدلالية (Qwen/Gemma) كي لا يعود نص فارغ"
     );
 
     // فشل الأساسي (نموذج غير متاح أو صيغة تغيّرت) لا يُسقط الميزة.
@@ -140,14 +144,14 @@ async function main() {
       AI: {
         run: async (model, input) => {
           calls.push(model);
-          if (model === VISION_MODEL || model === "@cf/qwen/qwen3.8-27b") throw new Error("model unavailable");
+          if (model === VISION_MODEL || model === "@cf/qwen/qwen3.8-27b" || model === "@cf/google/gemma-4-26b-a4b-it") throw new Error("model unavailable");
           return { response: "وصف من الاحتياطي" };
         }
       }
     };
     const fb = await askVisionAI({ env: failEnv, imageBuffer: img, prompt: "صف" });
     assert(
-      fb === "وصف من الاحتياطي" && calls[0] === "@cf/qwen/qwen3.8-27b" && calls[1] === VISION_MODEL && calls[2] === VISION_FALLBACK_MODEL,
+      fb === "وصف من الاحتياطي" && calls[0] === "@cf/qwen/qwen3.8-27b" && calls[1] === "@cf/google/gemma-4-26b-a4b-it" && calls[2] === VISION_MODEL && calls[3] === VISION_FALLBACK_MODEL,
       "MDL-5: فشل الأساسي يسقط للاحتياطي بدل إسقاط الميزة"
     );
 

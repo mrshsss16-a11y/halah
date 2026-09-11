@@ -31,6 +31,9 @@ export const VISION_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
 // Cloudflare». صيغة إدخال الصورة غير موثّقة بصفحته، فأي فشل يسقط لسكاوت كما كان، والسجل
 // يسمّي النموذج الذي أجاب (vision= بسطر COPY_LENGTH_RETRY).
 const VISION_DETAIL_MODEL = "@cf/qwen/qwen3.8-27b";
+// أول توليد بعد النشر أجاب فيه سكاوت لا Qwen (سبب الفشل لم يكن يُسجَّل). Gemma 4 على Workers AI
+// أيضاً محاولة ثانية، وسبب فشل كل نموذج صار يصل السجل عبر copy.js (verr=).
+const VISION_ALT_MODEL = "@cf/google/gemma-4-26b-a4b-it";
 // السابق يبقى **احتياطياً حياً**: صيغة إدخال الصور تختلف بين العائلتين، ولم
 // أتحقق من صيغة سكاوت على الإنتاج بعد. الفشل يسقط للسابق بدل أن يُسقط الميزة.
 export const VISION_FALLBACK_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
@@ -100,7 +103,7 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
 
   // المسار الأساسي: صيغة رسائل متعددة الأجزاء (سكاوت متعدد الوسائط أصلاً).
   const dataUrl = `data:${mimeType};base64,${bytesToBase64(bytes)}`;
-  for (const model of [VISION_DETAIL_MODEL, VISION_MODEL]) {
+  for (const model of [VISION_DETAIL_MODEL, VISION_ALT_MODEL, VISION_MODEL]) {
   try {
     const response = await env.AI.run(model, {
       messages: [
@@ -115,7 +118,10 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
           ]
         }
       ],
-      max_tokens: 700
+      max_tokens: 700,
+      // Qwen 3.8 وGemma 4 نماذج «تفكير»: بلا هذا تُستهلك الرموز بالتفكير ويعود نص فارغ فيسقط
+      // الطلب لسكاوت (مثال Gemma 4 بتوثيق Cloudflare يمرّره). لا يُرسل لسكاوت كي لا يُرفض.
+      ...(model !== VISION_MODEL ? { chat_template_kwargs: { enable_thinking: false } } : {})
     });
     const text = readVisionText(response);
     if (text) return { text, model, errors };

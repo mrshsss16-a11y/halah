@@ -157,11 +157,13 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // الحقيقي (أي نموذج فشل وبأي رسالة) بلا أن يُسقط التوليد.
   let rawVisionNotes = null;
   let visionModel = null;
+  let visionErrors = "";
   if (imageUrl) {
     try {
       const out = await askVisionDetailed({ env, imageUrl, prompt: visionPrompt });
       rawVisionNotes = out.text || null;
       visionModel = out.model;
+      visionErrors = (out.errors || []).join(" | ").replace(/\s+/g, " ").slice(0, 300);
       if (!out.text) {
         logError({ env }, {
           requestId: null,
@@ -272,7 +274,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // (نداء واحد) بدل تكرار البرومبت الضخم الذي أعاد نفس النص حرفياً ثلاث مرات.
   if (issues.some((i) => i.code === "TOO_SHORT")) {
     // الملاحظات (مقتطف) وعدد الكلمات تُحفظ بالسجل: البث الحي انقطع مرتين، والتشخيص يحتاجها.
-    const diag = `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)} vision=${visionModel || "none"} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`;
+    const diag = `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)} vision=${visionModel || "none"} verr=${visionErrors || "-"} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`;
     logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_LENGTH_RETRY", internal: diag, storeId: merchantId });
     try {
       const variantsText = parsedVariants.map((v) => `${v.name}: ${(v.values || []).join("، ")}`).join(" · ");
