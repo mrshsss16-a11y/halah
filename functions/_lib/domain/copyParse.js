@@ -151,3 +151,54 @@ export function parseSeoResponse(raw, name, price) {
   // الوحيدة التي تمنع نشره على صفحة التاجر بسلة (A4 · §١١).
   throw new CopyParseError("model output is not parseable product-copy JSON");
 }
+
+// ── بوابة جودة الوصف (2026-09-11) ─────────────────────────────────────────
+//
+// رصده المالك على وصف حقيقي بمتجر المراجعة: «هذي تنورة نسائية طويلة، لونها
+// أسود جميل. … السعر: 83 ريال.» — ثلاثة عيوب لا يمسكها تحليل JSON: افتتاحية
+// إشارية («هذي/هذه/هذا»)، والسعر داخل نص الوصف (يتغيّر بالمتجر ويبقى النص
+// كاذباً)، ووصف قصير عامّ رغم توفّر ملاحظات صورة. الفحص هنا حتمي ورخيص، ولا
+// يعتمد على أن النموذج «فهم» القاعدة — يُعاد التوليد مرة بتعليمة تسمّي العيب،
+// ثم يُنظَّف النص بحدّ أدنى مضمون لو أصرّ النموذج.
+
+/** افتتاحيات إشارية/تعريفية لا يبدأ بها وصف منتج على صفحة متجر. */
+// لا `\b` هنا: حدّ الكلمة بـJavaScript لاتيني فقط ولا يرى الحروف العربية —
+// فكان «هذي تنورة» يمرّ. الحدّ صريح: مسافة أو نهاية أو علامة ترقيم.
+const BAD_OPENERS = /^(هذي|هذه|هذا|هاذي|هاذا|هذول|هذيك|هذاك|منتجنا|منتجك|إليك|اليك|نقدم لك|نقدّم لك)(?=[\s،,:.!؟]|$)/;
+/** ذكر سعر داخل النثر: رقم مع ريال/ر.س/SAR، أو كلمة «السعر». */
+const PRICE_IN_PROSE = /(السعر|بسعر|سعره|سعرها)\s*[:：]?\s*[\d٠-٩]|[\d٠-٩][\d٠-٩.,]*\s*(ريال|ر\.?س\.?|SAR|﷼)/;
+const MIN_WORDS_WITH_VISION = 45;
+
+/**
+ * يرجّع قائمة عيوب الوصف (فارغة = مقبول). كل عيب يحمل رمزاً ثابتاً للاختبار
+ * والسجل، ونصاً عربياً يُلقَّم للنموذج بإعادة المحاولة.
+ */
+export function descriptionQualityIssues(copywriting, { hasVision = false } = {}) {
+  const issues = [];
+  const desc = String(copywriting?.description || "").trim();
+  const excerpt = String(copywriting?.excerpt || "").trim();
+  const wa = String(copywriting?.whatsapp || "").trim();
+  if (BAD_OPENERS.test(desc)) {
+    issues.push({ code: "BAD_OPENER", text: "الوصف يبدأ بافتتاحية إشارية (هذي/هذه/منتجنا…) — ابدئي باسم المنتج أو بميزته المرئية." });
+  }
+  if (PRICE_IN_PROSE.test(desc) || PRICE_IN_PROSE.test(excerpt) || PRICE_IN_PROSE.test(wa)) {
+    issues.push({ code: "PRICE_IN_PROSE", text: "نص الوصف/النبذة/الواتساب يذكر سعراً — المتجر يعرض السعر بنفسه، والرقم يتغيّر ويبقى النص كاذباً. احذفي أي سعر." });
+  }
+  const words = desc ? desc.split(/\s+/).filter(Boolean).length : 0;
+  if (hasVision && words < MIN_WORDS_WITH_VISION) {
+    issues.push({ code: "TOO_SHORT", text: `الوصف ${words} كلمة فقط رغم توفّر ملاحظات صورة — اكتبي ٦٠–١٢٠ كلمة من المرئيات المذكورة (اللون، القصّة، الطول، التفاصيل) واقتراح استخدام مشتق منها.` });
+  }
+  return issues;
+}
+
+/**
+ * تنظيف حتمي بحدّ أدنى حين يُصرّ النموذج بعد إعادة المحاولة: يُسقط الافتتاحية
+ * الإشارية ويحذف الجمل التي تذكر سعراً. لا يخترع نصاً — يحذف فقط.
+ */
+export function cleanDescription(text) {
+  let t = String(text || "").trim();
+  t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
+  // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
+  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s)).join(" ").trim();
+  return t;
+}

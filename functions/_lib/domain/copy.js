@@ -8,7 +8,7 @@ import { recallStyleExamples } from "../ai/memory.js";
 import { getProfile, profileToPromptBlock } from "./storeProfile.js";
 import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
-import { CopyParseError, parseSeoResponse, classifyVisionNotes } from "./copyParse.js";
+import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
@@ -161,7 +161,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
 
   const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock });
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
-  const userMsg = `اسم المنتج: ${name}\nالسعر: ${price || "غير محدد"} ريال\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
+  // السعر لا يُمرَّر للنموذج (2026-09-11): كان يعود داخل نص الوصف («السعر: 83
+  // ريال») فيتقادم مع أول تعديل سعر بالمتجر. يبقى لـJSON-LD فقط عبر parseSeoResponse.
+  const userMsg = `اسم المنتج: ${name}\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
 
   const ask = (extraSystem, skipCache) =>
     askWorkersAI({
@@ -169,6 +171,8 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       system: `${system}${extraSystem}`,
       messages: [{ role: "user", content: userMsg }],
       maxTokens: 1200,
+      // 0.35 لا 0.7: عيّنة أعلى أنتجت كلمة مكسورة («وستثنينية») على منتج حقيقي.
+      temperature: 0.35,
       model: COPY_MODEL,
       storeId: merchantId, // scopes the KV cache — two merchants selling the same product name must not share copy
       ttlKind: "copy",
@@ -192,6 +196,34 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     const strict =
       "\n\n## تنبيه إخراج صارم\nأرجعي **JSON صالحاً فقط** يبدأ بـ{ وينتهي بـ}. بلا أي نص قبله أو بعده، بلا شرح، بلا أسوار كود (```)، بلا اعتذار.";
     parsed = parseSeoResponse(await ask(strict, true), name, price);
+  }
+  // بوابة جودة حتمية بعد التحليل: افتتاحية إشارية / سعر بالنثر / قصر رغم صورة.
+  // إعادة محاولة واحدة بتعليمة تسمّي العيب وبتجاوز الكاش، ثم تنظيف مضمون.
+  const hasVision = Boolean(visionNotes);
+  let issues = descriptionQualityIssues(parsed.copywriting, { hasVision });
+  if (issues.length) {
+    logError({ env }, {
+      requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
+      internal: issues.map((i) => i.code).join(","), storeId: merchantId
+    });
+    const strictQuality = "\n\n## إعادة كتابة مطلوبة — عيوب بالمخرج السابق\n" + issues.map((i) => `- ${i.text}`).join("\n");
+    try {
+      const again = parseSeoResponse(await ask(strictQuality, true), name, price);
+      const againIssues = descriptionQualityIssues(again.copywriting, { hasVision });
+      if (againIssues.length < issues.length) { parsed = again; issues = againIssues; }
+    } catch (err) {
+      if (!(err instanceof CopyParseError)) throw err; // المخرج الأول صالح — نبقيه
+    }
+  }
+  if (issues.length) {
+    // النموذج أصرّ: تنظيف حتمي (حذف فقط، لا اختراع) ويُسجَّل أنه قُسر.
+    parsed.copywriting.description = cleanDescription(parsed.copywriting.description);
+    parsed.copywriting.excerpt = cleanDescription(parsed.copywriting.excerpt).slice(0, 250);
+    parsed.copywriting.whatsapp = cleanDescription(parsed.copywriting.whatsapp);
+    logError({ env }, {
+      requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_FORCED",
+      internal: issues.map((i) => i.code).join(","), storeId: merchantId
+    });
   }
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
   parsed.usedImage = Boolean(visionNotes);
