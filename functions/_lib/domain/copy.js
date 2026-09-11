@@ -102,6 +102,7 @@ function focusedDescriptionSystem(name, notes, variantsText) {
     "الطول: من ٦٠ إلى ٩٠ كلمة في ثلاث فقرات قصيرة يفصل بينها سطر فارغ:",
     `١) ابدئي بكلمة «${name}» ثم صفي ما في ملاحظات الصورة بالتفصيل: اللون، القصّة، الياقة، الأكمام، الطول، وكل تفصيل ورد فيها.`,
     "٢) متى وكيف تُلبس، مع قطعة تنسيق مقترحة.",
+    "الطول والقصّة بكلمة الملاحظات نفسها («ميدي» تبقى «ميدي»)، لا «طويل» ولا «قصير» ولا «كلوش» ولا «واسع» ما لم تَرِد فيها.",
     "٣) جملة واحدة بهذه الصيغة أو قريبة منها: «راجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.» — فعل أمر موجّه للعميلة، لا «توصي» ولا «يرجى» بلا فاعل.",
     "ممنوع: السعر، الشحن والإرجاع والدفع، أي خامة لم ترد، أحكام الجودة (مريح، أنيق، أناقة، فاخر، فخامة، مثالي، راقٍ)، ذكر العارضة أو الصورة، وأي تفصيل لم يرد بالملاحظات.",
     variantsText ? `الخيارات المتوفرة فعلاً: ${variantsText}` : "",
@@ -290,11 +291,16 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
         skipCache: true
       });
       // يُنظَّف قبل التقييم: النص المقبول هو نفسه ما يُنشر، لا نسخة يقصّها التنظيف لاحقاً.
-      const text = cleanDescription(readFocusedText(raw), { sourceText, productName: name });
+      const rawText = readFocusedText(raw);
+      const text = cleanDescription(rawText, { sourceText, productName: name });
       const candidate = { ...parsed, copywriting: { ...parsed.copywriting, description: text } };
       const candidateIssues = allIssues(candidate);
-      const accepted = Boolean(text) && !candidateIssues.some((i) => i.code === "TOO_SHORT") && candidateIssues.length <= issues.length;
-      logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_FOCUSED_RESULT", internal: `accepted=${accepted} words=${text.split(/\s+/).filter(Boolean).length} ${candidateIssues.map((i) => i.code).join(",")}`, storeId: merchantId });
+      const wc = (s) => String(s || "").split(/\s+/).filter(Boolean).length;
+      // أطول من الحالي بعد تنظيفه وليس أسوأ بالعيوب ⇒ يُقبل ولو بقي تحت حد الطول. رُفض نص بـ٣٣ كلمة
+      // وثلاث فقرات، فنُشر بدله ٢٧ كلمة بفقرة واحدة بلا تنسيق ولا جدول مقاسات (2026-09-11 23:50).
+      const longer = wc(text) > wc(cleanDescription(parsed.copywriting.description, { sourceText, productName: name }));
+      const accepted = Boolean(text) && candidateIssues.length <= issues.length && (longer || !candidateIssues.some((i) => i.code === "TOO_SHORT"));
+      logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_FOCUSED_RESULT", internal: `accepted=${accepted} raw=${wc(rawText)} words=${wc(text)} ${candidateIssues.map((i) => i.code).join(",")}`, storeId: merchantId });
       if (accepted) {
         parsed = candidate;
         issues = candidateIssues;

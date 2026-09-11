@@ -130,6 +130,16 @@ async function main() {
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
   {
+    // الكاتب المركّز أعاد نصاً سليماً بثلاث فقرات لكنه تحت حد الطول: أطول من الحالي ⇒ يُعتمد.
+    const shortGood = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية مع كسرات عند الصدر وتفصيل دانتيل على الكتف والكم.\n\nتُنسَّق مع بنطال بيج واسع للدوام والزيارات.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.";
+    const ai = mockAi([copyJson(REAL_BLOUSE), copyJson(REAL_BLOUSE), shortGood]);
+    const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
+    assert(out.copywriting.description === shortGood, `PL-36: نص الكاتب المركّز الأطول يُعتمد ولو تحت حد الطول، بفقراته وجملة جدول المقاسات («${out.copywriting.description}»)`);
+    const { readFileSync } = await import("node:fs");
+    const seoSrc = readFileSync(new URL("../../functions/_lib/ai/prompts/seo.js", import.meta.url), "utf8");
+    assert(!/طويلة بقصّة كلوش|فستان طويل بقصّة/.test(seoSrc) && /«ميدي» تبقى «ميدي»/.test(seoSrc) && /«ميدي» تبقى «ميدي»/.test(ai.seen.systems[2]), "PL-37: لا أمثلة تزرع «طويل»/«كلوش»، والطول بكلمة الملاحظات بالبرومبتين (نُشر «فستان طويل بتصميم كلوش» لفستان ميدي)");
+  }
+  {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
     assert(ai.seen.text === 3, "PL-16: الإصرار ⇒ ثلاث محاولات نصية فقط لا حلقة (والكاتب المركّز إن أعاد JSON يُقرأ وصفه ويُرفض لقِصَره)");
