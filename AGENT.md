@@ -119,7 +119,6 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 1. **Cloudflare Workers AI** — `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (الأساسي، مجاني على الحافة)
 2. **Groq** — لو `GROQ_API_KEY` مضبوط
 3. **OpenRouter** — لو `OPENROUTER_API_KEY` مضبوط (نماذج مجانية)
-4. **DeepSeek** — لو `DEEPSEEK_API_KEY` مضبوط
 
 `TEXT_MODEL` هو الافتراضي المعتمد للجودة. `FAST_TEXT_MODEL` (3b) أسرع لكن **جودته أضعف
 بوضوح للعربية** — اختُبر ورُفض لمحادثات هالة (يهلوس ويخترع خدمات). لا تستخدمه لردود العملاء.
@@ -231,7 +230,6 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 ### اختيارية بمزوّد (fallback يُعطَّل بلا كسر التشغيل، أو تحسين اختياري)
 - `GROQ_API_KEY` — الطبقة الثانية بتعاقب AI Gateway.
 - `OPENROUTER_API_KEY` — الطبقة الثالثة (نماذج مجانية).
-- `DEEPSEEK_API_KEY` — الطبقة الرابعة والأخيرة.
 - `HF_TOKEN` — احتياطي `imageProvider.js` (Hugging Face) خلف klein الأساسي.
 - `TURNSTILE_SECRET_KEY` — تحقق كابتشا Turnstile؛ غيابه يمرّر الطلبات (N7، دَين موثّق).
 - `RESEND_API_KEY` — إرسال بريد (استعادة كلمة مرور، تحقق إيميل) عبر `integrations/email.js`؛ fail-closed بلا مفتاح.

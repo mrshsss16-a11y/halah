@@ -8,7 +8,7 @@ import { recallStyleExamples } from "../ai/memory.js";
 import { getProfile, profileToPromptBlock } from "./storeProfile.js";
 import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
-import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription } from "./copyParse.js";
+import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
@@ -203,7 +203,10 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // مصدر الخامات = بيانات التاجر وحدها. ملاحظات الصورة **ليست** مصدراً: الصورة
   // لا تثبت ذهباً ولا حريراً (قاعدة المعرفة السعودية F005/F006).
   const sourceText = [name, features, existingDescription, JSON.stringify(parsedVariants)].join(" ");
-  let issues = descriptionQualityIssues(parsed.copywriting, { hasVision, sourceText });
+  // الحارس على كل ما يُنشر، لا الوصف وحده: النقاط والأسئلة الشائعة والعنوان والميتا
+  // تُنشر مع الوصف على صفحة المنتج (sallaProductPayload.js).
+  const allIssues = (p) => [...descriptionQualityIssues(p.copywriting, { hasVision, sourceText }), ...publishedFieldIssues(p, { sourceText })];
+  let issues = allIssues(parsed);
   if (issues.length) {
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
@@ -212,7 +215,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     const strictQuality = "\n\n## إعادة كتابة مطلوبة — عيوب بالمخرج السابق\n" + issues.map((i) => `- ${i.text}`).join("\n");
     try {
       const again = parseSeoResponse(await ask(strictQuality, true), name, price);
-      const againIssues = descriptionQualityIssues(again.copywriting, { hasVision, sourceText });
+      const againIssues = allIssues(again);
       if (againIssues.length < issues.length) { parsed = again; issues = againIssues; }
     } catch (err) {
       if (!(err instanceof CopyParseError)) throw err; // المخرج الأول صالح — نبقيه
@@ -223,6 +226,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     parsed.copywriting.description = cleanDescription(parsed.copywriting.description, { sourceText });
     parsed.copywriting.excerpt = cleanDescription(parsed.copywriting.excerpt, { sourceText }).slice(0, 250);
     parsed.copywriting.whatsapp = cleanDescription(parsed.copywriting.whatsapp, { sourceText });
+    cleanPublishedFields(parsed, { sourceText, name });
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_FORCED",
       internal: issues.map((i) => i.code).join(","), storeId: merchantId

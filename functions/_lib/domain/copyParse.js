@@ -240,6 +240,112 @@ export function cleanDescription(text, { sourceText } = {}) {
   let t = String(text || "").trim();
   t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
   // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
-  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !(sourceText !== undefined && unsourcedMaterial(s, sourceText))).join(" ").trim();
+  t = t.split(/(?<=[.!؟\n])\s+/).filter((s) => !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !MECHANISM_LEAK.test(s) && !(sourceText !== undefined && (unsourcedMaterial(s, sourceText) || unsourcedJudgment(s, sourceText)))).join(" ").trim();
   return t;
+}
+
+
+// ── حراس الحقول المنشورة الأخرى (2026-09-11) ─────────────────────────────
+//
+// ما يُنشر على صفحة المنتج بسلة ليس الوصف وحده: `composeDescriptionHtml` يضيف
+// النقاط (highlights) والأسئلة الشائعة (faqs)، و`buildSallaProductFields` يرسل
+// العنوان والميتا. المخرجات الحقيقية الأربعة التي رفضها التاجر اختلقت في الأسئلة
+// الشائعة مدة شحن («تتم شحن الطلبات خلال 3-5 أيام عمل») وطرق دفع وسياسة إرجاع،
+// ونقاطاً من كلمة واحدة («مريح»، «انيق») — والحارس لم يكن يفحص إلا الوصف والنبذة
+// والواتساب. مراجع سلة يولّد وصفاً ويرى الصفحة كاملة.
+
+/**
+ * سياسة متجر لا تعرفها هالة. العبارات محددة عمداً: «شحن» وحدها تُسقط مواصفة
+ * حقيقية لشاحن («يدعم الشحن السريع»)، فالمحظور صيغة الوعد لا الكلمة.
+ * مسموحة فقط إن وردت ببيانات التاجر (ضمانٌ نصّ عليه التاجر في المزايا مثلاً).
+ */
+const STORE_POLICY = /(مدة الشحن|الشحن خلال|يتم الشحن|تتم شحن|تتم الشحن|يشحن خلال|يُشحن خلال|شحن مجاني|الشحن مجاني|رسوم الشحن|التوصيل خلال|مدة التوصيل|توصيل مجاني|التوصيل مجاني|الإرجاع|إرجاع|الارجاع|ارجاع|الاسترجاع|استرجاع|الاستبدال|استبدال|طرق الدفع|طريقة الدفع|وسائل الدفع|وسائل دفع|الدفع عند الاستلام|بطاقات الائتمان|بطاقة ائتمان|التحويل البنكي|تحويل بنكي|الضمان|ضمان|تقسيط|تابي|تمارا)/;
+/** كشف آلية قراءة الصورة في نص منشور: «لا يوجد حزام مرئي»، «يبدو أن الفستان…». */
+const MECHANISM_LEAK = /(غير مرئي|يبدو أن|ملاحظات الصورة|(?<!\p{L})مرئي(?:ة|ه)?(?!\p{L}))/u;
+/** أحكام جودة (قاعدة ٥ بالبرومبت) — مسموحة فقط إن وردت ببيانات التاجر. مطبَّعة بـnormAr. */
+const JUDGMENTS = ["مريح", "انيق", "فاخر", "متين", "عالي الجوده", "جوده عاليه"];
+function unsourcedJudgment(text, sourceText) {
+  const body = normAr(text);
+  const src = normAr(sourceText);
+  return JUDGMENTS.find((j) =>
+    new RegExp(`(?<!\\p{L})(?:و|ب)?(?:ال)?${j}(?:ه|ا)?(?!\\p{L})`, "u").test(body) && !src.includes(j)
+  ) || null;
+}
+const MIN_HIGHLIGHT_WORDS = 3;
+const words = (t) => String(t || "").trim().split(/\s+/).filter(Boolean).length;
+
+function textProblems(text, sourceText) {
+  const t = String(text ?? "");
+  if (!t.trim()) return [];
+  const out = [];
+  if (PRICE_IN_PROSE.test(t)) out.push("PRICE_IN_PROSE");
+  if (PLACEHOLDER.test(t)) out.push("PLACEHOLDER_LEAK");
+  if (PROHIBITED_CLAIMS.test(t)) out.push("PROHIBITED_CLAIM");
+  if (MECHANISM_LEAK.test(t)) out.push("MECHANISM_LEAK");
+  const policy = t.match(STORE_POLICY)?.[0];
+  if (policy && !(sourceText !== undefined && normAr(sourceText).includes(normAr(policy).replace(/^ال/, "")))) out.push("STORE_POLICY");
+  if (sourceText !== undefined && unsourcedMaterial(t, sourceText)) out.push("UNSOURCED_MATERIAL");
+  if (sourceText !== undefined && unsourcedJudgment(t, sourceText)) out.push("UNSOURCED_JUDGMENT");
+  return out;
+}
+
+const FIELD_ISSUE_TEXT = {
+  PRICE_IN_PROSE: "سعر داخل النص — المتجر يعرض السعر بنفسه",
+  PLACEHOLDER_LEAK: "عنصر نائب بين معقوفين",
+  PROHIBITED_CLAIM: "ادعاء محظور (ندرة، أصالة بلا مصدر، حكم على الجسد)",
+  MECHANISM_LEAK: "كشف لآلية قراءة الصورة («مرئي»، «يبدو أن») — صفي المنتج مباشرة",
+  STORE_POLICY: "سياسة متجر لا نعرفها (شحن، توصيل، إرجاع، استبدال، دفع، ضمان) — احذفي أي سؤال أو نقطة عنها",
+  UNSOURCED_MATERIAL: "خامة أو معدن أو حجر لم يرد ببيانات التاجر",
+  UNSOURCED_JUDGMENT: "حكم جودة بلا مصدر («مريح»، «أنيق»، «فاخر») — صفي التفصيل بدل الحكم",
+  THIN_HIGHLIGHT: "نقطة من كلمة أو كلمتين — كل نقطة فائدة ملموسة مرتبطة بتفصيل"
+};
+
+/**
+ * عيوب الحقول المنشورة غير الوصف: النقاط، الأسئلة الشائعة، العنوان، عنوان البحث،
+ * الميتا — ومن الوصف نفسه الفحصان الجديدان فقط (كشف الآلية وحكم الجودة)، لأن
+ * `descriptionQualityIssues` تغطي بقيته. عيب واحد لكل رمز مع قائمة الحقول.
+ */
+export function publishedFieldIssues(parsed, { sourceText } = {}) {
+  const found = new Map();
+  const note = (codes, field) => codes.forEach((c) => {
+    if (!found.has(c)) found.set(c, new Set());
+    found.get(c).add(field);
+  });
+  const cw = parsed?.copywriting || {};
+  const seo = parsed?.seo || {};
+  for (const h of Array.isArray(cw.highlights) ? cw.highlights : []) {
+    note(textProblems(h, sourceText), "النقاط");
+    if (words(h) < MIN_HIGHLIGHT_WORDS) note(["THIN_HIGHLIGHT"], "النقاط");
+  }
+  for (const f of Array.isArray(parsed?.faqs) ? parsed.faqs : []) {
+    note([...textProblems(f?.q, sourceText), ...textProblems(f?.a, sourceText)], "الأسئلة الشائعة");
+  }
+  note(textProblems(seo.title, sourceText), "العنوان");
+  note(textProblems(seo.seoTitle, sourceText), "عنوان البحث");
+  note(textProblems(seo.metaDescription, sourceText), "وصف الميتا");
+  note(textProblems(cw.description, sourceText).filter((c) => c === "MECHANISM_LEAK" || c === "UNSOURCED_JUDGMENT"), "الوصف");
+  return [...found].map(([code, fields]) => ({ code: `FIELD_${code}`, text: `${FIELD_ISSUE_TEXT[code]} (في: ${[...fields].join("، ")})` }));
+}
+
+/**
+ * تنظيف حتمي للحقول المنشورة حين يُصرّ النموذج: حذف فقط، لا اختراع.
+ * نقطة أو سؤال معيب يُحذف كاملاً؛ عنوان معيب يعود لاسم المنتج؛ ميتا معيبة
+ * تُعاد بناؤها من النبذة بعد تنظيفها.
+ */
+export function cleanPublishedFields(parsed, { sourceText, name = "" } = {}) {
+  const bad = (t) => textProblems(t, sourceText).length > 0;
+  const cw = parsed.copywriting || (parsed.copywriting = {});
+  cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
+    .filter((h) => !bad(h) && words(h) >= MIN_HIGHLIGHT_WORDS);
+  parsed.faqs = (Array.isArray(parsed.faqs) ? parsed.faqs : [])
+    .filter((f) => f && String(f.q || "").trim() && String(f.a || "").trim() && !bad(f.q) && !bad(f.a));
+  cw.description = cleanDescription(cw.description, { sourceText });
+  const seo = parsed.seo || (parsed.seo = {});
+  if (bad(seo.title)) seo.title = truncateAtWord(String(name || ""), 60);
+  if (bad(seo.seoTitle)) seo.seoTitle = truncateAtWord(seo.title || String(name || ""), 65);
+  if (bad(seo.metaDescription)) {
+    seo.metaDescription = buildMetaDescription("", cleanDescription(cw.excerpt || cw.description, { sourceText }));
+    if (seo.jsonLdSchema) seo.jsonLdSchema.description = seo.metaDescription;
+  }
+  return parsed;
 }

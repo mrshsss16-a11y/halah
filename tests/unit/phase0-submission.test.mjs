@@ -34,11 +34,15 @@ async function main() {
       assert(!/مساعدة خدمة عملاء|رد آلي|ودجت المحادثة/.test(txt), `P0-6/${name}: لا وصف لمنتج مخفي (رد آلي/ودجت)`);
       assert(/لا نقرأ طلباتك|لا نقرأ طلباتك ولا بيانات عملائك/.test(txt), `P0-7/${name}: تصرّح أننا لا نقرأ الطلبات — والكود يطابق (P0-1)`);
     }
-    // مزوّدو المعالجة: كل مزوّد له مفتاح بالإنتاج يُسمّى. gateway.js يثبت الأربعة.
+    // مزوّدو المعالجة: كل مزوّد نص يستدعيه gateway.js يُسمّى بصفحة الخصوصية.
     const gateway = read("../../functions/_lib/ai/gateway.js");
-    for (const [host, name] of [["api.groq.com", "Groq"], ["openrouter.ai", "OpenRouter"], ["api.deepseek.com", "DeepSeek"]]) {
+    for (const [host, name] of [["api.groq.com", "Groq"], ["openrouter.ai", "OpenRouter"]]) {
       if (gateway.includes(host)) assert(privacy.includes(name), `P0-8: الخصوصية تسمّي ${name} — مزوّد نص فعلي بالكود`);
     }
+    // DeepSeek أُخرج قبل تقديم سلة (2026-09-11): سياسته المعلنة تخزّن البيانات في الصين،
+    // وصفحة الخصوصية لم تكن تذكر ذلك. لا عودة صامتة: لا نداء بالكود ولا سطر بالخصوصية.
+    assert(!/api\.deepseek\.com|DEEPSEEK_API_KEY|askDeepSeek/.test(gateway), "P0-8b: لا طبقة DeepSeek بسلسلة الذكاء الاصطناعي");
+    assert(!/DeepSeek/.test(privacy), "P0-8c: الخصوصية لا تسمّي مزوّداً لا نستخدمه");
     assert(/Cloudflare/.test(privacy) && /لا تغادرها/.test(privacy), "P0-9: الصورة تُحلَّل على Cloudflare فقط — يطابق vision.js (env.AI)");
     assert(/نظام حماية البيانات الشخصية/.test(privacy) && /تصحيح/.test(privacy) && /سحب موافقتك/.test(privacy) && /شكوى/.test(privacy), "P0-10: حقوق PDPL: الاطلاع والتصحيح والحذف وسحب الموافقة والشكوى");
     assert(/مدة الاحتفاظ/.test(privacy) && /لا تُخزَّن/.test(privacy), "P0-11: جدول مدد احتفاظ، والصورة لا تُخزَّن");
