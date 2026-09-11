@@ -84,7 +84,8 @@ async function saveCopy(env, { merchantId, productName, opening, keywords }) {
 // ووضعية العارضة أيضاً: «اليد اليمنى في الجيب» وصل وصف بلوزة حقيقي (2026-09-11 22:42 UTC).
 const MODEL_PERSON = /(العارضة|عارضة الأزياء|(?<!\p{L})(?:اليد|يدها|يديها|اليدين|ذراعها|تقف|واقفة|وضعية|شعرها|وجهها|الخلفية)(?!\p{L})|(?<!\p{L})model(?!\p{L})|wearing|paired with|pocket|background)/iu;
 function productOnlyNotes(notes, name) {
-  return splitSentences(notes).filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name)).join(" ").trim();
+  // Qwen كتب «كاسرات» (2026-09-11 23:58) فنقلها الكاتب حرفياً إلى الوصف المنشور.
+  return splitSentences(notes).filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name)).join(" ").replace(/(?<!\p{L})(و|ب)?كاسرات(?!\p{L})/gu, "$1كسرات").trim();
 }
 const descWords = (p) => String(p?.copywriting?.description || "").split(/\s+/).filter(Boolean).length;
 

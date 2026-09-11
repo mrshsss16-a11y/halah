@@ -126,6 +126,16 @@ async function main() {
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
     const d = out.copywriting.description;
     assert(!/أنيق|مظهراً/.test(d) && /^بلوزة بيضاء/.test(d) && d.split(/\s+/).filter(Boolean).length >= 35, `PL-34: نص الكاتب المركّز يُنظَّف قبل قبوله فلا يقصّه التنظيف لاحقاً تحت حد الطول (${d.split(/\s+/).length} كلمة)`);
+    {
+      const seenSys = [];
+      const typoAi = { AI: { run: async (_m, input) => {
+        if (Array.isArray(input?.messages?.[0]?.content)) return { response: "فستان أسود بطبقات كاسرات أفقية وحمالات رفيعة." };
+        seenSys.push(input?.messages?.[0]?.content || "");
+        return { response: copyJson(LONG_GOOD) };
+      } } };
+      await withImageFetch(() => generateProductCopy(args({ ...typoAi }, { name: "فستان", imageUrl: "https://cdn.example.com/dress.jpg" })));
+      assert(seenSys.length > 0 && !/كاسرات/.test(seenSys[0]) && /طبقات كسرات أفقية/.test(seenSys[0]), "PL-38: «كاسرات» من نموذج الرؤية تُصحَّح إلى «كسرات» قبل الكاتب");
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
