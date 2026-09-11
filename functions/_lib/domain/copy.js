@@ -102,7 +102,7 @@ function focusedDescriptionSystem(name, notes, variantsText) {
     "الطول: من ٦٠ إلى ٩٠ كلمة في ثلاث فقرات قصيرة يفصل بينها سطر فارغ:",
     `١) ابدئي بكلمة «${name}» ثم صفي ما في ملاحظات الصورة بالتفصيل: اللون، القصّة، الياقة، الأكمام، الطول، وكل تفصيل ورد فيها.`,
     "٢) متى وكيف تُلبس، مع قطعة تنسيق مقترحة.",
-    "٣) جملة هادئة تدعو لمراجعة جدول المقاسات قبل الطلب.",
+    "٣) جملة واحدة بهذه الصيغة أو قريبة منها: «راجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.» — فعل أمر موجّه للعميلة، لا «توصي» ولا «يرجى» بلا فاعل.",
     "ممنوع: السعر، الشحن والإرجاع والدفع، أي خامة لم ترد، أحكام الجودة (مريح، أنيق، أناقة، فاخر، فخامة، مثالي، راقٍ)، ذكر العارضة أو الصورة، وأي تفصيل لم يرد بالملاحظات.",
     variantsText ? `الخيارات المتوفرة فعلاً: ${variantsText}` : "",
     UNTRUSTED_DATA_NOTICE,
@@ -272,7 +272,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // (نداء واحد) بدل تكرار البرومبت الضخم الذي أعاد نفس النص حرفياً ثلاث مرات.
   if (issues.some((i) => i.code === "TOO_SHORT")) {
     // الملاحظات (مقتطف) وعدد الكلمات تُحفظ بالسجل: البث الحي انقطع مرتين، والتشخيص يحتاجها.
-    const diag = `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`;
+    const diag = `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)} vision=${visionModel || "none"} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`;
     logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_LENGTH_RETRY", internal: diag, storeId: merchantId });
     try {
       const variantsText = parsedVariants.map((v) => `${v.name}: ${(v.values || []).join("، ")}`).join(" · ");

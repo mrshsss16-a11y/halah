@@ -271,12 +271,12 @@ const STORE_POLICY = /(مدة الشحن|الشحن خلال|يتم الشحن|�
 const MECHANISM_LEAK = /(غير مرئي|يبدو أن|ملاحظات الصورة|(?<!\p{L})مرئي(?:ة|ه)?(?!\p{L}))/u;
 /** أحكام جودة (قاعدة ٥ بالبرومبت) — مسموحة فقط إن وردت ببيانات التاجر. مطبَّعة بـnormAr. */
 // «مثالي» أُضيفت 2026-09-11: «هذه البلوزة مثالية للمناسبات» بمخرج حقيقي على متجر المراجعة.
-const JUDGMENTS = ["مريح", "انيق", "اناقه", "فاخر", "فخامه", "متين", "مثالي", "راقي", "عالي الجوده", "جوده عاليه"];
+const JUDGMENTS = ["مريح", "انيق", "اناقه", "اناقت", "فاخر", "فخامه", "فخامت", "جمال", "جميل", "متين", "مثالي", "راقي", "عالي الجوده", "جوده عاليه"];
 function unsourcedJudgment(text, sourceText) {
   const body = normAr(text);
   const src = normAr(sourceText);
   return JUDGMENTS.find((j) =>
-    new RegExp(`(?<!\\p{L})(?:و|ب)?(?:ال)?${j}(?:ه|ا)?(?!\\p{L})`, "u").test(body) && !src.includes(j)
+    new RegExp(`(?<!\\p{L})(?:و|ب)?(?:ال)?${j}(?:ه|ا|ها)?(?!\\p{L})`, "u").test(body) && !src.includes(j)
   ) || null;
 }
 const MIN_HIGHLIGHT_WORDS = 3;

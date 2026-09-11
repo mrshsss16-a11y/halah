@@ -128,7 +128,7 @@ async function main() {
     const out = await askVisionAI({ env: okEnv, imageBuffer: img, prompt: "صف" });
     const part = seen.input.messages?.[0]?.content;
     assert(
-      out === "فستان ماكسي أسود بقصّة A." && seen.model === VISION_MODEL &&
+      out === "فستان ماكسي أسود بقصّة A." && seen.model === "@cf/qwen/qwen3.8-27b" &&
         Array.isArray(part) && part[0].type === "text" && part[0].text === "صف" &&
         part[1].type === "image_url" && /^data:image\/jpeg;base64,/.test(part[1].image_url.url),
       "MDL-4: الرؤية تستدعي سكاوت بصيغة أجزاء + data URI"
@@ -140,14 +140,14 @@ async function main() {
       AI: {
         run: async (model, input) => {
           calls.push(model);
-          if (model === VISION_MODEL) throw new Error("model unavailable");
+          if (model === VISION_MODEL || model === "@cf/qwen/qwen3.8-27b") throw new Error("model unavailable");
           return { response: "وصف من الاحتياطي" };
         }
       }
     };
     const fb = await askVisionAI({ env: failEnv, imageBuffer: img, prompt: "صف" });
     assert(
-      fb === "وصف من الاحتياطي" && calls[0] === VISION_MODEL && calls[1] === VISION_FALLBACK_MODEL,
+      fb === "وصف من الاحتياطي" && calls[0] === "@cf/qwen/qwen3.8-27b" && calls[1] === VISION_MODEL && calls[2] === VISION_FALLBACK_MODEL,
       "MDL-5: فشل الأساسي يسقط للاحتياطي بدل إسقاط الميزة"
     );
 

@@ -80,6 +80,12 @@ async function main() {
     const kept = cleanDescription(realFocused, { sourceText: "", productName: "بلوزة" });
     assert(/^بلوزة بيضاء/.test(kept) && /وياقة دائرية/.test(kept) && /القصّة مستقيمة/.test(kept) && !/[أا]ناق|أنيق/.test(kept), `PL-23: الحكم يُزال من الجملة وتبقى الجملتان وافتتاحية اسم المنتج («${kept}»)`);
     assert(cleanDescription("بلوزة بيضاء بتصميم أنيق وياقة دائرية.", { sourceText: "بلوزة أنيقة للدوام", productName: "بلوزة" }) === "بلوزة بيضاء بتصميم أنيق وياقة دائرية.", "PL-24: «أنيق» ذكرها التاجر ⇒ لا تُمس");
+
+    // مخرج حقيقي (فستان متجر المراجعة 2026-09-11 22:57 UTC): حكم بضمير متصل أفلت.
+    const realDress = "فستان أسود بلا أكمام، يتميز بكسرات تزيد من جماله وأناقته. قصته ميدي مما يجعله مناسبًا للعديد من المناسبات.";
+    assert(publishedFieldIssues({ copywriting: { description: realDress } }, { sourceText: "" }).some((i) => i.code === "FIELD_UNSOURCED_JUDGMENT"), "PL-26: «جماله وأناقته» بضمير متصل تُمسك (كانت تفلت)");
+    const dressClean = cleanDescription(realDress, { sourceText: "", productName: "فستان" });
+    assert(/^فستان أسود بلا أكمام، يتميز بكسرات\./.test(dressClean) && /قصته ميدي/.test(dressClean) && !/جمال|[أا]ناق/.test(dressClean), `PL-27: «تزيد من جماله وأناقته» تُزال وتبقى الجملة («${dressClean}»)`);
   }
 
   // ── البرومبت ─────────────────────────────────────────────────────────────

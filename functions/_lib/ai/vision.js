@@ -25,6 +25,12 @@ import { fetchExternalImage } from "../core/security.js";
 // **تشترط خطة مدفوعة** (بوابة تشغيلية)، و`qwen3.8-27b` مخرجاته أغلى ٣.٧×
 // ($3.20 مقابل $0.85 لكل مليون رمز مُخرَج) والحمل هنا مخرجات لا مدخلات.
 export const VISION_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
+// أول محاولة للرؤية (2026-09-11): ملاحظات سكاوت الحقيقية المحفوظة أخطأت ما يظهر بوضوح —
+// «مكشوفة الكتفين» لفستان بحمالات رفيعة، و«الأكمام قصيرة وبدون أكمام ظاهرة» لبلوزة بدانتيل
+// على الكم فاته. Qwen 3.8 مستضاف على Cloudflare نفسها فلا يتغير وعد «الصور لا تغادر
+// Cloudflare». صيغة إدخال الصورة غير موثّقة بصفحته، فأي فشل يسقط لسكاوت كما كان، والسجل
+// يسمّي النموذج الذي أجاب (vision= بسطر COPY_LENGTH_RETRY).
+const VISION_DETAIL_MODEL = "@cf/qwen/qwen3.8-27b";
 // السابق يبقى **احتياطياً حياً**: صيغة إدخال الصور تختلف بين العائلتين، ولم
 // أتحقق من صيغة سكاوت على الإنتاج بعد. الفشل يسقط للسابق بدل أن يُسقط الميزة.
 export const VISION_FALLBACK_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
@@ -93,8 +99,10 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
   const question = prompt || "صف هذه الصورة بدقة.";
 
   // المسار الأساسي: صيغة رسائل متعددة الأجزاء (سكاوت متعدد الوسائط أصلاً).
+  const dataUrl = `data:${mimeType};base64,${bytesToBase64(bytes)}`;
+  for (const model of [VISION_DETAIL_MODEL, VISION_MODEL]) {
   try {
-    const response = await env.AI.run(VISION_MODEL, {
+    const response = await env.AI.run(model, {
       messages: [
         {
           role: "user",
@@ -102,7 +110,7 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
             { type: "text", text: question },
             {
               type: "image_url",
-              image_url: { url: `data:${mimeType};base64,${bytesToBase64(bytes)}` }
+              image_url: { url: dataUrl }
             }
           ]
         }
@@ -110,11 +118,12 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
       max_tokens: 700
     });
     const text = readVisionText(response);
-    if (text) return { text, model: VISION_MODEL, errors };
+    if (text) return { text, model, errors };
     throw new Error("vision model returned empty text");
   } catch (err) {
     // لا نُسقط الميزة على تغيّر صيغة أو نموذج غير متاح — نسقط للسابق ونسجّل.
-    errors.push(`${VISION_MODEL}: ${String(err?.message || err).slice(0, 160)}`);
+    errors.push(`${model}: ${String(err?.message || err).slice(0, 160)}`);
+  }
   }
 
   try {
