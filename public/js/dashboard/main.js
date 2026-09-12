@@ -82,6 +82,14 @@ async function establishSallaEmbeddedSession() {
 // رجوع بالمتصفح قد يعرض DOM حساب سابق لحظياً قبل إعادة الجلب — أعد التحميل.
 window.addEventListener("pageshow", (e) => { if (e.persisted) location.reload(); });
 
+// يقابل وسم auth-pending وCSS بـpartials/dashboard-head.html (2026-09-13):
+// إظهار اللوحة فعلياً فقط بعد أن نعرف حال الجلسة. لا يُستدعى من مسارَي
+// "غير مسجَّل" أدناه أبداً — هناك نغادر (تحويل أو destroy) والوسم يبقى، فلا
+// يظهر شيء من اللوحة لزائر بلا جلسة.
+function revealDashboard() {
+  document.documentElement.classList.remove("auth-pending");
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   let sallaSessionOk = true;
   if (inSallaFrame) {
@@ -91,6 +99,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       // login.html refuses to be framed by design. Exit the embedded view
       // instead of leaving the merchant on a stuck loading screen —
       // لكن بكلمة أولاً: إغلاق صامت = "التطبيق خرب" في نظر التاجر.
+      // كشف الوسم هنا (لا قبله): الرسالة تحتاج <body> ظاهراً كي تُرى.
+      revealDashboard();
       window.showToast("ما قدرنا نفتح لوحتك من داخل سلة. أعد تحميل الصفحة، وإذا تكرر افتحها مباشرة من halah.aura.sa", "error");
       window.salla?.embedded?.destroy?.();
       return;
@@ -104,6 +114,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.location.href = "/login";
       return;
     }
+    // مسجَّل فعلاً — من هنا فقط يظهر شكل اللوحة الحقيقي.
+    revealDashboard();
     // الهوية دائماً ظاهرة: أي متجر وأي حساب — رُصد تاجر بثلاثة حسابات لا
     // يعرف أيها مفتوح. بالذاكرة فقط، لا تخزين محلي (جهاز مشترك = تسريب).
     const storeLabel = data?.storeName || "لوحة متجرك";
@@ -114,7 +126,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     // داخل سلة: التبويب الافتراضي يُعنوَن بشريط سلة (خارجها لا أثر).
     setEmbeddedTitle(TAB_TITLES.catalog);
     if (data?.isAdmin) document.getElementById("adminPortalBtn").classList.remove("hidden");
-  } catch (e) {}
+  } catch (e) {
+    // فشل الشبكة نفسه (لا استجابة) — سلوك سابق: تكمل الصفحة رغم ذلك، فلازم
+    // نكشف الوسم هنا أيضاً كي لا تبقى اللوحة مخفية للأبد بلا سبب معروض.
+    revealDashboard();
+  }
 
   // U1: تحويل نظيف بعد نجاح الربط من auth/salla/callback.js — شريط ترحيب
   // صادق (متجرك مربوط فعلاً وقتها لأن الجلسة نفسها أُنشئت بعد نجاح

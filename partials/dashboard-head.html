@@ -13,6 +13,14 @@
     // دليل تصميم التطبيقات المضمّنة يمنع شريطاً علوياً خاصاً بالتطبيق (2026-09-10).
     try { if (window.self !== window.top) document.documentElement.classList.add("in-salla-frame"); }
     catch (e) { document.documentElement.classList.add("in-salla-frame"); }
+
+    // زائر بلا جلسة كان يرى لوحة التاجر كاملة (منتجات/متجر/تبويبات) للحظة قبل
+    // أن يحسم main.js نتيجة /api/auth/me ويحوّل لتسجيل الدخول — وميض أمني: شكل
+    // اللوحة نفسه بيانات حساسة (2026-09-13). الوسم هنا يسبق حتى أول رسم لـ<body>،
+    // فقاعدة CSS بأسفل partials/dashboard-head.html تخفيه فوراً؛ main.js هو من
+    // يزيل الوسم بعد أن يعرف حال الجلسة — إن كان غير مسجَّل يحوِّل المتصفح بدل
+    // إزالته، فلا يظهر شيء من اللوحة إطلاقاً.
+    document.documentElement.classList.add("auth-pending");
   </script>
 
   <!-- لا integrity هنا عمداً: cdn.tailwindcss.com بلا Access-Control-Allow-Origin —
@@ -38,6 +46,12 @@
   <script src="https://unpkg.com/@salla.sa/embedded-sdk@0.2.6/dist/umd/index.js" integrity="sha384-78jV7iP0+0S2E9n/TKZ1BPLJyFlyKgOIO89f/priDfkmfb+efRdDK//Zdfof7d5c" crossorigin="anonymous"></script>
   <style>
     body { font-family: 'IBM Plex Sans Arabic', 'Tajawal', 'Readex Pro', sans-serif; background: #FFFFFF; color: #000000; }
+    /* يقابل وسم auth-pending أعلاه — يمنع وميض لوحة التاجر لزائر بلا جلسة
+       (2026-09-13). visibility لا display: كي لا تتغيّر أبعاد التخطيط أو
+       تتأخر قراءة عناصر main.js لـgetElementById قبل الإزالة. main.js يزيل
+       الوسم بمجرد أن يعرف حال الجلسة؛ حساب مسجَّل لا يلاحظ أي تأخير محسوس
+       لأن الإزالة تسبق أول رسم فعلي بجزء من الثانية فقط (نداء شبكة واحد). */
+    html.auth-pending body { visibility: hidden; }
     /* .sleek-card / .sleek-btn-black / .sleek-btn-white من /style.css (styles/08-shared-components.css). */
     .tab-on { background:#000; color:#fff; }
     .tab-off { color:#334155; }
