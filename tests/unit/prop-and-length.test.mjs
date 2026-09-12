@@ -247,6 +247,22 @@ async function main() {
       const d = out.copywriting.description;
       assert(!/أكمام/.test(d) && !/鞋/.test(d) && /مع بلوزة خفيفة\./.test(d) && /^تنورة ميدي/.test(d), `PL-64: وصف التنورة المنشور بلا «أكمام» ولا حرف صيني («${d}»)`);
     }
+    {
+      const pinkNotes = "اللون: وردة فاتح سادة. الياقة: دائرية. الأكمام: طويلة. التفاصيل: طبقة كشاكش عريضة أسفل الصدر. الطول والقصّة: ميدي بقصّة ضيئة عند الجذع. الطابع العام: نهاري.";
+      const seenSys = [];
+      let visionInput = "";
+      const pinkAi = { AI: { run: async (_m, input) => {
+        const c = input?.messages?.[0]?.content;
+        if (Array.isArray(c)) { visionInput = JSON.stringify(input); return { response: pinkNotes }; }
+        seenSys.push(c || "");
+        return { response: copyJson(LONG_GOOD) };
+      } } };
+      await withImageFetch(() => generateProductCopy(args({ ...pinkAi }, { name: "فستان", imageUrl: "https://cdn.example.com/pink.jpg" })));
+      const all = seenSys[0] || "";
+      const notes = all.slice(all.lastIndexOf("اللون:"), all.indexOf("---", all.lastIndexOf("اللون:")));
+      assert(/اللون: وردي فاتح سادة/.test(notes) && !/ضيئة/.test(notes), `PL-65: «وردة فاتح» و«ضيئة» تُصحَّحان قبل الكاتب («${notes}»)`);
+      assert(/«ضيقة» فقط إن التصق القماش بالجسم/.test(visionInput), "PL-66: توجيه الرؤية يمنع «ضيقة» لقماش منسدل");
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
