@@ -36,7 +36,7 @@ async function main() {
     }
     // مزوّدو المعالجة: كل مزوّد نص يستدعيه gateway.js يُسمّى بصفحة الخصوصية.
     const gateway = read("../../functions/_lib/ai/gateway.js");
-    for (const [host, name] of [["api.groq.com", "Groq"], ["openrouter.ai", "OpenRouter"]]) {
+    for (const [host, name] of [["api.groq.com", "Groq"], ["generativelanguage.googleapis.com", "Gemini"], ["openrouter.ai", "OpenRouter"]]) {
       if (gateway.includes(host)) assert(privacy.includes(name), `P0-8: الخصوصية تسمّي ${name} — مزوّد نص فعلي بالكود`);
     }
     // DeepSeek أُخرج قبل تقديم سلة (2026-09-11): سياسته المعلنة تخزّن البيانات في الصين،
@@ -46,7 +46,7 @@ async function main() {
     // قرار المالك 2026-09-12: الرؤية تسقط لـGroq ثم OpenRouter عند تعذّر Cloudflare — الخصوصية تقول ذلك.
     const vision = read("../../functions/_lib/ai/vision.js");
     assert(/Cloudflare أولاً/.test(privacy) && !/لا تغادرها/.test(privacy), "P0-9: الخصوصية لا تعد بأن الصورة لا تغادر Cloudflare — الرؤية لها احتياط خارجي");
-    for (const [host, name] of [["api.groq.com", "Groq"], ["openrouter.ai", "OpenRouter"]]) {
+    for (const [host, name] of [["api.groq.com", "Groq"], ["generativelanguage.googleapis.com", "Gemini"], ["openrouter.ai", "OpenRouter"]]) {
       if (vision.includes(host)) assert(new RegExp(`${name}[\\s\\S]{0,160}صورة المنتج`).test(read("../../privacy.html").replace(/\s+/g, " ")), `P0-9b: الخصوصية تذكر إرسال الصورة إلى ${name} — مزوّد رؤية فعلي بالكود`);
     }
     assert(/نظام حماية البيانات الشخصية/.test(privacy) && /تصحيح/.test(privacy) && /سحب موافقتك/.test(privacy) && /شكوى/.test(privacy), "P0-10: حقوق PDPL: الاطلاع والتصحيح والحذف وسحب الموافقة والشكوى");

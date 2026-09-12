@@ -122,8 +122,8 @@ export function classifyError(err) {
   // حدّ يومي عند مزوّد على الأقل، ولا مزوّد محدود بالدقيقة فقط ⇒ لا فائدة من إعادة المحاولة بعد دقيقة.
   // رسالة البوابة تجمع أسباب كل المزوّدين مفصولة بـ« | » (gateway.js).
   const parts = raw.split(" | ");
-  const DAILY = /free-models-per-day|tokens per day|\(TPD\)|requests per day|\(RPD\)|daily free allocation|(?<!\d)4006(?!\d)/i;
-  const MINUTE = /\b429\b|rate.?limit|too many requests|per minute|\((?:I|O)?TPM\)|\(RPM\)/i;
+  const DAILY = /free-models-per-day|tokens per day|\(TPD\)|requests per day|\(RPD\)|daily free allocation|PerDay|per_day|(?<!\d)4006(?!\d)/i;
+  const MINUTE = /\b429\b|rate.?limit|too many requests|per minute|PerMinute|\((?:I|O)?TPM\)|\(RPM\)/i;
   if (parts.some((x) => DAILY.test(x)) && !parts.some((x) => MINUTE.test(x) && !DAILY.test(x))) return "AI_QUOTA_DAILY";
   if (/\b429\b|rate.?limit|too many requests/i.test(raw)) return "AI_BUSY";
   if (/No AI backend available|AI binding is missing/i.test(raw)) return "AI_UNAVAILABLE";
