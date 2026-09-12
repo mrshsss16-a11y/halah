@@ -286,7 +286,10 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   const allIssues = (p) => [...descriptionQualityIssues(p.copywriting, { hasVision, sourceText, productName: name }), ...publishedFieldIssues(p, { sourceText, productName: name })];
   let issues = allIssues(parsed);
   const firstDraft = { page: pageText(parsed), codes: issues.map((i) => i.code) };
-  if (issues.length) {
+  // أحكام بلا مصدر وحدها تُنظَّف حتمياً بلا نداء نموذج: كل إعادة لها بسجل الإنتاج (2026-09-12) انتهت
+  // COPY_QUALITY_FORCED — نداء كامل مهدور من سعة يومية لا تتجاوز ٢٥–٣٠ وصفاً للمشروع.
+  const cleanableOnly = issues.length > 0 && issues.every((i) => i.code === "UNSOURCED_JUDGMENT" || i.code === "FIELD_UNSOURCED_JUDGMENT");
+  if (issues.length && !cleanableOnly) {
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
       // المزوّد ونموذج الرؤية والملاحظات: توليد 01:38 لم يترك ما يُشخَّص به «قاعدي» و«بروح راقصة».

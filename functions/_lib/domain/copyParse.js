@@ -386,7 +386,9 @@ export function splitSentences(text) {
 export function propItemIn(sentence, productName) {
   const productGroup = itemGroup(String(productName || "").trim().split(/\s+/)[0] || "");
   if (productGroup < 0) return null;
-  const first = normAr(sentence).trim().replace(/^[\s،:,\-–—]+/, "").split(/\s+/)[0] || "";
+  const words = normAr(sentence).trim().replace(/^[\s،:,\-–—]+/, "").split(/\s+/);
+  const first = words[0] || "";
+  if (/^و?(?:ال)?حزام$/.test(first) && /^(?:ال)?(?:كتف|يد)/.test(words[1] || "")) return null; // حزام الحقيبة جزء منها
   for (const candidate of [first, first.replace(/^و/, "")]) {
     const g = itemGroup(candidate);
     if (g >= 0) return g !== productGroup ? candidate.replace(/^ال/, "") : null;

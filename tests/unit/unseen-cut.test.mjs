@@ -22,6 +22,9 @@ async function main() {
     assert(page.copywriting.whatsapp === page.copywriting.excerpt, `PF-B: واتساب بلا مضمون بعد حذف الأحكام يُبنى من النبذة («${page.copywriting.whatsapp}»)`);
     assert(!page.seo.lsiKeywords.some((k) => /خصر/.test(k)) && !page.tags.some((k) => /خصر/.test(k)), "PF-C: «تنورة خصر مرتفع» لم تذكرها الصورة تُحذف من الكلمات المفتاحية والوسوم");
     assert(!/الموجود بالوصف/.test(page.faqs[0].a) && /جدول المقاسات/.test(page.faqs[0].a), `PF-D: الجواب لا يدّعي جدولاً داخل الوصف («${page.faqs[0].a}»)`);
+    const below = { copywriting: { description: "تنورة سوداء.\n\nللمطابقة الدقيقة قبل إتمام طلبك، راجعي جدول المقاسات الموضح أدناه.", excerpt: "", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
+    polishPage(below, { name: "تنورة", notes, sourceText: "تنورة" });
+    assert(/راجعي جدول المقاسات\./.test(below.copywriting.description) && !/أدناه/.test(below.copywriting.description), `PF-G: «جدول المقاسات الموضح أدناه» بلا جدول تحت الوصف ⇒ تُحذف عبارة المكان («${below.copywriting.description}»)`);
     assert(page.specsTable[0].key === "الطول والقصّة", `PF-E: مفتاح المواصفة يبقى «الطول والقصّة» لا «بطول» («${page.specsTable[0].key}»)`);
     assert(/إضاءة نهارية/.test(productOnlyNotes("الطابع العام: إضاءة نهائية، طابع رسمي.", "تنورة")), "PF-F: «إضاءة نهائية» بملاحظات الصورة ⇒ «نهارية»");
   }
