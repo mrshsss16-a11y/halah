@@ -82,7 +82,12 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   if (Array.isArray(seo.lsiKeywords)) seo.lsiKeywords = [...new Set(seo.lsiKeywords.map((k) => polishShort(k, ctx)).filter(Boolean))];
 
   if (typeof parsed.imageAlt === "string") parsed.imageAlt = polishShort(parsed.imageAlt, ctx) || String(name || "").trim();
-  if (Array.isArray(parsed.tags)) parsed.tags = [...new Set(parsed.tags.filter((t) => !unsourced(t)).map((t) => polishShort(t, ctx)).filter(Boolean))];
+  // SEO-20 (قائمة الفحص القديمة المنقّحة): وسوم بلا تكرار بعد تطبيع الحروف (ة/ه، أ/ا، ى/ي).
+  if (Array.isArray(parsed.tags)) {
+    const tagKey = (t) => t.replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
+    const seenTags = new Set();
+    parsed.tags = parsed.tags.filter((t) => !unsourced(t)).map((t) => polishShort(t, ctx)).filter((t) => t && !seenTags.has(tagKey(t)) && seenTags.add(tagKey(t)));
+  }
   if (Array.isArray(parsed.specsTable)) {
     parsed.specsTable = parsed.specsTable
       .map((r) => ({ ...r, key: polishShort(r?.key, ctx), value: polishShort(r?.value, ctx) }))
