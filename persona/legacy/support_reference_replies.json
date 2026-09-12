@@ -1,0 +1,5326 @@
+{
+ "source": "halah-rag-dev (Cloudflare D1, Aug 2026) — cleaned 2026-09-12 by review agents + Hala guards",
+ "backup": "C:/Users/shssk/Downloads/hala-old-backups/halah-rag-dev.sql",
+ "items": [
+  {
+   "id": "LGC-SUP-0033",
+   "source_id": "doc_style-customer-service-master_SUP-0033",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "exchange_size_larger",
+   "customer_message": "التيشيرت اللي طلبته مقاسه صغير، أقدر أبدله بمقاس أكبر؟",
+   "reply": "نعتذر إن المقاس ما كان مناسب. نحتاج رقم الطلب والمقاس المطلوب، ونتأكد من توفره ونوضح خطوات الاستبدال حسب سياسة الإرجاع: {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0034",
+   "source_id": "doc_style-customer-service-master_SUP-0034",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "exchange_color_change_of_mind",
+   "customer_message": "غيرت رأيي في الجاكيت بعد ما وصل، أقدر أرجعه وآخذ لون ثاني؟",
+   "reply": "الاستبدال ممكن إذا انطبقت على الطلب شروط الإرجاع: {سياسة_الإرجاع}. نحتاج رقم الطلب واللون المطلوب، ونتأكد من توفره ونرسل الخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0035",
+   "source_id": "doc_style-customer-service-master_SUP-0035",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "defective_item_exchange_or_refund",
+   "customer_message": "الحذاء فيه شق من الخلف، أبي أبدله أو أسترجع فلوسي، كيف؟",
+   "reply": "نعتذر عن العيب. نحتاج رقم الطلب وصور واضحة للشق من أكثر من زاوية، وبنحوّل الحالة لفريق المتجر يراجعها ويتواصل معك بخيار الاستبدال أو الاسترداد.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0036",
+   "source_id": "doc_style-customer-service-master_SUP-0036",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "exchange_color_mismatch_return_method",
+   "customer_message": "اللون مو مثل الصورة، أبي أرجعه وآخذ لون ثاني. أرسله لكم ولا تجون تستلمونه؟",
+   "reply": "نعتذر إن اللون ما طابق الصورة. طريقة الإرجاع والرسوم إن وجدت موضحة في سياسة المتجر: {سياسة_الإرجاع}. نحتاج رقم الطلب واللون المطلوب عشان نتأكد من التوفر ونرتب الخطوة الجاية.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0037",
+   "source_id": "doc_style-customer-service-master_SUP-0037",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "exchange_size_smaller_kids",
+   "customer_message": "طلبت فستان لبنتي والمقاس كبير عليها، أبي أبدله بمقاس أصغر، كيف أبلغكم بالمقاس الجديد؟",
+   "reply": "حاضرين. نحتاج رقم الطلب والمقاس المطلوب هنا في المحادثة، ونتأكد من توفره ونوضح طريقة إرجاع القطعة حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0038",
+   "source_id": "doc_style-customer-service-master_SUP-0038",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "defective_item_watch",
+   "customer_message": "اشتريت ساعة وغطاها الخلفي مفتوح من المصنع، أقدر أرجعها على طول؟",
+   "reply": "نعتذر عن الخلل. نحتاج رقم الطلب وصور واضحة لمكان الخلل، وبنرفع الحالة لفريق المتجر للفحص ويتواصل معك بخيار الاستبدال أو الإرجاع حسب {سياسة_الإرجاع} و{مدة_الضمان}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0039",
+   "source_id": "doc_style-customer-service-master_SUP-0039",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "wrong_item_received",
+   "customer_message": "وصلني منتج غير اللي طلبته، أبي أرجعه وآخذ الصحيح، وش أسوي؟",
+   "reply": "نعتذر عن الخطأ. نحتاج رقم الطلب وصورة للمنتج اللي وصل وملصق الطرد، وبنرفعها لفريق المتجر يتأكد ويتواصل معك لترتيب إرسال الصحيح أو الاسترداد حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0040",
+   "source_id": "doc_style-customer-service-master_SUP-0040",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "size_chart_mismatch",
+   "customer_message": "الجاكيت أصغر من المقاس المكتوب في جدول المقاسات، هل المقاسات موحدة ولا أرجعه؟",
+   "reply": "المقاسات أحياناً تختلف من موديل لموديل. نحتاج رقم الطلب وصورة لملصق المقاس الداخلي، ونراجع جدول المقاسات ونوضح خيارات الاستبدال أو الإرجاع حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0041",
+   "source_id": "doc_style-customer-service-master_SUP-0041",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "return_gift_change_of_mind",
+   "customer_message": "الطلب كان هدية وترددت، أقدر أرجعه وأختار شي ثاني؟",
+   "reply": "إمكانية الإرجاع أو الاستبدال تعتمد على سياسة المتجر: {سياسة_الإرجاع}. نحتاج رقم الطلب، ونتأكد إذا ينطبق عليه الشرط ونرسل الخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0042",
+   "source_id": "doc_style-customer-service-master_SUP-0042",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "missing_part_in_set",
+   "customer_message": "وصلني الطقم ناقص قطعة، أبي استبدال أو أسترجع جزء من المبلغ، كيف؟",
+   "reply": "نعتذر عن النقص. نحتاج رقم الطلب وصورة لمحتويات الطقم كاملة، وبنرفع الحالة لفريق المتجر يراجعها ويتواصل معك بالحل المتاح: إرسال القطعة أو الاستبدال أو الاسترداد.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0043",
+   "source_id": "doc_style-customer-service-master_SUP-0043",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "return_shipping_fee_change_of_mind",
+   "customer_message": "لو رجعت منتج لأني غيرت رأيي، أتحمل رسوم الشحن؟",
+   "reply": "رسوم شحن الإرجاع عند تغيير الرأي حسب سياسة المتجر: {سياسة_الإرجاع}، والرسوم إن وجدت: {رسوم_الشحن}. وإذا حاب نبدأ، نحتاج رقم الطلب ونوضح الخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{رسوم_الشحن}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0044",
+   "source_id": "doc_style-customer-service-master_SUP-0044",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "exchange_request_status_followup",
+   "customer_message": "رفعت طلب استبدال قبل أسبوع وما جاني رد، وين وصل؟",
+   "reply": "نعتذر عن تأخر الرد. نحتاج رقم الطلب أو رقم طلب الإرجاع، وبنحوّل استفسارك لفريق المتجر يتابع الحالة ويرد عليك بالتحديث.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0045",
+   "source_id": "doc_style-customer-service-master_SUP-0045",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "defective_stitching_exchange",
+   "customer_message": "الجينز فيه خيط مفكوك في الخياطة، أبي أبدله بخطوات سهلة.",
+   "reply": "نعتذر عن العيب. نحتاج رقم الطلب وصورة قريبة للخياطة، وبنرفعها لفريق المتجر يراجعها ويرسل خطوات الاستبدال بشكل واضح وبسيط.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0046",
+   "source_id": "doc_style-customer-service-master_SUP-0046",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "exchange_at_branch",
+   "customer_message": "أقدر أستبدل المنتج في فرع بدل ما أرسله؟ وكيف أحجز موعد؟",
+   "reply": "نتأكد لك إذا الاستبدال من فرع متاح لطلبك، والتفاصيل حسب {سياسة_الإرجاع}. نحتاج رقم الطلب والمدينة، وإذا الخدمة غير متاحة نوضح طريقة الإرجاع البديلة.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0047",
+   "source_id": "doc_style-customer-service-master_SUP-0047",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "stain_found_after_opening",
+   "customer_message": "فتحت الطلب ولقيت عليه بقعة، أقدر أرجعه؟",
+   "reply": "نعتذر عن اللي صار. نحتاج رقم الطلب وصور واضحة للبقعة وحالة المنتج، وبنرفع الحالة لفريق المتجر يراجعها ويتواصل معك بالخيارات المتاحة حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0048",
+   "source_id": "doc_style-customer-service-master_SUP-0048",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "partial_return",
+   "customer_message": "طلبت زوجين من نفس الحذاء، واحد مناسب والثاني لا، أقدر أرجع واحد بس؟",
+   "reply": "نتأكد لك من إمكانية إرجاع جزء من الطلب حسب {سياسة_الإرجاع}. نحتاج رقم الطلب وتحديد الزوج المراد إرجاعه، ونرسل الخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0009",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0009",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "order_delayed_two_weeks",
+   "customer_message": "طلبت من أسبوعين وما وصل، والتتبع واقف على نفس الحالة. متى توصل الشحنة؟",
+   "reply": "نعتذر عن التأخير. آخر حالة للشحنة تظهر هنا: {رابط_تتبع_الطلب}. نحتاج رقم الطلب، وبنرفع الحالة لفريق المتجر يتابعها مع شركة الشحن ويرد عليك بالتحديث.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0012",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0012",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "tracking_stuck_open_complaint",
+   "customer_message": "التتبع ما تحرك من يومين وأبي أفتح شكوى، وش المطلوب؟",
+   "reply": "حقك تتابع. نحتاج رقم الطلب أو رقم التتبع، وبنرفع شكواك لفريق المتجر يتابعها مع شركة الشحن ويرد عليك. وآخر تحديث للشحنة يظهر هنا: {رابط_تتبع_الطلب}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0013",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0013",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "address_mismatch_on_tracking",
+   "customer_message": "حدّثت عنواني في الموقع لكن التتبع يظهر العنوان القديم، وش الحل؟",
+   "reply": "تعديل العنوان على شحنة طالعة يعتمد على حالتها لدى شركة الشحن. نحتاج رقم الطلب والعنوان الصحيح كامل، وبنرفع الطلب لفريق المتجر يتأكد من إمكانية التعديل ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0016",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0016",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "cancel_due_to_delay",
+   "customer_message": "أبي ألغي الطلب وأسترد فلوسي لأن الشحنة تأخرت كثير، ممكن؟",
+   "reply": "نتفهم انزعاجك من التأخير. إمكانية الإلغاء تعتمد على حالة الشحنة و{سياسة_الإرجاع}، فنحتاج رقم الطلب وبنرفع طلبك لفريق المتجر يراجعه ويتواصل معك، ومدة الاسترداد عند الموافقة: {مدة_الاسترداد}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0082",
+   "source_id": "doc_style-customer-service-master_SUP-0082",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_not_received_after_cancel",
+   "customer_message": "لغيت طلبي من كم يوم، ليش ما رجعت فلوسي للحين؟",
+   "reply": "نتفهم قلقك. مدة رجوع المبلغ بعد الإلغاء حسب سياسة المتجر {مدة_الاسترداد}، ووقت ظهوره يختلف حسب البنك. نحتاج رقم الطلب، وبنرفع الحالة لفريق المتجر يتحقق ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0083",
+   "source_id": "doc_style-customer-service-master_SUP-0083",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_amount_less_than_paid",
+   "customer_message": "المبلغ اللي رجع لي أقل من اللي دفعته، وين الفرق؟",
+   "reply": "نعتذر عن اللبس. نحتاج رقم الطلب فقط، بدون أي بيانات بطاقة، وبنحوّل الحالة لفريق المتجر يراجع تفاصيل الاسترداد ويوضح سبب الفرق.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0084",
+   "source_id": "doc_style-customer-service-master_SUP-0084",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_timing_cancel_before_shipping",
+   "customer_message": "ألغيت طلبي قبل الشحن، هل يرجع المبلغ على طول؟",
+   "reply": "مدة رجوع المبلغ حسب سياسة المتجر: {مدة_الاسترداد}، ووقت ظهوره في الحساب يعتمد على طريقة الدفع والبنك. وإذا حاب نتأكد من حالة الإلغاء، نحتاج رقم الطلب.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0085",
+   "source_id": "doc_style-customer-service-master_SUP-0085",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_destination_wallet_or_card",
+   "customer_message": "فلوسي بترجع للمحفظة ولا للبطاقة؟",
+   "reply": "طريقة رجوع المبلغ تحددها سياسة المتجر: {سياسة_الإرجاع}. نحتاج رقم الطلب عشان نتأكد من الطريقة المعتمدة لطلبك.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0087",
+   "source_id": "doc_style-customer-service-master_SUP-0087",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_timing_after_return",
+   "customer_message": "رجعت المنتج أمس، متى يرجع المبلغ؟",
+   "reply": "بعد ما يستلم المتجر المرتجع ويراجعه يبدأ الاسترداد، ومدته حسب سياسة المتجر: {مدة_الاسترداد}. وإذا حاب نتابع حالة المرتجع، نحتاج رقم الطلب.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0089",
+   "source_id": "doc_style-customer-service-master_SUP-0089",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "delayed_refund_complaint",
+   "customer_message": "الاسترداد تأخر أكثر من اللازم، وين أشتكي؟",
+   "reply": "نعتذر عن التأخير، والشكوى تقدر ترفعها هنا. نحتاج رقم الطلب، وبنحوّلها لفريق المتجر يتابع الحالة ويتواصل معك، والتواصل المباشر متاح على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0090",
+   "source_id": "doc_style-customer-service-master_SUP-0090",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "return_rejected_dispute",
+   "customer_message": "رفضوا إرجاع المنتج وما رجعوا فلوسي، وش الحل الحين؟",
+   "reply": "نتفهم إن الموقف محبط. نحتاج رقم الطلب وسبب الرفض اللي وصلك، وبنرفع الحالة لفريق المتجر يعيد مراجعتها ويتواصل معك بالنتيجة.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0092",
+   "source_id": "doc_style-customer-service-master_SUP-0092",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_notice_not_on_card",
+   "customer_message": "جاني إشعار بالاسترداد لكن المبلغ ما ظهر في البطاقة، وش أسوي؟",
+   "reply": "ظهور المبلغ بعد إشعار الاسترداد يعتمد على البنك، والمدة حسب سياسة المتجر: {مدة_الاسترداد}. إذا عدّت المدة، نحتاج رقم الطلب وبنرفع الحالة لفريق المتجر يتحقق ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0094",
+   "source_id": "doc_style-customer-service-master_SUP-0094",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "partial_cancellation_refund",
+   "customer_message": "ألغيت جزء من الطلب والمبلغ اللي رجع ما وضح لي، ليش؟",
+   "reply": "عند إلغاء جزء من الطلب يُحسب الاسترداد للمنتجات الملغاة فقط. نحتاج رقم الطلب والمنتجات اللي تم إلغاؤها، وبنحوّل الحالة لفريق المتجر يوضح تفاصيل المبلغ.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0095",
+   "source_id": "doc_style-customer-service-master_SUP-0095",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "international_refund_currency",
+   "customer_message": "أنا خارج السعودية، لو رجعت المنتج يرجع المبلغ بنفس عملتي؟",
+   "reply": "عادةً يرجع المبلغ على نفس وسيلة الدفع، وأي فرق عملة أو رسوم تحويل يحدده البنك. تفاصيل الاسترداد حسب {سياسة_الإرجاع}، وللتأكيد على طلبك نحتاج رقم الطلب.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0096",
+   "source_id": "doc_style-customer-service-master_SUP-0096",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_to_different_card",
+   "customer_message": "المبلغ رجع على بطاقة غير اللي دفعت فيها، كيف أستعيده؟",
+   "reply": "نعتذر عن اللبس. نحتاج رقم الطلب فقط، بدون أي بيانات بطاقة، وبنرفع الحالة لفريق المتجر يراجع عملية الاسترداد ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0098",
+   "source_id": "doc_style-customer-service-master_SUP-0098",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "store_credit_instead_of_refund",
+   "customer_message": "أقدر آخذ قسيمة شراء بدل ما يرجع المبلغ نقداً؟",
+   "reply": "توفر القسيمة بدل الاسترداد يعتمد على سياسة المتجر: {سياسة_الإرجاع}. نحتاج رقم الطلب ونتأكد لك إذا الخيار متاح.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0017",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0017",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "exchange_size_smaller_or_refund",
+   "customer_message": "طلبت بنطلون مقاس M وطلع واسع علي، أبي أبدله بمقاس أصغر أو أرجع المبلغ.",
+   "reply": "حاضرين. نحتاج رقم الطلب وتحديد المطلوب: استبدال بمقاس أصغر أو إرجاع المبلغ، ونتأكد من توفر المقاس ونوضح الخطوات حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0018",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0018",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "color_lighter_than_listing",
+   "customer_message": "التيشيرت اللي وصلني لونه أفتح بكثير من صورة الموقع، أبي أبدله أو أرجعه.",
+   "reply": "نعتذر إن اللون ما طابق الصورة. نحتاج رقم الطلب وصورة للمنتج وتحديد المطلوب: استبدال أو إرجاع، ونوضح الخطوات حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0021",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0021",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "change_of_mind_return",
+   "customer_message": "غيرت رأيي بعد الاستلام وما أبي المنتج، كيف أرجعه؟",
+   "reply": "إمكانية الإرجاع عند تغيير الرأي وطريقته حسب سياسة المتجر: {سياسة_الإرجاع}. نحتاج رقم الطلب، ونتأكد إذا ينطبق عليه الشرط ونرسل الخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0022",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0022",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "wrong_color_sent",
+   "customer_message": "طلبت الجاكيت أسود ووصلني رمادي، تقدرون تبدلونه؟",
+   "reply": "نعتذر عن الخطأ. نحتاج رقم الطلب وصورة للجاكيت اللي وصل، وبنرفعها لفريق المتجر يتأكد ويتواصل معك لترتيب الاستبدال أو الإرجاع حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0001",
+   "source_id": "doc_style-customer-service-master_SUP-0001",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "price_higher_than_competitor",
+   "customer_message": "ليش سعر السماعات عندكم أغلى من محل ثاني؟",
+   "reply": "نتفهم إن السعر مهم لك. الأسعار يحددها المتجر، وممكن يختلف المنتج في النسخة أو الضمان أو الشحن، وكل التفاصيل في صفحة المنتج. وإذا حاب تستفسر عن مطابقة السعر، نحوّل استفسارك لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0002",
+   "source_id": "doc_style-customer-service-master_SUP-0002",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "bulk_discount_inquiry",
+   "customer_message": "عندكم خصم لو اشتريت بكميات؟",
+   "reply": "طلبات الكميات يراجعها فريق المتجر. نحتاج المنتج وعدد القطع المطلوب، وبنحوّل طلبك لهم يتواصلون معك بالتفاصيل.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0004",
+   "source_id": "doc_style-customer-service-master_SUP-0004",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "price_vs_value",
+   "customer_message": "ليش سعر المنتج ما يوازي مواصفاته؟",
+   "reply": "نقدر نوضح مواصفات المنتج ووش يميزه، وكل التفاصيل موجودة في صفحته. وإذا شاركتنا استخدامك، نرشح لك منتجات ثانية من المتجر تناسب احتياجك.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0006",
+   "source_id": "doc_style-customer-service-master_SUP-0006",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "social_media_offer_price",
+   "customer_message": "ليش العرض اللي شفته في السوشيال سعره أقل؟",
+   "reply": "العروض أحياناً تكون لفترة محدودة أو لقناة معينة. نحتاج صورة الإعلان أو رابطه، وبنحوّله لفريق المتجر يتأكد إذا العرض ساري ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0007",
+   "source_id": "doc_style-customer-service-master_SUP-0007",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "small_discount_request",
+   "customer_message": "أقدر أطلب تخفيض بسيط؟ السعر فوق ميزانيتي شوي.",
+   "reply": "ما نقدر نعدل الأسعار من المحادثة، لكن نقدر نساعدك تلقى بديل يناسبك. وضّح لنا وش تحتاج بالضبط ونرشح منتجات ثانية تشوف أسعارها في صفحاتها، والعروض الحالية إن وجدت تظهر في المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0008",
+   "source_id": "doc_style-customer-service-master_SUP-0008",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "price_includes_warranty_shipping",
+   "customer_message": "السعر يشمل الضمان والشحن ولا فيه رسوم إضافية؟",
+   "reply": "رسوم الشحن حسب سياسة المتجر: {رسوم_الشحن}، والضمان: {مدة_الضمان}. تفاصيل كل منتج موجودة في صفحته، وإذا حددت المنتج نوضح لك.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رسوم_الشحن}",
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0009",
+   "source_id": "doc_style-customer-service-master_SUP-0009",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "price_drop_after_purchase",
+   "customer_message": "لو اشتريت الحين ونزل السعر بعدين، ترجعون لي الفرق؟",
+   "reply": "ما نقدر نأكد تعويض فرق السعر من المحادثة، هذا يرجع لسياسة المتجر. وإذا صار، نحتاج رقم الطلب وبنحوّل استفسارك لفريق المتجر يرد عليك.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0010",
+   "source_id": "doc_style-customer-service-master_SUP-0010",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "loyal_customer_discount",
+   "customer_message": "تعطون خصم للعميل الدائم؟",
+   "reply": "نقدّر ولاءك للمتجر. العروض والخصومات الحالية إن وجدت تظهر في المتجر، وإذا حاب تسأل عن عروض خاصة نحوّل استفسارك لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0012",
+   "source_id": "doc_style-customer-service-master_SUP-0012",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "combine_orders_discount",
+   "customer_message": "فيه خصم لو جمعت طلبيتين وشحنتها مع بعض؟",
+   "reply": "دمج الطلبات في شحنة وحدة ورسومها حسب سياسة المتجر: {رسوم_الشحن}. نحتاج أرقام الطلبات، وبنحوّلها لفريق المتجر يتأكد من الإمكانية ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رسوم_الشحن}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0013",
+   "source_id": "doc_style-customer-service-master_SUP-0013",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "coupon_not_applicable",
+   "customer_message": "لقيت كود خصم وما اشتغل على المنتج اللي أبيه، تقدرون تطبقونه لي؟",
+   "reply": "بعض الأكواد لها شروط أو منتجات مستثناة. نحتاج الكود وصورة رسالة الخطأ، وبنحوّلها لفريق المتجر يتأكد من صلاحيته ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0014",
+   "source_id": "doc_style-customer-service-master_SUP-0014",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "price_changing_frequently",
+   "customer_message": "السعر في الموقع يتغير كل شوي، ليش؟",
+   "reply": "الأسعار ممكن تتغير بسبب العروض المؤقتة أو تحديثات المتجر، والسعر المعتمد هو اللي يظهر في صفحة المنتج وقت إتمام الطلب. وإذا لاحظت شي غريب، نحتاج رابط المنتج ونبلغ فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0015",
+   "source_id": "doc_style-customer-service-master_SUP-0015",
+   "keep": true,
+   "case_type": "اعتراض السعر",
+   "intent": "cash_payment_discount",
+   "customer_message": "لو دفعت كاش فيه خصم أكثر؟",
+   "reply": "طرق الدفع المتاحة: {طرق_الدفع_المتاحة}، وأي عرض مرتبط بطريقة دفع يظهر في المتجر وقت إتمام الطلب. ما نقدر نأكد خصومات من المحادثة، وإذا حاب تستفسر أكثر نحوّلك لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0057",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0057",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "payment_failed_fear_double_charge",
+   "customer_message": "دفعت بمدى وضغطت تأكيد وطلعت رسالة إن الدفع فشل، والصفحة رجعت للمنتجات. المبلغ ما انخصم ظاهرياً بس خايفة أكون دفعت مرتين أو الطلب ما انسجل. وش أسوي؟",
+   "reply": "ولا يهمك، نساعدك. شيّكي أول على بريدك أو قائمة الطلبات في حسابك إذا فيه تأكيد طلب، وإذا ما فيه جربي الدفع مرة ثانية أو بطريقة ثانية. وإذا لاحظتي خصم بدون طلب، أرسلي لنا صورة العملية بعد إخفاء بيانات البطاقة ونحوّلها لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0058",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0058",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "expired_payment_link",
+   "customer_message": "رابط الدفع انتهت صلاحيته قبل ما أكمل، وحاولت أطلب من جديد وما لقيت نفس العرض. تقدرون ترسلون رابط جديد؟",
+   "reply": "نعتذر عن اللي صار. نحتاج رقم الطلب، وبنحوّل طلبك لفريق المتجر يتأكد من إمكانية إصدار رابط جديد، أما العرض فتوفره يعتمد على مدته وشروطه في المتجر.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0059",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0059",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "temporary_hold_no_order",
+   "customer_message": "ظهر في حسابي خصم مؤقت بعد ما حاولت أدفع، لكن الطلب ما تأكد عندكم وما جاني إيميل. المبلغ بيرجع؟ وكيف أتأكد إن الطلب ما تكرر؟",
+   "reply": "الحجز المؤقت بعد محاولة دفع ما اكتملت يُلغى عادةً من البنك، والمدة يحددها البنك نفسه. وإذا ما وصلك تأكيد ولا ظهر طلب في حسابك فغالباً ما انسجل طلب، وللتأكد نحتاج صورة العملية بعد إخفاء بيانات البطاقة ونحوّلها لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0060",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0060",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "change_payment_method_after_order",
+   "customer_message": "اخترت التقسيط والعملية انرفضت، وجربت بطاقة ثانية وما نفع. أبي أغير لطريقة دفع ثانية، كيف؟ وهل ينلغي الطلب؟",
+   "reply": "تغيير طريقة الدفع يعتمد على حالة الطلب، وطرق الدفع المتاحة: {طرق_الدفع_المتاحة}. نحتاج رقم الطلب، وبنحوّله لفريق المتجر يتأكد من حالته ويوضح الخطوات.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0061",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0061",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "coupon_caused_payment_failure",
+   "customer_message": "حاولت أطبق كود خصم وقت الدفع وطلع خطأ وفشل الدفع، وما أدري إذا انحجز المبلغ. أبي الكود يشتغل.",
+   "reply": "نعتذر عن اللخبطة. يُفضّل التأكد إن الكود ساري وشروطه تنطبق على السلة، وإذا ما وصلك تأكيد طلب فالدفع غالباً ما اكتمل. وإذا استمرت المشكلة، نحتاج الكود وصورة الخطأ ونحوّلها لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0062",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0062",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "installment_rejected_by_bank",
+   "customer_message": "اخترت التقسيط وجتني رسالة من البنك إن العملية مرفوضة. المشكلة منكم ولا من البنك؟ وش الحل؟",
+   "reply": "إذا رسالة الرفض وصلت من البنك أو جهة التقسيط فالسبب غالباً من طرفهم، والأفضل التواصل معهم لمعرفته. ويمكن إكمال الطلب بطريقة دفع ثانية من المتاحة: {طرق_الدفع_المتاحة}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0063",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0063",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "gift_card_partial_payment",
+   "customer_message": "حاولت أدفع برصيد بطاقة هدية وطلع خطأ إن الرصيد غير كافي مع إنه كافي. أقدر أدفع جزء بالرصيد والباقي ببطاقة؟",
+   "reply": "إمكانية الدفع الجزئي بالرصيد تعتمد على طرق الدفع في المتجر: {طرق_الدفع_المتاحة}. نحتاج صورة رسالة الخطأ، وبنحوّلها لفريق المتجر يتأكد من الرصيد ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0064",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0064",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "double_charge_on_statement",
+   "customer_message": "ظهرت في كشف حسابي عمليتين بنفس قيمة الطلب، وعندكم طلب واحد بس. ترجعون المبلغ الزايد؟",
+   "reply": "نتفهم قلقك. نحتاج رقم الطلب وصورة من كشف الحساب بعد إخفاء بيانات البطاقة، وبنرفع الحالة لفريق المتجر يتحقق إذا العملية الثانية حجز مؤقت أو خصم فعلي ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0200",
+   "source_id": "doc_style-customer-service-master_SUP-0200",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "hide_price_in_gift_parcel",
+   "customer_message": "هلا، طلبت هدية وأبي أتأكد إن السعر ما يطلع في الطرد. كيف؟",
+   "reply": "هلا فيك. إخفاء السعر يعتمد على خيارات التغليف في المتجر: {خيارات_التغليف}. نحتاج رقم الطلب، وبنحوّل طلبك لفريق المتجر يتأكد قبل الشحن ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0201",
+   "source_id": "doc_style-customer-service-master_SUP-0201",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "gift_arrived_without_wrap",
+   "customer_message": "السلام عليكم، الهدية وصلت بدون تغليف مع إني طلبته.",
+   "reply": "وعليكم السلام، نعتذر عن اللي صار. نحتاج رقم الطلب وصورة للطرد، وبنرفعها لفريق المتجر يراجعها ويتواصل معك بالحل المتاح.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0202",
+   "source_id": "doc_style-customer-service-master_SUP-0202",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "add_gift_card_after_order",
+   "customer_message": "أبي أضيف بطاقة مكتوبة داخل العلبة بعد ما أكملت الطلب، ممكن؟",
+   "reply": "الإضافة تعتمد على حالة الطلب وإذا لسا ما تجهز للشحن. نحتاج رقم الطلب ونص البطاقة، وبنحوّلها لفريق المتجر يتأكد من الإمكانية ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0203",
+   "source_id": "doc_style-customer-service-master_SUP-0203",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "damaged_gift_wrap",
+   "customer_message": "وصلت الهدية والتغليف متضرر شوي، تقدرون تبدلونه أو تعوضوني؟",
+   "reply": "نعتذر إن التغليف وصل بهالشكل. نحتاج رقم الطلب وصورة للتغليف، وبنرفع الحالة لفريق المتجر يراجعها ويتواصل معك بالخيارات المتاحة.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0204",
+   "source_id": "doc_style-customer-service-master_SUP-0204",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "premium_gift_wrap_options",
+   "customer_message": "أبي تغليف فاخر للهدية، وش الخيارات وكم التكلفة؟",
+   "reply": "خيارات التغليف المتاحة: {خيارات_التغليف}، وتكلفتها تظهر في صفحة المنتج أو عند إتمام الطلب. وإذا عندك طلب قائم وحاب تضيف التغليف، نحتاج رقم الطلب ونحوّله لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0206",
+   "source_id": "doc_style-customer-service-master_SUP-0206",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "box_and_card_only",
+   "customer_message": "أبي الهدية تتغلف بدون ورق تغليف، بس صندوق وبطاقة صغيرة، ممكن؟",
+   "reply": "نتأكد لك إذا هالخيار متاح ضمن {خيارات_التغليف}. نحتاج رقم الطلب ونص البطاقة، وبنحوّلها لفريق المتجر قبل الشحن ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0207",
+   "source_id": "doc_style-customer-service-master_SUP-0207",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "handwritten_gift_card",
+   "customer_message": "تقدرون تكتبون عبارة بخط اليد بدل الطباعة؟ الهدية خاصة وأبيها شخصية.",
+   "reply": "فكرة حلوة. نتأكد لك إذا الكتابة بخط اليد متاحة ضمن {خيارات_التغليف}، ونحتاج رقم الطلب والعبارة المطلوبة، وبنحوّلها لفريق المتجر يرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0208",
+   "source_id": "doc_style-customer-service-master_SUP-0208",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "price_invoice_inside_gift",
+   "customer_message": "وصلت الهدية وداخلها فاتورة فيها السعر، مع إني طلبت يكون مخفي. وش أسوي؟",
+   "reply": "نعتذر عن اللي صار ونتفهم الإحراج. نحتاج رقم الطلب، وبنرفع الحالة لفريق المتجر يراجعها ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0209",
+   "source_id": "doc_style-customer-service-master_SUP-0209",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "gift_wrap_items_missing",
+   "customer_message": "طلبت تغليف هدية مع بطاقة ووصل ناقص، وش الحل؟",
+   "reply": "نعتذر عن النقص. نحتاج رقم الطلب وصورة للطرد، وبنرفعها لفريق المتجر يراجعها ويتواصل معك بالحل المتاح.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0210",
+   "source_id": "doc_style-customer-service-master_SUP-0210",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "schedule_gift_delivery_date",
+   "customer_message": "أقدر أحدد يوم معين توصل فيه الهدية؟",
+   "reply": "تحديد يوم التوصيل يعتمد على خيارات الشحن في المتجر، ومدة التوصيل المعتادة: {مدة_التوصيل}. نحتاج التاريخ المطلوب ورقم الطلب إن وجد، وبنحوّلها لفريق المتجر يتأكد من الإمكانية.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_التوصيل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0211",
+   "source_id": "doc_style-customer-service-master_SUP-0211",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "eco_friendly_wrap",
+   "customer_message": "عندكم تغليف صديق للبيئة للهدايا؟",
+   "reply": "خيارات التغليف المتاحة موضحة هنا: {خيارات_التغليف}. وإذا ما فيها خيار صديق للبيئة، نقدر نحوّل استفسارك لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0212",
+   "source_id": "doc_style-customer-service-master_SUP-0212",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "wrap_without_store_logo",
+   "customer_message": "طلبت تغليف الهدية بدون شعار المتجر وتغلفت بالشعار، تقدرون تعدلونه؟",
+   "reply": "نعتذر عن الخطأ. نحتاج رقم الطلب وصورة للتغليف، وبنرفعها لفريق المتجر يتأكد إذا التعديل ممكن قبل التوصيل ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0213",
+   "source_id": "doc_style-customer-service-master_SUP-0213",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "separate_wraps_same_order",
+   "customer_message": "تقدرون تغلفون كل قطعة في نفس الطلب بتغليف مختلف؟ الهدايا لأكثر من شخص.",
+   "reply": "نتأكد لك إذا هالخيار متاح ضمن {خيارات_التغليف}. نحتاج رقم الطلب ونوع التغليف لكل قطعة، وبنحوّلها لفريق المتجر قبل الشحن ويوضح التكلفة إن وجدت.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0214",
+   "source_id": "doc_style-customer-service-master_SUP-0214",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "wrong_name_on_gift_card",
+   "customer_message": "انكتب اسم غلط على بطاقة الهدية، كيف أعدله؟",
+   "reply": "نعتذر عن الخطأ. نحتاج رقم الطلب والاسم الصحيح بأسرع وقت، وبنحوّلها لفريق المتجر يتأكد إذا التعديل ممكن قبل الشحن ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0215",
+   "source_id": "doc_style-customer-service-master_SUP-0215",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "fragile_gift_packaging",
+   "customer_message": "الهدية زجاج وحساسة، كيف تتأكدون إن التغليف يحميها من الكسر؟",
+   "reply": "سؤال في محله. نحتاج رقم الطلب أو رابط المنتج، وبنحوّل ملاحظتك لفريق المتجر يتأكد من طريقة التغليف المناسبة للقطعة ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0216",
+   "source_id": "doc_style-customer-service-master_SUP-0216",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "hide_price_send_einvoice",
+   "customer_message": "أبي السعر يكون مخفي في الطرد وتوصلني الفاتورة إلكترونياً بعدين، ممكن؟",
+   "reply": "نتأكد لك إذا هالخيار متاح ضمن {خيارات_التغليف}. نحتاج رقم الطلب، وبنحوّل طلبك لفريق المتجر قبل الشحن ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0089",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0089",
+   "keep": true,
+   "case_type": "جودة المنتج والضمان",
+   "intent": "product_authenticity_concern",
+   "customer_message": "استلمت الساعة ولاحظت إن الشعار مختلف عن الصور، والخامة أحسها رديئة. هل هي أصلية؟",
+   "reply": "نتفهم قلقك ومهم نتأكد. نحتاج رقم الطلب وصور واضحة للشعار والعلبة وأي رقم تسلسلي، وبنرفع الحالة لفريق المتجر يراجعها ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0091",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0091",
+   "keep": true,
+   "case_type": "جودة المنتج والضمان",
+   "intent": "material_not_as_described",
+   "customer_message": "خامة القميص مو مثل الوصف، خشنة مو ناعمة. فيه حل؟",
+   "reply": "نعتذر إن الخامة ما كانت مثل المتوقع. نحتاج رقم الطلب وصور قريبة للخامة، وبنرفعها لفريق المتجر يراجعها ويوضح الخيارات حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0092",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0092",
+   "keep": true,
+   "case_type": "جودة المنتج والضمان",
+   "intent": "color_bleeding_after_wash",
+   "customer_message": "القطعة نزل لونها من أول غسلة ولوّنت الملابس الثانية. هل هذا عيب؟",
+   "reply": "نعتذر عن اللي صار. نحتاج رقم الطلب وصور للبقع وملصق العناية الداخلي، وبنرفع الحالة لفريق المتجر يفحصها ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0093",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0093",
+   "keep": true,
+   "case_type": "جودة المنتج والضمان",
+   "intent": "warranty_claim_device_failure",
+   "customer_message": "الماكينة خربت بعد شهر من الشراء، والمفروض الضمان يغطيها. كيف أتصرف؟",
+   "reply": "نعتذر عن العطل. تغطية الضمان حسب {مدة_الضمان}، ونحتاج رقم الطلب ووصف مختصر للعطل مع صورة أو فيديو، وبنرفع الحالة لفريق المتجر يراجعها ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0094",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0094",
+   "keep": true,
+   "case_type": "جودة المنتج والضمان",
+   "intent": "warranty_terms_unclear",
+   "customer_message": "المنتج مكتوب عليه ضمان سنة بس ما وصلني أي ورقة أو شرح، وش يغطي الضمان؟",
+   "reply": "مدة الضمان وشروطه للمنتج: {مدة_الضمان}. وإذا حاب تأكيد لطلبك بالتحديد، نحتاج رقم الطلب ونحوّل استفسارك لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0096",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0096",
+   "keep": true,
+   "case_type": "جودة المنتج والضمان",
+   "intent": "device_dead_on_arrival",
+   "customer_message": "الجهاز الكهربائي ما يشتغل أبداً، لا يطلع ضوء ولا شي، وجربت كل شي.",
+   "reply": "نعتذر عن اللي صار، وللسلامة يُفضّل عدم فتح الجهاز. نحتاج رقم الطلب وفيديو قصير لمحاولة التشغيل، وبنرفع الحالة لفريق المتجر يراجعها ويتواصل معك حسب {مدة_الضمان}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0217",
+   "source_id": "doc_style-customer-service-master_SUP-0217",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "change_phone_number",
+   "customer_message": "أبي أغير رقم جوالي المسجل عندكم، كيف؟",
+   "reply": "تغيير رقم الجوال يكون من إعدادات حسابك إذا الخيار متاح، أو عن طريق فريق المتجر بعد التحقق على {رقم_التواصل}. وللأمان، لا تشارك رمز التحقق أو صورة الهوية في المحادثة.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0218",
+   "source_id": "doc_style-customer-service-master_SUP-0218",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "login_wrong_password",
+   "customer_message": "ما قدرت أسجل دخول، يقول كلمة المرور غلط وأنا متأكد منها. وش الحل؟",
+   "reply": "يُفضّل تجربة خيار «نسيت كلمة المرور» في صفحة الدخول، والتأكد من مجلد الرسائل المزعجة إذا ما وصل الرابط. وإذا استمرت المشكلة، فريق المتجر يساعدك على {رقم_التواصل}، ولا تشارك كلمة المرور مع أي أحد.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0219",
+   "source_id": "doc_style-customer-service-master_SUP-0219",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "account_locked",
+   "customer_message": "انقفل حسابي بعد محاولات دخول كثيرة، كيف أفتحه؟",
+   "reply": "القفل غالباً إجراء أمني لحماية الحساب. يُفضّل تجربة إعادة تعيين كلمة المرور من «نسيت كلمة المرور»، وإذا ما انفتح الحساب، فريق المتجر يتحقق ويساعدك على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0220",
+   "source_id": "doc_style-customer-service-master_SUP-0220",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "lost_2fa_device",
+   "customer_message": "ضاع جوالي والتحقق الثنائي عليه، أقدر أرجع أدخل حسابي؟",
+   "reply": "إذا عندك رموز احتياطية محفوظة ممكن تستخدمها. وإذا ما عندك، استعادة الحساب تحتاج تحقق من فريق المتجر على {رقم_التواصل}، ولا ترسل صورة هويتك أو أي رمز في المحادثة.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0222",
+   "source_id": "doc_style-customer-service-master_SUP-0222",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "delete_account",
+   "customer_message": "أبي أحذف حسابي نهائياً، كيف أتأكد إن كل شي ينحذف؟",
+   "reply": "طلب حذف الحساب يتعامل معه فريق المتجر بعد التحقق من ملكيتك للحساب، وتفاصيل البيانات اللي تنحذف أو تُحفظ موضحة في {سياسة_الخصوصية}. بنحوّل طلبك لهم، والتواصل المباشر متاح على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الخصوصية}",
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0224",
+   "source_id": "doc_style-customer-service-master_SUP-0224",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "data_export_request",
+   "customer_message": "أبي نسخة من بياناتي اللي عندكم، كيف أطلبها؟",
+   "reply": "طلبات نسخ البيانات الشخصية يتعامل معها فريق المتجر بعد التحقق من الهوية، والتفاصيل في {سياسة_الخصوصية}. بنحوّل طلبك لهم، والتواصل المباشر متاح على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الخصوصية}",
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0225",
+   "source_id": "doc_style-customer-service-master_SUP-0225",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "stop_marketing_messages",
+   "customer_message": "ودي أوقف الرسائل التسويقية والإشعارات، كيف؟",
+   "reply": "غالباً يمكن إيقافها من إعدادات الإشعارات في الحساب أو من رابط إلغاء الاشتراك أسفل الرسالة. وإذا استمرت توصلك، بنحوّل طلبك لفريق المتجر يوقفها.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0226",
+   "source_id": "doc_style-customer-service-master_SUP-0226",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "account_compromised",
+   "customer_message": "أحس أحد دخل على حسابي، وش أسوي بسرعة؟",
+   "reply": "ننصح بتغيير كلمة المرور الحين وتسجيل الخروج من كل الأجهزة إذا الخيار متاح، وعدم مشاركة أي رمز تحقق مع أحد. وبنحوّل البلاغ مباشرة لفريق المتجر يراجع الحساب ويتواصل معك، والتواصل المباشر متاح على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0227",
+   "source_id": "doc_style-customer-service-master_SUP-0227",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "change_email",
+   "customer_message": "أبي أغير الإيميل المسجل عندكم، ممكن؟",
+   "reply": "تغيير الإيميل يكون من إعدادات الحساب إذا الخيار متاح، مع تأكيد عبر الإيميل الجديد. وإذا ما عندك وصول للإيميل القديم، التغيير يحتاج تحقق من فريق المتجر على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0228",
+   "source_id": "doc_style-customer-service-master_SUP-0228",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "delete_saved_card_with_subscription",
+   "customer_message": "أبي أحذف طريقة الدفع المحفوظة بس عندي اشتراك شغال، تنحذف ولا لا؟",
+   "reply": "إذا فيه اشتراك مرتبط بالبطاقة، ممكن يلزم تحديث وسيلة الدفع للاشتراك أو إلغاؤه قبل الحذف. بنحوّل استفسارك لفريق المتجر يوضح الخطوات، ولا ترسل بيانات البطاقة في المحادثة.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0229",
+   "source_id": "doc_style-customer-service-master_SUP-0229",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "anonymize_order_history",
+   "customer_message": "عندي طلبات قديمة وأبي أمسح اسمي من السجلات، ممكن؟",
+   "reply": "طلبات تعديل أو حذف البيانات الشخصية يراجعها فريق المتجر بعد التحقق من الهوية، وما يُحفظ من سجلات الطلبات موضح في {سياسة_الخصوصية}. بنحوّل طلبك لهم ويتواصلون معك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الخصوصية}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0230",
+   "source_id": "doc_style-customer-service-master_SUP-0230",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "merge_accounts",
+   "customer_message": "عندي حسابين عندكم، أقدر أدمجهم؟",
+   "reply": "دمج الحسابات يحتاج تحقق من ملكيتك للحسابين عن طريق فريق المتجر. نحتاج الإيميل أو رقم الجوال المرتبط بكل حساب، وبنحوّل طلبك لهم ويتواصلون معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0231",
+   "source_id": "doc_style-customer-service-master_SUP-0231",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "change_invoice_name",
+   "customer_message": "أبي أغير اسمي اللي يطلع في الفواتير، أقدر بسرعة؟",
+   "reply": "الاسم الظاهر ممكن يتعدل من الملف الشخصي إذا الخيار متاح، أما الاسم على الفواتير فتعديله يراجعه فريق المتجر. بنحوّل طلبك لهم، ولا ترسل صورة الهوية في المحادثة.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0113",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0113",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "changed_phone_no_otp",
+   "customer_message": "غيرت جوالي والرمز يروح للرقم القديم، وما أقدر أدخل أو أغير الرقم. كيف أرجع لحسابي؟",
+   "reply": "استعادة الحساب بدون الرقم القديم تحتاج تحقق من فريق المتجر لحماية حسابك. بنحوّل طلبك لهم، والتواصل المباشر متاح على {رقم_التواصل}. وللأمان، لا ترسل أي رمز تحقق أو كلمة مرور في المحادثة.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0114",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0114",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "otp_not_received",
+   "customer_message": "ما توصلني رسائل التحقق للدخول، جربت أكثر من مرة ويطلع خطأ. فيه مشكلة؟",
+   "reply": "ممكن السبب من شبكة الجوال أو إعدادات الرسائل، فيُفضّل التأكد من الإشارة وإن الرقم ما عليه حظر رسائل ثم إعادة المحاولة بعد دقائق. وإذا استمرت المشكلة، فريق المتجر يساعدك على {رقم_التواصل}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0115",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0115",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "remove_phone_number_privacy",
+   "customer_message": "أبي أشيل رقم جوالي من حسابي لأسباب خصوصية، كيف أحذفه أو أوقف استخدامه؟",
+   "reply": "نتفهم حرصك على خصوصيتك. إزالة الرقم يتعامل معها فريق المتجر بعد التحقق من ملكيتك للحساب، وممكن تأثر على طرق استعادته. بنحوّل طلبك لهم، وتفاصيل استخدام البيانات في {سياسة_الخصوصية}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الخصوصية}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0116",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0116",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "unrequested_otp",
+   "customer_message": "جاني رمز تحقق للدخول وأنا ما طلبته، خايف حسابي مخترق. وش تسوون؟",
+   "reply": "لا تشارك الرمز مع أي أحد حتى لو قال إنه من المتجر، وننصحك تغير كلمة المرور الحين. وبنحوّل البلاغ لفريق المتجر يراجع الحساب ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0117",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0117",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "alternate_number_privacy",
+   "customer_message": "أبي أضيف رقم بديل بس خايفة ينشارك لأحد أو يستخدمونه للتسويق. كيف تضمنون خصوصيته؟",
+   "reply": "حقك تتطمنين. طريقة استخدام الأرقام ومشاركتها موضحة في {سياسة_الخصوصية}، وإضافة الرقم تكون من إعدادات حسابك أو عن طريق فريق المتجر بعد التحقق، وما يحتاج ترسلين الرقم هنا.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الخصوصية}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0118",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0118",
+   "keep": true,
+   "case_type": "الخصوصية والحساب",
+   "intent": "phone_linked_to_other_account",
+   "customer_message": "لما أسجل برقمي يقول الرقم مستخدم في حساب ثاني، وأنا متأكد إنه رقمي وما أبي حسابين. كيف أحلها؟",
+   "reply": "هالحالة تحتاج تحقق من فريق المتجر لحماية الحسابين. بنحوّل طلبك لهم، ويساعدهم الإيميل المرتبط بحسابك أو رقم آخر طلب، والتواصل المباشر متاح على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0150",
+   "source_id": "doc_style-customer-service-master_SUP-0150",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "card_repeatedly_declined",
+   "customer_message": "ليش بطاقتي تنرفض كل مرة؟ والبنك يقول ما فيه مشكلة.",
+   "reply": "أحياناً يكون السبب إن الشراء الإلكتروني غير مفعّل للبطاقة، أو إن البنك يوقف العملية احترازياً. يُفضّل التأكد من هالنقطتين مع البنك أو تجربة طريقة دفع ثانية من {طرق_الدفع_المتاحة}، وإذا استمرت المشكلة نحتاج صورة رسالة الخطأ ونحوّلها لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0151",
+   "source_id": "doc_style-customer-service-master_SUP-0151",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "cash_on_delivery_availability",
+   "customer_message": "تقدرون تقبلون الدفع عند الاستلام بدل البطاقة؟",
+   "reply": "طرق الدفع المتاحة: {طرق_الدفع_المتاحة}، والدفع عند الاستلام إذا كان متاح يظهر وقت إتمام الطلب. وإذا ما ظهر، نقدر نحوّل استفسارك لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0154",
+   "source_id": "doc_style-customer-service-master_SUP-0154",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "alternative_payment_methods",
+   "customer_message": "إذا بطاقتي تفشل، فيه طرق دفع ثانية أجربها؟",
+   "reply": "طرق الدفع المتاحة في المتجر: {طرق_الدفع_المتاحة}، ويمكن اختيار أي وحدة منها وقت إتمام الطلب. وإذا استمرت المشكلة، نحوّلك لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0155",
+   "source_id": "doc_style-customer-service-master_SUP-0155",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "account_lock_after_decline",
+   "customer_message": "لو انرفضت عملية الدفع، ينقفل حسابي عندكم؟",
+   "reply": "رفض عملية دفع ما يعني بالضرورة أي إجراء على حسابك، وغالباً الطلب ما يكتمل فقط. وإذا لاحظت أي قفل على الحساب، فريق المتجر يساعدك على {رقم_التواصل}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0156",
+   "source_id": "doc_style-customer-service-master_SUP-0156",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "browser_payment_issue",
+   "customer_message": "كل ما أحاول أدفع بالفيزا ما تنجح، ممكن المشكلة من المتصفح؟",
+   "reply": "ممكن. يُفضّل تجربة متصفح ثاني أو التصفح الخاص، وإيقاف مانع الإعلانات مؤقتاً أثناء الدفع. وإذا استمرت المشكلة، نحتاج صورة رسالة الخطأ ونحوّلها لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0157",
+   "source_id": "doc_style-customer-service-master_SUP-0157",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "bank_transfer_proof",
+   "customer_message": "أبي أدفع بتحويل بنكي، كيف أرسل إثبات التحويل؟",
+   "reply": "إذا التحويل البنكي من طرق الدفع المتاحة ({طرق_الدفع_المتاحة})، يمكن إرسال صورة إيصال التحويل مع رقم الطلب هنا، وبنحوّلها لفريق المتجر يتحقق ويحدّث حالة الطلب. وللأمان، التحويل يكون فقط على الحساب الموضح في صفحة الدفع الرسمية للمتجر.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0158",
+   "source_id": "doc_style-customer-service-master_SUP-0158",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "cod_prepayment_question",
+   "customer_message": "اخترت الدفع عند الاستلام، هل لازم أدفع جزء مقدم؟",
+   "reply": "شروط الدفع عند الاستلام تحددها سياسة المتجر وتظهر وقت إتمام الطلب، وطرق الدفع المتاحة: {طرق_الدفع_المتاحة}. وللتأكيد على طلبك، نحتاج رقم الطلب.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0159",
+   "source_id": "doc_style-customer-service-master_SUP-0159",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "payment_error_code",
+   "customer_message": "طلعت لي شاشة خطأ فيها رمز 102، وش الحل؟",
+   "reply": "ما نقدر نحدد معنى الرمز بدقة من هنا. يُفضّل إعادة إدخال بيانات الدفع من البداية أو تجربة طريقة دفع ثانية، وإذا تكرر الخطأ نحتاج صورة الشاشة ونحوّلها لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0162",
+   "source_id": "doc_style-customer-service-master_SUP-0162",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "mada_vs_visa",
+   "customer_message": "فيه فرق بين الدفع بمدى والفيزا؟ أيهم أنسب؟",
+   "reply": "الاثنين يُستخدمون للشراء الإلكتروني، ومدى بطاقة محلية بينما الفيزا مقبولة داخل وخارج السعودية. المتاح في المتجر: {طرق_الدفع_المتاحة}، وإذا واجهتك مشكلة مع نوع، تجربة الثاني ممكن تحلها.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{طرق_الدفع_المتاحة}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0164",
+   "source_id": "doc_style-customer-service-master_SUP-0164",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "no_payment_confirmation",
+   "customer_message": "ما وصلتني رسالة تأكيد بعد الدفع، هل الطلب تأكد؟",
+   "reply": "يُفضّل التأكد من صندوق البريد والرسائل المزعجة، ومن قائمة الطلبات في حسابك. وإذا ما ظهر الطلب، نحتاج الإيميل أو رقم الجوال المستخدم في الطلب ونحوّله لفريق المتجر يتحقق.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0165",
+   "source_id": "doc_style-customer-service-master_SUP-0165",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "switch_card_after_failed_attempt",
+   "customer_message": "محاولة الدفع فشلت وأبي أدفع ببطاقة ثانية، لازم ألغي الطلب؟",
+   "reply": "غالباً ما يحتاج إلغاء، ويمكن إكمال الدفع بالبطاقة الثانية إذا الطلب لسا بانتظار الدفع. وإذا ما ظهر خيار الدفع، نحتاج رقم الطلب ونحوّله لفريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0066",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0066",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "anonymous_gift_card_message",
+   "customer_message": "ممكن تكتبون عبارة هدية على الكرت بدون اسم المرسل وبدون سعر؟ أبي رسالة قصيرة بس.",
+   "reply": "نتأكد لك إذا هالخيار متاح ضمن {خيارات_التغليف}. نحتاج رقم الطلب والعبارة المطلوبة بالضبط، وبنحوّلها لفريق المتجر قبل الشحن.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0068",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0068",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "urgent_gift_wrap_message",
+   "customer_message": "أبي تغليف هدية مع عبارة خاصة والسعر مخفي، والموضوع مستعجل. ممكن؟",
+   "reply": "نحوّل طلبك لفريق المتجر على طول، وتوفر الخدمة حسب {خيارات_التغليف} ومدة التوصيل حسب {مدة_التوصيل}. نحتاج رقم الطلب ونص العبارة.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{خيارات_التغليف}",
+    "{مدة_التوصيل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0070",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0070",
+   "keep": true,
+   "case_type": "التغليف والهدايا",
+   "intent": "combine_orders_one_gift_box",
+   "customer_message": "عندي أكثر من طلب وأبيها توصل في صندوق هدية واحد بدون ما تبان الأسعار، ممكن؟",
+   "reply": "دمج الطلبات في تغليف واحد يعتمد على حالتها وخيارات المتجر: {خيارات_التغليف}. نحتاج أرقام الطلبات وهل المطلوب بطاقة وحدة أو بدون بطاقة، وبنحوّلها لفريق المتجر يتأكد قبل الشحن.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{خيارات_التغليف}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0066",
+   "source_id": "doc_style-customer-service-master_SUP-0066",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "order_delayed_eta",
+   "customer_message": "طلبي تأخر عن موعده، متى يوصل؟",
+   "reply": "نعتذر عن التأخير. مدة التوصيل المعتادة {مدة_التوصيل}، ويمكن متابعة آخر حالة للشحنة من {رابط_تتبع_الطلب}. وإذا عدّت المدة، نحتاج رقم الطلب ونحوّله لفريق المتجر يتابع مع شركة الشحن.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_التوصيل}",
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0067",
+   "source_id": "doc_style-customer-service-master_SUP-0067",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "tracking_not_updated",
+   "customer_message": "رقم التتبع ما تحدّث من يومين، وش أسوي؟",
+   "reply": "تأخر تحديث التتبع يصير أحياناً عند شركات الشحن. آخر حالة تظهر في {رابط_تتبع_الطلب}، وإذا استمر بدون تحديث نحتاج رقم الطلب ونحوّله لفريق المتجر يتابع مع شركة الشحن.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0068",
+   "source_id": "doc_style-customer-service-master_SUP-0068",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "address_correction_after_dispatch",
+   "customer_message": "كتبت العنوان غلط، أقدر أعدله بعد ما طلعت الشحنة؟",
+   "reply": "تعديل العنوان بعد خروج الشحنة يعتمد على حالتها وشركة الشحن. نحتاج رقم الطلب والعنوان الصحيح بأسرع وقت، وبنحوّلها لفريق المتجر يتأكد من الإمكانية ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0069",
+   "source_id": "doc_style-customer-service-master_SUP-0069",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "delivered_not_received",
+   "customer_message": "جاني إشعار إن الطلب تسلّم وأنا ما استلمته، وش أسوي؟",
+   "reply": "نتفهم قلقك. يُفضّل التأكد أول من الجيران أو مكان الاستلام، وإذا ما لقيته نحتاج رقم الطلب، وبنرفع الحالة لفريق المتجر يتحقق مع شركة الشحن ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0070",
+   "source_id": "doc_style-customer-service-master_SUP-0070",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "carrier_delivery_notice",
+   "customer_message": "المندوب ترك عندي ورقة إشعار، كيف أستلم الطرد أو أرتب توصيله؟",
+   "reply": "نحتاج رقم الطلب وصورة ورقة الإشعار، وبنحوّلها لفريق المتجر يوضح خيارات إعادة التوصيل أو الاستلام، وأي رسوم إن وجدت حسب {رسوم_الشحن}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رسوم_الشحن}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0071",
+   "source_id": "doc_style-customer-service-master_SUP-0071",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "customs_hold",
+   "customer_message": "طلبي جاي من برا وقالوا محتجز في الجمارك، متى يخلص؟",
+   "reply": "مدة الإجراءات الجمركية تحددها الجمارك وما نقدر نأكد موعد محدد. آخر حالة تظهر في {رابط_تتبع_الطلب}، وإذا احتاج الأمر مستندات أو رسوم نحتاج رقم الطلب ونحوّله لفريق المتجر يوضح لك.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0073",
+   "source_id": "doc_style-customer-service-master_SUP-0073",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "missing_item_in_shipment",
+   "customer_message": "وصلت الشحنة ناقصة، القطعة الثانية مو موجودة في الطرد. وش صار؟",
+   "reply": "نعتذر عن النقص. أحياناً الطلب يوصل على أكثر من شحنة، وللتأكد نحتاج رقم الطلب وصورة للطرد ومحتوياته، وبنرفع الحالة لفريق المتجر يتحقق ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0074",
+   "source_id": "doc_style-customer-service-master_SUP-0074",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "cancel_before_shipping",
+   "customer_message": "أقدر ألغي الطلب قبل ما ينشحن؟",
+   "reply": "الإلغاء قبل الشحن يعتمد على حالة الطلب و{سياسة_الإرجاع}. نحتاج رقم الطلب بأسرع وقت، وبنحوّله لفريق المتجر يتأكد من الحالة ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0075",
+   "source_id": "doc_style-customer-service-master_SUP-0075",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "damaged_parcel_claim",
+   "customer_message": "الطرد وصل متضرر، كيف أطالب بتعويض؟",
+   "reply": "نعتذر عن اللي صار. يُفضّل الاحتفاظ بالطرد والتغليف كما هو، ونحتاج رقم الطلب وصور للضرر من كل الجهات، وبنرفع الحالة لفريق المتجر يراجعها ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0076",
+   "source_id": "doc_style-customer-service-master_SUP-0076",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "delivered_to_wrong_address",
+   "customer_message": "التتبع يقول الطلب توصل لعنوان ثاني، كيف أرجع شحنتي؟",
+   "reply": "نتفهم قلقك. نحتاج رقم الطلب وصورة لحالة التتبع، وبنرفع الحالة لفريق المتجر يتحقق مع شركة الشحن من مكان التسليم ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0077",
+   "source_id": "doc_style-customer-service-master_SUP-0077",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "failed_delivery_reschedule",
+   "customer_message": "المندوب ما لقاني والتوصيل فشل، كيف أعيد جدولة التوصيل؟",
+   "reply": "نحتاج رقم الطلب والوقت المناسب للاستلام، وبنحوّلها لفريق المتجر ينسق مع شركة الشحن. ويمكن متابعة حالة الشحنة من {رابط_تتبع_الطلب}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0078",
+   "source_id": "doc_style-customer-service-master_SUP-0078",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "upgrade_to_faster_shipping",
+   "customer_message": "أبي أغير الشحن لخيار أسرع، ممكن؟",
+   "reply": "خيارات الشحن ورسومها حسب سياسة المتجر: {رسوم_الشحن} و{مدة_التوصيل}، والتغيير يعتمد على حالة الطلب. نحتاج رقم الطلب ونحوّله لفريق المتجر يتأكد لك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رسوم_الشحن}",
+    "{مدة_التوصيل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0079",
+   "source_id": "doc_style-customer-service-master_SUP-0079",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "out_for_delivery_all_day",
+   "customer_message": "حالة الشحنة «قيد التوصيل» من الصباح، متى توصل؟",
+   "reply": "«قيد التوصيل» غالباً يعني إن الطرد مع المندوب في جولته. آخر تحديث يظهر في {رابط_تتبع_الطلب}، وإذا ما وصل خلال اليوم نحتاج رقم الطلب ونحوّله لفريق المتجر يتابع مع شركة الشحن.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0080",
+   "source_id": "doc_style-customer-service-master_SUP-0080",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "no_tracking_number",
+   "customer_message": "ما عطيتوني رقم تتبع للطلب، كيف أتابع الشحنة؟",
+   "reply": "يمكن متابعة الطلب من هنا: {رابط_تتبع_الطلب}. وإذا ما ظهر رقم تتبع، نحتاج رقم الطلب ونحوّله لفريق المتجر يرسل لك التحديث.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0081",
+   "source_id": "doc_style-customer-service-master_SUP-0081",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "returned_to_warehouse_resend",
+   "customer_message": "ما استلمت الطلب من نقطة الاستلام ورجع للمستودع، أقدر أطلب إعادة إرسال؟",
+   "reply": "إعادة الإرسال ورسومها إن وجدت حسب سياسة المتجر: {رسوم_الشحن}. نحتاج رقم الطلب، وبنحوّله لفريق المتجر يوضح الخيارات المتاحة.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رسوم_الشحن}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0001",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0001",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "wrong_size_sent",
+   "customer_message": "طلبت جاكيت مقاس M ووصلني L، كيف أبدله؟",
+   "reply": "نعتذر عن الخطأ. نحتاج رقم الطلب وصورة لملصق المقاس على الجاكيت، وبنرفعها لفريق المتجر يتأكد ويتواصل معك لترتيب الاستبدال حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0005",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0005",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "unclear_size_chart",
+   "customer_message": "المقاسات في الصور مو واضحة، ما عرفت أختار صح ووصلني مقاس مختلف.",
+   "reply": "نعتذر إن المقاسات ما كانت واضحة. نحتاج رابط المنتج أو رقم الطلب، ونراجع وصف المقاسات ونوضح خيارات الاستبدال حسب {سياسة_الإرجاع}، ونبلغ فريق المتجر بملاحظتك عن الصور.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0006",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0006",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "free_size_smaller",
+   "customer_message": "البلوزة مكتوب عليها Free Size بس شكلها أصغر من المتوقع، هذا طبيعي؟",
+   "reply": "مقاس Free Size ممكن يختلف حسب التصميم والخامة، والقياسات موضحة في صفحة المنتج. وإذا ما طابقت، نحتاج رقم الطلب وصورة للملصق الداخلي، ونوضح الخيارات حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0007",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0007",
+   "keep": true,
+   "case_type": "الإرجاع والاستبدال",
+   "intent": "shoe_size_too_big",
+   "customer_message": "طلبت حذاء مقاس 42 وطلع كبير مرة، أرسله للاستبدال؟",
+   "reply": "نقدر نساعدك. نحتاج رقم الطلب وصورة لملصق المقاس داخل الحذاء، ونتأكد من توفر المقاس المناسب ونوضح خطوات الاستبدال حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0233",
+   "source_id": "doc_style-customer-service-master_SUP-0233",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "late_order_no_response",
+   "customer_message": "طلبي كان المفروض يوصل قبل ثلاث أيام وما وصل، وأرسل رسائل وما أحد يرد. وش تسوون؟",
+   "reply": "نعتذر عن التأخير وعن تأخر الرد عليك. نحتاج رقم الطلب، وبنرفع شكواك لفريق المتجر يتابع الشحنة ويتواصل معك، والتواصل المباشر متاح على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0235",
+   "source_id": "doc_style-customer-service-master_SUP-0235",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "rude_staff_complaint",
+   "customer_message": "الموظف اللي تواصلت معه كان فظ وتعامل معي بشكل سيء، أبي أصعّد الموضوع.",
+   "reply": "نعتذر عن اللي مريت فيه، وشكراً إنك بلغتنا. نحتاج رقم الطلب ووقت التواصل أو صورة المحادثة إن وجدت، وبنرفع الشكوى لإدارة المتجر تراجعها وتتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0236",
+   "source_id": "doc_style-customer-service-master_SUP-0236",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "order_cancelled_paid_no_refund",
+   "customer_message": "دفعت والطلب انلغى بدون سبب، ولا أحد وضح لي أو رجع فلوسي. أبي حل الحين.",
+   "reply": "نعتذر عن الإلغاء بدون توضيح. نحتاج رقم الطلب، وبنرفع الحالة لفريق المتجر بشكل عاجل يوضح سبب الإلغاء ويتابع الاسترداد، ومدة الاسترداد حسب {مدة_الاسترداد}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0237",
+   "source_id": "doc_style-customer-service-master_SUP-0237",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "ticket_no_response",
+   "customer_message": "رفعت تذكرة قبل أسبوع وما جاني أي رد، ليش ما تردون؟",
+   "reply": "نعتذر عن التأخير في الرد. نحتاج رقم التذكرة أو رقم الطلب، وبنحوّلها لفريق المتجر للمتابعة، والتواصل المباشر متاح على {رقم_التواصل}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{رقم_التواصل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0239",
+   "source_id": "doc_style-customer-service-master_SUP-0239",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "missed_installation_appointment",
+   "customer_message": "حجزت موعد تركيب وما جيتوا، خرب علي يومي. أبي تعويض أو حل سريع.",
+   "reply": "نعتذر عن عدم الالتزام بالموعد ونتفهم انزعاجك. نحتاج رقم الطلب أو الحجز ووقت الموعد، وبنرفع الحالة لفريق المتجر بشكل عاجل يرتب معك موعد بديل ويرد على طلب التعويض.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0240",
+   "source_id": "doc_style-customer-service-master_SUP-0240",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "payment_failure_lost_discount",
+   "customer_message": "الموقع رفض يكمل الدفع كل ما أحاول، وخسرت عرض الخصم. ممكن تعوضوني؟",
+   "reply": "نعتذر عن اللي صار. نحتاج صورة رسالة الخطأ ورقم الطلب إن انشأ، وبنرفع الحالة لفريق المتجر يراجع مشكلة الدفع وطلبك بخصوص العرض ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0242",
+   "source_id": "doc_style-customer-service-master_SUP-0242",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "conflicting_information",
+   "customer_message": "كل موظف يعطيني معلومة غير الثاني وأتلخبط أكثر، أبي أحد يحل المشكلة ويعطيني جواب واضح.",
+   "reply": "نعتذر عن اللخبطة. نحتاج رقم الطلب وملخص قصير للمشكلة، وبنرفع الحالة لفريق المتجر ونطلب إن يتابعها شخص واحد ويرد عليك بجواب واضح.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0243",
+   "source_id": "doc_style-customer-service-master_SUP-0243",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "escalate_to_supervisor",
+   "customer_message": "أبي أصعّد لمشرف، الموظف ما عطاني أي حل وأحتاج قرار نهائي.",
+   "reply": "حاضرين. نحتاج رقم الطلب ونبذة مختصرة عن اللي صار، وبنرفع طلب التصعيد لمسؤول في فريق المتجر يراجع الحالة ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0244",
+   "source_id": "doc_style-customer-service-master_SUP-0244",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "warranty_claim_rejected",
+   "customer_message": "انرفض طلب الضمان بدون شرح واضح، أبي تفسير وخطوة للتصعيد.",
+   "reply": "نتفهم انزعاجك. شروط الضمان حسب {مدة_الضمان}، ونحتاج رقم الطلب وأي رسالة رفض وصلتك، وبنرفع طلب المراجعة لفريق المتجر يوضح السبب ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0245",
+   "source_id": "doc_style-customer-service-master_SUP-0245",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "return_not_reached_warehouse_refund",
+   "customer_message": "أرسلت المرتجع وما وصل المستودع، والمتابعة معلقة. وين فلوسي؟",
+   "reply": "نتفهم قلقك على المبلغ. نحتاج رقم الطلب ورقم شحنة الإرجاع، وبنرفع الحالة لفريق المتجر يتأكد من وصول المرتجع ويتواصل معك، ومدة الاسترداد بعد الاستلام حسب {مدة_الاسترداد}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0246",
+   "source_id": "doc_style-customer-service-master_SUP-0246",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "defective_item_after_sales_ignored",
+   "customer_message": "الخدمة بعد البيع تركوني وما تجاوب، المنتج فيه خلل وما أقدر أستعمله، أبي حل سريع أو تبديل.",
+   "reply": "نعتذر إن المتابعة بعد البيع ما كانت بالمستوى المطلوب. ممكن ترسل لنا رقم الطلب ووصف مختصر للخلل مع صور أو مقطع قصير؟ بحوّل حالتك لموظف من فريق المتجر يراجع الفحص أو الاستبدال حسب {سياسة_الإرجاع} ويتابع معك مباشرة.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0247",
+   "source_id": "doc_style-customer-service-master_SUP-0247",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "branch_staff_misconduct",
+   "customer_message": "روحت للفرع وسوء التعامل كان واضح، أبغى اعتذار رسمي وإجراء حتى ما يتكرر على زباين ثانيين.",
+   "reply": "نقدّر إنك بلّغتنا، وشكواك تهمنا. ممكن تذكر لنا تاريخ الزيارة والفرع واسم الموظف إن تذكره؟ بحوّل البلاغ لموظف مختص من إدارة المتجر يراجعه ويتواصل معك بالنتيجة.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0248",
+   "source_id": "doc_style-customer-service-master_SUP-0248",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "discount_not_applied_compensation",
+   "customer_message": "الخصم اللي شفته ما انطبق على طلبي وبعدها اختفى، وأحس إني خسرت فلوس. كيف بتعوضوني؟",
+   "reply": "نتفهم انزعاجك من عدم تطبيق الخصم. ممكن ترسل لنا رقم الطلب ولقطة شاشة للعرض اللي ظهر لك؟ بحوّل الحالة لموظف من فريق المتجر يراجع {شروط_العرض} ويرد عليك بالحل المتاح.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0249",
+   "source_id": "doc_style-customer-service-master_SUP-0249",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "repeated_unresolved_support",
+   "customer_message": "تواصلت مع الدعم أكثر من مرة ووصفت مشكلتي لكن يرجعون يعطوني نفس الرد الفاضي، أبغى حل واضح وخطوات أعملها بنفسي لو لازم.",
+   "reply": "معك حق، وتستاهل رد واضح. اكتب لنا المشكلة باختصار مع رقم الطلب إن وجد، وبنعطيك الخطوات اللي تقدر تسويها بنفسك، وإذا احتاجت الحالة تدخل بحوّلك لموظف يتابعها معك للنهاية.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "escalation_added",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0097",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0097",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "product_advice_filter_change_frequency",
+   "customer_message": "أنا محتار بخصوص تردد تغيير فلتر مرطب الهواء. أستخدمه تقريباً بالليل فقط، وأهل البيت عندهم تحسس طفيف. متى أنصح أغير الفلتر؟ هل في فرق حسب النوع؟",
+   "reply": "سؤال في محله، خصوصاً مع وجود تحسس. مدة تغيير الفلتر تختلف حسب نوعه وموديل الجهاز وتعليمات الشركة المصنعة. ممكن ترسل لنا موديل المرطب أو نوع الفلتر؟ نراجع لك المعلومات المذكورة في صفحة المنتج أو دليل الاستخدام.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0098",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0098",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "product_advice_headphones_compare",
+   "customer_message": "أبغى أختار بين سماعتين بلوتوث: واحدة لها بطارية أطول والثانية جودتها أحس أفضل. أنا أستخدمها للعمل والمشي. أي أختار؟",
+   "reply": "الاختيار يعتمد على وش أهم لك: تشغيل أطول خلال اليوم ولا جودة صوت أعلى. وش أولويتك؟ وممكن ترسل لنا اسم السماعتين عشان نوضح لك الفروقات حسب المواصفات المذكورة في صفحة كل منتج.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0099",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0099",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "product_advice_coffee_machine_compare",
+   "customer_message": "أحتاج مساعدتكم في اختيار ماكينة قهوة منزلية، محتار بين الموديل الصغير والإصدار البرو الأكبر. البيت صغير بس يجينا ضيوف أحياناً. وش الفروقات اللي أركز عليها؟",
+   "reply": "الفروقات عادة تكون في سعة الخزان وعدد المشروبات اللي تقدر تحضّرها بسرعة والمساحة اللي تاخذها. وش الأهم لك: صغر الحجم وسهولة التنظيف، ولا تحضير أكثر من كوب للضيوف؟ ونقدر نوضح لك مواصفات الموديلين من صفحة المنتج.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0100",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0100",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "product_care_wash_instructions",
+   "customer_message": "أبغى أعرف كم مرة لازم أغسل غطاء مخدة الركبة الطبي، أنا أستخدمه يومياً وعندي جلد حساس. في تعليمات واضحة؟",
+   "reply": "مع الجلد الحساس النظافة مهمة فعلاً. طريقة الغسيل تعتمد على خامة الغطاء وتعليمات الشركة المصنعة. ممكن ترسل لنا اسم المنتج أو صورة لملصق التعليمات؟ نوضح لك المذكور فيه.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0101",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0101",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "product_advice_tv_size",
+   "customer_message": "أنا ما بين تلفزيون سمارت 43 و 50 إنش. الغرفة صغيرة لكن نقعد على بعد 2.5 متر. أي حجم أنسب؟ وهل الفارق في الجودة ملموس؟",
+   "reply": "الاختيار بين المقاسين يعتمد على راحتك في المشاهدة ومساحة الغرفة. ممكن ترسل لنا الموديلين اللي تفكر فيهم؟ نوضح لك الفروقات حسب المواصفات المذكورة في صفحة كل منتج.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0102",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0102",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "product_advice_blender_compare",
+   "customer_message": "أحتاج مقارنة بين الخلاط اليدوي والخلاط الحراري لمطبخي الصغير، وأغلب طبخي سلطات وشوربات. أيهم أفضل؟",
+   "reply": "الخلاط اليدوي عادة أخف ويناسب المساحات الصغيرة، والحراري فيه وظائف إضافية مثل التسخين. وش الأهم لك: المساحة وسهولة الاستخدام ولا تعدد الوظائف؟ وإذا عندك موديلات معينة نوضح لك مواصفاتها من صفحة المنتج.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0103",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0103",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "product_advice_security_camera",
+   "customer_message": "أبغى أشتري كاميرا مراقبة داخلية لكن محتار بين كاميرا فيها رؤية ليلية متقدمة وكاميرا ذات تخزين سحابي أفضل. السلامة مهمة لكن أحتاج تخزين لوقت طويل. أي خيار أحط أولوية؟",
+   "reply": "الأولوية تعتمد على هدفك: رؤية أوضح بالليل، ولا حفظ تسجيلات لمدة أطول. أي واحد يهمك أكثر؟ وممكن ترسل لنا اسم الكاميرتين عشان نوضح لك المواصفات المذكورة لكل وحدة.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0104",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0104",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "product_advice_robot_vacuum",
+   "customer_message": "محتار بين مكنسة روبوت عادية وروبوت مع مسح رطب. عندي أرضيات سيراميك وشوية سجاد خفيف. أيهم أنسب؟",
+   "reply": "الاختيار يعتمد على احتياجك: إزالة الغبار اليومي، ولا مسح البقع بانتظام. وش أولويتك؟ وممكن ترسل لنا الموديلات اللي تفكر فيها عشان نوضح لك مواصفاتها وتوافقها مع السجاد.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0167",
+   "source_id": "doc_style-customer-service-master_SUP-0167",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_preparation_time",
+   "customer_message": "متى بيتجهّز طلبي المسبق؟",
+   "reply": "تقدر تتابع حالة طلبك من حسابك في المتجر، أو ترسل لنا رقم الطلب ونراجع لك آخر تحديث. مدة تجهيز الطلبات المسبقة هي {مدة_التجهيز} حسب المذكور في صفحة المنتج.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_التجهيز}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0168",
+   "source_id": "doc_style-customer-service-master_SUP-0168",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_change_color",
+   "customer_message": "أقدر أغيّر لون المنتج بالطلب المسبق؟",
+   "reply": "إمكانية تغيير اللون تعتمد على مرحلة الطلب وتوفر اللون. ممكن ترسل لنا رقم الطلب واللون اللي تبيه؟ بنرفع طلبك لفريق المتجر ونبلغك بإمكانية التعديل.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0169",
+   "source_id": "doc_style-customer-service-master_SUP-0169",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_add_item",
+   "customer_message": "إذا أبي أضيف منتج لطلب مسبق، كيف أسوي؟",
+   "reply": "نحتاج نتأكد إن الطلب لسا في مرحلة تسمح بالتعديل. ممكن ترسل لنا رقم الطلب والمنتج اللي تبي تضيفه؟ بنرفع طلبك لفريق المتجر، وإذا ما أمكن التعديل نقدر نوجهك لطلب جديد مستقل.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0170",
+   "source_id": "doc_style-customer-service-master_SUP-0170",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_cancel",
+   "customer_message": "كيف أقدر ألغي طلبي المسبق؟",
+   "reply": "ممكن ترسل لنا رقم الطلب؟ بنرفع طلب الإلغاء لفريق المتجر، وإمكانية الإلغاء وأي رسوم مرتبطة فيه تكون حسب {سياسة_الإلغاء}، وبنبلغك بالنتيجة.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإلغاء}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0171",
+   "source_id": "doc_style-customer-service-master_SUP-0171",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_status_in_preparation",
+   "customer_message": "حالة طلبي مكتوب عليها \"قيد التحضير\"، متى بيخلص؟",
+   "reply": "«قيد التحضير» تعني إن الطلب دخل مرحلة التجهيز. مدة التجهيز المعتادة {مدة_التجهيز}، وتقدر تتابع التحديثات من {رابط_تتبع_الطلب}، أو ترسل لنا رقم الطلب ونراجع لك الحالة.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}",
+    "{مدة_التجهيز}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0172",
+   "source_id": "doc_style-customer-service-master_SUP-0172",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_change_address",
+   "customer_message": "لو غيرت العنوان بعد ما سويت طلب مسبق، هل بيوصل على العنوان الجديد؟",
+   "reply": "تغيير العنوان غالباً يكون ممكن قبل شحن الطلب. ممكن ترسل لنا رقم الطلب والعنوان الجديد؟ بنرفع طلب التعديل لفريق المتجر ونبلغك إذا تم قبوله.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0173",
+   "source_id": "doc_style-customer-service-master_SUP-0173",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_split_shipment",
+   "customer_message": "في إمكانية تقسيم الشحنة لطلب مسبق فيه أكثر من منتج؟",
+   "reply": "ممكن ترسل لنا رقم الطلب؟ بنسأل فريق المتجر عن إمكانية شحن المتوفر أولاً، وأي رسوم شحن إضافية تكون حسب {رسوم_الشحن}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رسوم_الشحن}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0174",
+   "source_id": "doc_style-customer-service-master_SUP-0174",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "preorder_price_changed_after_payment",
+   "customer_message": "أبغى أعرف إذا سعر طلبي المسبق تغيّر بعد الدفع؟",
+   "reply": "ممكن ترسل لنا رقم الطلب؟ بحوّل استفسارك لموظف من فريق المتجر يراجع تفاصيل الدفع ويرد عليك بالتوضيح.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0175",
+   "source_id": "doc_style-customer-service-master_SUP-0175",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_delayed",
+   "customer_message": "لو المنتج تأخر عن الموعد اللي أعلتوه، وش تسوون؟",
+   "reply": "نعتذر عن التأخير. ممكن ترسل لنا رقم الطلب؟ بنراجع حالة الطلب مع فريق المتجر ونرجع لك بتحديث، والخيارات المتاحة مثل الإلغاء تكون حسب {سياسة_الإلغاء}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإلغاء}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0176",
+   "source_id": "doc_style-customer-service-master_SUP-0176",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "preorder_change_payment_method",
+   "customer_message": "أبغى أعدل طريقة الدفع لطلبي المسبق، ممكن؟",
+   "reply": "إمكانية تغيير طريقة الدفع تعتمد على مرحلة الطلب. ممكن ترسل لنا رقم الطلب والطريقة اللي تفضلها؟ بنرفع طلبك لفريق المتجر ونبلغك بالخطوات، ولا ترسل بيانات بطاقتك هنا أبداً.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0177",
+   "source_id": "doc_style-customer-service-master_SUP-0177",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_gift_note",
+   "customer_message": "هل أقدر أطلب هدية مع طلبي المسبق وأحط ورقة تهنئة؟",
+   "reply": "خدمة إضافة بطاقة الإهداء تعتمد على توفرها في المتجر. ممكن ترسل لنا رقم الطلب ونص البطاقة؟ بنتأكد من فريق المتجر إذا الخدمة متاحة وتفاصيلها قبل الشحن.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0178",
+   "source_id": "doc_style-customer-service-master_SUP-0178",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "preorder_return_eligibility",
+   "customer_message": "هل يحق لي استرجاع منتج اشتريته مسبقًا لو ما عجبني؟",
+   "reply": "الإرجاع يكون حسب {سياسة_الإرجاع} خلال {مدة_الاسترداد}، وبعض المنتجات قد تكون مستثناة. ممكن ترسل لنا رقم الطلب واسم المنتج؟ نوضح لك إذا ينطبق عليه الإرجاع أو الاستبدال.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0179",
+   "source_id": "doc_style-customer-service-master_SUP-0179",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_branch_pickup",
+   "customer_message": "لو حبيت أستلم طلبي المسبق من الفرع بدل التوصيل، هل ممكن؟",
+   "reply": "خيار الاستلام من الفرع يعتمد على توفره لدى المتجر. ممكن ترسل لنا رقم الطلب والفرع اللي تفضله؟ بنتأكد من فريق المتجر ونبلغك بالتفاصيل.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0180",
+   "source_id": "doc_style-customer-service-master_SUP-0180",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "preorder_pay_now_or_later",
+   "customer_message": "الطلب المسبق مكتوب \"قيد الانتظار\"، هل لازم أدفع الآن ولا لاحق؟",
+   "reply": "وقت الدفع للطلبات المسبقة يعتمد على إعدادات المتجر لهذا المنتج. ممكن ترسل لنا رقم الطلب؟ نراجع حالة الدفع ونوضح لك إذا مطلوب منك شيء الحين.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0181",
+   "source_id": "doc_style-customer-service-master_SUP-0181",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "preorder_item_out_of_stock_options",
+   "customer_message": "لو المنتج اللي طلبته طلب مسبق نفد، وش الخيارات اللي عندي؟",
+   "reply": "ممكن ترسل لنا رقم الطلب؟ بنراجع مع فريق المتجر الخيارات المتاحة لك مثل البديل أو الانتظار أو الإلغاء، وأي استرداد يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0182",
+   "source_id": "doc_style-customer-service-master_SUP-0182",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_change_size",
+   "customer_message": "هل أقدر أعدل المقاس لطلب مسبق قبل لا يبدأ الشحن؟",
+   "reply": "تعديل المقاس غالباً يكون ممكن قبل الشحن فقط. ممكن ترسل لنا رقم الطلب والمقاس الجديد؟ بنرفع طلبك لفريق المتجر، وإذا ما أمكن التعديل نوضح لك الخيارات الثانية.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0183",
+   "source_id": "doc_style-customer-service-master_SUP-0183",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_track_status",
+   "customer_message": "كيف أتابع حالة طلبي المسبق من جوالي بسرعة؟",
+   "reply": "تقدر تتابع طلبك من {رابط_تتبع_الطلب}، أو من صفحة «طلباتي» في حسابك بالمتجر. وإذا تحب، أرسل رقم الطلب ونراجع لك آخر تحديث.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0081",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0081",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "damaged_item_escalation",
+   "customer_message": "طلبت ساعة رجالية ووصلت وفيها خدش واضح على الشاشة، تواصلت مع الدعم وقالوا انتظر وما صار شي. أبغى تصعيد لأن المنتج غير مطابق.",
+   "reply": "نعتذر، استلام منتج مخدوش شيء مزعج. ممكن ترسل لنا رقم الطلب وصورة واضحة للخدش؟ بحوّل حالتك مباشرة لموظف من فريق المتجر يراجعها ويتواصل معك بالخطوة التالية.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0082",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0082",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "late_delivery_escalation",
+   "customer_message": "وصلت طلبيتي بعد مرور موعد التوصيل المتوقع بيومين وما تلقيت اعتذار أو توضيح من التوصيل، وتواصلت مع خدمة العملاء وما كان فيه تجاوب. أريد تصعيد وشرح السبب وتعويض إذا يناسب.",
+   "reply": "نعتذر عن تأخر وصول طلبك. ممكن ترسل لنا رقم الطلب والمدينة؟ بحوّل الشكوى لموظف من فريق المتجر يراجعها مع شركة الشحن، وطلب التعويض يُنظر فيه حسب سياسة المتجر.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0083",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0083",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "return_refused_escalation",
+   "customer_message": "طلبت منتج وكان مقاسه مختلف وما قبلوا الإرجاع بسهولة، وكل محاولاتي مع الدعم ما جابت نتيجة، أريد تصعيد الشكوى لأن الخدمة غير مرضية.",
+   "reply": "نعتذر عن الصعوبة اللي واجهتها في الإرجاع. ممكن ترسل لنا رقم الطلب والمقاس اللي وصلك وصورة لملصق المنتج؟ بحوّل حالتك لموظف مختص يراجعها حسب {سياسة_الإرجاع} ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0084",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0084",
+   "keep": true,
+   "case_type": "الشكوى",
+   "intent": "agent_misconduct_complaint",
+   "customer_message": "الموظف اللي رد عليّ في المحادثة تعامل بشكل غير لائق وكان تهاون واضح، طلبت تصعيد لأن أسلوبهم غير مقبول وأبي شكوى رسمية.",
+   "reply": "نعتذر عن الأسلوب اللي واجهته، وهذا ما يمثلنا. ممكن ترسل لنا وقت وتاريخ المحادثة أو لقطة شاشة لها؟ بحوّل شكواك لإدارة المتجر للمراجعة ويتواصل معك موظف مختص.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0085",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0085",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "missing_item_in_gift_set",
+   "customer_message": "طلبت مجموعة هدايا لوصلت فيها قطعة ناقصة، تواصلت أكثر من مرة وما حصلت حل، أطالب بتصعيد أو شرح كيف بيتم تعويض العناصر الناقصة.",
+   "reply": "نعتذر عن وصول الطلب ناقص. ممكن ترسل لنا رقم الطلب واسم القطعة الناقصة وصورة لمحتوى الطرد؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويبلغك بالحل المتاح.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0086",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0086",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "warranty_service_not_honored",
+   "customer_message": "خدمة ما بعد البيع وعدتني بصيانة تحت الضمان وما اتبعوا وعدهم، والمندوب ما جا ولا أحد رد عليّ، أريد تصعيد عاجل لأن الضمان مذكور في الفاتورة.",
+   "reply": "نتفهم استياءك من تأخر خدمة الضمان. ممكن ترسل لنا رقم الطلب أو الفاتورة ووصف المشكلة؟ بحوّل الحالة لموظف من فريق المتجر يتابعها حسب شروط الضمان ({مدة_الضمان}) ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0087",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0087",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "discount_not_applied_billing_escalation",
+   "customer_message": "تواصلت مع الدعم أكثر من مرة بخصوص خصم لم يظهر على طلبي رغم أنه مفعل عندي، والدعم رد بطريقة سطحية فقط. أطالب بتصعيد لأن المبلغ مهم.",
+   "reply": "نتفهم قلقك بخصوص الخصم. ممكن ترسل لنا رقم الطلب ولقطة شاشة للخصم؟ بحوّل الحالة لموظف من فريق المتجر يراجع الفاتورة ويرد عليك بالنتيجة.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0088",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0088",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "item_not_as_described_escalation",
+   "customer_message": "المنتج اللي استلمته مختلف عن الوصف على الموقع، وطلبت تبديله لكن قيل لي إن الإجراء مرفوض بدون تفسير واضح. أريد تصعيد الشكوى ومراجعة الوصف والصور على الموقع.",
+   "reply": "نعتذر عن اختلاف المنتج عن الوصف. ممكن ترسل لنا رقم الطلب واسم المنتج أو رابطه مع صور للي وصلك؟ بحوّل الحالة لموظف مختص يراجع الوصف وطلب الاستبدال حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0132",
+   "source_id": "doc_style-customer-service-master_SUP-0132",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_not_working",
+   "customer_message": "الكود اللي عطيتوني ما يشتغل عندي، ليش؟",
+   "reply": "تأكد إن الكود منسوخ كامل بدون مسافات، وإن المنتجات في السلة مشمولة بالعرض. أحياناً يكون للكود تاريخ انتهاء أو حد أدنى أو عدد استخدام محدد حسب {شروط_العرض}. إذا استمرت المشكلة، أرسل لنا لقطة شاشة لرسالة الخطأ ونراجعها.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0133",
+   "source_id": "doc_style-customer-service-master_SUP-0133",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_stacking_with_offer",
+   "customer_message": "هل أقدر أستخدم كوبون على منتج عليه عرض ثاني؟",
+   "reply": "بعض العروض تقبل الجمع مع الكوبونات وبعضها لا، وهذا يكون موضح في {شروط_العرض}. إذا ما كانت الشروط واضحة، أرسل لنا اسم العرض والكوبون ونتأكد لك.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0134",
+   "source_id": "doc_style-customer-service-master_SUP-0134",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_percentage_not_applied",
+   "customer_message": "الكوبون مكتوب عليه خصم بس لما أطبقه ما ينخصم، وش السالفة؟",
+   "reply": "بعض الكوبونات تشمل منتجات معينة فقط أو ما تنطبق على المنتجات المخفضة مسبقاً. شيّك على صفحة المنتج أو {شروط_العرض}. إذا استمرت المشكلة، أرسل لنا اسم المنتج ولقطة شاشة للسلة ونراجعها.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0135",
+   "source_id": "doc_style-customer-service-master_SUP-0135",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "auto_discount_or_code",
+   "customer_message": "تفعلون الخصم على طول ولا لازم أدخل كود؟",
+   "reply": "بعض الخصومات تنطبق تلقائياً في السلة، وبعضها يحتاج إدخال كود قبل الدفع، وهذا يكون موضح في صفحة العرض. إذا المفروض ينطبق وما ظهر، أرسل لنا لقطة شاشة للسلة ونراجعها.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0137",
+   "source_id": "doc_style-customer-service-master_SUP-0137",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_online_vs_branch",
+   "customer_message": "هل الكوبون يشتغل على كل الفروع ولا بس على النت؟",
+   "reply": "نطاق استخدام الكوبون (المتجر الإلكتروني أو الفروع) يكون موضح في {شروط_العرض}. إذا ما لقيت التفصيل، أرسل لنا اسم الكوبون ونتأكد لك من فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0138",
+   "source_id": "doc_style-customer-service-master_SUP-0138",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "discount_missed_after_payment",
+   "customer_message": "طلبي كان عليه خصم وما انطبق بعد الدفع، أقدر أسترجع الفرق؟",
+   "reply": "نتفهم ذلك. ممكن ترسل لنا رقم الطلب ولقطة شاشة للعرض؟ بحوّل الحالة لموظف من فريق المتجر يراجعها حسب {شروط_العرض} ويرد عليك بالنتيجة.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0139",
+   "source_id": "doc_style-customer-service-master_SUP-0139",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "activate_loyalty_coupon",
+   "customer_message": "كيف أفعل كوبون الولاء اللي وصلني على الإيميل؟",
+   "reply": "افتح الرابط اللي في الإيميل، أو انسخ الكوبون والصقه في خانة كود الخصم بالسلة قبل الدفع، وتأكد إنك مسجل دخول بنفس الحساب اللي وصله الإيميل. إذا ما اشتغل، أرسل لنا لقطة شاشة لرسالة الخطأ ونراجعها.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0140",
+   "source_id": "doc_style-customer-service-master_SUP-0140",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_already_used_error",
+   "customer_message": "الموقع يقول الكوبون مستخدم مسبقًا وأنا ما استخدمته، وش أسوي؟",
+   "reply": "ممكن ترسل لنا لقطة شاشة لرسالة الخطأ؟ بنرفعها لفريق المتجر يراجع سجل استخدام الكوبون ويبلغك بالنتيجة.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0141",
+   "source_id": "doc_style-customer-service-master_SUP-0141",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "app_only_coupon",
+   "customer_message": "فيه كوبون خصم خاص بالتطبيق، وين أقدر أستخدمه؟",
+   "reply": "إذا العرض خاص بالتطبيق، لازم تكمل الطلب من تطبيق المتجر وتدخل الكود في خانة الخصم قبل الدفع. وإذا ما ظهر الخصم بعد تحديث التطبيق، أرسل لنا لقطة شاشة للسلة ونراجعها.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0142",
+   "source_id": "doc_style-customer-service-master_SUP-0142",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_usage_limit",
+   "customer_message": "هل في حد أقصى لاستخدام نفس الكوبون؟",
+   "reply": "بعض الكوبونات تُستخدم مرة وحدة لكل حساب، وبعضها لعدد مرات أو لعملاء محددين، وهذا موضح في {شروط_العرض}. إذا تحب نتأكد من حالة كوبونك، أرسل لنا اسمه.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0143",
+   "source_id": "doc_style-customer-service-master_SUP-0143",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_eligible_products",
+   "customer_message": "الكود فيه خصم بس لمنتجات معينة، كيف أعرف وش هي؟",
+   "reply": "المنتجات المشمولة تكون عادة موضحة في صفحة العرض أو {شروط_العرض}. إذا ما كانت واضحة، أرسل لنا اسم الكوبون ونتأكد لك من المنتجات المشمولة.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0144",
+   "source_id": "doc_style-customer-service-master_SUP-0144",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "coupon_order_cancelled_refund",
+   "customer_message": "لو استخدمت كوبون وبعدين ألغيت الطلب، ينحسب علي ولا يرجع؟",
+   "reply": "إرجاع الكوبون أو المبلغ بعد الإلغاء يكون حسب {سياسة_الإلغاء} و{شروط_العرض}. ممكن ترسل لنا رقم الطلب؟ بنراجع حالته مع فريق المتجر ونوضح لك.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإلغاء}",
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0145",
+   "source_id": "doc_style-customer-service-master_SUP-0145",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_targeted_customers",
+   "customer_message": "وصلني كوبون لكن مكتوب له 'لعملاء محددين'، وش يعني؟",
+   "reply": "«لعملاء محددين» تعني إن العرض مخصص لفئة معينة من العملاء. إذا وصلك الكوبون وما اشتغل معك، أرسل لنا لقطة شاشة للرسالة اللي وصلتك ونتأكد من فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0146",
+   "source_id": "doc_style-customer-service-master_SUP-0146",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_with_loyalty_points",
+   "customer_message": "هل أقدر أستخدم كود خصم مع نقاط الولاء؟",
+   "reply": "إمكانية الجمع بين كود الخصم ونقاط الولاء تعتمد على {شروط_العرض} وبرنامج الولاء في المتجر، وتقدر تشوف ذلك في صفحة الدفع. إذا ما كان واضح، أرسل لنا نوع الخصم ونتأكد لك.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0148",
+   "source_id": "doc_style-customer-service-master_SUP-0148",
+   "keep": true,
+   "case_type": "الأسعار",
+   "intent": "price_dropped_after_purchase",
+   "customer_message": "لو اشتريت بخصم وبعدها المنتج طلع عليه خصم أكبر، ليش ما ينطبق علي؟",
+   "reply": "نتفهم ذلك. تعديل السعر على طلب قائم يكون حسب سياسة المتجر فقط. ممكن ترسل لنا رقم الطلب؟ بحوّل استفسارك لموظف من فريق المتجر يراجعه ويرد عليك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0074",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0074",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_status_in_preparation_3_days",
+   "customer_message": "حالة طلبي «قيد التجهيز» من ثلاث أيام، هذا تأخير ولا عادي؟",
+   "reply": "مدة التجهيز المعتادة {مدة_التجهيز} حسب المنتج وتوفره. ممكن ترسل لنا رقم الطلب؟ نراجع حالته ونبلغك إذا فيه تأخير.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_التجهيز}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0076",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0076",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "paid_but_status_awaiting_payment",
+   "customer_message": "الحالة عندي 'انتظار الدفع' مع إنّي دفعت قبل يومين، وش المطلوب؟",
+   "reply": "نتفهم قلقك. ممكن ترسل لنا رقم الطلب وتاريخ الدفع؟ بحوّل الحالة لموظف من فريق المتجر يطابق الدفع مع الطلب ويتواصل معك. ولا ترسل بيانات بطاقتك أو أي رمز تحقق هنا.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0077",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0077",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "delivery_time_after_preparation",
+   "customer_message": "بعد ما يجهز الطلب المسبق، كم ياخذ التوصيل عادةً؟",
+   "reply": "مدة التوصيل بعد التجهيز {مدة_التوصيل} حسب مدينتك وشركة الشحن. وتقدر تتابع شحنتك من {رابط_تتبع_الطلب} بعد شحن الطلب.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}",
+    "{مدة_التوصيل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0078",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0078",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_cancel_in_preparation",
+   "customer_message": "أبغى ألغي طلب مسبق، الحالة حالياً قيد التجهيز، هل ينفع ألغي؟",
+   "reply": "إمكانية الإلغاء في مرحلة التجهيز تكون حسب {سياسة_الإلغاء}. ممكن ترسل لنا رقم الطلب؟ بنرفع طلب الإلغاء لفريق المتجر ونبلغك بالنتيجة.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإلغاء}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0079",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0079",
+   "keep": true,
+   "case_type": "الطلبات المسبقة",
+   "intent": "preorder_ship_soon_no_update",
+   "customer_message": "الحالة عندي مكتوبة 'سيتم الشحن قريبًا' من أسبوع وما في تغيير، فيه تحديث؟",
+   "reply": "«سيتم الشحن قريباً» حالة عامة تبقى لين يتحدد موعد الشحن. ممكن ترسل لنا رقم الطلب؟ نراجع حالته مع فريق المتجر ونرجع لك بتحديث.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0049",
+   "source_id": "doc_style-customer-service-master_SUP-0049",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "size_advice_shirt",
+   "customer_message": "مو متأكد أي مقاس أطلب لقميص رجالي، صدري ١٠٥ سم وخصري ٩٠، وش تنصحني؟",
+   "reply": "قارن قياساتك بجدول المقاسات في صفحة المنتج. وإذا كنت بين مقاسين، القماش غير المطاطي غالباً يريحه المقاس الأكبر. وإذا تبي، أرسل لنا اسم المنتج ونساعدك بالمقارنة.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0050",
+   "source_id": "doc_style-customer-service-master_SUP-0050",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "exchange_size_too_tight",
+   "customer_message": "المقاس اللي طلبته ضيّق عليّ، أقدر أبدله ولا كيف الطريقة؟",
+   "reply": "تقدر تطلب استبدال المقاس حسب {سياسة_الإرجاع} خلال {مدة_الاسترداد}. ممكن ترسل لنا رقم الطلب والمقاس اللي تبيه؟ نوضح لك الخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0051",
+   "source_id": "doc_style-customer-service-master_SUP-0051",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "how_to_measure",
+   "customer_message": "الجدول في صفحة المنتج بالسنتيمتر وأنا ما أعرف أقيس، كيف أسوي؟",
+   "reply": "استخدم شريط قياس مرن: الصدر عند أوسع نقطة، والخصر عند الخصر الطبيعي، والورك عند أعرض نقطة. بعدها قارن الأرقام بالجدول، وإذا تبي أرسل لنا قياساتك واسم المنتج ونساعدك.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0052",
+   "source_id": "doc_style-customer-service-master_SUP-0052",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "between_two_sizes",
+   "customer_message": "أنا بين مقاسين في الجدول، أخذ الأصغر ولا الأكبر؟",
+   "reply": "إذا تحب القصة ضيقة والقماش مطاطي، الأصغر ممكن يناسب. وإذا تفضل الراحة أو القماش ما يتمدد، الأكبر غالباً أنسب. وشيّك على {سياسة_الإرجاع} قبل الطلب.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0054",
+   "source_id": "doc_style-customer-service-master_SUP-0054",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "store_sizes_vs_international",
+   "customer_message": "هل المقاسات في الموقع نفس المقاسات العالمية ولا تختلف؟",
+   "reply": "المقاسات تختلف حسب الماركة والموديل، فالأفضل تعتمد على جدول المقاسات في صفحة كل منتج، وتقرأ وصف القصة إذا كانت ضيقة أو واسعة.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0055",
+   "source_id": "doc_style-customer-service-master_SUP-0055",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "pants_too_long",
+   "customer_message": "البنطلون اللي طلبته قصته طويلة، ممكن أعيد قصه أو أبدله؟",
+   "reply": "عندك خيار التعديل عند خياط، أو طلب استبدال بمقاس ثاني حسب {سياسة_الإرجاع}. وإذا ناوي تستبدل، خلّ القطعة بحالتها وتغليفها.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0056",
+   "source_id": "doc_style-customer-service-master_SUP-0056",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "full_size_chart_request",
+   "customer_message": "المقاسات المكتوبة في المنتج مو واضحة، أقدر أشوف جدول كامل؟",
+   "reply": "جدول المقاسات يكون عادة في صفحة المنتج أو ضمن الوصف. إذا ما ظهر لك، جرب تحدّث الصفحة، أو أرسل لنا اسم المنتج ونتأكد لك من القياسات المتوفرة.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0057",
+   "source_id": "doc_style-customer-service-master_SUP-0057",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "model_photo_size_reference",
+   "customer_message": "هل القياس على الموديل في الصور يمثّل القياس الحقيقي؟ طوله 180 وشكله مضبوط.",
+   "reply": "صور الموديل تعطيك فكرة عن شكل اللبس، لكنها تعتمد على طوله ومقاسه. المرجع الأدق هو جدول المقاسات في صفحة المنتج. وإذا تبي، أرسل لنا اسم المنتج وقياساتك ونساعدك.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0058",
+   "source_id": "doc_style-customer-service-master_SUP-0058",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "dress_sleeve_length_return",
+   "customer_message": "اشتريت فستان والكم أطول من المذكور في المقاسات، أقدر أرجعه؟",
+   "reply": "إذا القياس يختلف عن المذكور، تقدر تطلب الإرجاع أو الاستبدال حسب {سياسة_الإرجاع} خلال {مدة_الاسترداد}. ممكن ترسل لنا رقم الطلب وصورة توضح الطول؟ ونوضح لك الخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0059",
+   "source_id": "doc_style-customer-service-master_SUP-0059",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "size_letter_across_brands",
+   "customer_message": "أنا أستعمل ماركة ثانية عادة مقاسي M، هل أطلب نفس المقاس؟",
+   "reply": "حرف المقاس يختلف بين الماركات، فالأفضل تقيس صدرك وخصرك وتقارن بالأرقام في جدول صفحة المنتج بدل الاعتماد على الحرف.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0060",
+   "source_id": "doc_style-customer-service-master_SUP-0060",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "cotton_shrinkage_size_choice",
+   "customer_message": "هل الملابس القطنية تنكمش بعد الغسيل؟ لازم آخذ مقاس أكبر؟",
+   "reply": "بعض الأقمشة القطنية تنكمش شوي مع الغسيل الحار أو التجفيف بالحرارة. راجع نوع القماش وتعليمات الغسيل في وصف المنتج، وإذا فيه نسبة قماش مطاطي غالباً يكفيك مقاسك المعتاد.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0061",
+   "source_id": "doc_style-customer-service-master_SUP-0061",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "bag_dimensions",
+   "customer_message": "كيف أعرف إن حجم الشنطة الصغيرة مناسب لي؟",
+   "reply": "قس شنطة عندك مريحة لك (العرض والارتفاع والعمق) وقارنها بالأبعاد المذكورة في صفحة المنتج. وإذا ما كانت الأبعاد مذكورة، أرسل لنا اسم المنتج ونتأكد لك.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0062",
+   "source_id": "doc_style-customer-service-master_SUP-0062",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "kids_size_exchange",
+   "customer_message": "لبس الطفل السترة يومين وطلعت صغيرة، نقدر نبدلها؟",
+   "reply": "الاستبدال يكون حسب {سياسة_الإرجاع} خلال {مدة_الاسترداد}، وبعض الشروط تتعلق بحالة القطعة. ممكن ترسل لنا رقم الطلب؟ نوضح لك إذا ينطبق عليها الاستبدال والخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0063",
+   "source_id": "doc_style-customer-service-master_SUP-0063",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "fit_type_slim_or_regular",
+   "customer_message": "كيف أعرف إذا القميص تم قصه ضيق أو هذا حجمه الطبيعي؟",
+   "reply": "نوع القصة (ضيقة، عادية، واسعة) يكون عادة مذكور في وصف المنتج. وإذا ما كان مذكور، أرسل لنا اسم المنتج ونتأكد لك.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0064",
+   "source_id": "doc_style-customer-service-master_SUP-0064",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "exchange_duration",
+   "customer_message": "لو طلبت مقاس جديد وين يوصله لي ـ هل يحتاج وقت طويل للاستبدال؟",
+   "reply": "مدة الاستبدال تشمل استلام القطعة وفحصها ثم شحن المقاس الجديد، وتكون حسب {سياسة_الإرجاع} و{مدة_التوصيل}. تقدر تبدأ الطلب من حسابك، أو ترسل لنا رقم الطلب ونوضح لك الخطوات.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{مدة_التوصيل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0065",
+   "source_id": "doc_style-customer-service-master_SUP-0065",
+   "keep": true,
+   "case_type": "المقاسات",
+   "intent": "avoid_ordering_too_large",
+   "customer_message": "أخاف أطلب مقاس أكبر ويطلع واسع مرة، كيف أتجنّب هالمشكلة؟",
+   "reply": "قس نفسك بدقة وقارن بجدول المنتج، واقرأ وصف القصة ونوع القماش، وشوف تقييمات العملاء إذا فيها ملاحظات عن المقاس. وإذا تبي، أرسل لنا قياساتك واسم المنتج ونساعدك.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0041",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0041",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_after_cancellation_not_received",
+   "customer_message": "ألغيت طلبي أمس ولحد الآن ما وصل المبلغ. متى يرجع؟",
+   "reply": "نتفهم انتظارك. مدة ظهور المبلغ بعد الإلغاء {مدة_الاسترداد} حسب طريقة الدفع والبنك. ممكن ترسل لنا رقم الطلب؟ بحوّل حالتك لموظف من فريق المتجر يراجع حالة الاسترداد ويبلغك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0043",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0043",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_not_reflected_bank_no_transaction",
+   "customer_message": "لغيت الطلب قبل شحنه، بس المبلغ ما رجع. البنك يقول ما في حركة. كيف نرتبها؟",
+   "reply": "نتفهم ذلك. ممكن ترسل لنا رقم الطلب وتاريخ الإلغاء؟ بحوّل الحالة لموظف من فريق المتجر يراجعها مع مزود الدفع ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0044",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0044",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_to_same_card_not_received",
+   "customer_message": "ألغيت طلبي، واخترت استلام المبلغ على نفس البطاقة. لماذا لم يحدث الاسترداد؟",
+   "reply": "نتفهم استفسارك. ممكن ترسل لنا رقم الطلب وتاريخه فقط؟ بحوّل الحالة لموظف من فريق المتجر يراجع الاسترداد. ولا ترسل أي أرقام من بطاقتك هنا.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0045",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0045",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_expedite_request",
+   "customer_message": "تراني أحتاج المبلغ بسرعة، طلب الإلغاء تم قبل أسبوع. هل فيه تسريع؟",
+   "reply": "نتفهم حاجتك للمبلغ. ممكن ترسل لنا رقم الطلب؟ بحوّل طلبك لموظف من فريق المتجر يراجع حالة الاسترداد ويبلغك بالخيارات المتاحة، مع العلم إن المدة المعتادة {مدة_الاسترداد}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0047",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0047",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "refund_method_bank_transfer",
+   "customer_message": "هل يرجع المبلغ بنفس الطريقة اللي دفعت فيها؟ دفعت بتحويل بنكي.",
+   "reply": "طريقة ومدة الاسترداد تكون حسب {سياسة_الإرجاع}. ممكن ترسل لنا رقم الطلب؟ بحوّل استفسارك لموظف من فريق المتجر يأكد لك طريقة الاسترداد لطلبك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0099",
+   "source_id": "doc_style-customer-service-master_SUP-0099",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "color_size_restock",
+   "customer_message": "اللون الأزرق من الجاكيت خلص في مقاس M، متى يرجع؟",
+   "reply": "نعتذر إن اللون خلص. موعد رجوع المخزون ما يكون محدد دائماً، فإذا صفحة المنتج فيها خيار «أعلمني عند التوفر» تقدر تفعّله. وإذا تبي، نساعدك تشوف لون أو مقاس قريب متوفر الحين.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0100",
+   "source_id": "doc_style-customer-service-master_SUP-0100",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "reserve_product_hold",
+   "customer_message": "أبغى أحجز جوال رمادي، ينفع تحتفظون فيه لين أفضى؟",
+   "reply": "خدمة الحجز تعتمد على توفرها لدى المتجر. ممكن ترسل لنا اسم المنتج أو الموديل؟ بنتأكد من فريق المتجر إذا الحجز متاح ومدته.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0102",
+   "source_id": "doc_style-customer-service-master_SUP-0102",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "restock_needed_for_event",
+   "customer_message": "ممكن ترجعون اللون اللي خلص خلال أسبوعين؟ أحتاجه لمناسبة.",
+   "reply": "نفهم أهمية التوقيت عندك. ما نقدر نأكد موعد رجوع المخزون، بس نقدر نسأل فريق المتجر إذا فيه موعد متوقع. وإذا الوقت ضيق، نساعدك تشوف بديل قريب متوفر الحين.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0103",
+   "source_id": "doc_style-customer-service-master_SUP-0103",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "reserve_in_branch_stock",
+   "customer_message": "التيشيرت اللي أبيه موجود بمخزن المدينة بس ما يطلع أونلاين، أقدر أحجزه للاستلام؟",
+   "reply": "حجز منتج من فرع يعتمد على الخدمات المتاحة لدى المتجر. ممكن ترسل لنا اسم المنتج والفرع؟ بنتأكد من فريق المتجر ونبلغك بالمتاح.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0104",
+   "source_id": "doc_style-customer-service-master_SUP-0104",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "shoe_size_out_of_stock_advice",
+   "customer_message": "مقاس ٤٢ من الحذاء اللي أبيه خلص، تنصحوني آخذ ٤١ ولا ٤٣؟",
+   "reply": "المقاس يختلف حسب الماركة والقالب، فالأفضل تقارن طول قدمك بجدول المقاسات في صفحة المنتج. وإذا تحب ننتظر رجوع مقاس ٤٢، فعّل خيار التنبيه عند التوفر إن وجد، والاستبدال لاحقاً يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0105",
+   "source_id": "doc_style-customer-service-master_SUP-0105",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "order_delayed_item_out_of_stock",
+   "customer_message": "طلبي تأخر لأن قطعة فيه خلصت، متى ترجع؟",
+   "reply": "نعتذر عن التأخير. ممكن ترسل لنا رقم الطلب؟ بنراجع مع فريق المتجر إذا فيه موعد متوقع للقطعة، ونوضح لك الخيارات مثل شحن الباقي أو إلغاء القطعة المتأخرة حسب {سياسة_الإلغاء}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإلغاء}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0106",
+   "source_id": "doc_style-customer-service-master_SUP-0106",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "suggest_alternative_same_style",
+   "customer_message": "لو اللون اللي أبيه خلص، تقدرون ترشحون لي قطعة بديلة بنفس الستايل؟",
+   "reply": "أكيد. أرسل لنا اسم المنتج أو رابطه، ونقترح لك بدائل قريبة متوفرة الحين، وتقدر تشوف السعر والتفاصيل في صفحة كل منتج.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0107",
+   "source_id": "doc_style-customer-service-master_SUP-0107",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "preorder_unavailable_product",
+   "customer_message": "إذا المنتج مو متوفر الحين، أقدر أطلبه طلب مسبق؟",
+   "reply": "بعض المنتجات تتوفر بنظام الطلب المسبق، ويكون ذلك واضح في صفحة المنتج مع {مدة_التجهيز}. أرسل لنا اسم المنتج ونتأكد لك إذا الخيار متاح.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_التجهيز}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0108",
+   "source_id": "doc_style-customer-service-master_SUP-0108",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "auto_cancel_or_replace_if_late",
+   "customer_message": "لو المنتج ما وصل في وقته، ترتبون لي إلغاء أو تبديل تلقائي؟",
+   "reply": "ما نغيّر أو نلغي أي شيء بدون موافقتك. إذا تأخر المنتج، أرسل لنا رقم الطلب وبنرفع طلبك (إلغاء أو تبديل) لفريق المتجر، والإلغاء يكون حسب {سياسة_الإلغاء}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإلغاء}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0109",
+   "source_id": "doc_style-customer-service-master_SUP-0109",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "ship_available_items_first",
+   "customer_message": "لون واحد من العبوة خلص، تقدرون تبعثون الباقي الحين وتكملون الباقي بعدين؟",
+   "reply": "ممكن ترسل لنا رقم الطلب؟ بنسأل فريق المتجر إذا ممكن شحن المتوفر أولاً والباقي بعدين، أو انتظار اكتمال الطلب حسب اختيارك، وأي رسوم إضافية تكون حسب {رسوم_الشحن}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رسوم_الشحن}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0110",
+   "source_id": "doc_style-customer-service-master_SUP-0110",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "ship_from_distant_branch",
+   "customer_message": "اللون اللي أبيه متوفر بس في فرع بعيد، فيه شحن من الفرع؟",
+   "reply": "خيارات الشحن من الفروع تعتمد على خدمات المتجر. أرسل لنا اسم المنتج والفرع ونتأكد لك، والرسوم والمدة تكون حسب {رسوم_الشحن} و{مدة_التوصيل}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رسوم_الشحن}",
+    "{مدة_التوصيل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0111",
+   "source_id": "doc_style-customer-service-master_SUP-0111",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "restock_notification_signup",
+   "customer_message": "لو عطيتكم رقمي، تنبهوني إذا رجع المقاس؟",
+   "reply": "إذا صفحة المنتج فيها خيار «أعلمني عند التوفر» تقدر تفعّله ويوصلك التنبيه. وإذا ما كان الخيار موجود، أرسل لنا اسم المنتج والمقاس ونسأل فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0112",
+   "source_id": "doc_style-customer-service-master_SUP-0112",
+   "keep": true,
+   "case_type": "الدفع",
+   "intent": "partial_charge_item_unavailable",
+   "customer_message": "طلبت كم قطعة ووحدة منها خلصت، ينخصم المبلغ كامل ولا جزء؟",
+   "reply": "ممكن ترسل لنا رقم الطلب؟ بحوّل استفسارك لموظف من فريق المتجر يوضح لك المبلغ المستحق، وأي استرداد للقطعة غير المتوفرة يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0113",
+   "source_id": "doc_style-customer-service-master_SUP-0113",
+   "keep": true,
+   "case_type": "الأسعار",
+   "intent": "hold_expired_price_changed",
+   "customer_message": "حجزت منتج وانتهت مدة الحجز، وش أسوي إذا السعر تغيّر؟",
+   "reply": "السعر الحالي يكون ظاهر في صفحة المنتج. وإذا عندك استفسار عن سعر الحجز السابق، أرسل لنا اسم المنتج وبحوّلك لموظف من فريق المتجر يوضح لك.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0114",
+   "source_id": "doc_style-customer-service-master_SUP-0114",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "wait_restock_or_buy_alternative",
+   "customer_message": "تنصحوني أنتظر رجوع المنتج ولا آخذ بديل أرخص؟",
+   "reply": "إذا المنتج الأصلي مهم لك بمواصفاته والوقت يسمح، الانتظار خيار. وإذا تحتاجه الحين، نقدر نقترح بدائل قريبة وتقارن أسعارها وتفاصيلها من صفحة كل منتج.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0049",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0049",
+   "keep": true,
+   "case_type": "الأسعار",
+   "intent": "competitor_price_comparison",
+   "customer_message": "شفت نفس المنتج في متجر ثاني أرخص، بس عندكم تفاصيل أكثر عن الضمان والمواصفات. هل الفرق في السعر يستاهل؟ ما أبي أدفع زيادة بدون سبب.",
+   "reply": "نقدّر سؤالك. نقدر نوضح لك اللي يشمله المنتج عندنا مثل {مدة_الضمان} والمواصفات والملحقات كما هي مذكورة في صفحة المنتج. وإذا تبي مقارنة أدق، أرسل لنا اسم المنتج ونراجع التفاصيل.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0052",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0052",
+   "keep": true,
+   "case_type": "الأسعار",
+   "intent": "price_increased_explanation",
+   "customer_message": "اشتريت منتج من عندكم قبل فترة بسعر أقل، والحين السعر ارتفع بدون توضيح. هل فيه تحديث بالمنتج ولا هي سياسة أسعار؟",
+   "reply": "نتفهم استفسارك. أسعار المنتجات يحددها المتجر، والسعر الحالي يكون في صفحة المنتج. أرسل لنا اسم المنتج وبحوّل سؤالك لفريق المتجر يوضح لك إذا فيه تحديث في المواصفات.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0053",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0053",
+   "keep": true,
+   "case_type": "الأسعار",
+   "intent": "accessories_originality_vs_competitor",
+   "customer_message": "بائع ثاني عنده نفس الجهاز أرخص، بس عندكم ملحقات مختلفة. هل الملحقات أصلية ومضمونة ولا الفرق بس اسم الماركة؟",
+   "reply": "الملحقات وحالتها والضمان تكون مذكورة في صفحة المنتج. أرسل لنا اسم المنتج ونتأكد لك من فريق المتجر عن تفاصيل الملحقات و{مدة_الضمان}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0054",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0054",
+   "keep": true,
+   "case_type": "الأسعار",
+   "intent": "quantity_discount_request",
+   "customer_message": "في عرض منافس قيم المنتج أقل مع خصم على الكميات، بينما سعركم للقطعة أعلى بدون خصومات. أنا بحاجة لمعرفة إذا عندكم عروض للكمية أو فوائد أخرى (تركيب، فحص، كفالة) تبرر الفرق. لا أبحث عن عذر، أبغى مقارنة عملية بين ما أقدمه لي المنافس وما تقدمونه أنتم.",
+   "reply": "إذا تبي تشتري كمية، أرسل لنا اسم المنتج والكمية، وبحوّل طلبك لفريق المتجر يوضح لك إذا فيه عروض كميات أو خدمات إضافية حسب {شروط_العرض}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0055",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0055",
+   "keep": true,
+   "case_type": "الأسعار",
+   "intent": "local_support_coverage",
+   "customer_message": "لقيت منتج مشابه بسعر أرخص لكن بدون ذكر كفالة أو دعم محلي، وسعركم أعلى لكن مكتوب توفير دعم محلي. هل الدعم المحلي فعلاً يغطي أي خدمة بعد الشراء؟ لو الدعم محدود، ما ينفع أخلص الفرق الكبير بس للدعم. أبغى تحديد واضح قبل ما أقرر الشراء.",
+   "reply": "سؤال في محله. نطاق الدعم بعد الشراء يختلف حسب المنتج، وتفاصيله تكون حسب {مدة_الضمان} والمذكور في صفحة المنتج. أرسل لنا اسم المنتج ونتأكد لك من فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0017",
+   "source_id": "doc_style-customer-service-master_SUP-0017",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "verify_watch_authenticity",
+   "customer_message": "وصلتني ساعة وأبي أتأكد إنها أصلية، كيف أتحقق؟",
+   "reply": "ممكن ترسل لنا رقم الطلب وصور واضحة للعلبة والرقم التسلسلي على ظهر الساعة؟ بحوّل طلبك لموظف من فريق المتجر يراجعها ويتواصل معك بالنتيجة والخيارات حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0018",
+   "source_id": "doc_style-customer-service-master_SUP-0018",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "fabric_not_as_described",
+   "customer_message": "الخامة المكتوبة قطن 100% لكن تحسها صناعية، هل ممكن أستبدلها؟",
+   "reply": "نتفهم شكك. ممكن ترسل لنا رقم الطلب وصورة قريبة للقماش وصورة للملصق الداخلي؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك الخيارات حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0019",
+   "source_id": "doc_style-customer-service-master_SUP-0019",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "loose_thread_defect",
+   "customer_message": "وصلت البلوزة فيها خيط مفكوك من داخل، ايش أسوي الحين؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصورة توضح الخيط؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك خيار الاستبدال أو الإرجاع حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0020",
+   "source_id": "doc_style-customer-service-master_SUP-0020",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "damaged_box_scratched_item",
+   "customer_message": "العلبة ممزقة والمنتج اللي داخلها فيه خدش، كيف أطالب بتعويض؟",
+   "reply": "نعتذر عن وصول طلبك بهالحالة. ممكن ترسل لنا رقم الطلب وصور للعلبة من كل الجهات وصورة للخدش؟ بحوّل حالتك لموظف من فريق المتجر يراجعها ويتواصل معك بالخيارات المتاحة.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0021",
+   "source_id": "doc_style-customer-service-master_SUP-0021",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "color_differs_from_photo",
+   "customer_message": "اللون اللي استلمته يختلف عن الصورة، أقدر أرجع أو أبدله؟",
+   "reply": "نتفهم ذلك. ممكن ترسل لنا رقم الطلب وصورة للمنتج بإضاءة طبيعية؟ نراجعها مع فريق المتجر، والاستبدال أو الإرجاع يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0022",
+   "source_id": "doc_style-customer-service-master_SUP-0022",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "strong_chemical_smell",
+   "customer_message": "التيشيرت ريحته كيماويات قوية، هذا طبيعي؟",
+   "reply": "نتفهم قلقك. يفضّل ما تستخدمه الحين. ممكن ترسل لنا رقم الطلب وصورة للملصق؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك الخيارات حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0023",
+   "source_id": "doc_style-customer-service-master_SUP-0023",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "missing_accessory_in_box",
+   "customer_message": "الملحق ناقص داخل العلبة، وش الخطوة؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصورة لمحتوى العلبة؟ بنرفع الحالة لفريق المتجر يراجعها ويبلغك بالحل المتاح.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0024",
+   "source_id": "doc_style-customer-service-master_SUP-0024",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "plastic_cracked_after_one_day",
+   "customer_message": "الجزء البلاستيك في المنتج تشقّق بعد يوم واحد، هذا طبيعي؟",
+   "reply": "هذا يحتاج مراجعة. ممكن ترسل لنا رقم الطلب وصور للتشقق أو مقطع قصير؟ بحوّل الحالة لموظف من فريق المتجر يراجعها حسب شروط الضمان ({مدة_الضمان}) ويتواصل معك.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0025",
+   "source_id": "doc_style-customer-service-master_SUP-0025",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "embroidery_defect_warranty",
+   "customer_message": "خيط التطريز خربان وكأنه عيب مصنع، هل يغطيه الضمان؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصورة قريبة للتطريز وصورة للقطعة كاملة؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك إذا تنطبق عليها {سياسة_الإرجاع} أو شروط الضمان.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0026",
+   "source_id": "doc_style-customer-service-master_SUP-0026",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "item_smaller_than_described",
+   "customer_message": "حجم المنتج جاني أصغر بكثير من اللي طلبته، أقدر أستبدله؟",
+   "reply": "نتفهم ذلك. ممكن ترسل لنا رقم الطلب وصورة للمنتج جنب شريط قياس؟ نراجعها مع فريق المتجر مقارنة بالوصف، والاستبدال أو الإرجاع يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0027",
+   "source_id": "doc_style-customer-service-master_SUP-0027",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "color_bleeding_after_wash",
+   "customer_message": "بعد الغسيل الطقم صار يطلع لون، وش أسوي؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصورة للطقم وصورة لملصق تعليمات الغسيل؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويتواصل معك بالخيارات المتاحة.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0028",
+   "source_id": "doc_style-customer-service-master_SUP-0028",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "print_peeling_warranty",
+   "customer_message": "الطباعة بدأت تتقشر بعد استخدام خفيف، فيه ضمان عليها؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصور قريبة للطباعة؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك الخيارات حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0029",
+   "source_id": "doc_style-customer-service-master_SUP-0029",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "zipper_broken_first_use",
+   "customer_message": "السحّاب انكسر من أول مرة فتحته، ينفع نبدله؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصور توضح السحّاب؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك خيار الاستبدال أو الإرجاع حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0030",
+   "source_id": "doc_style-customer-service-master_SUP-0030",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "tech_specs_mismatch",
+   "customer_message": "المنتج اللي استلمته غير مطابق للمواصفات التقنية المذكورة، ممكن استرجاع؟",
+   "reply": "نتفهم ذلك. ممكن ترسل لنا رقم الطلب والمواصفة المذكورة مقابل اللي لاحظته، مع صور أو لقطة شاشة؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك الخيارات حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0031",
+   "source_id": "doc_style-customer-service-master_SUP-0031",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "warranty_claim_how_to",
+   "customer_message": "اشتريت منتج عليه ضمان، كيف أقدم مطالبة؟",
+   "reply": "ممكن ترسل لنا رقم الطلب ووصف العيب مع صور؟ بحوّل مطالبتك لموظف من فريق المتجر يراجعها حسب شروط الضمان ({مدة_الضمان}) ويتواصل معك بالخطوات.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0032",
+   "source_id": "doc_style-customer-service-master_SUP-0032",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "broke_after_light_use_inspection",
+   "customer_message": "القطعة انكسرت بعد استخدام بسيط، هل لازم أرسلها للمعاينة ولا تعطوني قرار بسرعة؟",
+   "reply": "نفهم إنك تبي قرار سريع. ممكن ترسل لنا رقم الطلب وصورة للكسر ووصف مختصر للاستخدام؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك إذا تحتاج إرسال القطعة للفحص.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0033",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0033",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "shown_available_sold_out_at_checkout",
+   "customer_message": "شاهدت المنتج على الصفحة وكتب إنه متوفر، لكن عند الدفع طلع إنه نفد. أبيه اليوم، هل تقدرون توفره؟",
+   "reply": "نعتذر عن الإزعاج، أحياناً يتحدث المخزون أثناء الطلب. تفضّل نقترح لك بديل قريب متوفر، ولا تفعّل تنبيه التوفر إن كان متاح في صفحة المنتج؟",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0034",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0034",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "order_stopped_out_of_stock_refund_or_alt",
+   "customer_message": "طلبي كان قيد التجهيز وبعدين جاني إشعار إنه المنتج نفد. أبي إما بديل أو استرجاع المبلغ.",
+   "reply": "نعتذر عن ذلك. تفضّل بديل ولا استرداد المبلغ؟ أرسل لنا رقم الطلب واختيارك، وبحوّل طلبك لموظف من فريق المتجر يتابعه حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0035",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0035",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "size_xl_out_of_stock",
+   "customer_message": "أبي نفس المنتج بس بالمقاس XL، على الصفحة مكتوب نفد. هل في إمكانية تجيبونه؟",
+   "reply": "مقاس XL غير متوفر حالياً في هذا الموديل. تفضّل تفعّل تنبيه التوفر إن كان متاح، ولا نقترح لك موديل مشابه متوفر بمقاس XL؟",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0036",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0036",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "restock_notification_not_received",
+   "customer_message": "كم مرة أطلب تنبيه لما يرجع المنتج؟ المسألة مزعجة لأن كل مرة أضغط اشتراك ما يوصلني شيء.",
+   "reply": "نعتذر إن التنبيهات ما وصلتك. تقدر تشيّك إن الإشعارات مفعّلة والإيميل أو الرقم صحيح في حسابك، وبنرفع الملاحظة لفريق المتجر. وإذا تبي، أرسل لنا اسم المنتج ونسأل عن توفره.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0037",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0037",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "accessory_out_of_stock_alternative",
+   "customer_message": "أحتاج ملحق لهذا المنتج لكن الملحق مكتوب نفد. هل فيه بدائل تناسبه؟",
+   "reply": "الملحق غير متوفر حالياً. أرسل لنا اسم المنتج الأساسي أو موديله، ونقترح لك ملحقات متوفرة مذكور في صفحتها إنها متوافقة معه.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0038",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0038",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "product_discontinued_question",
+   "customer_message": "هل المنتج هذا توقف تصنيعه؟ لقيت إنه نفد وما رجع، أبي أعرف إذا في بدائل مو بس نفس اللون.",
+   "reply": "ما نقدر نأكد إذا المنتج توقف نهائياً قبل ما نتحقق من فريق المتجر. نسأل لك عنه، وبنفس الوقت نقدر نقترح بدائل قريبة بمواصفات مشابهة. وش أهم ميزة تبيها في البديل؟",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0039",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0039",
+   "keep": true,
+   "case_type": "توفر المنتج",
+   "intent": "cart_item_sold_out_notify_or_alt",
+   "customer_message": "حطيت المنتج في السلة ورجعت بعد ساعة لقيته نفد، أبي أعرف لو بتنبهوني يوم يرجع أو تعطوني خيار بديل تلقائي.",
+   "reply": "نتفهم الإزعاج. ما نختار بديل بدون موافقتك. تفضّل تفعّل تنبيه التوفر إن كان متاح في صفحة المنتج، ولا نقترح لك بديل وتختار بنفسك؟",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0040",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0040",
+   "keep": true,
+   "case_type": "الأسعار",
+   "intent": "alternative_price_difference",
+   "customer_message": "لو اخترت بديل، هل عليه فرق سعر أو أقدر أسترجع الفرق لو كان أرخص؟",
+   "reply": "البديل ممكن يختلف سعره عن المنتج الأصلي، والسعر يكون ظاهر في صفحة كل منتج. أما فرق المبلغ على طلب قائم فيكون حسب {سياسة_الإرجاع}، وإذا تبي نحوّلك لموظف يوضح لك.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0116",
+   "source_id": "doc_style-customer-service-master_SUP-0116",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "order_arrived_incomplete",
+   "customer_message": "استلمت طلبي اليوم ووصل نصه بس، القطعة الثانية ناقصة. وش أسوي؟",
+   "reply": "نعتذر عن وصول الطلب ناقص. ممكن ترسل لنا رقم الطلب وصورة لمحتويات الطرد وملصق الشحنة؟ بنرفع الحالة لفريق المتجر يراجعها ويبلغك بالحل المتاح.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0117",
+   "source_id": "doc_style-customer-service-master_SUP-0117",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "wrong_color_received",
+   "customer_message": "طلبت اللون الأسود ووصلني أبيض، كيف أبدله؟",
+   "reply": "نعتذر عن الخطأ. ممكن ترسل لنا رقم الطلب وصورة للمنتج اللي وصلك؟ بنرفع الحالة لفريق المتجر، والاستبدال أو الاسترداد يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0118",
+   "source_id": "doc_style-customer-service-master_SUP-0118",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "received_less_quantity",
+   "customer_message": "طلبت ٣ قطع ووصلتني وحدة بس، وش الخطوة؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصورة لمحتوى الطرد؟ بنرفع الحالة لفريق المتجر يراجعها ويبلغك بالحل المتاح.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0119",
+   "source_id": "doc_style-customer-service-master_SUP-0119",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "wrong_brand_received",
+   "customer_message": "اللي وصلني مو من الماركة اللي طلبتها، وصلت نسخة مختلفة. ممكن ترجعونها؟",
+   "reply": "نعتذر عن الخطأ. ممكن ترسل لنا رقم الطلب وصورة للمنتج اللي وصلك؟ بنرفع الحالة لفريق المتجر، والإرجاع أو الاستبدال يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0120",
+   "source_id": "doc_style-customer-service-master_SUP-0120",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "small_part_missing_cannot_assemble",
+   "customer_message": "القطعة الصغيرة اللي المفروض تكون في العلبة ناقصة، وما أقدر أركّب المنتج بدونها. عندكم حل سريع؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصورة للقطع اللي وصلت؟ بنرفع الحالة لفريق المتجر بشكل عاجل ويبلغك بالحل المتاح.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0121",
+   "source_id": "doc_style-customer-service-master_SUP-0121",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "wrong_item_exchange_or_refund_diff",
+   "customer_message": "وصلني صنف غير اللي طلبته، وأبي أستبدله أو أسترجع الفرق. كيف؟",
+   "reply": "نعتذر عن الخطأ. ممكن ترسل لنا رقم الطلب وصورة للصنف اللي وصلك، وتذكر لنا إذا تفضّل الاستبدال أو الاسترداد؟ بنرفع طلبك لفريق المتجر ويكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0122",
+   "source_id": "doc_style-customer-service-master_SUP-0122",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "wrong_color_shade",
+   "customer_message": "طلبت بلوزة باللون الأزرق العميق ووصلت فاتح، هل أقدر أبدل اللون؟",
+   "reply": "نتفهم ذلك. ممكن ترسل لنا رقم الطلب وصورة للبلوزة؟ بنتأكد من فريق المتجر إذا اللون المطلوب متوفر، والاستبدال يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0123",
+   "source_id": "doc_style-customer-service-master_SUP-0123",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "received_extra_quantity",
+   "customer_message": "الكمية اللي وصلت أكثر من اللي طلبته، شنو أسوي؟",
+   "reply": "شكراً إنك بلّغتنا. ممكن ترسل لنا رقم الطلب وصورة للكمية اللي وصلتك؟ بنرفع الحالة لفريق المتجر ويتواصل معك بخصوص القطع الزائدة.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0124",
+   "source_id": "doc_style-customer-service-master_SUP-0124",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "item_arrived_damaged_inside",
+   "customer_message": "المنتج وصل تالف من داخل، تستبدلونه ولا لازم أروح لمركز؟",
+   "reply": "نعتذر عن وصول المنتج تالف. ممكن ترسل لنا رقم الطلب وصور واضحة للتلف؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويتواصل معك بطريقة الاستبدال أو الإرجاع.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0125",
+   "source_id": "doc_style-customer-service-master_SUP-0125",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "minor_crack_accept_or_replace",
+   "customer_message": "وصلتني قطعة بكسر بسيط، ومحتار أقبلها ولا أطلب استبدال. تنصحوني وش أسوي؟",
+   "reply": "نتفهم حيرتك. ممكن ترسل لنا رقم الطلب وصورة للكسر؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويوضح لك الخيارات المتاحة حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0126",
+   "source_id": "doc_style-customer-service-master_SUP-0126",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "wrong_size_received",
+   "customer_message": "المنتج اللي وصل يختلف بمقاس واحد عن اللي طلبته، أقدر أبدله بمقاسي الصحيح؟",
+   "reply": "نعتذر عن الخطأ. ممكن ترسل لنا رقم الطلب وصورة لملصق المقاس؟ بنتأكد من فريق المتجر إذا مقاسك متوفر، والاستبدال أو الإرجاع يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0127",
+   "source_id": "doc_style-customer-service-master_SUP-0127",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "material_differs_from_description",
+   "customer_message": "المقاس وصل صحيح لكن الخامة مختلفة عن الوصف، هل أتبع إجراءات استبدال؟",
+   "reply": "نتفهم ذلك. ممكن ترسل لنا رقم الطلب وصورة للخامة واسم المنتج؟ بنرفع الحالة لفريق المتجر يقارنها بالوصف، والاستبدال أو الاسترداد يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0128",
+   "source_id": "doc_style-customer-service-master_SUP-0128",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "extra_unordered_item_in_box",
+   "customer_message": "لقيت في العلبة غرض ثاني مع طلبي، يمكن خطأ تعبئة. وش المطلوب مني؟",
+   "reply": "شكراً إنك بلّغتنا. ممكن ترسل لنا رقم الطلب وصورة للغرض الإضافي؟ بنرفع الحالة لفريق المتجر ويتواصل معك بخصوصه.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0129",
+   "source_id": "doc_style-customer-service-master_SUP-0129",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "security_seal_cut",
+   "customer_message": "وصل المنتج بس رباط الأمان تم قصّه، هل هذي مشكلة؟ أقدر أطلب استبدال ولا لا؟",
+   "reply": "نتفهم قلقك. يفضّل ما تستخدم المنتج الحين، وممكن ترسل لنا رقم الطلب وصورة للتغليف ومكان القطع؟ بحوّل الحالة لموظف من فريق المتجر يراجعها ويتواصل معك بالخيارات حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0131",
+   "source_id": "doc_style-customer-service-master_SUP-0131",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "design_differs_missing_print",
+   "customer_message": "أحد الأغراض اللي طلبتها يختلف في التصميم، بدل ما كان فيه نقش جانبي وصل بدون النقش، هل أقدر أبدله؟",
+   "reply": "نعتذر عن ذلك. ممكن ترسل لنا رقم الطلب وصورة للمنتج اللي وصلك ورابط المنتج اللي طلبته؟ بنرفع الحالة لفريق المتجر، والاستبدال يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0028",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0028",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "wrong_items_and_quantity_no_return_option",
+   "customer_message": "وصلت غرضين بدل واحد، لكن الغرض اللي وصل غير اللي طلبته، وبوقت التحقق على الموقع ما يطلع لي خيار لإرجاعه. أنا أبغى المنتج الصحيح أو استرداد المبلغ.",
+   "reply": "نعتذر عن الخطأ. تفضّل استبدال بالمنتج الصحيح ولا استرداد المبلغ؟ أرسل لنا رقم الطلب واختيارك، وبنرفع طلبك لفريق المتجر حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0029",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0029",
+   "keep": true,
+   "case_type": "جودة المنتج",
+   "intent": "damaged_wrong_and_missing_items",
+   "customer_message": "الطرد فتحته ولقيت منتج تالف وما هو المنتج اللي طلبته، وكمان القطعة الثانية ناقصة. ما أعرف كيف صار هذا الخلط، ومالي وقت أتعب بالسفريات لاسترجاعه.",
+   "reply": "نعتذر عن ذلك، ونفهم إن وقتك ضيق. ممكن ترسل لنا رقم الطلب وصورة للمنتج التالف وصورة لملصق الشحنة؟ بحوّل الحالة لموظف من فريق المتجر يتابعها ويتواصل معك بالخيارات.",
+   "needs_human": true,
+   "placeholders_used": [],
+   "changes": [
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0030",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0030",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "wrong_item_opened_box_gift",
+   "customer_message": "جاني غير المنتج المطلوب والعلبة كمان مفتوحة من جوة، خامة الغرض مش نفس الجودة اللي اخترتها. أحتاج حل لأن هذي هدية ومو وقت للتأخير.",
+   "reply": "نعتذر، ونفهم إنها هدية والوقت مهم. ممكن ترسل لنا رقم الطلب وصور للمنتج والعلبة؟ بحوّل الحالة لموظف من فريق المتجر يتابعها معك بشكل عاجل حسب {سياسة_الإرجاع}.",
+   "needs_human": true,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "escalation_added",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0031",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0031",
+   "keep": true,
+   "case_type": "خطأ في الطلب",
+   "intent": "duplicate_and_missing_items",
+   "customer_message": "طلبت مجموعة إكسسوارات كاملة لكن وصلت قطع خاطئة ومكررة، في قطعة مكررة وقطعة ناقصة تماماً. لازم القطعة الناقصة لأني باشغلها مع باقي المجموعة.",
+   "reply": "نعتذر عن الخطأ في تجهيز الطلب. ممكن ترسل لنا رقم الطلب وصورة للقطعة المكررة ولملصق الطرد؟ بنرفع الحالة لفريق المتجر يراجعها ويبلغك بالحل المتاح.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0184",
+   "source_id": "doc_style-customer-service-master_SUP-0184",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "jacket_size_for_winter",
+   "customer_message": "أنا متردد بين مقاسين للجاكيت، قياسي أو واحد أكبر؟ أي أنسب للشتاء؟",
+   "reply": "إذا ناوي تلبس تحته طبقات، ممكن يناسبك مقاس أكبر. قارن قياس صدرك وكتفك بجدول المقاسات في صفحة المنتج، وشيّك على {سياسة_الإرجاع} قبل الطلب.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0185",
+   "source_id": "doc_style-customer-service-master_SUP-0185",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "dress_fit_question",
+   "customer_message": "هذا الفستان يجي على الجسم ضيّق ولا مريح للحركة؟",
+   "reply": "نوع القصة ومدى الراحة يكونون عادة مذكورين في وصف المنتج مع جدول المقاسات. أرسل لنا اسم الفستان ونوضح لك المذكور عن القصة والخامة.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0186",
+   "source_id": "doc_style-customer-service-master_SUP-0186",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "gift_watch_recommendation",
+   "customer_message": "أبي هدية، أي ساعة تناسب شاب في العشرينات؟",
+   "reply": "يعتمد على ذوقه: الطابع الكلاسيكي يناسبه غالباً سوار جلد وتصميم بسيط، والرياضي يناسبه سوار سيليكون. قل لنا وش يحب، ونقترح لك خيارات من المتجر وتقدر تشوف أسعارها في صفحة كل منتج.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0187",
+   "source_id": "doc_style-customer-service-master_SUP-0187",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "headphones_price_tier_comparison",
+   "customer_message": "أيش الفرق بين هذي السماعات و اللي سعرها أعلى ب١٠٠؟ هل يستاهل الفرق؟",
+   "reply": "الفرق بين السماعتين يكون موضح في مواصفات كل منتج، مثل عزل الضوضاء والمواد. قل لنا وش استخدامك الأساسي، ونوضح لك الفروقات حسب المذكور في صفحة المنتجين.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0188",
+   "source_id": "doc_style-customer-service-master_SUP-0188",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "color_accuracy_in_photos",
+   "customer_message": "لون المنتج بالصورة يطابق الواقع؟ أخاف يطلع أفتح أو أغمق.",
+   "reply": "اللون قد يختلف شوي حسب الإضاءة وشاشة جهازك. إذا اللون مهم لك، أرسل لنا اسم المنتج ونسأل فريق المتجر عن تفاصيل أكثر، والإرجاع يكون حسب {سياسة_الإرجاع}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0189",
+   "source_id": "doc_style-customer-service-master_SUP-0189",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "phone_case_rare_model",
+   "customer_message": "أقدر أطلب غطاء هاتف بحجم نادر؟ عندكم تفصيل حسب الموديل؟",
+   "reply": "أرسل لنا اسم موديل جوالك بالضبط، ونتأكد لك إذا فيه غطاء متوافق متوفر في المتجر.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0190",
+   "source_id": "doc_style-customer-service-master_SUP-0190",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "jeans_durability",
+   "customer_message": "هذا الجينز يتحمل الشغل والاستخدام القوي؟ خايف ينشق بسرعة.",
+   "reply": "خامة الجينز ونوع الخياطة يكونون مذكورين في وصف المنتج. أرسل لنا اسم الموديل ونوضح لك المذكور عنه، وإذا فيه موديلات أثقل مناسبة للاستخدام اليومي نقترحها لك.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0191",
+   "source_id": "doc_style-customer-service-master_SUP-0191",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "fast_charger_for_laptop",
+   "customer_message": "أيش الفرق بين شاحن سلكي وسلكي سريع؟ أحتاج شاحن يحمّل اللابتوب بسرعة.",
+   "reply": "الشاحن السريع يحتاج يكون متوافق مع جهازك في القدرة (الواط) ونوع المنفذ. أرسل لنا موديل اللابتوب، ونساعدك تشوف الشواحن اللي مذكور في صفحتها إنها متوافقة معه.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0192",
+   "source_id": "doc_style-customer-service-master_SUP-0192",
+   "keep": true,
+   "case_type": "الشحن",
+   "intent": "delivery_time_to_riyadh",
+   "customer_message": "لو اشتريت الآن، متى يوصلني؟ الشحن للرياض ياخذ كم؟",
+   "reply": "مدة التوصيل للرياض {مدة_التوصيل} حسب خيار الشحن، وتبدأ بعد تأكيد الطلب. وتقدر تتابع شحنتك من {رابط_تتبع_الطلب}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{رابط_تتبع_الطلب}",
+    "{مدة_التوصيل}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0193",
+   "source_id": "doc_style-customer-service-master_SUP-0193",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "cotton_vs_poplin_summer",
+   "customer_message": "أبي أقارن بين قميص قطن وقميص بوبلين، أيهم أبرد في الصيف؟",
+   "reply": "القطن عادة يسمح بتهوية أكثر ويناسب الصيف، والبوبلين مظهره مرتب ويناسب اللبس الرسمي، ونوع الخامة بالضبط يكون مذكور في وصف كل منتج. أرسل لنا اسم القميصين ونوضح لك المذكور عنهم.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0194",
+   "source_id": "doc_style-customer-service-master_SUP-0194",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "multi_item_discount",
+   "customer_message": "هل فيه خصم لو أخذت شورتين من نفس الموديل؟",
+   "reply": "العروض تتغير حسب الفترة، وأي خصم على الكميات يكون حسب {شروط_العرض} ويظهر في السلة. أرسل لنا اسم الموديل ونتأكد لك إذا فيه عرض حالي عليه.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0195",
+   "source_id": "doc_style-customer-service-master_SUP-0195",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "authenticity_and_warranty_before_purchase",
+   "customer_message": "فيه أحد قال لي إن المنتج أصلي، هل عليه ضمان؟ أبي أتأكد قبل ما أشتري.",
+   "reply": "تفاصيل المنتج والضمان ({مدة_الضمان}) تكون مذكورة في صفحة المنتج. أرسل لنا اسم المنتج ونتأكد لك من فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{مدة_الضمان}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0196",
+   "source_id": "doc_style-customer-service-master_SUP-0196",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "known_brand_vs_new_brand",
+   "customer_message": "أنا بين موديلين من نفس السماكة، واحد ماركة مشهورة والتاني جديد. أيهم أنسب للاستخدام اليومي؟",
+   "reply": "الاختيار يعتمد على المواصفات وتقييمات العملاء والضمان المذكور لكل منتج. أرسل لنا اسم الموديلين ونوضح لك الفروقات حسب المذكور في صفحتهم.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0197",
+   "source_id": "doc_style-customer-service-master_SUP-0197",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "custom_tailoring_service",
+   "customer_message": "أقدر أطلب تفصيل لون وخياطة خاصة لبدلة رسمية؟ عندكم خدمة تفصيل؟",
+   "reply": "ممكن تذكر لنا المنتج والتعديل اللي تبيه؟ بنتأكد من فريق المتجر إذا خدمة التفصيل متاحة، وتفاصيل المدة والتكلفة تكون منهم مباشرة.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0198",
+   "source_id": "doc_style-customer-service-master_SUP-0198",
+   "keep": true,
+   "case_type": "الاسترداد",
+   "intent": "return_after_opening_conditions",
+   "customer_message": "أقدر أرجّع المنتج بعد ما أفتحه لو ما عجبني؟ وش شروط الإرجاع؟",
+   "reply": "الإرجاع يكون حسب {سياسة_الإرجاع} خلال {مدة_الاسترداد}، وبعض المنتجات قد تكون مستثناة. احتفظ بالفاتورة والتغليف، وأرسل لنا اسم المنتج ونوضح لك إذا ينطبق عليه الإرجاع.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{سياسة_الإرجاع}",
+    "{مدة_الاسترداد}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-SUP-0199",
+   "source_id": "doc_style-customer-service-master_SUP-0199",
+   "keep": true,
+   "case_type": "ما قبل الشراء",
+   "intent": "sofa_color_choice_for_guests",
+   "customer_message": "محتارة بين لونين للكنبة: واحد سهل التنظيف والثاني أحلى للبيت. أيهم أنسب للضيوف؟",
+   "reply": "إذا الاستخدام متكرر، اللون والقماش السهل في التنظيف يريحك أكثر، وإذا الكنبة للمجلس والاستخدام قليل تقدرين تختارين الأجمل. وتفاصيل القماش والعناية تكون مذكورة في صفحة المنتج.",
+   "needs_human": false,
+   "placeholders_used": [],
+   "changes": [
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0105",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0105",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_invalid_first_use",
+   "customer_message": "حاولت أستخدم كود الخصم عند الدفع وتطلع رسالة «رمز غير صالح»، مع إني نسخته من الإيميل وجربت أكثر من مرة. طلبي فيه منتجات من فئات مختلفة وما استخدمت الكوبون قبل. وش السبب؟ وفيه طريقة أطبقه الحين؟",
+   "reply": "نعتذر عن الإزعاج. السبب غالباً شرط من {شروط_العرض} مثل فئات مستثناة أو حد أدنى أو انتهاء الصلاحية. ممكن ترسل لنا لقطة شاشة لصفحة الدفع مع رسالة الخطأ؟ نراجعها مع فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0106",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0106",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "welcome_coupon_not_applied",
+   "customer_message": "استلمت ايميل بعرض ترحيبي برمز WELCOME10 وحاولت أطبقه لكن الخصم لم يظهر. لم أتأكد إذا كنت مسجلة قبل أو لا واشتريت الآن لأول مرة بهذا الحساب. هل الكوبون مخصص للمستخدمين الجدد فقط أم فيه شرط آخر؟ كيف أقدر أطبق الخصم لو كان صالحاً؟",
+   "reply": "أكواد الترحيب غالباً تكون للعملاء الجدد أو بشروط محددة حسب {شروط_العرض}. هل هذا أول طلب لك من نفس الحساب؟ وإذا تكرمتي أرسلي لنا لقطة شاشة للسلة ونراجعها.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0107",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0107",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_excluded_items",
+   "customer_message": "حاولت أطبق كوبون خصم على أثاث لكن ظهر لي 'لا ينطبق على العناصر المختارة'. في وصف المنتج مكتوب أنه غير قابل للخصم عند العروض، لكن الإعلان لم يوضح هالاستثناء. هل ممكن إعادة احتساب الفاتورة أو إعطاء بديل؟",
+   "reply": "رسالة «لا ينطبق على العناصر المختارة» تعني إن المنتج مستثنى من العرض. نتفهم إن الإعلان ما كان واضح. أرسل لنا اسم المنتج أو لقطة شاشة للإعلان، وبنرفع ملاحظتك لفريق المتجر يراجعها حسب {شروط_العرض}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0108",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0108",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "expired_coupon_extension_request",
+   "customer_message": "لقيت إعلان قديم لكوبون خصم وحاولت أستخدمه لكن النظام يقول انتهت صلاحيته، الإعلان ما ذكر تاريخ انتهاء واضح. هل ممكن تمددونه أو تعطوني رمز بديل لأن الخصم كان سبب الانتظار؟",
+   "reply": "النظام يوضح إن الكوبون منتهي، وما نقدر نأكد تمديده أو إصدار بديل. أرسل لنا لقطة شاشة للإعلان، وبنرفعها لفريق المتجر يراجعها حسب {شروط_العرض}.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "unsafe_promise_removed",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0109",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0109",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "stack_free_shipping_and_discount",
+   "customer_message": "حاولت أطبق كوبون شحن مجاني وكوبون خصم على نفس الطلب لكن عند الدفع النظام طبّق واحد فقط ورفع الرسوم. الإعلان لم يذكر إن كانت الرموز قابلة للتجميع. هل ممكن تفعيل الكوبونين مع بعض؟",
+   "reply": "بعض الكوبونات ما تقبل الجمع في نفس الطلب حسب {شروط_العرض}. أرسل لنا اسم الكوبونين أو لقطة شاشة لصفحة الدفع، ونتأكد لك من فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0110",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0110",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_discount_lower_than_stated",
+   "customer_message": "الكوبون المفروض يعطي خصم أكبر، بس اللي انطبق أقل بكثير. جربت على منتجين وطلع نفس الشي. هل فيه حد أعلى للخصم أو منتجات مستثناة؟",
+   "reply": "الفرق غالباً يكون بسبب حد أعلى للخصم أو منتجات غير مشمولة حسب {شروط_العرض}. ممكن ترسل لنا لقطة شاشة للسلة بعد تطبيق الكوبون؟ نراجعها مع فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0111",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0111",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "minimum_purchase_not_met_error",
+   "customer_message": "خرجت السلة وظهر لي خطأ 'غير مؤهل - الحد الأدنى للشراء غير متوفر' مع أن المجموع يبين أكثر من الحد المطلوب. هل يحسب النظام المجموع بعد إضافة الخصم أم قبل؟ وهل الشحن أو الضرائب تُحسب ضمن الحد؟",
+   "reply": "طريقة حساب الحد الأدنى (قبل الخصم أو بعده، ومع الشحن أو بدونه) تكون حسب {شروط_العرض}. ممكن ترسل لنا لقطة شاشة لملخص السلة؟ نراجعها مع فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  },
+  {
+   "id": "LGC-S-SA-0112",
+   "source_id": "doc_style-customer-service-saudi-white_S-SA-0112",
+   "keep": true,
+   "case_type": "العروض والكوبونات",
+   "intent": "coupon_not_available_in_region",
+   "customer_message": "دخلت رمز عرض والرسالة تقول 'غير متاح في منطقتك' مع أن الشحن متاح لمدينتي داخل الرياض. الإعلان ما ذكر قيود جغرافية. هل ممكن يكون القيد على طريقة الدفع أو على منطقتي بالتحديد؟",
+   "reply": "رسالة «غير متاح في منطقتك» تعني إن العرض مقيد بمناطق أو طرق شحن معينة حسب {شروط_العرض}. أرسل لنا اسم المدينة والكود، ونتأكد لك من فريق المتجر.",
+   "needs_human": false,
+   "placeholders_used": [
+    "{شروط_العرض}"
+   ],
+   "changes": [
+    "policy_to_placeholder",
+    "tone_fixed",
+    "rewritten"
+   ]
+  }
+ ]
+}

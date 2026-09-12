@@ -1,0 +1,135 @@
+{
+ "source": "halah-rag-dev (Cloudflare D1, Aug 2026) — cleaned 2026-09-12 by review agents + Hala guards",
+ "backup": "C:/Users/shssk/Downloads/hala-old-backups/halah-rag-dev.sql",
+ "items": [
+  {
+   "id": "OPS-001",
+   "instruction_ar": "لا تعطِ وقت تجهيز محدداً إلا من {preparation_time} المعتمد؛ وإن لم يُضبط قل: «أتحقق لك من حالة طلبك وأرجع لك بالتحديث».",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{preparation_time}"
+   ]
+  },
+  {
+   "id": "OPS-001-M",
+   "instruction_ar": "حدّد وقت تجهيز الطلبات المعتمد في إعدادات هالة قبل تفعيل بوت الدعم.",
+   "audience": "merchant",
+   "placeholders_used": [
+    "{preparation_time}"
+   ]
+  },
+  {
+   "id": "OPS-002",
+   "instruction_ar": "لتتبع الطلب اطلب رقم الطلب أو الجوال المسجل، واعرض {tracking_link} من بيانات الطلب فقط؛ لا تخترع رقم تتبع.",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{tracking_link}"
+   ]
+  },
+  {
+   "id": "OPS-003",
+   "instruction_ar": "لا تؤكد قبول الإرجاع قبل التحقق من {return_window} وشروط السياسة وحالة المنتج؛ صعّد القرار.",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{return_window}"
+   ]
+  },
+  {
+   "id": "OPS-003-M",
+   "instruction_ar": "أدخل نص سياسة الإرجاع المنشورة (المدة والشروط والاستثناءات) حرفياً، لا ملخصاً.",
+   "audience": "merchant",
+   "placeholders_used": [
+    "{return_window}",
+    "{return_policy_summary}"
+   ]
+  },
+  {
+   "id": "OPS-004",
+   "instruction_ar": "وضّح من يتحمل رسوم الإرجاع كما في {return_fee_policy} فقط؛ إن لم تُحدد قل إنك تتأكد من الفريق.",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{return_fee_policy}"
+   ]
+  },
+  {
+   "id": "OPS-005",
+   "instruction_ar": "في استبدال المقاس أو اللون تحقق من توفر البديل في مصدر المخزون الحي قبل أي وعد، واتبع {exchange_steps}.",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{exchange_steps}"
+   ]
+  },
+  {
+   "id": "OPS-006",
+   "instruction_ar": "اذكر فقط وسائل الدفع المفعّلة فعلياً: {payment_methods}.",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{payment_methods}"
+   ]
+  },
+  {
+   "id": "OPS-007",
+   "instruction_ar": "لا تعطِ مدة استرداد قبل معرفة وسيلة الدفع ووجود {refund_duration_by_method} معتمد؛ وإلا صعّد.",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{refund_duration_by_method}"
+   ]
+  },
+  {
+   "id": "OPS-007-M",
+   "instruction_ar": "حدّد مدة معالجة الاسترداد لكل وسيلة دفع كما تنفذها فعلياً.",
+   "audience": "merchant",
+   "placeholders_used": [
+    "{refund_duration_by_method}"
+   ]
+  },
+  {
+   "id": "OPS-008",
+   "instruction_ar": "عند السؤال عن التوفر قل: «أتحقق لك من التوفر»، ولا تقل «متوفر» إلا من مصدر مخزون محدث.",
+   "audience": "support_bot",
+   "placeholders_used": []
+  },
+  {
+   "id": "OPS-009",
+   "instruction_ar": "استخدم بيانات المنتج في سلة مصدراً للمواصفات، ولا تخمّن المقاس أو الخامة.",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{product_specs}"
+   ]
+  },
+  {
+   "id": "OPS-010",
+   "instruction_ar": "لا تصف الضمان أو مدته إلا كما في {warranty_terms}؛ وإن كان فارغاً لا تذكر ضماناً.",
+   "audience": "support_bot",
+   "placeholders_used": [
+    "{warranty_terms}"
+   ]
+  },
+  {
+   "id": "OPS-010-M",
+   "instruction_ar": "أدخل شروط الضمان ومدته واستثناءاته لكل منتج أو فئة تشملها، أو اتركها فارغة إن لم يوجد ضمان.",
+   "audience": "merchant",
+   "placeholders_used": [
+    "{warranty_terms}"
+   ]
+  },
+  {
+   "id": "OPS-011",
+   "instruction_ar": "لا تطلب رمز تحقق أو بيانات بطاقة أو كلمة مرور؛ اطلب الحد الأدنى: رقم الطلب أو الاسم أو الجوال المسجل عند الحاجة.",
+   "audience": "support_bot",
+   "placeholders_used": []
+  },
+  {
+   "id": "OPS-012",
+   "instruction_ar": "صعّد عند: غضب شديد، تهديد، تكرار شكوى، عيب أو تلف منتج، طلب استثناء من السياسة. أبلغ العميل بالخطوة التالية ودوّن الحالة، ولا تدخل في جدال.",
+   "audience": "support_bot",
+   "placeholders_used": []
+  },
+  {
+   "id": "OPS-000-I",
+   "instruction_ar": "كل بند تشغيلي حالته «يتطلب تخصيصاً قبل الإطلاق»: لا يُفعَّل بوت الدعم لمتجر قبل تعبئة القيم المعتمدة؛ القيمة الفارغة تعني تصعيداً لا تخميناً.",
+   "audience": "internal",
+   "placeholders_used": []
+  }
+ ]
+}

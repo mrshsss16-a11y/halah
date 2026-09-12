@@ -1,0 +1,826 @@
+{
+ "source": "halah-rag-dev (Cloudflare D1, Aug 2026) — cleaned 2026-09-12 by review agents + Hala guards",
+ "backup": "C:/Users/shssk/Downloads/hala-old-backups/halah-rag-dev.sql",
+ "items": [
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0114",
+   "reason": "near-duplicate of LGP-PROD-0099"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0116",
+   "reason": "near-duplicate of LGP-PROD-0110"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0081",
+   "reason": "agent_drop"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0063",
+   "reason": "agent_drop"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0027",
+   "reason": "agent_drop"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0219",
+   "reason": "unsafe/unverifiable food concept (edible oud oil in maamoul) filed under incense"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0224",
+   "reason": "unsafe concept (burning incense in car) and near-duplicate of LGP-PROD-0227"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0020",
+   "reason": "near-duplicate of LGP-PROD-0024"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0023",
+   "reason": "incoherent title (incense burners) for sukkari dates; near-duplicate of LGP-PROD-0018"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0025",
+   "reason": "near-duplicate of LGP-PROD-0024"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0026",
+   "reason": "near-duplicate of LGP-PROD-0016"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0027",
+   "reason": "near-duplicate of LGP-PROD-0017"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0029",
+   "reason": "near-duplicate of LGP-PROD-0019"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0030",
+   "reason": "near-duplicate of LGP-PROD-0024"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0031",
+   "reason": "near-duplicate of LGP-PROD-0024"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0206",
+   "reason": "near-duplicate of LGP-P-SA-0103"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0212",
+   "reason": "near-duplicate of LGP-PROD-0216"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0102",
+   "reason": "near-duplicate of LGP-P-SA-0101"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0106",
+   "reason": "near-duplicate of LGP-PROD-0204"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0109",
+   "reason": "near-duplicate of LGP-P-SA-0104"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0039",
+   "reason": "claims:LONGEVITY"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0143",
+   "reason": "near-duplicate of PROD-0140"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0144",
+   "reason": "near-duplicate of PROD-0139"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0010",
+   "reason": "near-duplicate of P-SA-0008"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0075",
+   "reason": "تكرار شبه حرفي لعسل سدر في جرة (العنصر ٦٩) مع اختلاف الوزن فقط"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0076",
+   "reason": "تكرار لعسل سمرة (العنصر ٧٠) مع اختلاف العبوة والوزن فقط"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0077",
+   "reason": "تكرار لعسل طلح (العنصر ٧١) مع اختلاف السعة فقط"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0078",
+   "reason": "تكرار لعبوة الهدايا (العنصر ٧٢) بثلاثة أنواع بدل نوعين"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0079",
+   "reason": "تكرار لعسل سدر في جرة (العنصر ٦٩)؛ الفرق ملعقة مرفقة فقط"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0123",
+   "reason": "مكرر تقريباً للعنصر 0119 (بن تقطير متوسط التحميص) بعد إزالة المنشأ والنكهات"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0124",
+   "reason": "مكرر تقريباً لكبسولات 0120 (كبسولات إسبريسو)"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0126",
+   "reason": "مكرر تقريباً لحبوب 0122 الكاملة، ويعتمد على ادعاء «عضوي» غير مثبت"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0128",
+   "reason": "مكرر تقريباً لحبوب 0122 الكاملة، ويعتمد على «١٠٠٪ أرابيكا» و«منتقاة يدوياً» غير مثبتة"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0129",
+   "reason": "مكرر تقريباً لكبسولات 0120 مع اختلاف النكهة فقط"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0130",
+   "reason": "مكرر تقريباً لبن التقطير 0119"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0132",
+   "reason": "مكرر تقريباً لأظرف التقطير 0121"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0133",
+   "reason": "مكرر تقريباً لبن التقطير 0119"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0136",
+   "reason": "near-duplicate of PROD-0189"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0164",
+   "reason": "near-duplicate of P-SA-0084"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0081",
+   "reason": "near-duplicate of PROD-0152"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-P-SA-0126",
+   "reason": "near-duplicate of P-SA-0122"
+  },
+  {
+   "kind": "product",
+   "id": "LGP-PROD-0246",
+   "reason": "near-duplicate of PROD-0242"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0010",
+   "reason": "duplicate: near-duplicate of SUP-0067 (tracking not updated)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0011",
+   "reason": "duplicate: near-duplicate of SUP-0068 (address correction)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0014",
+   "reason": "duplicate: near-duplicate of SUP-0066 (delivery ETA)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0015",
+   "reason": "duplicate: near-duplicate of SUP-0069 (delivered but not received)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0086",
+   "reason": "duplicate: near-duplicate of SUP-0083 (refund amount less than paid)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0088",
+   "reason": "duplicate: near-duplicate of SUP-0082 (refund not received after cancel)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0091",
+   "reason": "unusable: ambiguous customer message; original reply asks for card digits; covered by S-SA-0059"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0093",
+   "reason": "unusable: unrealistic scenario (redirecting a refund to a third party)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0097",
+   "reason": "duplicate: near-duplicate of SUP-0245 (return pending, refund missing)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0019",
+   "reason": "duplicate: near-duplicate of S-SA-0017 (size exchange or refund)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0020",
+   "reason": "duplicate: near-duplicate of S-SA-0018 (color differs from listing)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0023",
+   "reason": "duplicate: near-duplicate of S-SA-0021 (change-of-mind return)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0024",
+   "reason": "duplicate: near-duplicate of S-SA-0018 (color differs from listing)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0003",
+   "reason": "duplicate: near-duplicate of SUP-0001 (competitor price)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0005",
+   "reason": "duplicate: near-duplicate of SUP-0009 (price drop after purchase)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0011",
+   "reason": "duplicate: near-duplicate of SUP-0004 / SUP-0007 (price vs value, budget)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0016",
+   "reason": "duplicate: near-duplicate of SUP-0009 (price drop after purchase)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0205",
+   "reason": "duplicate: near-duplicate of SUP-0200 (hide price in gift parcel)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0090",
+   "reason": "duplicate: near-duplicate of S-SA-0089 (authenticity concern)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0095",
+   "reason": "duplicate: near-duplicate of SUP-0045 (stitching defect exchange)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0221",
+   "reason": "duplicate: near-duplicate of SUP-0222 (account and data deletion)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0223",
+   "reason": "duplicate: near-duplicate of S-SA-0113 (changed phone, no OTP access)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0232",
+   "reason": "duplicate: near-duplicate of SUP-0225 (stop marketing messages)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0119",
+   "reason": "duplicate: near-duplicate of SUP-0225 (stop marketing messages)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0120",
+   "reason": "duplicate: near-duplicate of S-SA-0113 (changed phone, no OTP access)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0149",
+   "reason": "duplicate: near-duplicate of S-SA-0057 (payment failed); original also asks for card number/CVV checks"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0152",
+   "reason": "duplicate: near-duplicate of SUP-0150 (card declined)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0153",
+   "reason": "duplicate: near-duplicate of S-SA-0059 (temporary bank hold)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0160",
+   "reason": "duplicate: near-duplicate of S-SA-0060 (change payment method after order)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0161",
+   "reason": "duplicate: near-duplicate of SUP-0156 (browser/technical payment issue)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0163",
+   "reason": "duplicate: near-duplicate of S-SA-0064 (double charge)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0166",
+   "reason": "duplicate: near-duplicate of S-SA-0061 / SUP-0013 (coupon issues)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0065",
+   "reason": "duplicate: near-duplicate of SUP-0201 + SUP-0208 (missing wrap, price visible)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0067",
+   "reason": "duplicate: near-duplicate of SUP-0200 (hide price in gift parcel)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0069",
+   "reason": "duplicate: near-duplicate of SUP-0208 (price visible in gift)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0071",
+   "reason": "duplicate: near-duplicate of SUP-0207 (custom handwriting on card)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0072",
+   "reason": "duplicate: near-duplicate of SUP-0200 (hide price in gift parcel)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0072",
+   "reason": "duplicate: near-duplicate of SUP-0039 (wrong item received)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0002",
+   "reason": "duplicate: near-duplicate of SUP-0040 (size smaller than size chart)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0003",
+   "reason": "duplicate: near-duplicate of SUP-0040 (size smaller than size chart)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0004",
+   "reason": "duplicate: near-duplicate of SUP-0040 (size smaller than size chart)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0008",
+   "reason": "duplicate: near-duplicate of SUP-0040 (size smaller than size chart)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0234",
+   "reason": "duplicate: near-duplicate of SUP-0075 (damaged on arrival)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0238",
+   "reason": "duplicate: near-duplicate of SUP-0039 (wrong item received)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0241",
+   "reason": "duplicate: near-duplicate of SUP-0042 (missing part in set)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0136",
+   "reason": "near-duplicate of S-SA-0108 (expired coupon extension); kept the more specific one"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0147",
+   "reason": "near-duplicate of S-SA-0105 (invalid coupon error); kept the more detailed one"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0073",
+   "reason": "near-duplicate of SUP-0167 (preorder preparation time)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0075",
+   "reason": "near-duplicate of SUP-0173 (split shipment for preorder)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0080",
+   "reason": "near-duplicate of SUP-0172 (change preorder address)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0053",
+   "reason": "near-duplicate of SUP-0050 (size exchange)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0042",
+   "reason": "near-duplicate of S-SA-0041 (refund after cancellation not received)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0046",
+   "reason": "near-duplicate of S-SA-0043 (cancelled, bank shows nothing)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0048",
+   "reason": "near-duplicate of S-SA-0041 (refund after cancellation not received)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0101",
+   "reason": "near-duplicate of S-SA-0039 (item sold out from cart); kept the clearer one"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0115",
+   "reason": "near-duplicate of SUP-0106 (suggest alternative); original also promised prices in reply"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0050",
+   "reason": "near-duplicate of S-SA-0049 (competitor price vs value)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0051",
+   "reason": "near-duplicate of S-SA-0049 (competitor price vs value)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0056",
+   "reason": "near-duplicate of S-SA-0055 (local/after-sales support vs cheaper competitor)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-SUP-0130",
+   "reason": "near-duplicate of SUP-0116 / SUP-0118 (incomplete order)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0025",
+   "reason": "near-duplicate of SUP-0116 (order arrived incomplete)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0026",
+   "reason": "near-duplicate of SUP-0117 (wrong color received)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0027",
+   "reason": "near-duplicate of SUP-0023 (missing accessory in box)"
+  },
+  {
+   "kind": "support",
+   "id": "LGC-S-SA-0032",
+   "reason": "near-duplicate of S-SA-0088 / SUP-0127 (item differs from description)"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X001",
+   "reason": "مكرر لنفس النمط في LGS-001 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X002",
+   "reason": "سياق استشاري B2B (تطوير مشروع) بلا مقابل في شراء من متجر"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X003",
+   "reason": "سياق استشاري B2B (شراكات ومراحل مشروع) بلا مقابل في شراء من متجر"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X004",
+   "reason": "مكرر لنفس النمط في LGS-004 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X005",
+   "reason": "يدفع لحجز مبدئي كأسلوب ضغط؛ ومكرر لنفس النمط في LGS-004 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X006",
+   "reason": "مكرر لنفس النمط في LGS-004 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X007",
+   "reason": "مكرر لنفس النمط في LGS-004 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X008",
+   "reason": "مكرر لنفس النمط في LGS-004 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X009",
+   "reason": "مكرر لنفس النمط في LGS-004 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X010",
+   "reason": "مكرر لنفس النمط في LGS-004 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X011",
+   "reason": "مكرر لنفس النمط في LGS-004 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X012",
+   "reason": "يعد بملف أمثلة «مع نتائج واضحة» — نتائج/دراسات حالة غير قابلة للتحقق"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X013",
+   "reason": "مكرر لنفس النمط في LGS-006 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X014",
+   "reason": "مكرر لنفس النمط في LGS-007 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X015",
+   "reason": "مكرر لنفس النمط في LGS-007 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X016",
+   "reason": "مكرر لنفس النمط في LGS-007 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X017",
+   "reason": "مكرر لنفس النمط في LGS-007 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X018",
+   "reason": "مكرر لنفس النمط في LGS-007 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X019",
+   "reason": "مكرر لنفس النمط في LGS-007 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X020",
+   "reason": "مكرر لنفس النمط في LGS-007 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X021",
+   "reason": "مكرر لنفس النمط في LGS-007 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X022",
+   "reason": "مكرر لنفس النمط في LGS-008 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X023",
+   "reason": "مكرر لنفس النمط في LGS-008 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X024",
+   "reason": "مكرر لنفس النمط في LGS-009 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X025",
+   "reason": "مكرر لنفس النمط في LGS-010 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X026",
+   "reason": "مكرر لنفس النمط في LGS-010 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X027",
+   "reason": "مكرر لنفس النمط في LGS-010 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X028",
+   "reason": "مكرر لنفس النمط في LGS-010 ولا يضيف موقفاً جديداً، وصياغته ركيكة («لا يمكنك أن تتوقع ضماناً»)"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X029",
+   "reason": "مكرر لنفس النمط في LGS-010 ولا يضيف موقفاً جديداً، ولهجة غير سعودية («بدّي»)"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X030",
+   "reason": "مكرر لنفس النمط في LGS-010 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X031",
+   "reason": "مكرر لنفس النمط في LGS-010 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X032",
+   "reason": "مكرر لنفس النمط في LGS-010 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X033",
+   "reason": "مكرر لنفس النمط في LGS-019 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X034",
+   "reason": "مكرر لنفس النمط في LGS-019 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X035",
+   "reason": "مكرر لنفس النمط في LGS-019 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X036",
+   "reason": "مكرر لنفس النمط في LGS-019 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X037",
+   "reason": "مكرر لنفس النمط في LGS-014 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X038",
+   "reason": "مكرر لنفس النمط في LGS-014 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X039",
+   "reason": "مكرر لنفس النمط في LGS-014 ولا يضيف موقفاً جديداً، وفيه عبارة غير مفهومة («صفرية الطول»)"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X040",
+   "reason": "مكرر لنفس النمط في LGS-014 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X041",
+   "reason": "مكرر لنفس النمط في LGS-014 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X042",
+   "reason": "يحتوي وعداً («أضمن تركيزنا») ولهجة غير سعودية («شلون»)؛ ومكرر لنفس النمط في LGS-011 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X043",
+   "reason": "مكرر لنفس النمط في LGS-017 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X044",
+   "reason": "مكرر لنفس النمط في LGS-017 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X045",
+   "reason": "مكرر لنفس النمط في LGS-017 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X046",
+   "reason": "مكرر لنفس النمط في LGS-017 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X047",
+   "reason": "مكرر لنفس النمط في LGS-017 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X048",
+   "reason": "مكرر لنفس النمط في LGS-017 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X049",
+   "reason": "مكرر لنفس النمط في LGS-017 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X050",
+   "reason": "وعد «نوعدك بمخرجات عملية»؛ ومكرر لنفس النمط في LGS-018 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X051",
+   "reason": "مكرر لنفس النمط في LGS-020 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X052",
+   "reason": "وعد «اللي نضمنه»؛ ومكرر لنفس النمط في LGS-018 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X053",
+   "reason": "مكرر لنفس النمط في LGS-018 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X054",
+   "reason": "مكرر لنفس النمط في LGS-018 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X055",
+   "reason": "مكرر لنفس النمط في LGS-018 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X056",
+   "reason": "مكرر لنفس النمط في LGS-018 ولا يضيف موقفاً جديداً، وخطأ لغوي («تعطك»)"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X057",
+   "reason": "مكرر لنفس النمط في LGS-003 ولا يضيف موقفاً جديداً"
+  },
+  {
+   "kind": "sales",
+   "id": "LGS-X058",
+   "reason": "مكرر لنفس النمط في LGS-003 ولا يضيف موقفاً جديداً"
+  }
+ ]
+}

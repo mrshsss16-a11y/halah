@@ -1,0 +1,1360 @@
+{
+ "note": "خانات يملؤها التاجر ببيانات منتجه أو سياسة متجره — مستخرجة آلياً من الملفات المنقّحة (2026-09-12). الإنجليزية من ردود المبيعات وحزمة السياسات.",
+ "total": 169,
+ "items": [
+  {
+   "placeholder": "{الخامة}",
+   "language": "ar",
+   "uses": 145,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{سياسة_الإرجاع}",
+   "language": "ar",
+   "uses": 132,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{الوزن}",
+   "language": "ar",
+   "uses": 99,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الحجم}",
+   "language": "ar",
+   "uses": 84,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{المكونات}",
+   "language": "ar",
+   "uses": 78,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{المقاس}",
+   "language": "ar",
+   "uses": 60,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{شروط_العرض}",
+   "language": "ar",
+   "uses": 40,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{عدد_القطع}",
+   "language": "ar",
+   "uses": 35,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{رقم_التواصل}",
+   "language": "ar",
+   "uses": 30,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{مدة_الاسترداد}",
+   "language": "ar",
+   "uses": 28,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{مدة_الضمان}",
+   "language": "ar",
+   "uses": 26,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{رابط_تتبع_الطلب}",
+   "language": "ar",
+   "uses": 24,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{تعليمات_العناية}",
+   "language": "ar",
+   "uses": 23,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مكونات_العطر}",
+   "language": "ar",
+   "uses": 22,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{طرق_الدفع_المتاحة}",
+   "language": "ar",
+   "uses": 20,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{خيارات_التغليف}",
+   "language": "ar",
+   "uses": 20,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{محتويات_العلبة}",
+   "language": "ar",
+   "uses": 19,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{product_specs}",
+   "language": "en",
+   "uses": 19,
+   "used_in": [
+    "sales_bot",
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{رسوم_الشحن}",
+   "language": "ar",
+   "uses": 18,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{السعة}",
+   "language": "ar",
+   "uses": 17,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مدة_التوصيل}",
+   "language": "ar",
+   "uses": 16,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{الطول}",
+   "language": "ar",
+   "uses": 14,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الفئة_العمرية}",
+   "language": "ar",
+   "uses": 13,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_العسل_ومصدره}",
+   "language": "ar",
+   "uses": 13,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{سياسة_الإلغاء}",
+   "language": "ar",
+   "uses": 12,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{مدة_البطارية}",
+   "language": "ar",
+   "uses": 11,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الأبعاد}",
+   "language": "ar",
+   "uses": 11,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{return_policy_summary}",
+   "language": "en",
+   "uses": 11,
+   "used_in": [
+    "sales_bot",
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{نوع_المنفذ}",
+   "language": "ar",
+   "uses": 10,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{التوافق}",
+   "language": "ar",
+   "uses": 10,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الألوان}",
+   "language": "ar",
+   "uses": 10,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{سياسة_الخصوصية}",
+   "language": "ar",
+   "uses": 10,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{القطر}",
+   "language": "ar",
+   "uses": 9,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{القدرة}",
+   "language": "ar",
+   "uses": 8,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{بلد_المنشأ}",
+   "language": "ar",
+   "uses": 8,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مدة_التجهيز}",
+   "language": "ar",
+   "uses": 8,
+   "used_in": [
+    "support_bot"
+   ]
+  },
+  {
+   "placeholder": "{تركيز_العطر}",
+   "language": "ar",
+   "uses": 7,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الحبات}",
+   "language": "ar",
+   "uses": 6,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الخرز}",
+   "language": "ar",
+   "uses": 6,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{product_name}",
+   "language": "en",
+   "uses": 6,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{دقة_القياس}",
+   "language": "ar",
+   "uses": 5,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{اللون}",
+   "language": "ar",
+   "uses": 5,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_العود}",
+   "language": "ar",
+   "uses": 5,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{درجة_التحميص}",
+   "language": "ar",
+   "uses": 5,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{أنواع_المواقد}",
+   "language": "ar",
+   "uses": 4,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{النكهات}",
+   "language": "ar",
+   "uses": 4,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{حجم_الخط}",
+   "language": "ar",
+   "uses": 4,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نسبة_الخامة}",
+   "language": "ar",
+   "uses": 4,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{usage_instructions}",
+   "language": "en",
+   "uses": 4,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{بلد_الصنع}",
+   "language": "ar",
+   "uses": 3,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عامل_الحماية}",
+   "language": "ar",
+   "uses": 3,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{منشأ_البن}",
+   "language": "ar",
+   "uses": 3,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_القاعدة}",
+   "language": "ar",
+   "uses": 3,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الغلاف}",
+   "language": "ar",
+   "uses": 3,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{السماكة}",
+   "language": "ar",
+   "uses": 3,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_الإغلاق}",
+   "language": "ar",
+   "uses": 3,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{warranty_policy}",
+   "language": "en",
+   "uses": 3,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{reviews_link}",
+   "language": "en",
+   "uses": 3,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{preparation_time}",
+   "language": "en",
+   "uses": 3,
+   "used_in": [
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{return_window}",
+   "language": "en",
+   "uses": 3,
+   "used_in": [
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{refund_duration_by_method}",
+   "language": "en",
+   "uses": 3,
+   "used_in": [
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{warranty_terms}",
+   "language": "en",
+   "uses": 3,
+   "used_in": [
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{نوع_البطارية}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_الطلاء}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{العيار}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_درجات_الطحن}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نسبة_التركيز}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_البشرة}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{ملاحظات_النكهة}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_الجهاز}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الكبسولات}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الأظرف}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_البطانة}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الحشوة}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الصفحات}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_التغليف}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الشعيرات}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_النعل}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_الطبقة}",
+   "language": "ar",
+   "uses": 2,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{option_a}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{option_b}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{variant_differences}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{product_page_link}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{whats_in_box}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{care_instructions}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{size_chart}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{shipping_time_by_city}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "sales_bot"
+   ]
+  },
+  {
+   "placeholder": "{tracking_link}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{return_fee_policy}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{exchange_steps}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{payment_methods}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "operations"
+   ]
+  },
+  {
+   "placeholder": "{sla_urgent}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "policy"
+   ]
+  },
+  {
+   "placeholder": "{sla_supervisor}",
+   "language": "en",
+   "uses": 2,
+   "used_in": [
+    "policy"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الأكواب}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{العرض}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_اللوحة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مقاس_اللوحة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_المشبك}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{لون_العسل}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_العبوة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{التوابل_المضافة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{حجم_عبوة_السفر}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_المرشحات}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{حجم_المسك}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{ملاءمة_محيط_العين}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{العدد}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{التغليف}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{تاريخ_التحميص}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{طريقة_المعالجة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{حالة_البن}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نسبة_الخلط}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مقاس_الشاشة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الميزات}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{طراز_الجوال}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الطبقة_العلوية}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الطبقة_السفلية}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الألوان_المتوفرة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_العلبة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الهيكل}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الرواية}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{جهة_الطباعة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{لغة_الترجمة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_التجليد}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{جهة_الترجمة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الحافظة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_البطاقات}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مصدر_الأذكار}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الورق}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_الخيط}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مقاس_الحبة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_الحبل}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مصدر_التفسير}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_السجادة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_القلم}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{درجة_التغطية}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مدة_الاستخدام_بعد_الفتح}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{المقاسات_المتوفرة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الصدر}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الارتفاع}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الجهد}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{تعليمات_الاستخدام}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{أقصى_طول_للعود}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_قطع_المعمول}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_أقراص_الفحم}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_التمر}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{تعليمات_التخزين}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مدة_الاستهلاك_بعد_الفتح}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الأصناف}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نسبة_الكاكاو}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{درجة_الحدة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الأبعاد_مفتوحة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الأبعاد_مطوية}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الأدراج}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{أبعاد_الدرج_الصغير}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{أبعاد_الدرج_الكبير}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{نوع_القاعدة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الخانات}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_العبوات}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{الأقطار}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_المقابض}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{سماكة_القاعدة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{خامة_الرؤوس}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{درجة_الحرارة_القصوى}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{عدد_الأشخاص}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{مدة_حفظ_الحرارة}",
+   "language": "ar",
+   "uses": 1,
+   "used_in": [
+    "product_descriptions"
+   ]
+  },
+  {
+   "placeholder": "{sla_orders}",
+   "language": "en",
+   "uses": 1,
+   "used_in": [
+    "policy"
+   ]
+  },
+  {
+   "placeholder": "{sla_privacy}",
+   "language": "en",
+   "uses": 1,
+   "used_in": [
+    "policy"
+   ]
+  },
+  {
+   "placeholder": "{sla_high}",
+   "language": "en",
+   "uses": 1,
+   "used_in": [
+    "policy"
+   ]
+  },
+  {
+   "placeholder": "{sla_damage}",
+   "language": "en",
+   "uses": 1,
+   "used_in": [
+    "policy"
+   ]
+  }
+ ]
+}

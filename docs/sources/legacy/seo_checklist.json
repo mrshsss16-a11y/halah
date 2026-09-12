@@ -1,0 +1,352 @@
+{
+ "source": "halah-rag-dev (Cloudflare D1, Aug 2026) — cleaned 2026-09-12 by review agents + Hala guards",
+ "backup": "C:/Users/shssk/Downloads/hala-old-backups/halah-rag-dev.sql",
+ "scope_note": "قائمة فحص لحقول صفحة المنتج التي تكتبها هالة أو تقترحها في سلة. البنود التقنية على مستوى الثيم/المتجر (canonical، الفهرسة، السرعة، الروابط الداخلية، الصفحات التعريفية، الربط بـSearch Console) خارج نطاق حقول هالة ونُقلت إلى dropped.",
+ "items": [
+  {
+   "id": "SEO-01",
+   "field": "title",
+   "rule_ar": "اسم المنتج وصفي: نوع المنتج + سمة موثقة واحدة أو اثنتان (الخامة، الحجم، الموديل، اللون) بلا مبالغة ولا تكرار كلمات.",
+   "check": "Contains the product-type noun from merchant data; no content word repeated more than once after normalization; length <= 70 chars (warn).",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-003",
+    "KW-002",
+    "SEO-C-005"
+   ]
+  },
+  {
+   "id": "SEO-02",
+   "field": "title",
+   "rule_ar": "لا صفات حكم ولا ادعاءات غير مثبتة في الاسم (ثابت، أصلي، فاخر، طبيعي…) إلا بدليل صريح من التاجر.",
+   "check": "No match against forbidden_phrases + policy claims detection_terms unless the matching claim has merchant evidence attached.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-P-001",
+    "SEO-C-003"
+   ]
+  },
+  {
+   "id": "SEO-03",
+   "field": "title",
+   "rule_ar": "لا تُضاف مناسبة أو موسم (رمضان، العيد، تخرج) إلا إذا حدد التاجر المنتج لها، وبلا وعد تسليم قبل موعد.",
+   "check": "Occasion terms present only if merchant occasion flag/field is set; no delivery-date phrases.",
+   "deterministic": true,
+   "source_id": [
+    "KW-005"
+   ]
+  },
+  {
+   "id": "SEO-04",
+   "field": "seo_title",
+   "rule_ar": "عنوان SEO يصف الصفحة، والكلمة الرئيسية قرب البداية، ويُفضّل ألا يتجاوز نحو ٦٠ حرفاً لتقليل القص في نتائج البحث.",
+   "check": "Length <= 60 chars (warn only, not block); primary keyword appears within first 30 chars.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-003",
+    "SEO-C-001"
+   ]
+  },
+  {
+   "id": "SEO-05",
+   "field": "seo_title",
+   "rule_ar": "عنوان SEO فريد لكل منتج وغير منسوخ من المورد أو من منتج آخر في المتجر.",
+   "check": "Exact and normalized-duplicate check against all other product seo_titles in the store and supplier title.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-002"
+   ]
+  },
+  {
+   "id": "SEO-06",
+   "field": "meta_description",
+   "rule_ar": "الوصف المختصر يوضح ما سيجده العميل (نوع المنتج + مواصفة أو اثنتان موثقتان) بلا حشو كلمات مفتاحية.",
+   "check": "Length 70-160 chars (warn outside); primary keyword occurs at most 2 times; no word repeated > 2 times.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-004"
+   ]
+  },
+  {
+   "id": "SEO-07",
+   "field": "meta_description",
+   "rule_ar": "لا أسعار ولا خصومات ولا عروض ولا ندرة ولا وعود توصيل ولا دعوات شراء في الوصف المختصر.",
+   "check": "No digits followed/preceded by currency (ر.س، ريال، SAR); no terms: خصم، عرض، مجاني، الكمية محدودة، لفترة محدودة، اطلب الآن، تسوق/تسوقي، توصيل خلال.",
+   "deterministic": true,
+   "source_id": [
+    "KW-005",
+    "SEO-P-007"
+   ]
+  },
+  {
+   "id": "SEO-08",
+   "field": "slug",
+   "rule_ar": "رابط قصير يعكس اسم المنتج، كلماته مفصولة بشرطة، بلا كلمات حشو أو أرقام عشوائية، وبنظام كتابة ثابت (عربي أو لاتيني) داخل المتجر.",
+   "check": "Matches ^[\\p{L}\\p{N}]+(-[\\p{L}\\p{N}]+)*$ (unicode); <= 6 segments; Latin letters lowercase; no stopwords list hit.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-P-001",
+    "SEO-P-002",
+    "SEO-P-003"
+   ]
+  },
+  {
+   "id": "SEO-09",
+   "field": "alt_text",
+   "rule_ar": "كل صورة منتج لها نص بديل غير فارغ، ولا يتكرر النص نفسه لكل الصور.",
+   "check": "alt non-empty for every image; length 5-125 chars; alt strings unique across the product's images.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-007"
+   ]
+  },
+  {
+   "id": "SEO-10",
+   "field": "alt_text",
+   "rule_ar": "النص البديل يصف ما يظهر في الصورة فعلاً (المنتج، اللون، الزاوية) لا قائمة كلمات مفتاحية.",
+   "check": "Human or vision-model review that alt matches image content; mechanical part: no keyword repeated within alt.",
+   "deterministic": false,
+   "source_id": [
+    "SEO-C-007"
+   ]
+  },
+  {
+   "id": "SEO-11",
+   "field": "description",
+   "rule_ar": "الوصف أصلي ومختلف فعلاً عن نص المورد وعن أوصاف المتغيرات والمنتجات المشابهة في المتجر.",
+   "check": "5-gram Jaccard similarity vs supplier text and sibling products < {similarity_threshold} (e.g. 0.5).",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-002",
+    "KW-002"
+   ]
+  },
+  {
+   "id": "SEO-12",
+   "field": "description",
+   "rule_ar": "كل مواصفة مذكورة (خامة، مقاس، سعة، توافق، منشأ) لها مصدر في بيانات التاجر أو المورد؛ لا تخمين.",
+   "check": "Grounding check: every extracted spec value must map to a merchant-provided field; unmapped values flagged. Requires extraction step.",
+   "deterministic": false,
+   "source_id": [
+    "SEO-C-006",
+    "KW-002"
+   ]
+  },
+  {
+   "id": "SEO-13",
+   "field": "description",
+   "rule_ar": "المتغيرات (المقاس، اللون، SKU) موصوفة بدقة وغير مخلوطة بين منتجات مختلفة.",
+   "check": "All size/color values mentioned in text are a subset of the product's Salla options.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-011",
+    "KW-002"
+   ]
+  },
+  {
+   "id": "SEO-14",
+   "field": "description",
+   "rule_ar": "لا تُكتب سياسات الشحن أو الإرجاع أو الضمان أو الدفع داخل الوصف إلا منقولة حرفياً من سياسة التاجر المنشورة.",
+   "check": "If policy terms (شحن، توصيل، إرجاع، استبدال، ضمان، الدفع عند الاستلام، تقسيط) appear, a merchant policy source must be attached; otherwise block.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-012"
+   ]
+  },
+  {
+   "id": "SEO-15",
+   "field": "description",
+   "rule_ar": "لا ادعاءات طبية أو علاجية ولا نصائح عناية أو استخدام غير موثقة من العلامة أو المورد.",
+   "check": "No match for medical terms list (يعالج، يشفي، علاج، مضاد للحساسية، آمن للحامل…) unless merchant evidence attached; usage/care text must come from merchant field.",
+   "deterministic": true,
+   "source_id": [
+    "KW-004",
+    "SEO-P-006"
+   ]
+  },
+  {
+   "id": "SEO-16",
+   "field": "description",
+   "rule_ar": "لا صيغ تفضيل مطلق («الأفضل»، «رقم ١»، «الأول في المملكة») بلا أساس موثق.",
+   "check": "Regex on الأفضل|أفضل\\s|رقم\\s?(1|١)|الأول\\s(في|على) → block unless evidence.",
+   "deterministic": true,
+   "source_id": [
+    "KW-003"
+   ]
+  },
+  {
+   "id": "SEO-17",
+   "field": "description",
+   "rule_ar": "لا دعوات شراء داخل الوصف (اطلب الآن، تسوقي، لا تفوّت).",
+   "check": "No match against CTA terms list (family=cta).",
+   "deterministic": true,
+   "source_id": [
+    "SEO-P-001",
+    "SEO-P-007"
+   ]
+  },
+  {
+   "id": "SEO-18",
+   "field": "description",
+   "rule_ar": "الأسئلة الشائعة (إن وُجدت) تجيب عن تردد حقيقي لدى المشتري ولا تكرر الوصف، وإجاباتها من بيانات التاجر فقط؛ وإن غابت البيانات يُحذف السؤال.",
+   "check": "FAQ answers must reference merchant fields; overlap with description body < {faq_overlap_threshold}. Relevance judgment is editorial.",
+   "deterministic": false,
+   "source_id": [
+    "SEO-C-008"
+   ]
+  },
+  {
+   "id": "SEO-19",
+   "field": "description",
+   "rule_ar": "لا يُنشر الوصف قبل مراجعة التاجر للمواصفات والمعلومات الحساسة.",
+   "check": "Publish action requires merchant_approved = true on the draft.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-020"
+   ]
+  },
+  {
+   "id": "SEO-20",
+   "field": "tags",
+   "rule_ar": "وسوم قليلة ذات صلة (نوع المنتج، الفئة، استخدام موثق) بلا تكرار ولا حشو مرادفات.",
+   "check": "Tag count <= {max_tags}; no duplicates after Arabic normalization (ة/ه، أ/ا، ى/ي); each tag found in product data or category name.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-P-001",
+    "SEO-P-003",
+    "KW-001"
+   ]
+  },
+  {
+   "id": "SEO-21",
+   "field": "structured_data",
+   "rule_ar": "بيانات Product وOffer (الاسم، السعر، العملة، التوفر) تطابق ما يظهر في الصفحة، وتُولَّد من بيانات سلة لا من نص هالة.",
+   "check": "Google Rich Results Test passes; offers.price == displayed price; offers.availability matches live stock.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-010",
+    "SEO-C-011"
+   ]
+  },
+  {
+   "id": "SEO-22",
+   "field": "structured_data",
+   "rule_ar": "لا تقييمات (AggregateRating/Review) إلا من مراجعات مشترين حقيقية ظاهرة في الصفحة؛ ممنوع توليد أو اختلاق تقييمات.",
+   "check": "No rating markup when displayed review count = 0; ratingCount/reviewCount equal displayed counts.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-C-017"
+   ]
+  },
+  {
+   "id": "SEO-23",
+   "field": "structured_data",
+   "rule_ar": "مسار BreadcrumbList يطابق مسار الفئة الفعلي للمنتج في المتجر.",
+   "check": "Rich Results Test valid; breadcrumb item URLs resolve (HTTP 200) and match category path.",
+   "deterministic": true,
+   "source_id": [
+    "SEO-P-001",
+    "SEO-P-004"
+   ]
+  }
+ ],
+ "dropped": [
+  {
+   "source_id": "SEO-C-001",
+   "reason": "دُمج في SEO-04؛ «كلمة رئيسية واحدة لكل صفحة» تبسيط لا تشترطه Google"
+  },
+  {
+   "source_id": "SEO-C-005",
+   "reason": "H1 يتحكم فيه ثيم سلة (يُعرض اسم المنتج)؛ دُمج في SEO-01"
+  },
+  {
+   "source_id": "SEO-C-009",
+   "reason": "الروابط الداخلية على مستوى المتجر/الثيم، خارج حقول هالة"
+  },
+  {
+   "source_id": "SEO-C-013",
+   "reason": "canonical تقني على مستوى المنصة، خارج حقول هالة"
+  },
+  {
+   "source_id": "SEO-C-014",
+   "reason": "noindex لصفحات الفلترة تقني على مستوى المنصة"
+  },
+  {
+   "source_id": "SEO-C-015",
+   "reason": "السرعة والجوال على مستوى الثيم"
+  },
+  {
+   "source_id": "SEO-C-016",
+   "reason": "صفحات من نحن/تواصل على مستوى المتجر لا صفحة المنتج"
+  },
+  {
+   "source_id": "SEO-C-018",
+   "reason": "ربط Search Console/Merchant Center/Analytics إعداد متجر لا حقل منتج"
+  },
+  {
+   "source_id": "SEO-C-019",
+   "reason": "يخص المقالات والأدلة لا صفحة المنتج"
+  },
+  {
+   "source_id": "SEO-C-012",
+   "reason": "نُقل جزء صفحة المنتج إلى SEO-14؛ نشر السياسات نفسها مسؤولية التاجر"
+  },
+  {
+   "source_id": "SEO-P-001",
+   "reason": "قالب يحمل ادعاء غير مثبت: الكلمة «عطر نسائي ثابت» و«تفاصيل الثبات» و«لمسة [الانطباع]»؛ حقول FAQ مزاحة (السؤال في خانة الجواب)؛ عنوان SEO المقترح يتجاوز ٦٠ حرفاً"
+  },
+  {
+   "source_id": "SEO-P-002",
+   "reason": "قالب؛ وصف meta فيه حكم «تجمع الراحة مع الشكل المرتب»؛ حقول FAQ مزاحة"
+  },
+  {
+   "source_id": "SEO-P-003",
+   "reason": "قالب؛ حقول FAQ مزاحة؛ استُخرجت منه قواعد عامة فقط"
+  },
+  {
+   "source_id": "SEO-P-004",
+   "reason": "قالب؛ «عجوة المدينة» ادعاء منشأ يحتاج دليلاً من التاجر؛ حقول FAQ مزاحة"
+  },
+  {
+   "source_id": "SEO-P-005",
+   "reason": "قالب؛ حقول FAQ مزاحة؛ استُخرجت منه قواعد عامة فقط"
+  },
+  {
+   "source_id": "SEO-P-006",
+   "reason": "قالب؛ سؤال «هل يناسب البشرة الحساسة» ادعاء صحي؛ دُمجت قاعدته في SEO-15"
+  },
+  {
+   "source_id": "SEO-P-007",
+   "reason": "قالب؛ «إكسسوار يكمل إطلالة» عبارة ترويجية؛ نص الرابط «تسوقي» دعوة شراء"
+  },
+  {
+   "source_id": "KW-001",
+   "reason": "يخص صفحات الفئات لا صفحة المنتج"
+  },
+  {
+   "source_id": "KW-002",
+   "reason": "دُمج في SEO-01/11/12/13"
+  },
+  {
+   "source_id": "KW-003",
+   "reason": "يخص مقالات المقارنة؛ نُقل منع «أفضل» بلا أساس إلى SEO-16"
+  },
+  {
+   "source_id": "KW-004",
+   "reason": "دُمج في SEO-15"
+  },
+  {
+   "source_id": "KW-005",
+   "reason": "دُمج في SEO-03 وSEO-07"
+  }
+ ],
+ "google_conflicts_and_notes": [
+  "Google لا تحدد طولاً إلزامياً للعنوان أو الوصف المختصر؛ القص يكون حسب عرض البكسل. حدود ٦٠ و١٦٠ حرفاً إرشادية فقط، فتكون severity=warn لا block.",
+  "Google قد تعيد كتابة العنوان والوصف المختصر في النتائج؛ لا يُعِد التاجر بظهور نص معين.",
+  "بيانات Product/Offer المنظمة تحتاج السعر للمقتطفات الغنية — لا يتعارض مع منع الأسعار في النص لأن السعر يأتي من بيانات سلة المنظمة لا من نص هالة.",
+  "منع التقييمات المختلقة يتوافق مع سياسة Google للمراجعات؛ التقييمات الذاتية لـOrganization/LocalBusiness غير مؤهلة للمقتطفات.",
+  "الوسوم (tags) في سلة ليست عامل ترتيب معروفاً في Google؛ فائدتها للتصفح والبحث الداخلي، لذا منع الحشو فيها أهم من كثرتها.",
+  "H1 وcanonical وSchema يولّدها ثيم سلة؛ هالة لا تضمنها، والفحص عليها للتنبيه فقط.",
+  "القوالب الأصلية كانت تخاطب المؤنث فقط («تسوقي، اذكري») — استُبدل بصياغة محايدة."
+ ]
+}
