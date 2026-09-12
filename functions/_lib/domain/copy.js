@@ -11,8 +11,9 @@ import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
-import { fixNoteLabels, splitSentencesKeep, dropUnseenLength, dropForeignScript, dropSleevesForBottoms, withSizeChartLine, fixLatinWords, fixTrouserLength, dropSalesCta, fixCommonGrammar, fixColorAgreement } from "./copyPhrases.js";
-import { productOnlyNotes, dropAttachedClaims, ATTACHED, otherItem } from "./copyNotes.js";
+import { splitSentencesKeep } from "./copyPhrases.js";
+import { productOnlyNotes } from "./copyNotes.js";
+import { polishPage, pageText } from "./copyPage.js";
 import { loadLessons, lessonsBlock, learnFromCopy } from "./copyLessons.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
@@ -279,7 +280,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // تُنشر مع الوصف على صفحة المنتج (sallaProductPayload.js).
   const allIssues = (p) => [...descriptionQualityIssues(p.copywriting, { hasVision, sourceText, productName: name }), ...publishedFieldIssues(p, { sourceText, productName: name })];
   let issues = allIssues(parsed);
-  const firstDraft = { description: String(parsed.copywriting.description || ""), codes: issues.map((i) => i.code) };
+  const firstDraft = { page: pageText(parsed), codes: issues.map((i) => i.code) };
   if (issues.length) {
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
@@ -347,19 +348,12 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       internal: `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)}`, storeId: merchantId
     });
   }
-  parsed.copywriting.description = dropSleevesForBottoms(dropForeignScript(dropUnseenLength(fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name)), visionNotes)), name);
-  parsed.copywriting.description = withSizeChartLine(fixColorAgreement(fixCommonGrammar(dropSalesCta(fixTrouserLength(fixLatinWords(parsed.copywriting.description, sourceText), name)))), name);
-  parsed.copywriting.excerpt = fixLatinWords(parsed.copywriting.excerpt, sourceText);
+  // الصفحة كلها لا فقرة الوصف وحدها: العنوان والميتا والأسئلة والنقاط والنبذة والوسوم كانت تنشر أخطاء
+  // أُصلحت بالوصف فقط (تجربة 2026-09-12). كل تصحيح يمر على كل حقل (copyPage.js).
+  polishPage(parsed, { name, sourceText, notes: visionNotes });
   // أثر كل توليد (مؤقت حتى قبول سلة): توليد بلا عيب مرصود لم يترك صفاً فتعذّر تشخيص «couche».
   logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_TRACE", internal: `tier=${lastAsk.tier} vision=${visionModel || "none"} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`, storeId: merchantId });
-  parsed.copywriting.excerpt = dropForeignScript(parsed.copywriting.excerpt);
-  parsed.copywriting.whatsapp = dropForeignScript(parsed.copywriting.whatsapp);
-  parsed.copywriting.excerpt = dropAttachedClaims(parsed.copywriting.excerpt, name);
-  parsed.copywriting.whatsapp = dropAttachedClaims(parsed.copywriting.whatsapp, name);
-  if (Array.isArray(parsed.copywriting.highlights)) {
-    parsed.copywriting.highlights = parsed.copywriting.highlights.filter((h) => typeof h !== "string" || !(ATTACHED.test(h) && otherItem(h, name)));
-  }
-  await learnFromCopy(env, { draft: firstDraft.description, codes: firstDraft.codes, final: parsed.copywriting.description, rawNotes: rawVisionNotes || "", notes: visionNotes, sourceText });
+  await learnFromCopy(env, { draft: firstDraft.page, codes: firstDraft.codes, final: pageText(parsed), rawNotes: rawVisionNotes || "", notes: visionNotes, sourceText });
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
   parsed.usedImage = Boolean(visionNotes);
   // تصنيف المتجر بيانات تاجر قد تكون خاطئة — رُصد فستان تحت «التنانير». حين
