@@ -11,6 +11,7 @@ import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields, splitSentences, propItemIn } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
+import { fixNoteLabels } from "./copyPhrases.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -103,6 +104,7 @@ function focusedDescriptionSystem(name, notes, variantsText) {
     "الطول: من ٦٠ إلى ٩٠ كلمة في ثلاث فقرات قصيرة يفصل بينها سطر فارغ:",
     `١) ابدئي بكلمة «${name}» ثم صفي ما في ملاحظات الصورة بالتفصيل: اللون، القصّة، الياقة، الأكمام، الطول، وكل تفصيل ورد فيها.`,
     "٢) متى وكيف تُلبس، مع قطعة تنسيق مقترحة.",
+    "لا تنسخي عناوين الملاحظات («الطول والقصّة»، «الكتفان والحمالات») — صوغيها جملاً: «بطول ميدي» لا «الطول والقصّة ميدي».",
     "الطول والقصّة بكلمة الملاحظات نفسها («ميدي» تبقى «ميدي»)، لا «طويل» ولا «قصير» ولا «كلوش» ولا «واسع» ما لم تَرِد فيها.",
     "٣) جملة واحدة بهذه الصيغة أو قريبة منها: «راجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.» — فعل أمر موجّه للعميلة، لا «توصي» ولا «يرجى» بلا فاعل.",
     "ممنوع: السعر، الشحن والإرجاع والدفع، أي خامة لم ترد، أحكام الجودة (مريح، أنيق، أناقة، فاخر، فخامة، مثالي، راقٍ)، ذكر العارضة أو الصورة، وأي تفصيل لم يرد بالملاحظات.",
@@ -321,6 +323,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       internal: `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)}`, storeId: merchantId
     });
   }
+  parsed.copywriting.description = fixNoteLabels(parsed.copywriting.description);
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
   parsed.usedImage = Boolean(visionNotes);
   // تصنيف المتجر بيانات تاجر قد تكون خاطئة — رُصد فستان تحت «التنانير». حين
