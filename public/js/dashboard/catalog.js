@@ -9,7 +9,7 @@ import { iconSvg, setIcon } from "./icons.js";
 import { fetchCatalogList, postCatalogSync, postBulkGenerateSelected } from "./api.js";
 import { renderIdentityLine } from "./render.js";
 import { setPublishTarget, generateCopy } from "./studio.js";
-import { pollBulkJob } from "./bulk.js";
+import { pollBulkJob, toneValue } from "./bulk.js";
 
 const escHtml = window.escHtml;
 const showMsg = (id, text, type) => window.showMsg(id, text, type);
@@ -94,6 +94,11 @@ export async function loadCatalog(offset = 0) {
         setIcon(icon, "inventory_2");
         title.innerText = "متجرك مربوط، لكن ما لقينا منتجات نقدر نحفظها.";
         hint.innerText = "تأكد أن منتجاتك منشورة بسلة ولها رموز SKU، ثم اضغط «اسحب منتجاتي».";
+      } else if (S.storeLinked === false) {
+        // متجر غير مربوط: زر السحب سيفشل — الخطوة الصحيحة هي الربط لا السحب.
+        setIcon(icon, "storefront");
+        title.innerText = "متجرك غير مربوط بسلة بعد — اربطه أولاً من تبويب «متجري».";
+        hint.innerText = "بعد الربط تُسحب منتجاتك بصورها تلقائياً وتظهر هنا.";
       } else {
         setIcon(icon, "inventory_2");
         title.innerText = 'ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"';
@@ -129,6 +134,7 @@ export function catalogCard(it, key) {
 
   const card = document.createElement("button");
   card.type = "button";
+  card.setAttribute("aria-label", "اكتب وصف " + (it.name || "المنتج"));
   card.className = "w-full text-right rounded-2xl border border-slate-200 bg-white overflow-hidden hover:border-black transition shadow-sm";
   card.dataset.sku = key;
 
@@ -147,7 +153,7 @@ export function catalogCard(it, key) {
   // بطاقة صادقة تقول ذلك بدل مربع اختيار غائب بلا تفسير.
   const skuBadge = it.sku
     ? ""
-    : '<span class="absolute top-2 right-2 bg-amber-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">بلا SKU — لا يدخل التوليد الجماعي</span>';
+    : '<span class="absolute top-2 right-2 bg-amber-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" title="بلا SKU — لا يدخل التوليد الجماعي">بلا SKU</span>';
   // أيقونة «بلا صورة» قطعة مبنيّة داخلياً من ثوابت (لا نص من سلة) — تُسمّى كمتغيّر
   // مثل img/badge ليبقى حارس CATUI-12 صارماً على كل ما عداها.
   const noImageIcon = iconSvg("image_not_supported", "text-3xl text-slate-400");
@@ -178,6 +184,7 @@ export function catalogCard(it, key) {
     box.type = "checkbox";
     box.className = "catalog-pick w-4 h-4 accent-black cursor-pointer";
     box.value = it.sku;
+    box.setAttribute("aria-label", "حدّد " + (it.name || it.sku));
     box.checked = S.selectedSkus.has(it.sku);
     box.addEventListener("change", () => {
       if (box.checked) S.selectedSkus.add(it.sku); else S.selectedSkus.delete(it.sku);
@@ -214,8 +221,8 @@ export function selectAllCatalog(on) {
 }
 
 /**
- * توليد للمنتجات المحددة — نفس مسار الجملة (طابور مراجعة، احترام حصة
- * الشهر، فاصل ١.١ث لكل متجر)، لكن بقائمة التاجر لا بترتيب الأولوية.
+ * توليد للمنتجات المحددة — نفس مسار الجملة (طابور مراجعة، حد يومي والزائد
+ * مؤجَّل يوماً بيوم، فاصل ١.١ث لكل متجر)، لكن بقائمة التاجر لا بترتيب الأولوية.
  */
 export async function generateSelectedCatalog() {
   const skus = [...S.selectedSkus];
@@ -225,13 +232,13 @@ export async function generateSelectedCatalog() {
   btn.disabled = true;
   txt.innerText = "جاري البدء…";
   try {
-    const tone = document.getElementById("bulkTone")?.value || "white";
+    const tone = toneValue();
     const { res, data } = await postBulkGenerateSelected(skus, tone);
     if (!res.ok || !data?.ok) {
       showMsg("catalogFeedback", data?.error || "تعذر بدء التوليد. حاول مرة ثانية.", "error");
     } else {
       // المراجعة صارت بنفس التبويب — لا إحالة لتبويب ثانٍ، والقائمة أسفل الشبكة.
-      showMsg("catalogFeedback", (data.message || `بدأ توليد ${skus.length} وصفاً`) + " — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة)، وتظهر بقائمة المراجعة تحت لتعتمدها واحداً واحداً.", "success");
+      showMsg("bulkFeedback", (data.message || `بدأ توليد ${skus.length} وصفاً`) + " — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة)، وتظهر بقائمة المراجعة تحت لتعتمدها واحداً واحداً.", "success");
       S.selectedSkus.clear();
       selectAllCatalog(false);
       renderCatalogSelection();

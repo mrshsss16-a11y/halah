@@ -2,7 +2,7 @@
 import { S } from "./state.js";
 import { postCopy, postPublish, postCategory } from "./api.js";
 import { renderCopy, renderPublishTarget, showPublishSuccess, showPublishError } from "./render.js";
-import { markCatalogCardPublished } from "./catalog.js";
+import { markCatalogCardPublished, openCopyPanel } from "./catalog.js";
 import { revertReview } from "./review.js";
 import { loadUsage } from "./store.js";
 
@@ -125,6 +125,11 @@ export async function applySuggestedCategory() {
   }
 }
 
+function currentCatalogItem() {
+  const id = S.selectedCatalogProduct?.productId;
+  return id ? Object.values(S.catalogItems).find((p) => String(p.productId) === String(id)) : null;
+}
+
 // ── وجهة النشر ────────────────────────────────────────────────────
 // اختيار منتج من "منتجاتي" يضبط قائمة النشر آلياً. القائمة تبقى قابلة
 // للتعديل: التاجر يقدر يختار منتجاً آخر يدوياً وقتها نحدّث السطر التوضيحي.
@@ -171,10 +176,12 @@ export function onPublishProductChange() {
   renderPublishTarget();
 }
 
-/** «أعد التوليد» — نفس بيانات المنتج المعبّاة بالاستوديو، بلا إعادة كتابة. */
+/** «أعد التوليد» — نفس بيانات المنتج المعبّاة بالاستوديو، بلا إعادة كتابة.
+ *  كان يمرّر لأعلى الصفحة (فوق الشبكة) فيختفي أثر الضغطة — الآن حالة الانتظار
+ *  تظهر مكان اللوحة. */
 export function regenerateCopy() {
   document.getElementById("publishFeedback").classList.add("hidden");
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  openCopyPanel(currentCatalogItem() || { name: document.getElementById("pName").value });
   generateCopy();
 }
 

@@ -9,7 +9,7 @@ import { createRunner } from "../_helpers.mjs";
 const { assert, done } = createRunner("hugeicons");
 const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
 
-const PARTIALS = ["dashboard-catalog", "dashboard-hero", "dashboard-modals", "dashboard-nav", "dashboard-review", "dashboard-store", "dashboard-studio"];
+const PARTIALS = ["dashboard-catalog", "dashboard-hero", "dashboard-modals", "dashboard-nav", "dashboard-review", "dashboard-store", "dashboard-studio", "dashboard-bulk"];
 const NAMES = ["check_circle", "auto_awesome", "storefront", "refresh", "close", "tune", "sync", "progress_activity", "logout",
   "lock_person", "link_off", "label_important", "image_not_supported", "edit_note", "edit", "delete_forever", "inventory_2"];
 

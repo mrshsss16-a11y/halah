@@ -5,7 +5,7 @@
             <h3 class="text-sm font-black text-black">كيف تجربتك مع هالة لين الآن؟</h3>
             <p class="text-[11px] text-slate-600 font-medium">تقييمك يوصلنا مباشرة — سؤال واحد بس.</p>
           </div>
-          <button onclick="dismissFeedback()" class="text-slate-400 hover:text-black" title="لاحقاً"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M18 6L6.00081 17.9992M17.9992 18L6 6.00085" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg></button>
+          <button type="button" onclick="dismissFeedback()" class="text-slate-400 hover:text-black" title="لاحقاً" aria-label="إغلاق سؤال التقييم"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M18 6L6.00081 17.9992M17.9992 18L6 6.00085" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg></button>
         </div>
         <div class="flex gap-2" id="feedbackStars">
           <button onclick="pickFeedbackScore(1)" data-score="1" class="fb-star sleek-btn-white w-10 h-10 rounded-xl text-sm font-black">١</button>
@@ -26,7 +26,7 @@
         <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4 flex-wrap">
           <div class="space-y-1">
             <h2 class="text-lg font-black text-black">راجع واعتمد — قبل أي نشر</h2>
-            <p id="reviewCountsLine" class="text-xs text-slate-600 font-medium">كل وصف مولَّد بالجملة يمرّ من هنا. ما يُنشر على سلة إلا ما تعتمده.</p>
+            <p id="reviewCountsLine" class="text-xs text-slate-600 font-medium">أوصاف «ولّد المحدد» و«ولّد للكل» تنتظرك هنا. ما يُنشر على سلة إلا ما تعتمده.</p>
           </div>
           <button onclick="reloadReview()" class="sleek-btn-white px-3 py-2 rounded-xl text-xs transition flex items-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M20.0092 2V5.13219C20.0092 5.42605 19.6418 5.55908 19.4537 5.33333C17.6226 3.2875 14.9617 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg><span>تحديث</span>
@@ -42,14 +42,14 @@
         </div>
 
         <div id="reviewActions" class="hidden flex gap-2 flex-wrap">
-          <button onclick="decideReview('approve_all')" class="sleek-btn-black px-4 py-2.5 rounded-xl text-xs transition">اعتمد الكل</button>
+          <button onclick="decideReview('approve_all')" class="sleek-btn-black px-4 py-2.5 rounded-xl text-xs transition">اعتمد الكل وانشره</button>
           <button onclick="decideReview('approve')" class="sleek-btn-white px-4 py-2.5 rounded-xl text-xs transition">اعتمد المحدد</button>
           <button onclick="decideReview('reject')" class="sleek-btn-white px-4 py-2.5 rounded-xl text-xs transition text-rose-700">ارفض المحدد</button>
           <label class="text-[11px] font-bold text-slate-600 flex items-center gap-1 mr-auto"><input type="checkbox" id="reviewSelectAll" onchange="toggleReviewAll(this.checked)"> تحديد الكل</label>
         </div>
 
         <div id="reviewFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
-        <div id="reviewLoading" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري التحميل…</div>
-        <div id="reviewEmpty" class="hidden text-xs text-slate-500 font-medium py-6 text-center">لا شيء هنا الآن.</div>
+        <div id="reviewLoading" role="status" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري التحميل…</div>
+        <div id="reviewEmpty" class="hidden text-xs text-slate-500 font-medium py-6 text-center">ما فيه أوصاف بانتظار مراجعتك. حدّد منتجات من «منتجاتي» واضغط «ولّد أوصاف المحدد».</div>
         <div id="reviewList" class="space-y-3"></div>
       </div>

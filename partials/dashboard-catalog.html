@@ -2,6 +2,15 @@
          جوهر المنتج: التاجر يشوف منتجاته الحقيقية ويضغط واحداً، فتتعبّى حقول
          الاستوديو من سلة ويبدأ التوليد فوراً — صفر كتابة أو لصق يدوي. -->
     <section id="sectionCatalog" class="space-y-5">
+      <!-- خطوات العمل بترتيبها الفعلي (2026-09-13) — دليل ثابت لا حالة مدّعاة:
+           لا يقول «مكتمل» عن خطوة، فقط يرتّب ما يراه التاجر تحته. -->
+      <ol id="flowSteps" aria-label="خطوات وصف منتجاتك" class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] font-bold text-black">
+        <li class="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200"><span class="step-num bg-black text-white">١</span><span>اسحب منتجاتك من سلة</span></li>
+        <li class="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200"><span class="step-num bg-black text-white">٢</span><span>اضغط منتجاً أو حدّد عدة منتجات</span></li>
+        <li class="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200"><span class="step-num bg-black text-white">٣</span><span>راجع الوصف وعدّله</span></li>
+        <li class="flex items-center gap-2 p-2.5 rounded-xl bg-white border border-slate-200"><span class="step-num bg-black text-white">٤</span><span>اعتمده فيُنشر على سلة</span></li>
+      </ol>
+
       <div class="sleek-card rounded-3xl p-6 space-y-4 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
           <div class="space-y-1">
@@ -16,19 +25,57 @@
 
         <div id="catalogFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
 
-        <div id="catalogLoading" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري تحميل منتجاتك…</div>
+        <div id="catalogLoading" role="status" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري تحميل منتجاتك…</div>
 
-        <!-- ── اختيار متعدد: التاجر يشوف الصور ويحدد أي منتجات تُوصف ── -->
-        <div id="catalogSelectBar" class="hidden flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+        <!-- ── شريط أدوات «منتجاتي» (2026-09-13): الاختيار والنبرة وكل أزرار التوليد
+             بمكان واحد فوق الشبكة. كانت النبرة داخل نموذج يدوي مطويّ (فالتاجر يولّد
+             بنبرة لا يراها)، وزر «ولّد للكل» بآخر الصفحة بعيداً عن المنتجات. ── -->
+        <div id="catalogSelectBar" class="hidden space-y-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="flex flex-wrap items-center gap-2">
           <span id="catalogSelectCount" class="text-xs font-black text-black">محدد: ٠</span>
-          <button onclick="selectAllCatalog(true)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">تحديد كل المعروض</button>
-          <button onclick="selectAllCatalog(false)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">إلغاء التحديد</button>
+          <button type="button" onclick="selectAllCatalog(true)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">تحديد كل المعروض</button>
+          <button type="button" onclick="selectAllCatalog(false)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">إلغاء التحديد</button>
+            <label for="pTone" class="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 sm:mr-auto">
+              <span>نبرة الكتابة</span>
+              <select id="pTone" class="bg-white border border-slate-300 text-[11px] rounded-lg px-2 py-1.5 text-black font-bold focus:outline-none focus:border-black">
+                <option value="white">لهجة بيضاء تسويقية ودودة</option>
+                <option value="formal">فصحى رسمية راقية</option>
+                <option value="luxury">فخامة وحصرية</option>
+                <option value="deals">حماس عروض</option>
+                <option value="funny">خفة دم سعودية</option>
+              </select>
+            </label>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
           <button id="catalogSelectedGenBtn" onclick="generateSelectedCatalog()" disabled
                   class="sleek-btn-black px-4 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 opacity-50 cursor-not-allowed">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-sm" aria-hidden="true" focusable="false"><path d="M15 2L15.5387 4.39157C15.9957 6.42015 17.5798 8.00431 19.6084 8.46127L22 9L19.6084 9.53873C17.5798 9.99569 15.9957 11.5798 15.5387 13.6084L15 16L14.4613 13.6084C14.0043 11.5798 12.4202 9.99569 10.3916 9.53873L8 9L10.3916 8.46127C12.4201 8.00431 14.0043 6.42015 14.4613 4.39158L15 2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M7 12L7.38481 13.7083C7.71121 15.1572 8.84275 16.2888 10.2917 16.6152L12 17L10.2917 17.3848C8.84275 17.7112 7.71121 18.8427 7.38481 20.2917L7 22L6.61519 20.2917C6.28879 18.8427 5.15725 17.7112 3.70827 17.3848L2 17L3.70827 16.6152C5.15725 16.2888 6.28879 15.1573 6.61519 13.7083L7 12Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg>
             <span id="catalogSelectedGenText">ولّد أوصاف المحدد</span>
           </button>
-          <span class="text-[11px] text-slate-500 font-medium">كل وصف يمرّ على مراجعتك قبل النشر.</span>
+          <button id="bulkGenerateBtn" type="button" onclick="startCatalogGenerate()" class="sleek-btn-white px-4 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M15 2L15.5387 4.39157C15.9957 6.42015 17.5798 8.00431 19.6084 8.46127L22 9L19.6084 9.53873C17.5798 9.99569 15.9957 11.5798 15.5387 13.6084L15 16L14.4613 13.6084C14.0043 11.5798 12.4202 9.99569 10.3916 9.53873L8 9L10.3916 8.46127C12.4201 8.00431 14.0043 6.42015 14.4613 4.39158L15 2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M7 12L7.38481 13.7083C7.71121 15.1572 8.84275 16.2888 10.2917 16.6152L12 17L10.2917 17.3848C8.84275 17.7112 7.71121 18.8427 7.38481 20.2917L7 22L6.61519 20.2917C6.28879 18.8427 5.15725 17.7112 3.70827 17.3848L2 17L3.70827 16.6152C5.15725 16.2888 6.28879 15.1573 6.61519 13.7083L7 12Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg><span>ولّد لكل منتجاتي — الأهم أولاً</span>
+          </button>
+          </div>
+          <p class="text-[11px] text-slate-600 font-medium leading-relaxed">
+            كل وصف يُحسب من «أوصاف اليوم». الزائد عن حد اليوم <b>يُؤجَّل ويُكمَل تلقائياً يوماً بيوم</b>،
+            و«ولّد للكل» يبدأ بالمنتجات بلا وصف ثم ذات الوصف القصير. <b>لا يُنشر شيء على سلة قبل ما تراجعه وتعتمده</b> بقائمة المراجعة تحت.
+          </p>
+          <p id="quotaExhaustedNote" class="hidden text-[11px] font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded-xl px-3 py-2">
+            خلصت أوصاف اليوم. اللي تحدده الآن يُجدول ويبدأ توليده مع تجدّد الحد بكرة.
+          </p>
+        </div>
+
+        <!-- رسائل التوليد بالجملة وشريط تقدّمه — بمكان الضغطة نفسه. -->
+        <div id="bulkFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+        <div id="bulkProgress" class="hidden space-y-2" aria-live="polite">
+          <div class="flex justify-between text-[11px] font-bold text-slate-600">
+            <span id="bulkProgressLabel">جاري المعالجة…</span>
+            <span id="bulkProgressCount">0 / 0</span>
+          </div>
+          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+            <div id="bulkProgressBar" class="bg-black h-2 rounded-full transition-all" style="width:0%"></div>
+          </div>
+          <div id="bulkFailedList" class="text-[11px] text-rose-700 space-y-0.5"></div>
         </div>
 
         <div id="catalogEmpty" class="hidden text-center py-10 space-y-2">
@@ -47,5 +94,8 @@
 
       <!-- المراجعة الجماعية — نفس المكان: نتائج «ولّد أوصاف المحدد» تظهر هنا. -->
       <!--#include partials/dashboard-review.html-->
+
+      <!-- المسارات الثانوية (قائمة ملصوقة · منتج يدوي) — آخر الصفحة، مطويّة. -->
+      <!--#include partials/dashboard-bulk.html-->
 
     </section>

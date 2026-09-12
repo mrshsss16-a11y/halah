@@ -54,6 +54,15 @@
     /* أيقونات Hugeicons Free (MIT — الإشعار الكامل بـ/js/dashboard/icons.js) كـSVG
        مضمَّن: الحجم 1em يتبع صنف النص، واللون currentColor يتبع النص والوضع الداكن. */
     .hgi { flex-shrink: 0; vertical-align: -0.15em; }
+    /* تركيز مرئي للوحة المفاتيح (2026-09-13): الحقول تحمل focus:outline-none من
+       Tailwind، والأزرار والبطاقات لم يكن لها أي أثر تركيز. */
+    button:focus-visible, a:focus-visible, summary:focus-visible, select:focus-visible,
+    input:focus-visible, textarea:focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+    .salla-dark button:focus-visible, .salla-dark a:focus-visible, .salla-dark summary:focus-visible,
+    .salla-dark select:focus-visible, .salla-dark input:focus-visible, .salla-dark textarea:focus-visible { outline-color: #baefe3; }
+    .in-salla-frame:not(.salla-dark) button:focus-visible, .in-salla-frame:not(.salla-dark) a:focus-visible,
+    .in-salla-frame:not(.salla-dark) summary:focus-visible { outline-color: #004d5b; }
+    .step-num { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 1.25rem; height: 1.25rem; border-radius: 9999px; font-size: 10px; font-weight: 900; }
 
     /* ── داخل إطار سلة: لا شريط ولا تذييل خاص بنا، والمحتوى يبدأ من الأعلى ──
        العنوان ينتقل لشريط سلة الأصلي (embedded.js · page.setTitle). */

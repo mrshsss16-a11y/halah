@@ -12,10 +12,8 @@ export const S = {
   publishing: false,          // قفل ضغطة النشر المزدوجة
   selectedCatalogProduct: null, // { productId, name } أو null
 
-  // ── المحادثة التجريبية ──
-  // chat.js يأخذ قائمة الأدوار كاملة ويلتقط آخر رسالة مستخدم بنفسه، فحفظ
-  // التاريخ هنا هو ما يعطي الوكيل سياق المحادثة.
-  chatHistory: [],
+  // null = لم تُجلب حالة المتجر بعد؛ false = غير مربوط فعلاً (store.js).
+  storeLinked: null,
 
   // ── منتجاتي (كتالوج سلة المسحوب) ──
   catalogItems: {},

@@ -7,6 +7,15 @@ import { postReviewList, postReviewDecide, postFeedback } from "./api.js";
 const escHtml = window.escHtml;
 const showMsg = (id, text, type) => window.showMsg(id, text, type);
 
+// حالة فارغة لكل تبويب بدل «لا شيء هنا» واحدة لخمس حالات مختلفة.
+const REVIEW_EMPTY = {
+  pending: "ما فيه أوصاف بانتظار مراجعتك. حدّد منتجات من «منتجاتي» واضغط «ولّد أوصاف المحدد».",
+  awaiting_publish: "ما فيه أوصاف معتمدة تنتظر النشر.",
+  published: "ما نُشر شيء على سلة بعد.",
+  publish_failed: "ما فيه نشر فاشل.",
+  rejected: "ما رفضت أي وصف."
+};
+
 export function setReviewCounts(c) {
   if (!c) return;
   document.getElementById("rvPending").innerText = c.pending;
@@ -43,7 +52,7 @@ export function reviewCard(r) {
   div.className = "rounded-2xl border border-slate-200 bg-white p-4 space-y-2";
   div.dataset.id = r.id;
   const head = `<div class="flex items-start gap-2">
-      ${S.reviewState === "pending" ? `<input type="checkbox" class="review-check mt-1" data-id="${r.id}">` : ""}
+      ${S.reviewState === "pending" ? `<input type="checkbox" class="review-check mt-1" data-id="${r.id}" aria-label="حدّد ${escHtml(r.name || r.sku || "")}">` : ""}
       ${r.imageUrl ? `<img src="${escHtml(r.imageUrl)}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-lg object-cover bg-slate-100" onerror="this.remove()">` : ""}
       <div class="flex-1 min-w-0">
         <div class="text-sm font-black text-black truncate">${escHtml(r.name || r.sku || "")}</div>
@@ -99,7 +108,7 @@ export async function loadReview(state) {
     if (!data?.ok) { showMsg("reviewFeedback", data?.error || "تعذر التحميل.", "error"); return; }
     setReviewCounts(data.counts);
     S.reviewRows = data.rows || [];
-    if (!S.reviewRows.length) { empty.classList.remove("hidden"); return; }
+    if (!S.reviewRows.length) { empty.innerText = REVIEW_EMPTY[S.reviewState] || REVIEW_EMPTY.pending; empty.classList.remove("hidden"); return; }
     S.reviewRows.forEach((r) => list.appendChild(reviewCard(r)));
   } catch (e) { loading.classList.add("hidden"); showMsg("reviewFeedback", "تعذر الاتصال.", "error"); }
 }
@@ -119,6 +128,18 @@ export function toggleReviewAll(on) {
 
 export async function decideReview(action) {
   const payload = { action };
+  if (action === "approve_all") {
+    // «اعتمد الكل» ينشر كل الطابور على متجر حي — لا يمر بضغطة عابرة.
+    const n = Number(document.getElementById("rvPending")?.innerText || 0);
+    const confirmed = await confirmAction({
+      title: "اعتماد كل الأوصاف",
+      message: `نعتمد ${n || "كل"} وصف بانتظار مراجعتك وننشرها على متجرك بسلة تدريجياً؟ تقدر تتراجع عن أي منتج بعد النشر.`,
+      confirmText: "اعتمد وانشر الكل",
+      cancelText: "إلغاء",
+      variant: "warning"
+    });
+    if (!confirmed) return;
+  }
   if (action !== "approve_all") {
     payload.ids = selectedReviewIds();
     if (!payload.ids.length) { showMsg("reviewFeedback", "حدّد عنصراً واحداً على الأقل.", "error"); return; }
