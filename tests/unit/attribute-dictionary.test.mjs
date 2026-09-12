@@ -51,7 +51,8 @@ async function main() {
     try {
       await generateProductCopy({ env: { AI }, merchantId: "m_1", name: "ساعة رجالية بوس كلوب", price: "", tone: "white", category: "", features: "قطر 40 ملم؛ حركة كوارتز", existingDescription: "", imageUrl: "https://cdn.example.com/watch.jpg", keywordsExtra: [] });
     } finally { globalThis.fetch = realFetch; }
-    assert(/قاموس مواصفات الساعات/.test(visionInput) && /قاموس مواصفات الساعات/.test(systems[0] || ""), "AD-8: قاموس الساعات يصل قارئ الصورة والكاتب");
+    assert(/قاموس مواصفات الساعات/.test(visionInput), "AD-8: قاموس الساعات يصل توجيه قارئ الصورة");
+    assert(/التزمي بنفس مصطلحات ملاحظات الصورة حرفياً/.test(systems[0] || ""), "AD-9: الكاتب ملزم بمصطلحات ملاحظات الصورة حرفياً (التي سمّاها القاموس)");
   }
 }
 
