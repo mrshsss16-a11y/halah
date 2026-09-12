@@ -8,6 +8,7 @@ import { recallStyleExamples } from "../ai/memory.js";
 import { fenceUntrusted, UNTRUSTED_DATA_NOTICE } from "../ai/guards.js";
 import { getProfile, profileToPromptBlock } from "./storeProfile.js";
 import { taxonomyForProduct } from "../ai/productTaxonomy.js";
+import { attributeBlockForProduct } from "../ai/attributeDictionary.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
@@ -148,7 +149,8 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     } catch { parsedVariants = []; }
   }
 
-  const taxonomyBlock = taxonomyForProduct({ category, name });
+  // كتيب المصطلحات + قاموس المواصفات الاحترافي (فتحة الرقبة، مينا الساعة، نوع الإطار… والتباساتها).
+  const taxonomyBlock = [taxonomyForProduct({ category, name }), attributeBlockForProduct({ category, name })].filter(Boolean).join("\n\n");
   // ذاكرة الدروس: أخطاء رُصدت بتوليدات سابقة تُعاد للكاتب ولقارئ الصورة (طلب المالك 2026-09-12).
   const lessons = await loadLessons(env);
   const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock) + lessonsBlock(lessons, "vision");
