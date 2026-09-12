@@ -57,6 +57,10 @@ async function main() {
   {
     const lessons = detectLessons({ draft: "تنورة بخصر مرتفع وقصّة مستقيمة.", notes: "اللون: أسود.", sourceText: "تنورة" });
     assert(lessons.some((l) => l.code === "UNSEEN_CUT" && l.target === "writer"), "UC-8: القصّة المخترعة تصير درساً للكاتب");
+    const fakhm = stripJudgments("سطح القماش اللامع يعطيها مظهرًا فخمًا يناسب المناسبات الرسمية والطلعات النهارية.");
+    assert(fakhm === "سطح القماش اللامع يناسب المناسبات الرسمية والطلعات النهارية.", `UC-10: «يعطيها مظهرًا فخمًا» تُحذف وتبقى الجملة سليمة («${fakhm}»)`);
+    const { unsourcedClaims } = await import("../../functions/_lib/domain/copyClaims.js");
+    assert(unsourcedClaims("متوفرة بمقاسات متنوعة لتناسب الجميع، راجعي جدول المقاسات.", "تنورة").includes("ONE_SIZE"), "UC-11: «لتناسب الجميع» ادعاء يُحذف (توليد 2026-09-12 19:48)");
     const dangling = stripJudgments("تنورة ميدي سوداء بقصّة واسعة وتصميم أنيق، تتميز بكسرات عريضة.");
     assert(dangling === "تنورة ميدي سوداء بقصّة واسعة، تتميز بكسرات عريضة.", `UC-9: «وتصميم أنيق» تُحذف كاملة لا صفتها وحدها («${dangling}»)`);
   }

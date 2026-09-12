@@ -344,13 +344,15 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   }
   if (issues.length) {
     // النموذج أصرّ: تنظيف حتمي (حذف فقط، لا اختراع) ويُسجَّل أنه قُسر.
+    const beforeForce = splitSentencesKeep(parsed.copywriting.description).map((x) => x.s);
     parsed.copywriting.description = cleanDescription(parsed.copywriting.description, { sourceText, productName: name });
+    const forcedOut = beforeForce.filter((x) => x && !parsed.copywriting.description.includes(x)).join(" | ").replace(/\s+/g, " ").slice(0, 400);
     parsed.copywriting.excerpt = cleanDescription(parsed.copywriting.excerpt, { sourceText, productName: name }).slice(0, 250);
     parsed.copywriting.whatsapp = cleanDescription(parsed.copywriting.whatsapp, { sourceText, productName: name });
     cleanPublishedFields(parsed, { sourceText, name });
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_FORCED",
-      internal: `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)}`, storeId: merchantId
+      internal: `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)} removed=${forcedOut || "-"}`, storeId: merchantId
     });
   }
   // الصفحة كلها لا فقرة الوصف وحدها: العنوان والميتا والأسئلة والنقاط والنبذة والوسوم كانت تنشر أخطاء

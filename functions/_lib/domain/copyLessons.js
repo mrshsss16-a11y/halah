@@ -11,7 +11,7 @@
 import { fixLatinWords, SALES_CTA, findColorAgreement, unseenCutPhrases } from "./copyPhrases.js";
 
 const MAX_LESSONS_PER_PROMPT = 10;
-const JUDGMENT_WORDS = /(?<!\p{L})(?:و|ب|ل)?(?:ال)?((?:[أا]نيق|فاخر|مريح|مثالي|جذاب|رائع|عصري|فريد|مميز|راق|جمالي|ساحر|خلاب)(?:ة|ه|ًا|اً|ا)?)(?!\p{L})/gu;
+const JUDGMENT_WORDS = /(?<!\p{L})(?:و|ب|ل)?(?:ال)?((?:[أا]نيق|فاخر|فخم|مريح|مثالي|جذاب|رائع|عصري|فريد|مميز|راق|جمالي|ساحر|خلاب)(?:ة|ه|ًا|اً|ا)?)(?!\p{L})/gu;
 const LENGTH_WORDS = /(?<!\p{L})(ميدي|ماكسي|ميني)(?!\p{L})/gu;
 const LATIN_WORD = /(?<![A-Za-z])[a-z][a-z-]{2,19}(?![A-Za-z])/g;
 const FOREIGN_SCRIPT = /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af]/u;
