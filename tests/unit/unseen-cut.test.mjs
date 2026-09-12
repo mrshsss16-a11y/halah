@@ -10,6 +10,22 @@ const { assert, done } = createRunner("unseen-cut");
 
 async function main() {
   {
+    const notes = "اللون: أسود. الطول والقصّة: بطول ميدي. التفاصيل: كسرات عريضة من الخصر، وسطح قماش لامع.";
+    const page = {
+      copywriting: { description: "تنورة ميدي سوداء تتميز بكسرات عريضة تبدأ من الخصر.", excerpt: "تنورة ميدي سوداء وكسرات عريضة من الخصر، سطحها اللامع.", whatsapp: "يا هلا! إطلالة رسمية. وش رايك فيها؟", highlights: [] },
+      seo: { title: "تنورة ميدي سوداء بكسرات", seoTitle: "تنورة ميدي سوداء", metaDescription: "تنورة ميدي سوداء وكسرات عريضة من الخصر، سطحها اللامع.", focusKeyword: "تنورة ميدي سوداء", lsiKeywords: ["تنورة بكسرات", "تنورة خصر مرتفع"] },
+      faqs: [{ q: "كيف أختار المقاس المناسب لي؟", a: "تقدري تراجعي جدول المقاسات الموجود بالوصف عشان تتأكدي من المقاس اللي يناسبك." }],
+      specsTable: [{ key: "الطول والقصّة", value: "ميدي" }], imageAlt: "تنورة ميدي سوداء", tags: ["تنورة رسمية", "تنورة خصر مرتفع"]
+    };
+    polishPage(page, { name: "تنورة", notes, sourceText: "تنورة" });
+    assert(page.copywriting.excerpt.endsWith("، وسطحها لامع.") && page.seo.metaDescription.endsWith("، وسطحها لامع."), `PF-A: «، سطحها اللامع.» تُصحَّح بالنبذة والميتا («${page.copywriting.excerpt}»)`);
+    assert(page.copywriting.whatsapp === page.copywriting.excerpt, `PF-B: واتساب بلا مضمون بعد حذف الأحكام يُبنى من النبذة («${page.copywriting.whatsapp}»)`);
+    assert(!page.seo.lsiKeywords.some((k) => /خصر/.test(k)) && !page.tags.some((k) => /خصر/.test(k)), "PF-C: «تنورة خصر مرتفع» لم تذكرها الصورة تُحذف من الكلمات المفتاحية والوسوم");
+    assert(!/الموجود بالوصف/.test(page.faqs[0].a) && /جدول المقاسات/.test(page.faqs[0].a), `PF-D: الجواب لا يدّعي جدولاً داخل الوصف («${page.faqs[0].a}»)`);
+    assert(page.specsTable[0].key === "الطول والقصّة", `PF-E: مفتاح المواصفة يبقى «الطول والقصّة» لا «بطول» («${page.specsTable[0].key}»)`);
+    assert(/إضاءة نهارية/.test(productOnlyNotes("الطابع العام: إضاءة نهائية، طابع رسمي.", "تنورة")), "PF-F: «إضاءة نهائية» بملاحظات الصورة ⇒ «نهارية»");
+  }
+  {
     const real = productOnlyNotes("اللون: أسود. التفاصيل: تنورة بكسرات عريضة تحت بلوزة شفافة. الطول والقصّة: ميدي تصل فوق الكاحل مع حذاء بكعب. الطابع العام: إضاءة نهارية، طابع رسمي.", "تنورة");
     assert(/بكسرات عريضة/.test(real) && /ميدي تصل فوق الكاحل/.test(real) && !/بلوزة|حذاء|تحت\.|مع\./.test(real), `UC-1: سطر فيه قطعة أخرى يُقص عندها ولا يُحذف كله («${real}»)`);
     const model = productOnlyNotes("الطول والقصّة: ميدي تصل إلى منتصف ساق العارضة. التفاصيل: كسرات عريضة، والعارضة تقف أمام خلفية بيضاء.", "تنورة");

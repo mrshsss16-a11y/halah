@@ -25,12 +25,19 @@ function polishProse(text, { name, sourceText }) {
   // ادعاء لم يذكره التاجر (مقاومة ماء، ضمان، ثبات، أصلي…) يُحذف بجملته — تقييم 2026-09-12.
   const sourced = joinSentences(splitSentencesKeep(String(text || "")).filter(({ s }) => !unsourcedClaims(s, sourceText).length));
   const t = dropForeignScript(fixNoteLabels(dropAttachedClaims(sourced, name)));
-  return fixColorAgreement(fixCommonGrammar(dropSalesCta(fixTrouserLength(fixLatinWords(t, sourceText), name)))).trim();
+  return fixColorAgreement(fixCommonGrammar(dropSalesCta(fixTrouserLength(fixLatinWords(t, sourceText), name))))
+    // «…من الخصر، سطحها اللامع.» ⇒ «…، وسطحها لامع.» (نبذة وميتا حقيقيتان 2026-09-12 18:46).
+    .replace(/،[ \t]*(\p{L}+ها)[ \t]+ال(\p{L}+)(?=[ \t]*(?:[.!؟]|$))/gu, "، و$1 $2")
+    // «جدول المقاسات الموجود بالوصف»: الوصف لا يحوي جدولاً.
+    .replace(/[ \t]*(?:ال)?موجود[ \t]+(?:ب|في[ \t]+)(?:ال)?وصف(?!\p{L})/gu, "")
+    .trim();
 }
 
 /** نص قصير (عنوان، نقطة، وسم، سؤال، نص بديل، مواصفة): تُحذف الكلمة المعيبة لا العنصر. */
-function polishShort(text, { name, sourceText }) {
-  const t = fixLatinWords(dropForeignScript(fixNoteLabels(String(text || ""))), sourceText);
+function polishShort(text, { name, sourceText, keepLabels = false }) {
+  // مفتاح المواصفة «الطول والقصّة» اسم صحيح لا عنوان ملاحظات مسرّب — صار «بطول» (2026-09-12 18:46).
+  const raw = String(text || "");
+  const t = fixLatinWords(dropForeignScript(keepLabels ? raw : fixNoteLabels(raw)), sourceText);
   return fixColorAgreement(fixCommonGrammar(fixTrouserLength(t, name)))
     .replace(CTA_WORDS, "")
     .replace(/[ \t]{2,}/g, " ")
@@ -64,6 +71,9 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   cw.description = fixSizeChartClosing(withSizeChartLine(dropSleevesForBottoms(dropUnseenLength(cut(polishProse(cw.description, ctx)), notes), name), name), { name, category });
   cw.excerpt = cut(polishProse(cw.excerpt, ctx)).slice(0, 250);
   cw.whatsapp = fixSizeChartClosing(cut(polishProse(cw.whatsapp, ctx)), { name, category });
+  // «يا هلا! إطلالة رسمية. وش رايك فيها؟» — بقي تحية وسؤالاً بعد حذف الأحكام: يُبنى من النبذة بدل رسالة فارغة.
+  const whatsappBody = cw.whatsapp.replace(/(?<!\p{L})(?:يا[ \t]+هلا|هلا|أهلاً|اهلا|مرحبا|وش[ \t]+رايك[ \t]+فيها|وش[ \t]+رأيك[ \t]+فيها|إطلالة[ \t]+رسمية)(?!\p{L})/gu, "");
+  if (words(whatsappBody.replace(/[^\p{L}\s]/gu, " ")) < 6 && words(cw.excerpt) >= 6) cw.whatsapp = cw.excerpt;
   if (typeof cw.objectionKiller === "string") cw.objectionKiller = polishProse(cw.objectionKiller, ctx);
   if (typeof cw.callToAction === "string" && unsourced(cw.callToAction)) cw.callToAction = "";
   cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
@@ -83,18 +93,18 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   seo.metaDescription = fixSizeChartClosing(cut(polishProse(seo.metaDescription, ctx)), { name, category });
   if (seo.jsonLdSchema && typeof seo.jsonLdSchema === "object") seo.jsonLdSchema.description = seo.metaDescription;
   if (typeof seo.focusKeyword === "string") seo.focusKeyword = polishShort(seo.focusKeyword, ctx) || String(name || "").trim();
-  if (Array.isArray(seo.lsiKeywords)) seo.lsiKeywords = [...new Set(seo.lsiKeywords.map((k) => polishShort(k, ctx)).filter(Boolean))];
+  if (Array.isArray(seo.lsiKeywords)) seo.lsiKeywords = [...new Set(seo.lsiKeywords.filter((k) => !unsourced(k) && !unseenCut(k)).map((k) => polishShort(k, ctx)).filter(Boolean))];
 
   if (typeof parsed.imageAlt === "string") parsed.imageAlt = cut(polishShort(parsed.imageAlt, ctx)) || String(name || "").trim();
   // SEO-20 (قائمة الفحص القديمة المنقّحة): وسوم بلا تكرار بعد تطبيع الحروف (ة/ه، أ/ا، ى/ي).
   if (Array.isArray(parsed.tags)) {
     const tagKey = (t) => t.replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
     const seenTags = new Set();
-    parsed.tags = parsed.tags.filter((t) => !unsourced(t)).map((t) => polishShort(t, ctx)).filter((t) => t && !seenTags.has(tagKey(t)) && seenTags.add(tagKey(t)));
+    parsed.tags = parsed.tags.filter((t) => !unsourced(t) && !unseenCut(t)).map((t) => polishShort(t, ctx)).filter((t) => t && !seenTags.has(tagKey(t)) && seenTags.add(tagKey(t)));
   }
   if (Array.isArray(parsed.specsTable)) {
     parsed.specsTable = parsed.specsTable
-      .map((r) => ({ ...r, key: polishShort(r?.key, ctx), value: polishShort(r?.value, ctx) }))
+      .map((r) => ({ ...r, key: polishShort(r?.key, { ...ctx, keepLabels: true }), value: polishShort(r?.value, ctx) }))
       .filter((r) => r.key && r.value && !unsourced(`${r.key} ${r.value}`) && !unseenCut(`${r.key} ${r.value}`));
   }
   return parsed;
