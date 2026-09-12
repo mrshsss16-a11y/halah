@@ -1,0 +1,58 @@
+      <!-- ── «طرق أخرى» (2026-09-13): المسارات الثانوية مطويّة أسفل الصفحة ──
+           كانت بطاقة الجملة والنموذج اليدوي بين الشبكة وطابور المراجعة، فيمرّ
+           التاجر على نموذجين لا يحتاجهما قبل أن يصل لما ينتظر قراره. التوليد
+           من المنتجات المسحوبة صار بشريط أدوات «منتجاتي» نفسه. -->
+      <div id="otherWaysCard" class="sleek-card rounded-3xl p-5 space-y-3 shadow-sm">
+        <h2 class="text-sm font-black text-black">طرق أخرى للتوليد</h2>
+        <p class="text-[11px] text-slate-600 font-medium">للمنتجات اللي مو مسحوبة من سلة بعد. نفس القواعد: تُحسب من أوصاف اليوم، ولا يُنشر شيء قبل مراجعتك.</p>
+
+        <details id="bulkPasteBox" class="rounded-2xl border border-slate-200 p-4">
+          <summary class="cursor-pointer select-none text-xs font-black text-black">الصق قائمة منتجات (سطر لكل منتج)</summary>
+          <div class="space-y-3 pt-3">
+            <p class="text-[11px] text-slate-600 font-medium">الصيغة: <span dir="auto" class="font-mono">اسم,سعر,فئة,<bdi>SKU</bdi></span> — المنتج بلا SKU يُتجاهل. تُستخدم نبرة الكتابة المختارة بشريط «منتجاتي».</p>
+            <label for="bulkRows" class="sr-only">قائمة المنتجات</label>
+        <textarea id="bulkRows" rows="5" placeholder="عباية سوداء مطرزة,350,عبايات,SKU-001&#10;عطر عود ملكي 100مل,220,عطور,SKU-002" dir="auto" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono focus:outline-none focus:border-black"></textarea>
+        <button id="bulkBtn" onclick="startBulkJob()" class="w-full sleek-btn-white py-3.5 rounded-xl text-xs transition">ولّد أوصاف القائمة</button>
+          </div>
+        </details>
+
+      <details id="studioManual" class="rounded-2xl border border-slate-200 p-4">
+        <summary class="cursor-pointer select-none flex items-center gap-2 text-xs font-black text-black">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M15.5 2V5M6.5 2V5M11 2V5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M19 12V10.5C19 7.20017 19 5.55025 17.9749 4.52512C16.9497 3.5 15.2998 3.5 12 3.5H10C6.70017 3.5 5.05025 3.5 4.02513 4.52513C3 5.55025 3 7.20017 3 10.5V15C3 18.2998 3 19.9497 4.02513 20.9749C5.05025 22 6.70017 22 10 22H11" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M7 15H11M7 11H15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M15.7367 21.6527L14 22L14.3473 20.2633C14.4179 19.9106 14.5913 19.5866 14.8456 19.3323L18.9111 15.2668C19.2668 14.9111 19.8437 14.9111 20.1995 15.2668L20.7332 15.8005C21.0889 16.1563 21.0889 16.7332 20.7332 17.0889L16.6677 21.1544C16.4134 21.4087 16.0894 21.5821 15.7367 21.6527Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
+          <span>أو اكتب منتجاً يدوياً — لمنتج مو بسلة بعد</span>
+        </summary>
+        <div class="space-y-4 pt-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <input id="pName" type="text" placeholder="اسم المنتج (مثال: عطر عود ملكي 100مل)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <input id="pPrice" type="number" placeholder="السعر (ر.س)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+          <input id="pCategory" type="text" placeholder="الفئة (عطور، عبايات، تمور…)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
+        </div>
+        <textarea id="pFeatures" rows="2" placeholder="مزايا المنتج (اختياري) — افصل بينها بفاصلة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+
+        <!-- المسار الأساسي: هذين الحقلين يُعبّآن آلياً من بطاقة "منتجاتي".
+             يبقيان ظاهرين وقابلين للتعديل للمسار اليدوي (منتج مو بسلة بعد). -->
+        <div id="studioSourceBanner" class="hidden p-3 rounded-xl bg-slate-50 border border-slate-300 text-[11px] font-bold text-black flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M2.5 7.5V13.5C2.5 17.2712 2.5 19.1569 3.67157 20.3284C4.84315 21.5 6.72876 21.5 10.5 21.5H13.5C17.2712 21.5 19.1569 21.5 20.3284 20.3284C21.5 19.1569 21.5 17.2712 21.5 13.5V7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M3.86909 5.31461L2.5 7.5H21.5L20.2478 5.41303C19.3941 3.99021 18.9673 3.2788 18.2795 2.8894C17.5918 2.5 16.7621 2.5 15.1029 2.5H8.95371C7.32998 2.5 6.51812 2.5 5.84013 2.8753C5.16215 3.2506 4.73113 3.93861 3.86909 5.31461Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M12 7.5V2.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M10 10.5H14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
+          <span id="studioSourceText"></span>
+        </div>
+
+        <div class="space-y-2.5">
+          <label for="pImageUrl" class="block text-[11px] font-bold text-slate-600">صورة المنتج — يحلّلها فعلياً (لون، خامة، شكل) قبل الكتابة</label>
+          <input id="pImageUrl" type="text" placeholder="تُعبَّأ تلقائياً لما تختار منتجاً من «منتجاتي» — أو الصق رابط صورة" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" dir="ltr"/>
+        </div>
+
+        <details class="text-xs">
+          <summary class="cursor-pointer font-bold text-slate-600 select-none">الوصف الحالي للمنتج (اختياري — يُعبَّأ تلقائياً من سلة)</summary>
+          <div class="space-y-2.5 pt-2.5">
+            <textarea id="pExistingDescription" rows="3" placeholder="وصف المنتج الحالي بمتجرك — الذكاء الاصطناعي يحسّن صياغته وSEO بدل ما يخترع وصفاً عاماً من الاسم بس" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+          </div>
+        </details>
+
+        <button id="genBtn" onclick="generateCopy()" class="w-full sleek-btn-black py-3.5 rounded-xl text-xs transition flex items-center justify-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M15 2L15.5387 4.39157C15.9957 6.42015 17.5798 8.00431 19.6084 8.46127L22 9L19.6084 9.53873C17.5798 9.99569 15.9957 11.5798 15.5387 13.6084L15 16L14.4613 13.6084C14.0043 11.5798 12.4202 9.99569 10.3916 9.53873L8 9L10.3916 8.46127C12.4201 8.00431 14.0043 6.42015 14.4613 4.39158L15 2Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/><path d="M7 12L7.38481 13.7083C7.71121 15.1572 8.84275 16.2888 10.2917 16.6152L12 17L10.2917 17.3848C8.84275 17.7112 7.71121 18.8427 7.38481 20.2917L7 22L6.61519 20.2917C6.28879 18.8427 5.15725 17.7112 3.70827 17.3848L2 17L3.70827 16.6152C5.15725 16.2888 6.28879 15.1573 6.61519 13.7083L7 12Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.5"/></svg>
+          <span id="genBtnText">اكتب الوصف الآن</span>
+        </button>
+
+        </div>
+      </details>
+      </div>

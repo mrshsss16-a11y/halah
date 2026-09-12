@@ -26,6 +26,7 @@ export async function loadStore() {
     document.getElementById("storeConnected").classList.toggle("hidden", !linked);
     document.getElementById("storeDisconnected").classList.toggle("hidden", !!linked);
     document.getElementById("storeLinkState").innerText = linked ? "مرتبط ✅" : "غير مرتبط";
+    S.storeLinked = Boolean(linked);
 
     if (linked) {
       document.getElementById("connectedStoreName").innerText = data.storeName || "—";
@@ -72,7 +73,10 @@ export async function loadUsage() {
   const descEl = document.getElementById("kpiUsageDesc");
   try {
     const { data } = await postUsage();
-    descEl.innerText = data?.description ? `${data.description.remaining}/${data.description.limit}` : "—";
+    const d = data?.description;
+    // «٣/٥» كان يُقرأ «استهلكت ٣» — الصيغة تقول المتبقي صراحةً.
+    descEl.innerText = d ? `باقي ${d.remaining} من ${d.limit}` : "—";
+    document.getElementById("quotaExhaustedNote")?.classList.toggle("hidden", !(d && d.limit > 0 && d.remaining <= 0));
   } catch (e) {
     // فشل صامت غير مقبول (M5) — تعذر الجلب يظهر كخط، لا يبقى الهيكل يدور للأبد.
     descEl.innerText = "—";

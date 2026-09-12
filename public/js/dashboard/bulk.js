@@ -5,6 +5,11 @@ import { postBulkUpload, postBulkStatus, postBulkGenerateAll } from "./api.js";
 import { loadReview } from "./review.js";
 
 const escHtml = window.escHtml;
+
+/** نبرة واحدة ظاهرة بشريط «منتجاتي» لكل مسارات التوليد (مفرد، محدد، للكل، ملصوق). */
+export function toneValue() {
+  return document.getElementById("pTone")?.value || "white";
+}
 const showMsg = (id, text, type) => window.showMsg(id, text, type);
 
 export function parseBulkRows(raw) {
@@ -23,14 +28,16 @@ export async function startBulkJob() {
   document.getElementById("bulkFeedback").classList.add("hidden");
 
   try {
-    const { data } = await postBulkUpload(rows, document.getElementById("bulkTone").value);
+    const { data } = await postBulkUpload(rows, toneValue());
     if (!data?.ok) {
       showMsg("bulkFeedback", data?.error || "تعذر بدء المعالجة.", "error");
       btn.disabled = false;
       return;
     }
-    showMsg("bulkFeedback", `تم استلام ${data.queued} منتج — تقدير الوقت ${data.etaMinutes} دقيقة.`, "success");
-    document.getElementById("bulkProgress").classList.remove("hidden");
+    // رسالة الخادم تقول كم بدأ اليوم وكم تأجّل — كانت تُهمَل فيظن التاجر أن الكل اليوم.
+    showMsg("bulkFeedback", (data.message ? data.message + " " : "") + `تم استلام ${data.queued} منتج — تقدير الوقت ${data.etaMinutes} دقيقة.`, "success");
+    // الرسالة والشريط بشريط «منتجاتي» أعلى الصفحة، والزر بآخرها — نمرّر إليهما.
+    document.getElementById("bulkFeedback")?.scrollIntoView({ behavior: "smooth", block: "center" });
     pollBulkJob(data.jobId);
   } catch (e) {
     showMsg("bulkFeedback", "تعذر الاتصال.", "error");
@@ -40,6 +47,8 @@ export async function startBulkJob() {
 
 export async function pollBulkJob(jobId) {
   if (S.bulkPollTimer) clearInterval(S.bulkPollTimer);
+  // مسار «ولّد أوصاف المحدد» كان يتتبّع وظيفته بشريط مخفي — لا تقدّم ظاهر أبداً.
+  document.getElementById("bulkProgress")?.classList.remove("hidden");
   let pollFailures = 0;
   const tick = async () => {
     try {
@@ -83,10 +92,10 @@ export async function startCatalogGenerate() {
   btn.disabled = true;
   document.getElementById("bulkFeedback").classList.add("hidden");
   try {
-    const { data } = await postBulkGenerateAll(document.getElementById("bulkTone").value);
+    const { data } = await postBulkGenerateAll(toneValue());
     if (!data?.ok) { showMsg("bulkFeedback", data?.error || "تعذر بدء التوليد.", "error"); btn.disabled = false; return; }
-    showMsg("bulkFeedback", data.message + (data.upgradeHint ? " " + data.upgradeHint : "") + ` — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة، تقدير الإكمال: ~${data.etaMinutes} دقيقة).`, "info");
-    document.getElementById("bulkProgress").classList.remove("hidden");
+    // upgradeHint («رقّي الباقة») لا يُعرض: لا مسار ترقية باللوحة، فهو وعد بلا زر.
+    showMsg("bulkFeedback", data.message + ` — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة، تقدير الإكمال: ~${data.etaMinutes} دقيقة).`, "info");
     pollBulkJob(data.jobId);
   } catch (e) { showMsg("bulkFeedback", "تعذر الاتصال.", "error"); }
   btn.disabled = false;
