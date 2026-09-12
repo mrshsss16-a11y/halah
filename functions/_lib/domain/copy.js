@@ -11,7 +11,7 @@ import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields, splitSentences, propItemIn } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
-import { fixNoteLabels, splitSentencesKeep, joinSentences } from "./copyPhrases.js";
+import { fixNoteLabels, splitSentencesKeep, joinSentences, dropUnseenLength } from "./copyPhrases.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -121,7 +121,7 @@ function focusedDescriptionSystem(name, notes, variantsText) {
     "الطول: من ٦٠ إلى ٩٠ كلمة في ثلاث فقرات قصيرة يفصل بينها سطر فارغ:",
     `١) ابدئي بكلمة «${name}» ثم صفي ما في ملاحظات الصورة بالتفصيل: اللون، القصّة، الياقة، الأكمام، الطول، وكل تفصيل ورد فيها.`,
     "٢) متى وكيف تُلبس، مع قطعة تنسيق مقترحة.",
-    "لا تنسخي عناوين الملاحظات («الطول والقصّة»، «الكتفان والحمالات») — صوغيها جملاً: «بطول ميدي» لا «الطول والقصّة ميدي».",
+    "لا تنسخي عناوين الملاحظات («الطول والقصّة»، «الكتفان والحمالات») — صوغيها جملاً: «بقصّة واسعة» لا «الطول والقصّة: واسعة». ولا تذكري طولاً (ميدي، ماكسي، ميني) لم يرد بالملاحظات.",
     "الطول والقصّة بكلمة الملاحظات نفسها («ميدي» تبقى «ميدي»)، لا «طويل» ولا «قصير» ولا «كلوش» ولا «واسع» ما لم تَرِد فيها.",
     "٣) جملة واحدة بهذه الصيغة أو قريبة منها: «راجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.» — فعل أمر موجّه للعميلة، لا «توصي» ولا «يرجى» بلا فاعل.",
     "ممنوع: السعر، الشحن والإرجاع والدفع، أي خامة لم ترد، أحكام الجودة (مريح، أنيق، أناقة، فاخر، فخامة، مثالي، راقٍ)، ذكر العارضة أو الصورة، وأي تفصيل لم يرد بالملاحظات.",
@@ -315,6 +315,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       // يُنظَّف قبل التقييم: النص المقبول هو نفسه ما يُنشر، لا نسخة يقصّها التنظيف لاحقاً.
       const rawText = readFocusedText(raw);
       const text = cleanDescription(rawText, { sourceText, productName: name });
+      // ما حذفه التنظيف يُسجَّل: افتتاحية اسم المنتج اختفت بتوليد حقيقي والسبب لم يكن ظاهراً.
+      const keptSentences = new Set(splitSentencesKeep(text).map((x) => x.s));
+      const removedByClean = splitSentencesKeep(rawText).map((x) => x.s).filter((x) => x && !keptSentences.has(x)).join(" | ").replace(/\s+/g, " ").slice(0, 300);
       const candidate = { ...parsed, copywriting: { ...parsed.copywriting, description: text } };
       const candidateIssues = allIssues(candidate);
       const wc = (s) => String(s || "").split(/\s+/).filter(Boolean).length;
@@ -322,7 +325,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       // وثلاث فقرات، فنُشر بدله ٢٧ كلمة بفقرة واحدة بلا تنسيق ولا جدول مقاسات (2026-09-11 23:50).
       const longer = wc(text) > wc(cleanDescription(parsed.copywriting.description, { sourceText, productName: name }));
       const accepted = Boolean(text) && candidateIssues.length <= issues.length && (longer || !candidateIssues.some((i) => i.code === "TOO_SHORT"));
-      logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_FOCUSED_RESULT", internal: `accepted=${accepted} raw=${wc(rawText)} words=${wc(text)} ${candidateIssues.map((i) => i.code).join(",")}`, storeId: merchantId });
+      logError({ env }, { requestId: null, path: "api/copy:quality", code: "COPY_FOCUSED_RESULT", internal: `accepted=${accepted} raw=${wc(rawText)} words=${wc(text)} removed=${removedByClean || "-"} ${candidateIssues.map((i) => i.code).join(",")}`, storeId: merchantId });
       if (accepted) {
         parsed = candidate;
         issues = candidateIssues;
@@ -342,7 +345,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       internal: `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)}`, storeId: merchantId
     });
   }
-  parsed.copywriting.description = fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name));
+  parsed.copywriting.description = dropUnseenLength(fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name)), visionNotes);
   parsed.copywriting.excerpt = dropAttachedClaims(parsed.copywriting.excerpt, name);
   parsed.copywriting.whatsapp = dropAttachedClaims(parsed.copywriting.whatsapp, name);
   if (Array.isArray(parsed.copywriting.highlights)) {

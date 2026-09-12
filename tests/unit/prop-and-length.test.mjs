@@ -169,6 +169,20 @@ async function main() {
       const look = stripJudgments("للمرأة التي تبحث عن إطلالة أنيقة وعملية في يومها.");
       assert(look === "للمرأة التي تبحث عن إطلالة عملية في يومها.", `PL-44: «إطلالة أنيقة وعملية» ⇒ «إطلالة عملية» بلا واو معلّقة («${look}»)`);
     }
+    {
+      const o = { sourceText: "", productName: "بلوزة" };
+      const modern = cleanDescription("بطول ميدي وقصّة أوسع من الجسم مع تجميع عند منطقة الصدر، هذه البلوزة توفر مظهراً عصرياً.", o);
+      assert(modern === "بطول ميدي وقصّة أوسع من الجسم مع تجميع عند منطقة الصدر.", `PL-45: «هذه البلوزة توفر مظهراً عصرياً» تُزال بلا بقايا («${modern}»)`);
+      const look2 = cleanDescription("تُلبس في العمل خلال الصيف، ويمكن تنسيقها مع تنورة قصيرة لإطلالة أنيقة.", o);
+      assert(look2 === "تُلبس في العمل خلال الصيف، ويمكن تنسيقها مع تنورة قصيرة.", `PL-46: «لإطلالة» المعلّقة بعد حذف الصفة تُزال («${look2}»)`);
+      const { dropUnseenLength } = await import("../../functions/_lib/domain/copyPhrases.js");
+      const unseen = dropUnseenLength("بلوزة بيضاء.\n\nبطول ميدي وقصّة أوسع من الجسم.", "اللون: أبيض. الطول والقصّة: بلوزة بقصّة أوسع من الجسم.");
+      assert(unseen === "بلوزة بيضاء.\n\nقصّة أوسع من الجسم.", `PL-47: طول لم تذكره ملاحظات الصورة يُحذف والفقرات تبقى («${unseen}»)`);
+      assert(dropUnseenLength("فستان أسود بطول ميدي.", "الطول والقصّة: ميدي.") === "فستان أسود بطول ميدي.", "PL-48: الطول الوارد بالملاحظات يبقى");
+      const { readFileSync } = await import("node:fs");
+      const copySrc = readFileSync(new URL("../../functions/_lib/domain/copy.js", import.meta.url), "utf8");
+      assert(!/«بطول ميدي» لا/.test(copySrc) && /removed=\$\{removedByClean/.test(copySrc), "PL-49: مثال «بطول ميدي» لا يُزرع بتعليمات الكاتب، وما يحذفه التنظيف يُسجَّل");
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
