@@ -181,7 +181,7 @@ export async function findAccountByEmail(env, email) {
 
 /** معرّف التاجر المالك لهذا البريد (أو null) — بعد إثبات الملكية بالرمز. */
 export async function findMerchantIdByEmail(env, email) {
-  // tenant-audit-ok: email هو الهوية المُثبَتة بالرمز (OTP) — لا merchant_id قبلها.
+  // tenant-audit-ok: email هو الهوية المُثبَتة (رابط استعادة من صف D1، أو تسجيل الدخول) — لا merchant_id قبلها.
   const row = await env.DB.prepare("SELECT merchant_id FROM accounts WHERE email = ?").bind(email).first();
   return row?.merchant_id || null;
 }

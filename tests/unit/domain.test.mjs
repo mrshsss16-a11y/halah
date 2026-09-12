@@ -71,7 +71,7 @@ function fakeDb(handlers = [], log = []) {
 async function runTests() {
   // ── ١. attemptGuard: قفل بعد ٥ محاولات فاشلة ─────────────────────────────
   {
-    const { attemptGuard, isLoginLocked, recordLoginFailure, recordResetOtpFailure } =
+    const { attemptGuard, isLoginLocked, recordLoginFailure } =
       await import("../../functions/_lib/domain/auth.js");
 
     // سياسة "lockout" (تسجيل الدخول): أربع محاولات لا تقفل، والخامسة تختم locked_until.
@@ -104,26 +104,6 @@ async function runTests() {
     const freeEnv = { DB: fakeDb([[/SELECT locked_until/, { locked_until: past }]]) };
     assert(await isLoginLocked(lockedEnv, "a@b.com"), "DOM-3: ختم قفل مستقبلي ⇒ مقفول");
     assert(!(await isLoginLocked(freeEnv, "a@b.com")), "DOM-4: ختم قفل منتهٍ ⇒ غير مقفول");
-
-    // سياسة "window" (رمز الاستعادة): المفتاح موسوم بـpwreset: — لا يقفل الدخول،
-    // وبلوغ العتبة يحرق الرمز المعلّق.
-    const rlog = [];
-    const rdb = fakeDb(
-      [
-        [/SELECT failed_count FROM login_attempts WHERE email = \?$/, { failed_count: 5 }],
-        [/INSERT INTO login_attempts/, { meta: { changes: 1 } }]
-      ],
-      rlog
-    );
-    const burned = await recordResetOtpFailure({ DB: rdb }, "a@b.com");
-    assert(
-      burned === true && rlog.some((e) => /DELETE FROM password_resets/.test(e.sql) && e.binds[0] === "a@b.com"),
-      "DOM-5: بلوغ العتبة بمسار الاستعادة يحرق الرمز المعلّق ويعيد true"
-    );
-    assert(
-      rlog.every((e) => !/login_attempts/.test(e.sql) || String(e.binds[0]).startsWith("pwreset:")),
-      "DOM-6: مفتاح الاستعادة موسوم بـ`pwreset:` — قفل الاستعادة لا يقفل تسجيل الدخول"
-    );
 
     // المصنع نفسه قابل لإعادة الاستخدام بأي بادئة، بلا تكرار الخوارزمية.
     const g = attemptGuard({ prefix: "x:", policy: "lockout" });

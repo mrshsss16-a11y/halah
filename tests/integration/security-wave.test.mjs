@@ -15,7 +15,6 @@ import {
 } from "../../functions/_lib/core/security.js";
 import { checkRateLimit } from "../../functions/_lib/core/rateLimit.js";
 import { timingSafeEqualStr } from "../../functions/_lib/core/crypto.js";
-import { hashOtp } from "../../functions/_lib/core/auth.js";
 import { bumpSessionVersion, RESERVED_STORE_IDS } from "../../functions/_lib/core/session.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -313,10 +312,10 @@ async function runTests() {
   {
     const forgot = read("functions/api/auth/forgot_password.js");
     assert(!/^\s*console\.warn\(/m.test(forgot), "N8-1: console.warn محذوف من forgot_password");
-    assert(/RESET_OTP_NOT_DELIVERED/.test(forgot), "N8-2: بديله logError بكود مهيكل");
+    assert(/RESET_EMAIL_SEND_FAILED/.test(forgot) && /RESET_EMAIL_NOT_CONFIGURED/.test(forgot), "N8-2: بديله logError بكود مهيكل");
     assert(
-      !/code: "RESET_OTP_NOT_DELIVERED"[\s\S]{0,200}email/.test(forgot),
-      "N8-3: السجل لا يحمل البريد ولا الرمز"
+      !/code: "RESET_EMAIL_SEND_FAILED"[^}]{0,200}(email|token)/.test(forgot),
+      "N8-3: السجل لا يحمل البريد ولا التوكن"
     );
   }
 
@@ -351,8 +350,7 @@ async function runTests() {
     assert(timingSafeEqualStr("abc", "abcd") === false, "Q1-3: ترفض اختلاف الطول");
     for (const f of [
       "functions/_lib/core/session.js",
-      "functions/_lib/core/oauthState.js",
-      "functions/api/auth/reset_password.js"
+      "functions/_lib/core/oauthState.js"
     ]) {
       const src = read(f);
       assert(!/function timingSafeEqual\(/.test(src), `Q1-4/${f}: لا نسخة محلية`);
@@ -372,15 +370,12 @@ async function runTests() {
 
   // ── Q3: hashOtp وEMAIL_RE موحّدتان ────────────────────────────────────────
   {
-    const h1 = await hashOtp("a@b.com", "123456");
-    const h2 = await hashOtp("a@b.com", "123456");
-    const h3 = await hashOtp("c@d.com", "123456");
-    assert(h1 === h2 && /^[0-9a-f]{64}$/.test(h1), "Q3-1: hashOtp حتمية وSHA-256 hex");
-    assert(h1 !== h3, "Q3-2: مملّحة بالبريد — الرمز غير قابل للنقل بين حسابين");
+    // Q3-1..4 (hashOtp) أُزيلت مع رمز الـ٦ أرقام — الاستعادة صارت رابطاً بتوكن مجزّأ
+    // من مصدر واحد (domain/passwordReset.js، مغطّى بـtests/unit/auth-reset.test.mjs).
     for (const f of ["functions/api/auth/forgot_password.js", "functions/api/auth/reset_password.js"]) {
       const src = read(f);
-      assert(!/async function hashOtp\(/.test(src), `Q3-3/${f}: لا نسخة محلية لـhashOtp`);
-      assert(/from "\.\.\/\.\.\/_lib\/core\/auth\.js"/.test(src), `Q3-4/${f}: يستورد من core/auth.js`);
+      assert(!/crypto\.subtle\.digest/.test(src), `Q3-3/${f}: لا تجزئة محلية للتوكن`);
+      assert(/from "\.\.\/\.\.\/_lib\/domain\/passwordReset\.js"/.test(src), `Q3-4/${f}: يستورد من domain/passwordReset.js`);
     }
     assert(EMAIL_RE.test("a@b.co") && !EMAIL_RE.test("a@b") && !EMAIL_RE.test("a b@c.com"), "Q3-5: EMAIL_RE تعمل");
     for (const f of ["functions/api/auth/signup.js", "functions/api/auth/complete_account.js"]) {
@@ -441,9 +436,9 @@ async function runTests() {
 
     const reset = read("functions/api/auth/reset_password.js");
     assert(
-      /RESET_OTP_DELETE_FAILED/.test(reset) &&
+      /RESET_TOKEN_CONSUME_FAILED/.test(reset) &&
         /RESET_LOGIN_ATTEMPTS_CLEAR_FAILED/.test(reset) &&
-        /RESET_OTP_ATTEMPTS_CLEAR_FAILED/.test(reset),
+        /SESSION_BUMP_FAILED/.test(reset),
       "Q2-10: تنظيف ما بعد إعادة التعيين لم يعد يبتلع الأخطاء"
     );
 

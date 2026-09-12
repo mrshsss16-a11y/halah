@@ -232,8 +232,8 @@ npx wrangler pages deployment list --project-name hala-ai-os | grep Production
 - `OPENROUTER_API_KEY` — الطبقة الثالثة (نماذج مجانية).
 - `HF_TOKEN` — احتياطي `imageProvider.js` (Hugging Face) خلف klein الأساسي.
 - `TURNSTILE_SECRET_KEY` — تحقق كابتشا Turnstile؛ غيابه يمرّر الطلبات (N7، دَين موثّق).
-- `RESEND_API_KEY` — إرسال بريد (استعادة كلمة مرور، تحقق إيميل) عبر `integrations/email.js`؛ fail-closed بلا مفتاح.
-- `EMAIL_FROM` — عنوان المرسل لنفس مزوّد البريد.
+- `RESEND_API_KEY` — إرسال بريد (رابط استعادة كلمة المرور `domain/passwordReset.js`، رمز تحقق الإيميل) عبر `integrations/email.js`؛ غيابه = `forgot_password` يرد 503 صريحة + `RESET_EMAIL_NOT_CONFIGURED` (fail-closed).
+- `EMAIL_FROM` — عنوان المرسل لنفس مزوّد البريد (دومين موثَّق عند Resend، مثل `هالة <no-reply@send.aura.sa>`). رابط الاستعادة ثابت على `https://halah.aura.sa/reset-password` (لا يُبنى من Host).
 - `GOOGLE_CLIENT_ID` — تحقق توكن Google Sign-In بـ`auth/google.js`.
 - `META_APP_ID`, `META_APP_SECRET` — تطبيق ميتا لإنستغرام/واتساب Embedded Signup.
 - `INSTAGRAM_APP_SECRET`, `INSTAGRAM_VERIFY_TOKEN` — ويبهوك إنستغرام (مبني، غير مفعَّل بعد).
