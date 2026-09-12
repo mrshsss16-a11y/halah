@@ -71,6 +71,11 @@ export const ERROR_CATALOG = {
     status: 503,
     message: "خدمة الذكاء الاصطناعي متوقفة مؤقتاً عندنا. فريقنا منتبه للموضوع — جرّب بعد شوي."
   },
+  // كل المزوّدين بلغوا حدهم **اليومي** (2026-09-12 05:35 UTC): «جرّب بعد دقيقة» كانت تُكرِّر طلباً لن ينجح.
+  AI_QUOTA_DAILY: {
+    status: 503,
+    message: "خلصت سعة الذكاء الاصطناعي المتاحة لهذا اليوم. تتجدد تلقائياً خلال ساعات — جرّب لاحقاً، وما ضاع شي."
+  },
 
   // ── التخزين والمزامنة ──
   DB_UNAVAILABLE: {
@@ -114,6 +119,12 @@ export function classifyError(err) {
   // ترتيب الفحص مقصود: الأضيق أولاً. "AI binding is missing" تحتوي كلمة AI
   // وكذلك "No AI backend available" — لكن الأولى عطل تهيئة والثانية كذلك،
   // بينما 429 من مزود خارجي حالة مختلفة تماماً (مزحوم، لا معطّل).
+  // حدّ يومي عند مزوّد على الأقل، ولا مزوّد محدود بالدقيقة فقط ⇒ لا فائدة من إعادة المحاولة بعد دقيقة.
+  // رسالة البوابة تجمع أسباب كل المزوّدين مفصولة بـ« | » (gateway.js).
+  const parts = raw.split(" | ");
+  const DAILY = /free-models-per-day|tokens per day|\(TPD\)|requests per day|\(RPD\)|daily free allocation|(?<!\d)4006(?!\d)/i;
+  const MINUTE = /\b429\b|rate.?limit|too many requests|per minute|\((?:I|O)?TPM\)|\(RPM\)/i;
+  if (parts.some((x) => DAILY.test(x)) && !parts.some((x) => MINUTE.test(x) && !DAILY.test(x))) return "AI_QUOTA_DAILY";
   if (/\b429\b|rate.?limit|too many requests/i.test(raw)) return "AI_BUSY";
   if (/No AI backend available|AI binding is missing/i.test(raw)) return "AI_UNAVAILABLE";
   if (/Groq |OpenRouter |DeepSeek |Workers AI|all four ai tiers/i.test(raw)) return "AI_UNAVAILABLE";
