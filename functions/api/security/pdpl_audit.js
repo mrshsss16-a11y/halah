@@ -24,7 +24,9 @@ export async function onRequest(context) {
       encryptionAlgorithm: hasEncryptionKey ? "AES-256-GCM" : "disabled",
       sessionSecurityConfigured: hasSessionSecret,
       sessionAlgorithm: hasSessionSecret ? "HMAC-SHA256" : "disabled",
-      tenantIsolation: "Enforced"
+      // كانت «Enforced» ثابتة لا تفحص شيئاً — وكذّبتها ثغرة /api/store/status (تدقيق 2026-09-13).
+      tenantIsolation: "build_time_static_audit",
+      tenantIsolationNote: "عزل الاستعلامات يُفحص بتدقيق ثابت عند كل بناء (scripts/audit-isolation.mjs)، لا بفحص حي لكل طلب، ولا يثبت غياب ثغرات منطقية خارج الاستعلامات."
     },
     disclaimer: "التقييم التقني يقيس جاهزية عناصر التشفير والجلسات، ولا يعتبر شهادة امتثال قانوني نهائي بنظام حماية البيانات الشخصية (PDPL) والتي تتطلب إجراءات قانونية وتنظيمية مكتملة.",
     auditTimestamp: new Date().toISOString()
