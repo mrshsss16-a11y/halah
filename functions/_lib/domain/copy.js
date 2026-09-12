@@ -11,7 +11,7 @@ import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields, splitSentences, propItemIn } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
-import { fixNoteLabels } from "./copyPhrases.js";
+import { fixNoteLabels, splitSentencesKeep, joinSentences } from "./copyPhrases.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -84,9 +84,26 @@ async function saveCopy(env, { merchantId, productName, opening, keywords }) {
 // لأن الملاحظات نفسها تصفها — الحارس بعد الكتابة كان يحذف، والمصدر يعيد الإغراء كل مرة.
 // ووضعية العارضة أيضاً: «اليد اليمنى في الجيب» وصل وصف بلوزة حقيقي (2026-09-11 22:42 UTC).
 const MODEL_PERSON = /(العارضة|عارضة الأزياء|(?<!\p{L})(?:اليد|يدها|يديها|اليدين|ذراعها|تقف|واقفة|وضعية|شعرها|وجهها|الخلفية)(?!\p{L})|(?<!\p{L})model(?!\p{L})|wearing|paired with|pocket|background)/iu;
+// قطعة أخرى بأي موضع من الجملة (propItemIn يفحص أول كلمة فقط): «ومرفق به تنورة».
+const otherItem = (text, name) => String(text || "").split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, "")).some((w) => w && (propItemIn(w, name) || propItemIn(w.replace(/^[وب]/, ""), name)));
+const ATTACHED = /(?<!\p{L})(?:مرفق|مرفقة|مرفقه|يأتي مع|تأتي مع|يشمل|تشمل|طقم)(?!\p{L})/u;
+/** ادعاء أن قطعة أخرى تأتي مع المنتج كذب على العميلة: الجملة تُحذف كاملة. */
+function dropAttachedClaims(text, name) {
+  return joinSentences(splitSentencesKeep(text).filter(({ s }) => !(ATTACHED.test(s) && otherItem(s, name))));
+}
 function productOnlyNotes(notes, name) {
-  // Qwen كتب «كاسرات» (2026-09-11 23:58) فنقلها الكاتب حرفياً إلى الوصف المنشور.
-  return splitSentences(notes).filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name)).join(" ").replace(/(?<!\p{L})(و|ب)?كاسرات(?!\p{L})/gu, "$1كسرات").trim();
+  // بلوزة 2026-09-12 00:06: «اللون: أبيض مع أجزاء سفلية بدرجات من الأزرق…» و«…، ومرفق به تنورة بقصّة A».
+  // التصفية على مستوى المقطع: جملة الطول نفسها فيها «توب بقصّة واسعة» الصحيحة.
+  return splitSentences(notes)
+    .filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name))
+    .map((s) => s.split(/،\s*|\s+(?=و(?:مرفق|مع|يأتي|تأتي))/u).filter((c) => !otherItem(c, name)).join("، ")
+      .replace(/\s*مع\s+(?:ال)?[أا]جزاء\s+سفلي(?:ة|ه)?[^.،]*/gu, "")
+      .replace(/مبطن(?:ة|ه)?\s+بالدانتيل/gu, "مطعّمة بالدانتيل")
+      .replace(/([^.!؟\s])\s*$/u, "$1."))
+    .filter((s) => s.replace(/^[^:]*:\s*/, "").replace(/[.\s]/g, ""))
+    .join(" ")
+    // Qwen كتب «كاسرات» (2026-09-11 23:58) فنقلها الكاتب حرفياً إلى الوصف المنشور.
+    .replace(/(?<!\p{L})(و|ب)?كاسرات(?!\p{L})/gu, "$1كسرات").trim();
 }
 const descWords = (p) => String(p?.copywriting?.description || "").split(/\s+/).filter(Boolean).length;
 
@@ -164,7 +181,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   let visionErrors = "";
   if (imageUrl) {
     try {
-      const out = await askVisionDetailed({ env, imageUrl, prompt: visionPrompt });
+      // اسم المنتج يحدد القطعة: بلا اسم وصف Qwen بلوزة العارضة وتنورتها طقماً واحداً.
+      const prompt = name ? `${visionPrompt}\n\nالقطعة المعروضة للبيع: «${String(name).slice(0, 60)}». صف هذه القطعة وحدها وتجاهل أي قطعة أخرى تلبسها العارضة.` : visionPrompt;
+      const out = await askVisionDetailed({ env, imageUrl, prompt });
       rawVisionNotes = out.text || null;
       visionModel = out.model;
       visionErrors = (out.errors || []).join(" | ").replace(/\s+/g, " ").slice(0, 300);
@@ -323,7 +342,12 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       internal: `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)}`, storeId: merchantId
     });
   }
-  parsed.copywriting.description = fixNoteLabels(parsed.copywriting.description);
+  parsed.copywriting.description = fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name));
+  parsed.copywriting.excerpt = dropAttachedClaims(parsed.copywriting.excerpt, name);
+  parsed.copywriting.whatsapp = dropAttachedClaims(parsed.copywriting.whatsapp, name);
+  if (Array.isArray(parsed.copywriting.highlights)) {
+    parsed.copywriting.highlights = parsed.copywriting.highlights.filter((h) => typeof h !== "string" || !(ATTACHED.test(h) && otherItem(h, name)));
+  }
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
   parsed.usedImage = Boolean(visionNotes);
   // تصنيف المتجر بيانات تاجر قد تكون خاطئة — رُصد فستان تحت «التنانير». حين

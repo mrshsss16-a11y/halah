@@ -31,6 +31,8 @@ const PATTERNS = [
 
 export function stripJudgments(sentence) {
   let s = String(sentence || "");
+  // «إطلالة أنيقة وعملية» ⇒ «إطلالة عملية» لا «إطلالة وعملية» (مخرج حقيقي 2026-09-12 00:06).
+  s = s.replace(new RegExp(`(?<=(?:إطلالة|اطلالة|مظهر|قطعة)(?:اً|ًا|ا)?)\\s+(?:ال)?${ADJ}\\s+و(?=\\p{L})`, "gu"), " ");
   for (const re of PATTERNS) s = s.replace(re, "");
   s = s.replace(/\s*،\s*(?=[.،؟!]|$)/g, "").replace(/\s{2,}/g, " ").replace(/^\s*[،,]\s*/, "").trim();
   const words = s.split(/\s+/).filter(Boolean).length;

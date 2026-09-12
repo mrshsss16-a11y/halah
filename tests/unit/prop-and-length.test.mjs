@@ -144,6 +144,31 @@ async function main() {
       const f = fixNoteLabels(c);
       assert(f === "فستان أسود يمتاز بحمالات وبلا أكمام، مع تفاصيل طبقات أفقية بارزة. بطول ميدي مع طبقات متدرجة من الخصر حتى منتصف الساق، ما يجعله مناسبًا للمناسبات الخاصة.", `PL-40: عناوين الملاحظات لا تُنشر («${f}»)`);
     }
+    {
+      // ملاحظات Qwen الحقيقية لبلوزة متجر المراجعة (2026-09-12 00:06).
+      const realNotes = "اللون: أبيض مع أجزاء سفلية بدرجات من الأزرق السماوي والكحلي. الياقة: دائرية ومفتوحة. الأكمام: قصيرة ومبطنة بالدانتيل. التفاصيل: كسرات تجميع واضحة عند منطقة الصدر. الطول والقصّة: توب بقصّة واسعة، ومرفق به تنورة بقصّة A تنتهي عند منطقة الركبة.";
+      const seenSys = [];
+      let visionPromptSeen = "";
+      const outfitAi = { AI: { run: async (_m, input) => {
+        const c = input?.messages?.[0]?.content;
+        if (Array.isArray(c)) { visionPromptSeen = JSON.stringify(input); return { response: realNotes }; }
+        seenSys.push(c || "");
+        return { response: copyJson(LONG_GOOD) };
+      } } };
+      await withImageFetch(() => generateProductCopy(args({ ...outfitAi }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
+      const all = seenSys[0] || ""; const sys = all.slice(all.lastIndexOf("اللون:"), all.indexOf("---", all.lastIndexOf("اللون:")));
+      assert(sys && !/تنورة|أجزاء سفلية|السماوي|مبطنة/.test(sys) && /دائرية ومفتوحة/.test(sys) && /مطعّمة بالدانتيل/.test(sys) && /توب بقصّة واسعة/.test(sys), "PL-41: ملاحظات الطقم تُصفّى مقطعاً مقطعاً — التنورة وألوانها و«مبطنة» لا تصل الكاتب، وتفاصيل البلوزة تبقى");
+      assert(/القطعة المعروضة للبيع: «بلوزة»/.test(visionPromptSeen), "PL-42: اسم المنتج يصل نموذج الرؤية ليحدد القطعة");
+    }
+    {
+      const claim = LONG_GOOD + "\n\nالبلوزة مرفق بها تنورة زرقاء بقصّة A.";
+      const ai = mockAi([copyJson(claim)]);
+      const out = await generateProductCopy(args({ ...ai }));
+      assert(out.copywriting.description === LONG_GOOD, `PL-43: ادعاء «مرفق بها تنورة» يُحذف من المنشور، وجملة التنسيق «تحت التنورة» تبقى («${out.copywriting.description}»)`);
+      const { stripJudgments } = await import("../../functions/_lib/domain/copyPhrases.js");
+      const look = stripJudgments("للمرأة التي تبحث عن إطلالة أنيقة وعملية في يومها.");
+      assert(look === "للمرأة التي تبحث عن إطلالة عملية في يومها.", `PL-44: «إطلالة أنيقة وعملية» ⇒ «إطلالة عملية» بلا واو معلّقة («${look}»)`);
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
