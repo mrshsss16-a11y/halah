@@ -72,7 +72,7 @@ async function main() {
   // ── التنظيف: حذف فقط ─────────────────────────────────────────────────────
   {
     const cleaned = cleanDescription(REAL_BLOUSE, { sourceText: "", productName: "بلوزة" });
-    assert(cleaned === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية.", `PL-10: جملة التنورة وجملة «مثالية» تُحذفان والصحيحة تبقى («${cleaned}»)`);
+    assert(cleaned === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية. تناسب المناسبات الصيفية والنهارية.", `PL-10: جملة التنورة تُحذف، و«مثالية للمناسبات» تصير «تناسب المناسبات» («${cleaned}»)`);
 
     // مخرج الكاتب المركّز الحقيقي (2026-09-11 22:49 UTC): الحكم داخل جملة صحيحة.
     const realFocused = "بلوزة بيضاء بتصميم أنيق وياقة دائرية وأكمام قصيرة. القصّة مستقيمة تعطيها لمسة من الأناقة، والطول مناسب لمن يفضلون الإطلالات الكلاسيكية.";
@@ -218,6 +218,10 @@ async function main() {
       const { fixNoteLabels } = await import("../../functions/_lib/domain/copyPhrases.js");
       assert(fixNoteLabels("تُلبس بطابع الطابع العام: نهاري صيفي.") === "تُلبس بطابع نهاري صيفي.", "PL-58: عنوان «الطابع العام:» لا يُنشر");
     }
+    {
+      const usage = cleanDescription("هذه البلوزة مثالية للمناسبات النهارية والكاجوال، ويمكن ارتداؤها مع سروال جينز أو تنورة قصيرة لإطلالة مريحة وعصرية.", { sourceText: "", productName: "بلوزة" });
+      assert(usage === "تناسب المناسبات النهارية والكاجوال، ويمكن ارتداؤها مع سروال جينز أو تنورة قصيرة.", `PL-59: فقرة الاستخدام الإشارية تُنظَّف ولا تُحذف كاملة («${usage}»)`);
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
@@ -235,7 +239,7 @@ async function main() {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
     assert(ai.seen.text === 3, "PL-16: الإصرار ⇒ ثلاث محاولات نصية فقط لا حلقة (والكاتب المركّز إن أعاد JSON يُقرأ وصفه ويُرفض لقِصَره)");
-    assert(out.copywriting.description === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية." && !/تنورة|مثالية/.test(out.copywriting.description), "PL-17: عند الإصرار لا تصل التنورة ولا «مثالية» صفحة المتجر");
+    assert(out.copywriting.description === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية. تناسب المناسبات الصيفية والنهارية." && !/تنورة|مثالية/.test(out.copywriting.description), `PL-17: عند الإصرار لا تصل التنورة ولا «مثالية» صفحة المتجر («${out.copywriting.description}»)`);
   }
   {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);
