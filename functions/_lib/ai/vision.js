@@ -46,26 +46,14 @@ export const VISION_FALLBACK_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 // نماذج OpenRouter المجانية التي تقبل الصور من https://openrouter.ai/api/v1/models بنفس اليوم.
 const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
 const OPENROUTER_VISION_MODELS = ["google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free"];
-// Gemini (Google) — نقطة متوافقة مع OpenAI (ai.google.dev/gemini-api/docs/openai، 2026-09-12)، للنص والرؤية.
-// 2.5 Flash أولاً: التفكير يُوقف بـreasoning_effort «none» («Reasoning cannot be turned off for … 3 models»
-// فيستهلك التفكير رموز الرد). 3.8 Flash ثانياً بتفكير منخفض ورموز إضافية.
-export const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-export const GEMINI_MODELS = [
-  { model: "gemini-2.5-flash", extra: { reasoning_effort: "none" }, extraTokens: 0 },
-  { model: "gemini-3.8-flash", extra: { reasoning_effort: "low" }, extraTokens: 1500 }
-];
 
 function externalVisionTiers(env) {
   const tiers = [];
   if (env.GROQ_API_KEY) {
     tiers.push({ label: `groq:${GROQ_VISION_MODEL}`, url: "https://api.groq.com/openai/v1/chat/completions", apiKey: env.GROQ_API_KEY, model: GROQ_VISION_MODEL, extra: { reasoning_effort: "none" } });
   }
-  // Gemini بعد Groq: متعدد الوسائط أصلاً. 3.8 Flash لا يوقف التفكير فيُعطى رموزاً إضافية كي لا يعود نصاً فارغاً.
-  if (env.GEMINI_API_KEY) {
-    for (const { model, extra, extraTokens } of GEMINI_MODELS) {
-      tiers.push({ label: `gemini:${model}`, url: GEMINI_API_URL, apiKey: env.GEMINI_API_KEY, model, extra: { ...extra, max_tokens: 700 + extraTokens } });
-    }
-  }
+  // لا Gemini هنا (قرار المالك 2026-09-13): طبقته المجانية تسمح لـGoogle باستخدام المحتوى لتحسين منتجاتها،
+  // وصور المنتجات قد تُظهر أشخاصاً. Gemini للكتابة فقط (gateway.js).
   if (env.OPENROUTER_API_KEY) {
     for (const model of OPENROUTER_VISION_MODELS) {
       tiers.push({ label: `openrouter:${model}`, url: "https://openrouter.ai/api/v1/chat/completions", apiKey: env.OPENROUTER_API_KEY, model, extra: { reasoning: { enabled: false } } });
@@ -136,7 +124,7 @@ export async function askVisionAI(opts) {
  * ورسائل فشل ما قبله. المستدعي يسجّلها — لا يبلعها.
  */
 export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mimeType = "image/jpeg" }) {
-  if (!env.AI && !env.GROQ_API_KEY && !env.GEMINI_API_KEY && !env.OPENROUTER_API_KEY) throw new Error("AI binding is missing.");
+  if (!env.AI && !env.GROQ_API_KEY && !env.OPENROUTER_API_KEY) throw new Error("AI binding is missing.");
   const errors = [];
 
   let buffer = imageBuffer;

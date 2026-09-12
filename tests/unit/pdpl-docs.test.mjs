@@ -27,6 +27,8 @@ async function main() {
   assert(/حد يومي من الأوصاف/.test(tv) && !/أول كل شهر|بداية الشهر التالي/.test(tv), "PDPL-7: بند الحصة بالشروط يطابق الحد اليومي الحقيقي");
 
   assert(/تحسين جودة الأوصاف/.test(pv) && /نمط الخطأ وحده/.test(pv) && /لا يُحفظ فيه نص وصفك/.test(pv) && /أنماط أخطاء مجهولة/.test(tv) && ropa.includes("`copy_lessons`"), "PDPL-10: تعلّم الجودة من الأخطاء مُفصَح عنه بالخصوصية والشروط والسجل، بلا نص متجر ولا بيانات شخصية");
+  const vision = read("../../functions/_lib/ai/vision.js").replace(/^\s*\/\/.*$/gm, "");
+  assert(!/generativelanguage|GEMINI/.test(vision) && /لا تُرسل إليه صور المنتجات/.test(pv), "PDPL-11: صور المنتجات لا تُرسل لـGemini المجاني (قرار المالك 2026-09-13)، والخصوصية تقول ذلك");
   const audit = read("../../functions/api/security/pdpl_audit.js");
   assert(!/"Enforced"/.test(audit.replace(/^\s*\/\/.*$/gm, "")), "PDPL-8: لا ادعاء «Enforced» ثابت بلا فحص");
   assert(existsSync(new URL("../../docs/PDPL/ROPA.md", import.meta.url)), "PDPL-9: الوثائق داخل docs/PDPL");

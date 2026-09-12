@@ -2,7 +2,9 @@
 import { readFileSync } from "node:fs";
 import { createRunner } from "../_helpers.mjs";
 import { askWorkersAI } from "../../functions/_lib/ai/gateway.js";
-import { askVisionDetailed, GEMINI_API_URL } from "../../functions/_lib/ai/vision.js";
+import { askVisionDetailed } from "../../functions/_lib/ai/vision.js";
+
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 import { classifyError } from "../../functions/_lib/core/errors.js";
 
 const { assert, done } = createRunner("gemini-fallback");
@@ -56,7 +58,7 @@ async function main() {
       if (url === GEMINI_API_URL) return ok("اللون: أسود.");
       return new Response("no", { status: 500 });
     }, () => askVisionDetailed({ env: { AI: { run: async () => { throw new Error(QUOTA); } }, GROQ_API_KEY: "g", GEMINI_API_KEY: "k", OPENROUTER_API_KEY: "o" }, imageUrl: IMAGE, prompt: "صف" }));
-    assert(out.text === "اللون: أسود." && out.model === "gemini:gemini-2.5-flash" && order[0] === "qwen/qwen3.8-27b" && order[1] === "gemini-2.5-flash", `GF-5: الرؤية Groq ثم Gemini قبل OpenRouter (${order.join(" > ")})`);
+    assert(!order.some((m) => /^gemini/.test(m)) && order[0] === "qwen/qwen3.8-27b" && order[1] === "google/gemma-4-31b-it:free" && out.text === "", `GF-5: الرؤية Groq ثم OpenRouter بلا Gemini — صور المنتجات لا تُرسل لطبقته المجانية (${order.join(" > ")})`);
   }
   {
     const urls = [];
@@ -69,7 +71,7 @@ async function main() {
   }
   {
     const privacy = readFileSync(new URL("../../privacy.html", import.meta.url), "utf8").replace(/\s+/g, " ");
-    assert(/Google \(Gemini API\)/.test(privacy) && /قد تستخدم Google المحتوى المُرسل لتحسين خدماتها/.test(privacy), "GF-6: الخصوصية تسمّي Gemini وتفصح عن استخدام Google للمحتوى بالطبقة المجانية");
+    assert(/Google \(Gemini API\)/.test(privacy) && /لا تُرسل إليه صور المنتجات/.test(privacy) && /قد تستخدم Google نص المنتج المُرسل لتحسين خدماتها/.test(privacy), "GF-6: الخصوصية تسمّي Gemini وتفصح عن استخدام Google للمحتوى بالطبقة المجانية");
   }
 }
 
