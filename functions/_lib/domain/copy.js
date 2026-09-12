@@ -242,12 +242,22 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // ريال») فيتقادم مع أول تعديل سعر بالمتجر. يبقى لـJSON-LD فقط عبر parseSeoResponse.
   const userMsg = `اسم المنتج: ${name}\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
 
-  const ask = (extraSystem, skipCache) =>
-    askWorkersAI({
+  // آخر مخرج خام ومزوّده: سجل فشل التحليل كان بلا سبب ظاهر (2026-09-12 01:24).
+  const lastAsk = { tier: "-", raw: "" };
+  const parseDiag = () => {
+    const r = String(lastAsk.raw || "");
+    return `tier=${lastAsk.tier} len=${r.length} startsJson=${/^\s*(?:```(?:json)?\s*)?\{/.test(r)} endsJson=${/\}\s*(?:```)?\s*$/.test(r)} tail=${r.slice(-80).replace(/\s+/g, " ")}`;
+  };
+  const ask = async (extraSystem, skipCache) => {
+    const diag = {};
+    const raw = await askWorkersAI({
       env,
       system: `${system}${extraSystem}`,
       messages: [{ role: "user", content: userMsg }],
-      maxTokens: 1200,
+      // ١٢٠٠ كانت تكفي نموذج Cloudflare؛ Groq/OpenRouter يستهلكان رموزاً أكثر للعربية فينقطع JSON.
+      // النموذج يتوقف عند نهاية JSON فلا تُستهلك الزيادة إلا عند الحاجة.
+      maxTokens: 2400,
+      diag,
       // 0.35 لا 0.7: عيّنة أعلى أنتجت كلمة مكسورة («وستثنينية») على منتج حقيقي.
       temperature: 0.35,
       model: COPY_MODEL,
@@ -255,6 +265,10 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       ttlKind: "copy",
       skipCache
     });
+    lastAsk.tier = diag.tier || "-";
+    lastAsk.raw = raw;
+    return raw;
+  };
 
   let parsed;
   try {
@@ -267,12 +281,19 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       requestId: null,
       path: "api/copy:parse",
       code: "COPY_PARSE_RETRY",
-      internal: "first model output unparseable — retrying with JSON-only instruction",
+      internal: `first model output unparseable — retrying with JSON-only instruction ${parseDiag()}`,
       storeId: merchantId
     });
     const strict =
       "\n\n## تنبيه إخراج صارم\nأرجعي **JSON صالحاً فقط** يبدأ بـ{ وينتهي بـ}. بلا أي نص قبله أو بعده، بلا شرح، بلا أسوار كود (```)، بلا اعتذار.";
-    parsed = parseSeoResponse(await ask(strict, true), name, price);
+    try {
+      parsed = parseSeoResponse(await ask(strict, true), name, price);
+    } catch (retryErr) {
+      if (retryErr instanceof CopyParseError) {
+        logError({ env }, { requestId: null, path: "api/copy:parse", code: "COPY_PARSE_FAILED", internal: parseDiag(), storeId: merchantId });
+      }
+      throw retryErr;
+    }
   }
   // بوابة جودة حتمية بعد التحليل: افتتاحية إشارية / سعر بالنثر / قصر رغم صورة.
   // إعادة محاولة واحدة بتعليمة تسمّي العيب وبتجاوز الكاش، ثم تنظيف مضمون.

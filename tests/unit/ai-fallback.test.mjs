@@ -52,6 +52,18 @@ async function main() {
     const src = readFileSync(new URL("../../functions/_lib/core/rateLimit.js", import.meta.url), "utf8");
     assert(/expirationTtl: Math\.max\(60, ttl\)/.test(src), "AF-3: عمر مفتاح حد الطلبات لا يقل عن ٦٠ ثانية (KV رفض ٥٢ فسقط الفحص مفتوحاً)");
   }
+  {
+    // «تعذّر توليد وصف صالح» 2026-09-12 01:24: فشل التحليل مرتين بلا مزوّد ولا سبب بالسجل.
+    const diag = {};
+    const text = await withFetch(async (url) => {
+      if (String(url).includes("groq")) return new Response(JSON.stringify({ choices: [{ message: { content: "{\"ok\":1}" } }] }), { status: 200 });
+      return new Response("no", { status: 500 });
+    }, () => askWorkersAI({ env: baseEnv(), system: "s", messages: [{ role: "user", content: "u" }], skipCache: true, diag }));
+    assert(text === "{\"ok\":1}" && diag.tier === "groq", `AF-4: البوابة تسجّل المزوّد الذي أجاب (${diag.tier})`);
+    const copySrc = readFileSync(new URL("../../functions/_lib/domain/copy.js", import.meta.url), "utf8");
+    assert(/code: "COPY_PARSE_FAILED", internal: parseDiag\(\)/.test(copySrc) && /retrying with JSON-only instruction \$\{parseDiag\(\)\}/.test(copySrc) && /tier=\$\{lastAsk\.tier\} len=/.test(copySrc), "AF-5: فشل تحليل JSON يُسجَّل بالمزوّد وطول المخرج ونهايته، بالمحاولتين");
+    assert(/maxTokens: 2400/.test(copySrc), "AF-6: حد رموز JSON الوصف يتسع للعربية على Groq/OpenRouter فلا ينقطع");
+  }
 }
 
 main().then(done);
