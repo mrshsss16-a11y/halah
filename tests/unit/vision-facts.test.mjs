@@ -120,6 +120,16 @@ async function main() {
     assert(!/يمتاز الفستان/.test(dress.copywriting.description) && /تنسدل الطيّات من الصدر حتى منتصف الساق/.test(dress.copywriting.description), `VFX-24: جملة تكرر الحقائق بكلمات حشو تُحذف، وجملة تضيف وصفاً جديداً تبقى («${dress.copywriting.description}»)`);
   }
   {
+    // تنورة أبيض وأسود 2026-09-13.
+    const skirt = { copywriting: { description: "وصف." } };
+    applyVisionFacts(skirt, { color: "أسود وأبيض", length: "ميدي", fit: "مستقيمة", waist: "برباط", details: ["بليسيه", "تصميم غير متماثل"], pattern: "مورد", surface: "مطفي" }, { name: "تنورة" });
+    assert(skirt.copywriting.description.startsWith("تنورة ميدي سوداء وبيضاء بقصّة مستقيمة ورباط عند الخصر، بطيّات بليسيه وتصميم غير متماثل ونقشة مورّدة وقماش مطفي."), `VFX-25: لونان بواو العطف يؤنَّثان معاً («${skirt.copywriting.description}»)`);
+    const long = { copywriting: { description: "وصف." } };
+    applyVisionFacts(long, { color: "أسود وأبيض", length: "ميدي", details: ["سموك"] }, { name: "تنورة بليسيه بطبقة مائلة" });
+    assert(long.copywriting.description.startsWith("تنورة بليسيه بطبقة مائلة باللون الأسود والأبيض وطول ميدي، بتجعيد سموك."), `VFX-26: «باللون الأسود والأبيض» لا «الوأبيض»، و«سموك» تفصيل («${long.copywriting.description}»)`);
+    assert(/تطريز» خيوط بارزة/.test(structuredVisionBlock({ structured: true }, "فستان")) && /سموك/.test(structuredVisionBlock({ structured: true }, "فستان")), "VFX-27: توجيه قارئ الصورة يفرّق التطريز عن النقشة المطبوعة ويسمّي السموك");
+  }
+  {
     const privacy = readFileSync(new URL("../../privacy.html", import.meta.url), "utf8").replace(/\s+/g, " ");
     assert(PURGE_TABLES.includes("vision_facts") && /نص مختصر لما ظهر في صورة المنتج/.test(privacy) && /لا تُخزَّن/.test(privacy), "VFX-18: الحقائق ضمن محو بيانات التاجر ومذكورة بمدد الاحتفاظ، والصورة نفسها لا تُخزَّن");
   }

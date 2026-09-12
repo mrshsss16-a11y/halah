@@ -29,6 +29,11 @@ async function main() {
   assert(JSON.stringify(page.copywriting.highlights) === JSON.stringify(["تنورة سوداء ميدي بقصّة واسعة", "قماش لامع يضفي طابعاً رسمياً"]), `PC-5: نقطة تعيد العنوان حرفياً تُحذف، وما يضيف معلومة خارج العنوان يبقى (${JSON.stringify(page.copywriting.highlights)})`);
   assert(JSON.stringify(page.tags) === JSON.stringify(["تنورة سوداء", "تنورة ميدي", "قصّة واسعة", "قماش لامع", "تنورة"]), `PC-6: وسوم الصفة المفردة («أسود»، «ميدي»، «واسعة») تُحذف (${JSON.stringify(page.tags)})`);
 
+  const filler = { copywriting: { description: "فستان ميدي أخضر.\n\nهذا الفستان مناسب للمناسبات النهارية، ويمكن ارتداؤه في العديد من المناسبات غير الرسمية. يمكن تنسيقه مع حذاء مسطح.", excerpt: "تُلبس في المناسبات اليومية والغير رسمية.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
+  polishPage(filler, { name: "فستان", sourceText: "فستان", notes: "" });
+  assert(/مناسب للمناسبات النهارية\. يمكن تنسيقه مع حذاء مسطح\./.test(filler.copywriting.description) && !/العديد من المناسبات/.test(filler.copywriting.description), `PC-8: حشو «ويمكن ارتداؤه في العديد من المناسبات غير الرسمية» يُحذف وتبقى الجملة («${filler.copywriting.description}»)`);
+  assert(filler.copywriting.excerpt === "تُلبس في المناسبات اليومية وغير الرسمية.", `PC-9: «والغير رسمية» ⇒ «وغير الرسمية» («${filler.copywriting.excerpt}»)`);
+
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");
