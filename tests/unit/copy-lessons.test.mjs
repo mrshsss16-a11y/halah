@@ -104,6 +104,12 @@ async function main() {
     assert(/أنيقة/.test(w) && /couche/.test(w) && !/ثلاث طبقات/.test(w) && /ثلاث طبقات/.test(v) && /couche/.test(v) && !/أنيقة/.test(v), "CL-5: كل هدف يستلم دروسه ودروس «both» فقط");
     assert(w.indexOf("أنيقة") < w.indexOf("couche") && lessonsBlock([], "writer") === "", "CL-6: الترتيب كما جاء من D1 (الأكثر تكراراً أولاً)، وبلا دروس لا كتلة");
     assert((await loadLessons({})).length === 0 && (await learnFromCopy({}, { draft: "أنيقة" })) === 0, "CL-7: بلا D1 لا قراءة ولا كتابة ولا خطأ");
+    let sql = "";
+    const both = { code: "LATIN_WORD", wrong_text: "couche", right_text: "طبقة", target: "both", hits: 3 };
+    const vis = { code: "VISION_TERM", wrong_text: "«بليسيه» لكسرات عريضة", right_text: "كسرات عريضة", target: "vision", hits: 10 };
+    const loaded = await loadLessons({ DB: { prepare: (q) => { sql = q; return { all: async () => ({ results: [both, vis, both] }) }; } } });
+    assert(/'writer', 'both'/.test(sql) && /'vision', 'both'/.test(sql) && /UNION ALL/.test(sql) && loaded.length === 2, "CL-7b: الدروس تُقرأ لكل هدف على حدة (لا تُزاح دروس قارئ الصورة)، بلا تكرار «both»");
+    assert(lessonsBlock(loaded, "vision").indexOf("بليسيه") < lessonsBlock(loaded, "vision").indexOf("couche"), "CL-7c: بلاغ المالك (وزن 10) قبل درس آلي أقل تكراراً");
   }
   {
     const rows = [

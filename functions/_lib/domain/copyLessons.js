@@ -10,7 +10,7 @@
 // كتبها النموذج — لا نص تاجر ولا اسم منتج — فالدرس من متجر ينفع كل المتاجر ولا يكشف بيانات أحد.
 import { fixLatinWords, SALES_CTA, findColorAgreement } from "./copyPhrases.js";
 
-const MAX_LESSONS_PER_PROMPT = 8;
+const MAX_LESSONS_PER_PROMPT = 10;
 const JUDGMENT_WORDS = /(?<!\p{L})(?:و|ب|ل)?(?:ال)?((?:[أا]نيق|فاخر|مريح|مثالي|جذاب|رائع|عصري|فريد|مميز|راق|جمالي|ساحر|خلاب)(?:ة|ه|ًا|اً|ا)?)(?!\p{L})/gu;
 const LENGTH_WORDS = /(?<!\p{L})(ميدي|ماكسي|ميني)(?!\p{L})/gu;
 const LATIN_WORD = /(?<![A-Za-z])[a-z][a-z-]{2,19}(?![A-Za-z])/g;
@@ -79,14 +79,18 @@ export function detectLessons({ draft = "", codes = [], final = "", rawNotes = "
   return out;
 }
 
-/** أكثر الدروس تكراراً (لكل الأهداف) بنداء D1 واحد. غياب الجدول أو عطل D1 = بلا دروس. */
+/**
+ * أكثر الدروس تكراراً **لكل هدف على حدة** بنداء D1 واحد. غياب الجدول أو عطل D1 = بلا دروس.
+ * كانت «أعلى 24» من الكل: دروس الكاتب تتراكم أسرع فأزاحت دروس قارئ الصورة (أعلى تكرار لها 2) وتكررت أخطاؤه.
+ * بلاغ المالك يُزرع بوزن 10 فيتقدم على ما رصدته الحراس آلياً مرة أو مرتين.
+ */
 export async function loadLessons(env) {
   if (!env?.DB) return [];
+  const top = (targets) => `SELECT * FROM (SELECT code, wrong_text, right_text, target, hits FROM copy_lessons WHERE target IN (${targets}) ORDER BY hits DESC, last_seen DESC LIMIT ${MAX_LESSONS_PER_PROMPT})`;
   try {
-    const { results } = await env.DB.prepare(
-      "SELECT code, wrong_text, right_text, target FROM copy_lessons ORDER BY hits DESC, last_seen DESC LIMIT 24"
-    ).all();
-    return Array.isArray(results) ? results : [];
+    const { results } = await env.DB.prepare(`${top("'writer', 'both'")} UNION ALL ${top("'vision', 'both'")}`).all();
+    const seen = new Set();
+    return (Array.isArray(results) ? results : []).filter((l) => l && !seen.has(`${l.code}|${l.wrong_text}`) && seen.add(`${l.code}|${l.wrong_text}`));
   } catch {
     return [];
   }
@@ -94,7 +98,10 @@ export async function loadLessons(env) {
 
 /** كتلة التوجيه لهدف واحد (writer للكاتبين، vision لقارئ الصورة). */
 export function lessonsBlock(lessons, target) {
-  const rows = (lessons || []).filter((l) => l && (l.target === target || l.target === "both")).slice(0, MAX_LESSONS_PER_PROMPT);
+  // ترتيب ثابت بالتكرار: دروس «both» تأتي من قسم الكاتب بالاستعلام فتُعاد لمكانها بين دروس الرؤية.
+  const rows = (lessons || []).filter((l) => l && (l.target === target || l.target === "both"))
+    .map((l, i) => [l, i]).sort((a, b) => (Number(b[0].hits) || 0) - (Number(a[0].hits) || 0) || a[1] - b[1]).map(([l]) => l)
+    .slice(0, MAX_LESSONS_PER_PROMPT);
   if (!rows.length) return "";
   const clean = (t) => String(t || "").replace(/[\r\n`]/g, " ").slice(0, 120);
   return "\n\n## دروس من أخطاء رُصدت فعلاً بتوليدات سابقة (الأكثر تكراراً أولاً) — لا تكررها\n" +
