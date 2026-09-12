@@ -198,6 +198,26 @@ async function main() {
         assert(got === expected, `${label} («${got}»)`);
       }
     }
+    {
+      // طلب المالك: الجزء المطابق للعنوان يُوصف، وباقي الصورة للطابع العام فقط.
+      const moodNotes = "اللون: أبيض. الياقة: دائرية. الأكمام: قصيرة ومطعّمة بالدانتيل. الطابع العام: نهاري صيفي كاجوال، مع تنورة زرقاء.";
+      const seenSys = [];
+      let visionInput = "";
+      const moodAi = { AI: { run: async (_m, input) => {
+        const c = input?.messages?.[0]?.content;
+        if (Array.isArray(c)) { visionInput = JSON.stringify(input); return { response: moodNotes }; }
+        seenSys.push(c || "");
+        return { response: copyJson(LONG_GOOD) };
+      } } };
+      await withImageFetch(() => generateProductCopy(args({ ...moodAi }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
+      assert(/القطعة المعروضة للبيع: «بلوزة»/.test(visionInput) && /الجزء المطابق لهذا العنوان/.test(visionInput) && /الطابع العام/.test(visionInput), "PL-55: العنوان يصل الرؤية مع الصورة — الجزء المطابق يُوصف وباقي الصورة لسطر «الطابع العام»");
+      const all = seenSys[0] || "";
+      const notes = all.slice(all.lastIndexOf("اللون:"), all.indexOf("---", all.lastIndexOf("اللون:")));
+      assert(/الطابع العام: نهاري صيفي كاجوال/.test(notes) && !/تنورة/.test(notes), `PL-56: سطر «الطابع العام» يصل الكاتب بلا ذكر ملابس العارضة («${notes}»)`);
+      assert(/«الطابع العام» مصدر اقتراح الاستخدام/.test(all), "PL-57: الكاتب يُبلَّغ أن «الطابع العام» للمناسبة لا لتفاصيل المنتج");
+      const { fixNoteLabels } = await import("../../functions/_lib/domain/copyPhrases.js");
+      assert(fixNoteLabels("تُلبس بطابع الطابع العام: نهاري صيفي.") === "تُلبس بطابع نهاري صيفي.", "PL-58: عنوان «الطابع العام:» لا يُنشر");
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
