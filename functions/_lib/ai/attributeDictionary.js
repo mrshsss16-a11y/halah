@@ -46,7 +46,12 @@ const pick = (text) => {
  * الكلمة الأولى من الاسم أولاً (التجار يبدؤون بنوع المنتج)، ثم الاسم كله، ثم فئة المتجر.
  */
 export function attributeBlockForProduct({ category = "", name = "" } = {}) {
-  const firstWord = String(name || "").trim().split(/\s+/)[0] || "";
-  const key = pick(firstWord) || pick(name) || pick(category);
+  const key = attributeCategoryFor({ category, name });
   return key ? ATTRIBUTE_BLOCKS[key] : "";
+}
+
+/** مفتاح فئة القاموس (womens_apparel، watches…) أو "" — نفس ترتيب الاختيار. تستخدمه القراءة المنظّمة. */
+export function attributeCategoryFor({ category = "", name = "" } = {}) {
+  const firstWord = String(name || "").trim().split(/\s+/)[0] || "";
+  return pick(firstWord) || pick(name) || pick(category);
 }

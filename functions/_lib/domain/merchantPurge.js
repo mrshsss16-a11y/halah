@@ -42,6 +42,7 @@ export const PURGE_TABLES = [
   "marketing_contexts",
   "product_sync",
   "copy_history",
+  "vision_facts",
   "whatsapp_contacts",
   "whatsapp_messages",
   "usage_meter",

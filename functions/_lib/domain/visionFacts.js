@@ -1,0 +1,211 @@
+// قراءة صورة منظّمة ومحفوظة (طلب المالك 2026-09-12: «كيف تخلي الجودة ثابتة مع تغير النماذج؟»).
+//
+// نفس التنورة قُرئت «قصّة واسعة» ثم «قصّة مستقيمة» بعد ست دقائق (Groq Qwen، 18:40 و18:46)، ومرة
+// «إضاءة نهائية». ثلاث طبقات تثبّت ما يمكن تثبيته مهما تغيّر المزوّد:
+//   ١) قارئ الصورة يختار كل صفة من قائمة مغلقة أو «غير واضح» — لا نص حر يختلف من نموذج لآخر،
+//      وما خرج عن القائمة يُهمل لا يُنشر.
+//   ٢) الحقائق المتحقَّقة تُحفظ لكل صورة ولكل متجر (vision_facts): إعادة التوليد لا تعيد القراءة،
+//      فلا تتقلب الصفات ولا تُستهلك حصة الرؤية.
+//   ٣) الجملة الأولى وجدول المواصفات (والعنوان لاسم عام مثل «تنورة») يبنيها الكود من الحقائق؛
+//      النموذج يكتب التنسيق والمناسبة فقط.
+// الفئات المغطاة: ملابس نسائية وعبايات (حيث رُصدت الأخطاء). غيرها يبقى على الملاحظات الحرة.
+import { logError } from "../core/errorLog.js";
+import { attributeCategoryFor } from "../ai/attributeDictionary.js";
+import { fixColorAgreement, isBottomItem } from "./copyPhrases.js";
+
+// تغيير القوائم أو الصيغة = رفع الإصدار، فتُقرأ الصور من جديد بدل حقائق بقوائم قديمة.
+const FACTS_VERSION = "v1";
+const STRUCTURED_CATEGORIES = new Set(["womens_apparel", "abayas"]);
+const MIN_FACTS = 2;
+
+const ENUMS = {
+  length: ["ميني", "بطول الركبة", "ميدي", "ماكسي", "حتى الخصر", "تحت الخصر"],
+  fit: ["واسعة", "مستقيمة", "ضيقة", "بقصّة A", "منسدلة", "كلوش"],
+  waist: ["مرتفع", "منخفض", "بحزام", "مطاطي", "برباط"],
+  neckline: ["دائرية", "على شكل V", "مربعة", "عالية", "ياقة قميص", "برباط", "على شكل قارب", "مكشوفة الكتفين", "ملفوفة"],
+  sleeves: ["بلا أكمام", "بحمالات رفيعة", "قصيرة", "بطول الكوع", "طويلة", "منفوخة", "واسعة", "مكشكشة"],
+  details: ["كسرات عريضة", "بليسيه", "طبقات", "كشكش", "دانتيل", "تطريز", "ترتر", "خرز", "فتحة جانبية", "أزرار", "جيوب", "حزام", "رباط", "درابيه", "تصميم غير متماثل", "سحاب ظاهر"],
+  surface: ["لامع", "مطفي", "شفاف"],
+  pattern: ["سادة", "مورد", "مخطط", "كاروهات", "منقوش", "منقط"],
+  mood: ["رسمي", "يومي", "سهرة", "نهاري", "مسائي"]
+};
+const LABELS = { color: "اللون", length: "الطول", fit: "القصّة", waist: "الخصر", neckline: "الياقة", sleeves: "الأكمام", details: "التفاصيل", surface: "سطح القماش", pattern: "النقشة", mood: "الطابع العام" };
+const TOP_ONLY = ["neckline", "sleeves"];
+
+const norm = (t) => String(t || "").replace(/[ً-ْٰـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim().toLowerCase();
+
+function canon(field, value) {
+  if (typeof value !== "string") return null;
+  const full = norm(value);
+  const bare = full.replace(/^بقصه\s+/, "").replace(/^ال/, "");
+  return ENUMS[field].find((e) => { const n = norm(e); return n === full || n === bare || n.replace(/^بقصه\s+/, "") === bare; }) || null;
+}
+
+const ITEM_WORD = /(?:تنور|فستان|فساتين|بلوز|عباي|قميص|بنطال|بنطلون|جاكيت|حذاء|حقيب|عارضه)/u;
+function cleanColor(value) {
+  const c = String(typeof value === "string" ? value : "").replace(/\s+/g, " ").trim();
+  if (!/^[ء-ي٠-٩ّ ]{2,30}$/u.test(c) || norm(c) === norm("غير واضح") || c.split(" ").length > 3 || ITEM_WORD.test(norm(c))) return null;
+  return c;
+}
+
+/** null = المخرج ليس JSON (ملاحظات حرة)؛ وإلا الحقائق الصالحة وحدها (قد تكون {}). */
+function parseVisionFacts(input, name = "") {
+  let j = input;
+  if (typeof input === "string") {
+    const start = input.indexOf("{");
+    const end = input.lastIndexOf("}");
+    if (start < 0 || end <= start) return null;
+    try { j = JSON.parse(input.slice(start, end + 1)); } catch { return {}; }
+  }
+  if (!j || typeof j !== "object" || Array.isArray(j)) return {};
+  const bottom = isBottomItem(name);
+  const facts = {};
+  const color = cleanColor(j.color);
+  if (color) facts.color = color;
+  for (const field of Object.keys(ENUMS)) {
+    if (bottom && TOP_ONLY.includes(field)) continue;
+    if (field === "details") {
+      const raw = Array.isArray(j.details) ? j.details : typeof j.details === "string" ? j.details.split(/[،,]/) : [];
+      const list = [...new Set(raw.map((d) => canon("details", d)).filter(Boolean))].slice(0, 4);
+      if (list.length) facts.details = list;
+    } else {
+      const c = canon(field, j[field]);
+      if (c) facts[field] = c;
+    }
+  }
+  return facts;
+}
+
+const enough = (facts) => Boolean(facts) && Object.keys(facts).length >= MIN_FACTS;
+
+async function sha256Hex(text) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/** هل تُقرأ الصورة منظّمة، ومفتاح حفظها، وحقائقها المحفوظة إن وُجدت. عطل D1 = قراءة جديدة. */
+export async function visionFactsContext(env, { merchantId, imageUrl, name, category }) {
+  const structured = Boolean(imageUrl) && STRUCTURED_CATEGORIES.has(attributeCategoryFor({ category, name }));
+  const ctx = { structured, key: null, facts: null };
+  if (!structured || !merchantId) return ctx;
+  ctx.key = await sha256Hex(`${FACTS_VERSION}|${imageUrl}|${String(name || "").trim()}`);
+  if (!env?.DB) return ctx;
+  try {
+    const row = await env.DB.prepare("SELECT facts FROM vision_facts WHERE merchant_id = ? AND image_key = ?").bind(merchantId, ctx.key).first();
+    const facts = row?.facts ? parseVisionFacts(JSON.parse(row.facts), name) : null;
+    if (enough(facts)) ctx.facts = facts;
+  } catch { /* الجدول غير مطبَّق أو عطل D1: تُقرأ الصورة من جديد */ }
+  return ctx;
+}
+
+/** صيغة الإخراج المنظّمة تُلحق بتوجيه قارئ الصورة. */
+export function structuredVisionBlock(ctx, name = "") {
+  if (!ctx?.structured) return "";
+  const bottom = isBottomItem(name);
+  const fields = Object.keys(ENUMS).filter((k) => !(bottom && TOP_ONLY.includes(k)));
+  return [
+    "",
+    "## صيغة الإخراج — تستبدل صيغة الأسطر أعلاه",
+    "أرجع JSON واحداً فقط بلا أي نص قبله أو بعده. كل قيمة حرفياً من قائمتها، أو «غير واضح» عند أدنى شك — لا تخمين ولا قيمة من خارج القائمة:",
+    "- color: اسم اللون بالعربي بصيغة المذكر (أسود، وردي فاتح، كحلي)",
+    ...fields.map((k) => `- ${k}${k === "details" ? " (قائمة من ٠ إلى ٤ عناصر)" : ""}: ${ENUMS[k].join(" | ")}`),
+    "- الصفات للقطعة المعروضة للبيع وحدها، لا لما تلبسه العارضة معها.",
+    "- fit: «واسعة» إن اتسعت الحافة عن الخصر، «مستقيمة» إن بقي عرضها قريباً من الخصر، «ضيقة» إن التصق القماش بالجسم.",
+    `الصيغة: {${["color", ...fields].map((k) => `"${k}": ${k === "details" ? "[…]" : "\"…\""}`).join(", ")}}`
+  ].join("\n");
+}
+
+/**
+ * يحوّل مخرج قارئ الصورة إلى ملاحظات من الحقائق الصالحة ويحفظها.
+ * null = ليست قراءة منظّمة (تبقى الملاحظات الحرة)؛ "" = JSON بلا حقائق كافية (لا ملاحظات).
+ */
+export async function settleVisionFacts(env, ctx, { merchantId, name, text, model }) {
+  if (!ctx?.structured) return null;
+  const facts = parseVisionFacts(text, name);
+  if (facts === null) return null;
+  if (!enough(facts)) {
+    logError({ env }, { requestId: null, path: "api/copy:vision", code: "VISION_FACTS_INVALID", internal: `model=${model || "?"} ${String(text || "").slice(0, 300).replace(/\s+/g, " ")}`, storeId: merchantId });
+    return "";
+  }
+  ctx.facts = facts;
+  if (env?.DB && ctx.key && merchantId) {
+    try {
+      await env.DB.prepare(
+        "INSERT INTO vision_facts (merchant_id, image_key, facts, model) VALUES (?, ?, ?, ?) ON CONFLICT(merchant_id, image_key) DO UPDATE SET facts = excluded.facts, model = excluded.model, created_at = datetime('now')"
+      ).bind(merchantId, ctx.key, JSON.stringify(facts), String(model || "")).run();
+    } catch { /* الحفظ تثبيت لا شرط: فشله لا يُسقط التوليد */ }
+  }
+  return factsToNotes(facts);
+}
+
+/** ملاحظات بنفس صيغة الأسطر السابقة، فتعمل عليها الحراس والدروس كما هي. */
+export function factsToNotes(facts) {
+  const f = facts || {};
+  return Object.keys(LABELS)
+    .filter((k) => (k === "details" ? f.details?.length : f[k]))
+    .map((k) => `${LABELS[k]}: ${k === "details" ? f.details.join("، ") : f[k]}.`)
+    .join(" ");
+}
+
+function agreeColor(noun, color) {
+  const agreed = fixColorAgreement(`${noun} ${color}`).slice(noun.length + 1);
+  if (agreed === color) return color;
+  return agreed.replace(/(?<!\p{L})(فاتح|غامق)(?!\p{L})/u, "$1ة");
+}
+const WAIST = { "مرتفع": "بخصر مرتفع", "منخفض": "بخصر منخفض", "بحزام": "بحزام عند الخصر", "مطاطي": "بخصر مطاطي", "برباط": "برباط عند الخصر" };
+const NECK = (v) => (v === "ياقة قميص" ? "بياقة قميص" : v === "مكشوفة الكتفين" ? "بكتفين مكشوفين" : `بياقة ${v}`);
+const SLEEVE = (v) => (["بلا أكمام", "بحمالات رفيعة"].includes(v) ? v : `بأكمام ${v}`);
+const DETAIL = (d) => (d === "بليسيه" ? "طيّات بليسيه" : d);
+const SURFACE = (s) => `قماش ${s}`;
+// «بقصّة واسعة وخصر مرتفع»: الأولى بالباء، والتالية بالواو (و«بلا» تبقى «وبلا»).
+const chain = (list) => list.map((p, i) => {
+  const b = p.startsWith("ب") ? p : `ب${p}`;
+  return i === 0 ? b : `و${b.startsWith("بلا ") ? b : b.slice(1)}`;
+}).join(" ");
+
+function factsCopy(facts, name) {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return { opening: "", title: "" };
+  const has = (t) => norm(words.join(" ")).includes(norm(String(t).split(" ")[0]));
+  const f = facts || {};
+  const head = [words[0], ...(f.length && !has(f.length) ? [f.length] : []), ...(f.color && !has(f.color) ? [agreeColor(words[0], f.color)] : []), ...words.slice(1)].join(" ");
+  const cuts = [
+    ...(f.fit && !has(f.fit) ? [f.fit.startsWith("بقصّة") ? f.fit : `بقصّة ${f.fit}`] : []),
+    ...(f.waist ? [WAIST[f.waist]] : []),
+    ...(f.neckline ? [NECK(f.neckline)] : []),
+    ...(f.sleeves ? [SLEEVE(f.sleeves)] : [])
+  ];
+  const extras = [...(f.details || []).filter((d) => !has(d)).map(DETAIL), ...(f.surface ? [SURFACE(f.surface)] : [])];
+  const opening = `${head}${cuts.length ? ` ${chain(cuts)}` : ""}${extras.length ? `${cuts.length ? "،" : ""} ${chain(extras)}` : ""}.`;
+  const lead = f.details?.[0] ? `ب${DETAIL(f.details[0])}` : f.fit ? (f.fit.startsWith("بقصّة") ? f.fit : `بقصّة ${f.fit}`) : "";
+  const title = `${head}${lead && !has(lead.replace(/^ب/, "")) ? ` ${lead}` : ""}`.slice(0, 60).trim();
+  return { opening, title };
+}
+
+/** الجملة الأولى والمواصفات (والعنوان ونص البديل لاسم عام) من الحقائق المحفوظة. */
+export function applyVisionFacts(parsed, facts, { name = "" } = {}) {
+  if (!enough(facts)) return parsed;
+  const { opening, title } = factsCopy(facts, name);
+  const cw = parsed.copywriting || (parsed.copywriting = {});
+  if (opening) {
+    const paras = String(cw.description || "").trim().split(/\n\s*\n/);
+    const sentences = (paras[0] || "").split(/(?<=[.!؟])\s+/).filter(Boolean);
+    const noun = norm(String(name).trim().split(/\s+/)[0] || "");
+    // جملة النموذج الأولى تبدأ باسم المنتج = جملة الحقائق عنده؛ تُستبدل. غير ذلك تُسبق بجملة الحقائق.
+    if (sentences.length && noun && norm(sentences[0]).startsWith(noun)) sentences[0] = opening; else sentences.unshift(opening);
+    paras[0] = sentences.join(" ");
+    cw.description = paras.filter((p) => p.trim()).join("\n\n");
+  }
+  const FACT_KEY = /(لون|طول|قص|خصر|ياق|اكمام|تفاصيل|سطح|نقش|طابع)/u;
+  const kept = (Array.isArray(parsed.specsTable) ? parsed.specsTable : []).filter((r) => r && !FACT_KEY.test(norm(r.key)));
+  const rows = Object.keys(LABELS)
+    .filter((k) => k !== "mood" && (k === "details" ? facts.details?.length : facts[k]))
+    .map((k) => ({ key: LABELS[k], value: k === "details" ? facts.details.join("، ") : facts[k] }));
+  parsed.specsTable = [...rows, ...kept];
+  if (title && String(name).trim().split(/\s+/).length <= 2) {
+    const seo = parsed.seo || (parsed.seo = {});
+    seo.title = title;
+    parsed.imageAlt = title;
+  }
+  return parsed;
+}

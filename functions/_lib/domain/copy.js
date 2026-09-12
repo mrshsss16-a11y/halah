@@ -16,6 +16,7 @@ import { splitSentencesKeep } from "./copyPhrases.js";
 import { productOnlyNotes } from "./copyNotes.js";
 import { polishPage, pageText } from "./copyPage.js";
 import { loadLessons, lessonsBlock, learnFromCopy } from "./copyLessons.js";
+import { visionFactsContext, structuredVisionBlock, settleVisionFacts, factsToNotes, applyVisionFacts } from "./visionFacts.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -153,19 +154,21 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   const taxonomyBlock = [taxonomyForProduct({ category, name }), attributeBlockForProduct({ category, name })].filter(Boolean).join("\n\n");
   // ذاكرة الدروس: أخطاء رُصدت بتوليدات سابقة تُعاد للكاتب ولقارئ الصورة (طلب المالك 2026-09-12).
   const lessons = await loadLessons(env);
-  const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock) + lessonsBlock(lessons, "vision");
+  // قراءة منظّمة محفوظة لكل صورة: نفس الصورة ⇒ نفس الحقائق مهما تغيّر المزوّد (visionFacts.js، 2026-09-12).
+  const factsCtx = await visionFactsContext(env, { merchantId, imageUrl, name, category });
+  const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock) + lessonsBlock(lessons, "vision") + structuredVisionBlock(factsCtx, name);
   // فشل الرؤية كان يُبلع بـ`.catch(() => null)` بلا سطر واحد بالسجل — فحين
   // طلع وصف مفبرك على متجر حي لم يكن بالسجل ما يفسّره. الآن يُسجَّل السبب
   // الحقيقي (أي نموذج فشل وبأي رسالة) بلا أن يُسقط التوليد.
-  let rawVisionNotes = null;
-  let visionModel = null;
+  let rawVisionNotes = factsCtx.facts ? factsToNotes(factsCtx.facts) : null;
+  let visionModel = factsCtx.facts ? "saved-facts" : null;
   let visionErrors = "";
-  if (imageUrl) {
+  if (imageUrl && !factsCtx.facts) {
     try {
       // اسم المنتج يحدد القطعة: بلا اسم وصف Qwen بلوزة العارضة وتنورتها طقماً واحداً.
       const prompt = name ? `${visionPrompt}\n\nالقطعة المعروضة للبيع: «${String(name).slice(0, 60)}». أسطر الوصف عن الجزء المطابق لهذا العنوان من الصورة وحده، وأي قطعة أخرى تلبسها العارضة لا تدخل فيها. باقي الصورة يُستخدم لسطر «الطابع العام» فقط.` : visionPrompt;
       const out = await askVisionDetailed({ env, imageUrl, prompt });
-      rawVisionNotes = out.text || null;
+      rawVisionNotes = (await settleVisionFacts(env, factsCtx, { merchantId, name, text: out.text, model: out.model })) ?? (out.text || null);
       visionModel = out.model;
       visionErrors = summarizeVisionErrors(out.errors);
       if (!out.text) {
@@ -353,6 +356,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // الصفحة كلها لا فقرة الوصف وحدها: العنوان والميتا والأسئلة والنقاط والنبذة والوسوم كانت تنشر أخطاء
   // أُصلحت بالوصف فقط (تجربة 2026-09-12). كل تصحيح يمر على كل حقل (copyPage.js).
   polishPage(parsed, { name, sourceText, notes: visionNotes, category });
+  applyVisionFacts(parsed, factsCtx.facts, { name });
   // أثر كل توليد (مؤقت حتى قبول سلة): توليد بلا عيب مرصود لم يترك صفاً فتعذّر تشخيص «couche».
   logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_TRACE", internal: `tier=${lastAsk.tier} vision=${visionModel || "none"} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}${rawVisionNotes && rawVisionNotes.trim() !== visionNotes ? ` raw=${rawVisionNotes.slice(0, 500).replace(/\s+/g, " ")}` : ""}`, storeId: merchantId });
   // حقول الصفحة كلها (العنوان، الميتا، النقاط، الأسئلة، الوسوم…) لم تكن تُحفظ فتعذّر مراجعتها من السجل (2026-09-12).
