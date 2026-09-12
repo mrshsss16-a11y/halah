@@ -54,7 +54,7 @@ function externalVisionTiers(env) {
   }
   if (env.OPENROUTER_API_KEY) {
     for (const model of OPENROUTER_VISION_MODELS) {
-      tiers.push({ label: `openrouter:${model}`, url: "https://openrouter.ai/api/v1/chat/completions", apiKey: env.OPENROUTER_API_KEY, model, extra: {} });
+      tiers.push({ label: `openrouter:${model}`, url: "https://openrouter.ai/api/v1/chat/completions", apiKey: env.OPENROUTER_API_KEY, model, extra: { reasoning: { enabled: false } } });
     }
   }
   return tiers;

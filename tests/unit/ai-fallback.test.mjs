@@ -64,6 +64,20 @@ async function main() {
     assert(/code: "COPY_PARSE_FAILED", internal: parseDiag\(\)/.test(copySrc) && /retrying with JSON-only instruction \$\{parseDiag\(\)\}/.test(copySrc) && /tier=\$\{lastAsk\.tier\} len=/.test(copySrc), "AF-5: فشل تحليل JSON يُسجَّل بالمزوّد وطول المخرج ونهايته، بالمحاولتين");
     assert(/maxTokens: 2400/.test(copySrc), "AF-6: حد رموز JSON الوصف يتسع للعربية على Groq/OpenRouter فلا ينقطع");
   }
+  {
+    // 2026-09-12 01:33: OpenRouter كتب تفكيره داخل الرد، وGroq بنموذج خارج الطبقة المجانية.
+    const bodies = {};
+    const diag = {};
+    await withFetch(async (url, init) => {
+      const body = JSON.parse(init.body);
+      if (String(url).includes("groq")) { bodies.groq = body; return new Response("rate limited", { status: 429 }); }
+      bodies.openrouter = body;
+      return new Response(JSON.stringify({ choices: [{ message: { content: "{\"ok\":1}" } }] }), { status: 200 });
+    }, () => askWorkersAI({ env: baseEnv(), system: "s", messages: [{ role: "user", content: "u" }], skipCache: true, diag }));
+    assert(bodies.groq?.model === "qwen/qwen3.8-27b" && bodies.groq?.reasoning_effort === "none", "AF-7: Groq بنموذج من جدوله المجاني والتفكير معطّل");
+    assert(bodies.openrouter?.reasoning?.enabled === false, "AF-8: OpenRouter يطلب إيقاف التفكير فلا يُكتب داخل الرد");
+    assert(diag.tier === "openrouter" && diag.errors.some((e) => /^workers-ai: 4006/.test(e)) && diag.errors.some((e) => /^groq: Groq 429/.test(e)), "AF-9: أسباب فشل الطبقات السابقة تصل التشخيص حتى حين تنجح طبقة لاحقة");
+  }
 }
 
 main().then(done);

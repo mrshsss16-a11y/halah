@@ -243,10 +243,10 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   const userMsg = `اسم المنتج: ${name}\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
 
   // آخر مخرج خام ومزوّده: سجل فشل التحليل كان بلا سبب ظاهر (2026-09-12 01:24).
-  const lastAsk = { tier: "-", raw: "" };
+  const lastAsk = { tier: "-", raw: "", errors: "" };
   const parseDiag = () => {
     const r = String(lastAsk.raw || "");
-    return `tier=${lastAsk.tier} len=${r.length} startsJson=${/^\s*(?:```(?:json)?\s*)?\{/.test(r)} endsJson=${/\}\s*(?:```)?\s*$/.test(r)} tail=${r.slice(-80).replace(/\s+/g, " ")}`;
+    return `tier=${lastAsk.tier} len=${r.length} startsJson=${/^\s*(?:```(?:json)?\s*)?\{/.test(r)} endsJson=${/\}\s*(?:```)?\s*$/.test(r)} errs=${lastAsk.errors || "-"} tail=${r.slice(-80).replace(/\s+/g, " ")}`;
   };
   const ask = async (extraSystem, skipCache) => {
     const diag = {};
@@ -266,6 +266,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       skipCache
     });
     lastAsk.tier = diag.tier || "-";
+    lastAsk.errors = (diag.errors || []).map((e) => String(e).replace(/\s+/g, " ").slice(0, 160)).join(" | ");
     lastAsk.raw = raw;
     return raw;
   };
