@@ -11,7 +11,7 @@ import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
-import { fixNoteLabels, splitSentencesKeep, dropUnseenLength, dropForeignScript, dropSleevesForBottoms, withSizeChartLine, fixLatinWords, fixTrouserLength } from "./copyPhrases.js";
+import { fixNoteLabels, splitSentencesKeep, dropUnseenLength, dropForeignScript, dropSleevesForBottoms, withSizeChartLine, fixLatinWords, fixTrouserLength, dropSalesCta, fixCommonGrammar } from "./copyPhrases.js";
 import { productOnlyNotes, dropAttachedClaims, ATTACHED, otherItem } from "./copyNotes.js";
 import { loadLessons, lessonsBlock, learnFromCopy } from "./copyLessons.js";
 
@@ -348,7 +348,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     });
   }
   parsed.copywriting.description = dropSleevesForBottoms(dropForeignScript(dropUnseenLength(fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name)), visionNotes)), name);
-  parsed.copywriting.description = withSizeChartLine(fixTrouserLength(fixLatinWords(parsed.copywriting.description, sourceText), name), name);
+  parsed.copywriting.description = withSizeChartLine(fixCommonGrammar(dropSalesCta(fixTrouserLength(fixLatinWords(parsed.copywriting.description, sourceText), name))), name);
   parsed.copywriting.excerpt = fixLatinWords(parsed.copywriting.excerpt, sourceText);
   // أثر كل توليد (مؤقت حتى قبول سلة): توليد بلا عيب مرصود لم يترك صفاً فتعذّر تشخيص «couche».
   logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_TRACE", internal: `tier=${lastAsk.tier} vision=${visionModel || "none"} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`, storeId: merchantId });

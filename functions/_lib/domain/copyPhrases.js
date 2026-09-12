@@ -128,3 +128,15 @@ export function fixTrouserLength(text, name) {
     .replace(/(?<!\p{L})(?:ب)?(?:تصميم|قصّة|قصة)[ \t]+ماكسي(?!\p{L})/gu, "بطول كامل")
     .replace(/(?<!\p{L})ماكسي(?!\p{L})/gu, "بطول كامل");
 }
+
+// دعوة بيع لا تصف القطعة: «تسوقي الآن للحصول على…» (فستان 2026-09-12 02:27). الجملة تُحذف كاملة.
+export const SALES_CTA = /(?<!\p{L})(?:تسوقي|تسوّقي|اطلبي|اطلبيها|احصلي|سارعي|اقتنيها|لا تفوتي)(?!\p{L})/u;
+export function dropSalesCta(text) {
+  return joinSentences(splitSentencesKeep(text).filter(({ s }) => !SALES_CTA.test(s)));
+}
+// «هذا القطع/القطعة» (بنطلون 2026-09-12 02:28)، و«إطلالة عملية في آنٍ واحد» بعد حذف «أنيقة و».
+export function fixCommonGrammar(text) {
+  return String(text || "")
+    .replace(/(?<!\p{L})هذا[ \t]+(?:القطعة|القطع)(?!\p{L})/gu, "هذه القطعة")
+    .replace(/(?<!\p{L})((?:ل|ب)?(?:إطلالة|اطلالة))[ \t]+(\p{L}+)[ \t]+في[ \t]+آن[ٍ]?[ \t]+واحد(?!\p{L})/gu, "$1 $2");
+}

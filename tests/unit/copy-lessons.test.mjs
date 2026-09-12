@@ -73,6 +73,17 @@ async function main() {
     assert(/temperature: 0\.2,\n?\s*\.\.\.extra/.test(visionSrc.replace(/\r/g, "")), "CL-17: نداء الرؤية الخارجي بحرارة منخفضة صريحة (Groq يعتمد 1.0)");
   }
   {
+    // توليدات 2026-09-12 02:27–02:28.
+    const { dropSalesCta, fixCommonGrammar } = await import("../../functions/_lib/domain/copyPhrases.js");
+    const dress = "فستان ميدي بطبعة مربعات حمراء وسوداء وأكمام طويلة.\n\nيناسب الإطلالات النهارية الكاجوال. تسوقي الآن للحصول على إطلالة عملية في آنٍ واحد.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.";
+    const cleaned = dropSalesCta(dress);
+    assert(cleaned === "فستان ميدي بطبعة مربعات حمراء وسوداء وأكمام طويلة.\n\nيناسب الإطلالات النهارية الكاجوال.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.", `CL-18: جملة «تسوقي الآن…» تُحذف والفقرات تبقى («${cleaned}»)`);
+    assert(fixCommonGrammar("يُناسب هذا القطع الإطلالات النهارية.") === "يُناسب هذه القطعة الإطلالات النهارية.", "CL-19: «هذا القطع» ⇒ «هذه القطعة»");
+    assert(fixCommonGrammar("لإطلالة عملية في آنٍ واحد.") === "لإطلالة عملية." && fixCommonGrammar("لإطلالة عملية ومرتبة في آنٍ واحد.") === "لإطلالة عملية ومرتبة في آنٍ واحد.", "CL-20: «في آنٍ واحد» تُحذف بعد صفة واحدة وتبقى بعد صفتين");
+    const learned = codesOf(detectLessons({ draft: "يُناسب هذا القطع الإطلالات. تسوقي الآن للحصول على إطلالة.", final: "يُناسب هذه القطعة الإطلالات.", sourceText: "فستان" }));
+    assert(learned.includes("SALES_CTA") && learned.includes("GRAMMAR"), `CL-21: الذاكرة تتعلم دعوة البيع والخطأ النحوي (${learned.join(",")})`);
+  }
+  {
     const rows = [
       { code: "JUDGMENT", wrong_text: "«أنيقة»", right_text: "تفصيل مرئي", target: "writer" },
       { code: "VISION_COUNT", wrong_text: "«ثلاث طبقات» لخمس", right_text: "عدد بيقين", target: "vision" },
