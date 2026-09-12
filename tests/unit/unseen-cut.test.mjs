@@ -2,7 +2,7 @@
 // فاخترع الكاتب «بخصر مرتفع، تتميز بقصّتها المستقيمة» لتنورة واسعة.
 import { createRunner } from "../_helpers.mjs";
 import { productOnlyNotes } from "../../functions/_lib/domain/copyNotes.js";
-import { dropUnseenCut, unseenCutPhrases } from "../../functions/_lib/domain/copyPhrases.js";
+import { dropUnseenCut, unseenCutPhrases, stripJudgments } from "../../functions/_lib/domain/copyPhrases.js";
 import { polishPage } from "../../functions/_lib/domain/copyPage.js";
 import { detectLessons } from "../../functions/_lib/domain/copyLessons.js";
 
@@ -41,6 +41,8 @@ async function main() {
   {
     const lessons = detectLessons({ draft: "تنورة بخصر مرتفع وقصّة مستقيمة.", notes: "اللون: أسود.", sourceText: "تنورة" });
     assert(lessons.some((l) => l.code === "UNSEEN_CUT" && l.target === "writer"), "UC-8: القصّة المخترعة تصير درساً للكاتب");
+    const dangling = stripJudgments("تنورة ميدي سوداء بقصّة واسعة وتصميم أنيق، تتميز بكسرات عريضة.");
+    assert(dangling === "تنورة ميدي سوداء بقصّة واسعة، تتميز بكسرات عريضة.", `UC-9: «وتصميم أنيق» تُحذف كاملة لا صفتها وحدها («${dangling}»)`);
   }
 }
 
