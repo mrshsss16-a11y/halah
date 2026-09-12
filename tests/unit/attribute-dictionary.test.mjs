@@ -34,6 +34,7 @@ async function main() {
     assert(blocks.every((b) => (b.match(/\(/g) || []).length === (b.match(/\)/g) || []).length), "AD-4: لا أقواس معلّقة من قص وسط الكلمة");
     assert(!valueLines.some((l) => MATERIAL.test(l)), `AD-5: لا قيمة تسمّي مادة بقوائم ما يُرى (${valueLines.find((l) => MATERIAL.test(l)) || ""})`);
     assert(/أكمام|الأكمام/.test(blocks[7]) && /المينا/.test(blocks[0]) && /≠/.test(blocks[0]), "AD-6: قاموس الفستان يسمّي الأكمام، والساعة المينا، مع التباسات");
+    assert(/بليسيه ≠ كسرات عريضة/.test(blocks[7]) && /سطح القماش: لامع/.test(blocks[7]) && !/بطيّات \(بليسيه\)/.test(blocks[7]), "AD-6b: البليسيه يُميَّز عن الكسرات العريضة، ولمعان القماش صفة مرئية (تنورة حقيقية 2026-09-12)");
     const full = JSON.parse(readFileSync(new URL("../../docs/sources/attribute_dictionary_ksa.json", import.meta.url), "utf8"));
     assert(Array.isArray(full) && full.length === 8 && full.every((c) => c.verified && c.dictionary?.attributes?.length >= 8), "AD-7: القاموس الكامل بمصادره محفوظ بالوثائق (8 فئات متحقق منها)");
   }

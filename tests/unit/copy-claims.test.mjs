@@ -13,6 +13,7 @@ async function main() {
     assert(unsourcedClaims("خاتم ذهب عيار 21 أصلي.", "خاتم ذهب عيار 21").includes("AUTHENTIC") && unsourcedClaims("ثبات يدوم طوال اليوم بمكونات طبيعية.", "عطر 100 مل").join(",") === "NATURAL,LONGEVITY", "CC-3: «أصلي» و«ثبات يدوم» و«طبيعية» بلا مصدر تُرصد");
     assert(unsourcedClaims("اطلب خاتمك الآن قبل ما ينفد.", "").includes("SCARCITY") && unsourcedClaims("عباية بمقاس واحد يناسب الجميع.", "عباية").includes("ONE_SIZE"), "CC-4: الندرة و«مقاس واحد» تُرصدان");
     assert(unsourcedClaims("سوار فولاذي بلمسة مطفية وثلاثة عقارب.", "ساعة").length === 0, "CC-5: وصف مرئي عادي بلا ادعاء لا يُرصد");
+    assert(unsourcedClaims("تنسيقها سهل مع بلوزة رسمية، وتناسب كل المواسم.", "تنورة ميدي سوداء").includes("ALL_SEASONS") && unsourcedClaims("خامة خفيفة تناسب جميع الفصول.", "").includes("ALL_SEASONS") && !unsourcedClaims("تناسب كل المواسم.", "تنورة صيفية وشتوية").includes("ALL_SEASONS") && !unsourcedClaims("تنسيقها سهل مع بلوزة رسمية.", "").length, "CC-5b: «تناسب كل المواسم» بلا مصدر تُرصد (توليد حقيقي 2026-09-12)، ومسموحة إن ذكر التاجر الموسم");
   }
   {
     const perfume = "عطر بخور بزجاجة شفافة.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.";
