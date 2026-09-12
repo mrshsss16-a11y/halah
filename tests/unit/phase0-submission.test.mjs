@@ -39,6 +39,9 @@ async function main() {
     for (const [host, name] of [["api.groq.com", "Groq"], ["generativelanguage.googleapis.com", "Gemini"], ["openrouter.ai", "OpenRouter"]]) {
       if (gateway.includes(host)) assert(privacy.includes(name), `P0-8: الخصوصية تسمّي ${name} — مزوّد نص فعلي بالكود`);
     }
+    // مزوّد البريد: محوّل integrations/email.js يرسل بريد التاجر إلى Resend ⇒ يُسمّى بالخصوصية.
+    const emailAdapter = read("../../functions/_lib/integrations/email.js");
+    if (emailAdapter.includes("api.resend.com")) assert(/Resend[\s\S]{0,120}بريدك الإلكتروني/.test(privacy), "P0-8d: الخصوصية تسمّي Resend وتذكر أن بريدك يُرسل إليه — مزوّد بريد فعلي بالكود");
     // DeepSeek أُخرج قبل تقديم سلة (2026-09-11): سياسته المعلنة تخزّن البيانات في الصين،
     // وصفحة الخصوصية لم تكن تذكر ذلك. لا عودة صامتة: لا نداء بالكود ولا سطر بالخصوصية.
     assert(!/api\.deepseek\.com|DEEPSEEK_API_KEY|askDeepSeek/.test(gateway), "P0-8b: لا طبقة DeepSeek بسلسلة الذكاء الاصطناعي");

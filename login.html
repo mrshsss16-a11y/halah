@@ -136,29 +136,17 @@
       <div class="flex items-center justify-between border-b border-slate-200 pb-3">
         <h3 class="font-black text-sm text-black flex items-center gap-2">
           <span class="material-symbols-outlined text-black">lock_reset</span>
-          <span>استعادة كلمة المرور (Security & OTP Recovery)</span>
+          <span>استعادة كلمة المرور</span>
         </h3>
         <button onclick="closeForgotPasswordModal()" class="text-slate-400 hover:text-black font-bold text-lg">✕</button>
       </div>
 
-      <!-- Step 1: Request OTP -->
       <div id="forgotStep1" class="space-y-3">
-        <p class="text-xs text-slate-600 leading-relaxed font-medium">أدخل بريدك الإلكتروني المسجل، وإن كان مسجلاً وصلك رمز تحقق آمن (٦ أرقام) على بريدك.</p>
+        <p class="text-xs text-slate-600 leading-relaxed font-medium">أدخل بريدك الإلكتروني المسجل، وإن كان مسجلاً نرسل إليه رابطاً لتعيين كلمة مرور جديدة (صالح ٣٠ دقيقة، يعمل مرة واحدة).</p>
         <input id="forgotEmail" type="email" placeholder="merchant@domain.com" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-medium"/>
-        <button onclick="handleRequestOtp()" class="w-full wire-btn py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-          <span>إرسال رمز التحقق (OTP)</span>
+        <button id="forgotSendBtn" onclick="handleRequestResetLink()" class="w-full wire-btn py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+          <span>أرسل رابط الاستعادة</span>
           <span class="material-symbols-outlined text-base">send</span>
-        </button>
-      </div>
-
-      <!-- Step 2: Confirm OTP & Set New Password -->
-      <div id="forgotStep2" class="hidden space-y-3">
-        <p class="text-xs text-slate-600 leading-relaxed font-medium">تم إرسال رمز التحقق! أدخل الرمز المكون من 6 أرقام وكلمة المرور الجديدة:</p>
-        <input id="forgotOtpCode" type="text" maxlength="6" placeholder="رمز التحقق (6 أرقام)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono font-bold text-center text-sm"/>
-        <input id="forgotNewPassword" type="password" minlength="8" placeholder="كلمة المرور الجديدة (8 خانات فأكثر)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black focus:outline-none focus:border-black font-medium"/>
-        <button onclick="handleResetPasswordSubmit()" class="w-full wire-btn py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
-          <span>تأكيد وتعيين كلمة المرور الجديدة</span>
-          <span class="material-symbols-outlined text-base">check_circle</span>
         </button>
       </div>
 
@@ -304,12 +292,13 @@
       if (e) e.preventDefault();
       const modal = document.getElementById('forgotModal');
       const step1 = document.getElementById('forgotStep1');
-      const step2 = document.getElementById('forgotStep2');
       const fb = document.getElementById('forgotFeedback');
+      const loginEmail = document.getElementById('loginEmail')?.value?.trim();
+      const forgotEmail = document.getElementById('forgotEmail');
+      if (forgotEmail && loginEmail && !forgotEmail.value) forgotEmail.value = loginEmail;
 
       if (modal) modal.classList.remove('hidden');
       if (step1) step1.classList.remove('hidden');
-      if (step2) step2.classList.add('hidden');
       if (fb) fb.classList.add('hidden');
     }
 
@@ -318,11 +307,20 @@
       if (modal) modal.classList.add('hidden');
     }
 
-    async function handleRequestOtp() {
+    async function handleRequestResetLink() {
       const email = document.getElementById('forgotEmail')?.value?.trim();
       const fb = document.getElementById('forgotFeedback');
+      const btn = document.getElementById('forgotSendBtn');
       if (!email) return;
-
+      const showFb = (ok, msg) => {
+        if (!fb) return;
+        fb.classList.remove('hidden');
+        fb.className = ok
+          ? 'p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black'
+          : 'p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300';
+        fb.innerText = msg;
+      };
+      if (btn) btn.disabled = true;
       try {
         const res = await fetch('/api/auth/forgot_password', {
           method: 'POST',
@@ -332,68 +330,14 @@
         const data = await res.json();
         if (data?.ok) {
           document.getElementById('forgotStep1')?.classList.add('hidden');
-          document.getElementById('forgotStep2')?.classList.remove('hidden');
-          if (fb) {
-            fb.classList.remove('hidden');
-            fb.className = 'p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black';
-            fb.innerText = `إن كان البريد مسجلاً وصلك الرمز على بريدك.`;
-          }
+          showFb(true, data.message || 'إن كان البريد مسجلاً لدينا فقد أرسلنا إليه رابط الاستعادة.');
         } else {
-          if (fb) {
-            fb.classList.remove('hidden');
-            fb.className = 'p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300';
-            fb.innerText = data?.error || 'تعذر إرسال رمز التحقق.';
-          }
+          showFb(false, data?.error || 'تعذّر طلب رابط الاستعادة.');
         }
       } catch (err) {
-        if (fb) {
-          fb.classList.remove('hidden');
-          fb.className = 'p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300';
-          fb.innerText = 'حدث خطأ في الاتصال.';
-        }
+        showFb(false, 'حدث خطأ في الاتصال.');
       }
-    }
-
-    async function handleResetPasswordSubmit() {
-      const email = document.getElementById('forgotEmail')?.value?.trim();
-      const otpCode = document.getElementById('forgotOtpCode')?.value?.trim();
-      const newPassword = document.getElementById('forgotNewPassword')?.value;
-      const fb = document.getElementById('forgotFeedback');
-
-      if (!email || !otpCode || !newPassword) return;
-
-      try {
-        const res = await fetch('/api/auth/reset_password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, otpCode, newPassword })
-        });
-        const data = await res.json();
-        if (data?.ok) {
-          if (fb) {
-            fb.classList.remove('hidden');
-            fb.className = 'p-3 rounded-xl text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-300';
-            fb.innerText = data.message || 'تم إعادة تعيين كلمة المرور بنجاح! جاري إغلاق النافذة...';
-          }
-          setTimeout(() => {
-            closeForgotPasswordModal();
-            const loginPw = document.getElementById('loginPassword');
-            if (loginPw) loginPw.value = newPassword;
-          }, 1500);
-        } else {
-          if (fb) {
-            fb.classList.remove('hidden');
-            fb.className = 'p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300';
-            fb.innerText = data?.error || 'رمز التحقق غير صحيح.';
-          }
-        }
-      } catch (err) {
-        if (fb) {
-          fb.classList.remove('hidden');
-          fb.className = 'p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300';
-          fb.innerText = 'حدث خطأ في تعيين كلمة المرور.';
-        }
-      }
+      if (btn) btn.disabled = false;
     }
 
     // Public per Google's own docs — the Client ID identifies the app, it is

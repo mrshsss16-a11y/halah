@@ -34,17 +34,6 @@ export async function hashPassword(password) {
   return { hash: bytesToHex(derived), salt: bytesToHex(saltBytes) };
 }
 
-/**
- * Q3 — مصدر واحد لتجزئة رمز الاستعادة (كانت نسختان متطابقتان بـforgot_password
- * وreset_password؛ أي انحراف بينهما يكسر كل استعادة بصمت). SHA-256 لـ
- * `${email}:${otp}` — مملّح بالبريد فما ينفع رمز حساب لحساب آخر.
- */
-export async function hashOtp(email, otp) {
-  const data = new TextEncoder().encode(`${email}:${otp}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 export async function verifyPassword(password, hash, salt) {
   const derived = await deriveBits(password, hexToBytes(salt));
   const computed = bytesToHex(derived);

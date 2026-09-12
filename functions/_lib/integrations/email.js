@@ -12,14 +12,16 @@ export function isConfigured(env) {
   return Boolean(env?.RESEND_API_KEY && env?.EMAIL_FROM);
 }
 
-export async function send(env, { to, subject, text }) {
+export async function send(env, { to, subject, text, html }) {
   if (!isConfigured(env)) {
     throw new Error("البريد غير مفعّل — RESEND_API_KEY أو EMAIL_FROM غير مضبوطين.");
   }
+  const payload = { from: env.EMAIL_FROM, to: [to], subject, text };
+  if (html) payload.html = html;
   const res = await fetch(RESEND_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({ from: env.EMAIL_FROM, to: [to], subject, text })
+    body: JSON.stringify(payload)
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");

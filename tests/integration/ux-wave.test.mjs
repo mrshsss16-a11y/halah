@@ -88,7 +88,8 @@ async function runTests() {
     assert(!src.includes("data.otpCode"), "U2: login.html لا يعرض data.otpCode أبداً");
     // القناة صارت البريد (2026-09-10): واتساب كان يشترط صفّاً بـ`whatsapp_contacts`
     // فتعذّرت الاستعادة **بصمت** على كل من سجّل ببريده ولم يربط رقمه.
-    assert(src.includes("إن كان البريد مسجلاً وصلك الرمز على بريدك"), "U2: رسالة نجاح صادقة بدل عرض الرمز، وتسمّي القناة الحقيقية");
+    // 2026-09-13: الرمز صار رابطاً بالبريد، والرسالة تأتي من الخادم مشروطة («إن كان مسجّلاً»).
+    assert(src.includes("إن كان البريد مسجلاً لدينا فقد أرسلنا إليه رابط الاستعادة") && !/otpCode/.test(src), "U2: رسالة نجاح صادقة مشروطة وتسمّي القناة الحقيقية، بلا رمز OTP");
     assert(!/sleek-btn-black/.test(src), "U3: login.html لا يستخدم صنف sleek-btn-black غير المعرَّف");
     assert(src.includes(".wire-btn"), "U3: login.html يعرّف صنف wire-btn البديل");
   }
