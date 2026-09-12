@@ -49,7 +49,8 @@ export async function checkRateLimit(env, clientIp, actionKey = "global", limit 
     }
 
     const ttl = record.resetAt - now > 0 ? record.resetAt - now : windowSeconds;
-    await env.HALA_CACHE.put(key, JSON.stringify(record), { expirationTtl: ttl });
+    // KV يرفض أقل من ٦٠ ثانية («Invalid expiration_ttl of 52») فيسقط الفحص مفتوحاً (2026-09-12).
+    await env.HALA_CACHE.put(key, JSON.stringify(record), { expirationTtl: Math.max(60, ttl) });
 
     return { 
       allowed: true, 
