@@ -59,6 +59,15 @@ async function main() {
     assert(out.text === "اللون: أسود." && out.model === "gemini:gemini-2.5-flash" && order[0] === "qwen/qwen3.8-27b" && order[1] === "gemini-2.5-flash", `GF-5: الرؤية Groq ثم Gemini قبل OpenRouter (${order.join(" > ")})`);
   }
   {
+    const urls = [];
+    const text = await withFetch(async (url) => {
+      urls.push(url);
+      if (url === GEMINI_API_URL) return ok("وصف طويل من Gemini");
+      return new Response("no", { status: 500 });
+    }, () => askWorkersAI({ env: { GROQ_API_KEY: "g", GEMINI_API_KEY: "k" }, system: "s", messages: [{ role: "user", content: "u" }], skipCache: true, maxTokens: 2400 }));
+    assert(text === "وصف طويل من Gemini" && !urls.some((u) => u.includes("groq")), "GF-7: كتابة طويلة (max_tokens > 1000) تتجاوز Groq المجاني مباشرة — حد OTPM يرفضها دائماً");
+  }
+  {
     const privacy = readFileSync(new URL("../../privacy.html", import.meta.url), "utf8").replace(/\s+/g, " ");
     assert(/Google \(Gemini API\)/.test(privacy) && /قد تستخدم Google المحتوى المُرسل لتحسين خدماتها/.test(privacy), "GF-6: الخصوصية تسمّي Gemini وتفصح عن استخدام Google للمحتوى بالطبقة المجانية");
   }

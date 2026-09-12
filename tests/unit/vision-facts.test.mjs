@@ -65,7 +65,7 @@ async function main() {
     assert(page.seo.title === "تنورة ميدي سوداء بكسرات عريضة" && page.imageAlt === page.seo.title, `VFX-11: اسم عام ⇒ عنوان من الحقائق («${page.seo.title}»)`);
     const dress = { copywriting: { description: "وصف." }, seo: { title: "فستان سهرة كحلي طويل" } };
     applyVisionFacts(dress, { color: "وردي فاتح", length: "ماكسي", neckline: "على شكل V", sleeves: "بلا أكمام", details: ["دانتيل"] }, { name: "فستان سهرة كحلي طويل" });
-    assert(dress.copywriting.description.startsWith("فستان ماكسي وردي فاتح سهرة كحلي طويل بياقة على شكل V وبلا أكمام، بدانتيل.") && dress.seo.title === "فستان سهرة كحلي طويل", `VFX-12: فستان بالمذكر، و«وبلا أكمام»، واسم التاجر المفصّل يبقى عنواناً («${dress.copywriting.description}»)`);
+    assert(dress.copywriting.description.startsWith("فستان سهرة كحلي طويل باللون الوردي الفاتح وطول ماكسي وياقة على شكل V وبلا أكمام، بدانتيل.") && dress.seo.title === "فستان سهرة كحلي طويل", `VFX-12: اسم التاجر المفصّل يبقى كما هو والحقائق بعده، و«وبلا أكمام»، والعنوان لا يُمس («${dress.copywriting.description}»)`);
     const blouse = { copywriting: { description: "" } };
     applyVisionFacts(blouse, { color: "وردي فاتح", sleeves: "قصيرة" }, { name: "بلوزة" });
     assert(blouse.copywriting.description === "بلوزة وردية فاتحة بأكمام قصيرة.", `VFX-13: «وردية فاتحة» لبلوزة («${blouse.copywriting.description}»)`);
@@ -96,6 +96,19 @@ async function main() {
     assert(/صيغة الإخراج/.test(visionPrompt) && db.seen.inserts === 1, "VFX-15: التوليد يطلب الصيغة المنظّمة ويحفظ الحقائق");
     assert(first.copywriting.description.startsWith("تنورة ميدي سوداء بقصّة واسعة، بكسرات عريضة وقماش لامع.") && !/مستقيم/.test(JSON.stringify(first)), `VFX-16: القصّة من الحقائق لا من الكاتب («${first.copywriting.description.slice(0, 80)}»)`);
     assert(visionCalls === 1 && second.copywriting.description.split("\n")[0] === first.copywriting.description.split("\n")[0] && JSON.stringify(second.specsTable) === JSON.stringify(first.specsTable), `VFX-17: إعادة التوليد لا تعيد قراءة الصورة، والحقائق نفسها (قراءات: ${visionCalls})`);
+  }
+  {
+    // جولة ثبات 2026-09-12 — عباية حقيقية: حقائق Qwen كما حُفظت، ووصف الكاتب كما خرج.
+    const abaya = { copywriting: { description: "عباية ماكسي سوداء فيونكة كلوش مطرزة بأكمام واسعة. السطح مطفي والنقشة سادة، مع أكمام واسعة.\n\nتأتي العباية مع طرحة، وتُنسق مع إطلالات يومية بسيطة." }, specsTable: [{ key: "الخامة", value: "كريب" }] };
+    applyVisionFacts(abaya, { color: "أسود", length: "ماكسي", fit: "كلوش", sleeves: "واسعة", details: ["تطريز"], surface: "مطفي", pattern: "سادة", mood: "يومي" }, { name: "عباية فيونكة كلوش مطرزة" });
+    assert(abaya.copywriting.description === "عباية فيونكة كلوش مطرزة باللون الأسود وطول ماكسي وأكمام واسعة، بقماش مطفي.\n\nتأتي العباية مع طرحة، وتُنسق مع إطلالات يومية بسيطة.", `VFX-19: اسم التاجر كما هو، بلا «بتطريز» لعباية «مطرزة» ولا «كلوش» مكررة، وجملة تكرار الحقائق تُحذف («${abaya.copywriting.description}»)`);
+    assert(abaya.specsTable.some((r) => r.key === "الخامة" && r.value === "كريب"), "VFX-20: مواصفة التاجر (الخامة من مزاياه) تبقى");
+    const db = memoryDb();
+    const ctx = await visionFactsContext({ DB: db.DB }, { merchantId: "m_1", imageUrl: IMAGE, name: "فستان سهرة سماوي بذيل كحلي", category: "", sourceText: "الخامة تفتة ناعم كلوش غير قابل للتمدد؛ طول الفستان 60 إنش" });
+    const notes = await settleVisionFacts({ DB: db.DB }, ctx, { merchantId: "m_1", name: "فستان سهرة سماوي بذيل كحلي", text: '{"color":"سماوي","length":"ماكسي","fit":"ضيقة","sleeves":"بلا أكمام"}' });
+    assert(/القصّة: كلوش/.test(notes) && !/ضيقة/.test(notes) && ctx.facts.fit === "كلوش", `VFX-21: «كلوش» بمزايا التاجر تغلب «ضيقة» من الصورة («${notes}»)`);
+    const sleevesOnly = await settleVisionFacts({}, { structured: true, sourceText: "أكمام واسعة" }, { name: "بلوزة", text: '{"color":"أبيض","fit":"مستقيمة"}' });
+    assert(/القصّة: مستقيمة/.test(sleevesOnly), "VFX-22: «أكمام واسعة» بالمزايا ليست قصّة ولا تغيّر القراءة");
   }
   {
     const privacy = readFileSync(new URL("../../privacy.html", import.meta.url), "utf8").replace(/\s+/g, " ");

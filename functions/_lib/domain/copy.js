@@ -155,7 +155,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // ذاكرة الدروس: أخطاء رُصدت بتوليدات سابقة تُعاد للكاتب ولقارئ الصورة (طلب المالك 2026-09-12).
   const lessons = await loadLessons(env);
   // قراءة منظّمة محفوظة لكل صورة: نفس الصورة ⇒ نفس الحقائق مهما تغيّر المزوّد (visionFacts.js، 2026-09-12).
-  const factsCtx = await visionFactsContext(env, { merchantId, imageUrl, name, category });
+  const factsCtx = await visionFactsContext(env, { merchantId, imageUrl, name, category, sourceText: `${features || ""} ${existingDescription || ""}` });
   const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock) + lessonsBlock(lessons, "vision") + structuredVisionBlock(factsCtx, name);
   // فشل الرؤية كان يُبلع بـ`.catch(() => null)` بلا سطر واحد بالسجل — فحين
   // طلع وصف مفبرك على متجر حي لم يكن بالسجل ما يفسّره. الآن يُسجَّل السبب

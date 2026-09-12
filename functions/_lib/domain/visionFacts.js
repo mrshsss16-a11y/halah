@@ -3,11 +3,11 @@
 // نفس التنورة قُرئت «قصّة واسعة» ثم «قصّة مستقيمة» بعد ست دقائق (Groq Qwen، 18:40 و18:46)، ومرة
 // «إضاءة نهائية». ثلاث طبقات تثبّت ما يمكن تثبيته مهما تغيّر المزوّد:
 //   ١) قارئ الصورة يختار كل صفة من قائمة مغلقة أو «غير واضح» — لا نص حر يختلف من نموذج لآخر،
-//      وما خرج عن القائمة يُهمل لا يُنشر.
+//      وما خرج عن القائمة يُهمل لا يُنشر. بيانات التاجر (القصّة، الطول) تغلب قراءة الصورة.
 //   ٢) الحقائق المتحقَّقة تُحفظ لكل صورة ولكل متجر (vision_facts): إعادة التوليد لا تعيد القراءة،
 //      فلا تتقلب الصفات ولا تُستهلك حصة الرؤية.
 //   ٣) الجملة الأولى وجدول المواصفات (والعنوان لاسم عام مثل «تنورة») يبنيها الكود من الحقائق؛
-//      النموذج يكتب التنسيق والمناسبة فقط.
+//      النموذج يكتب التنسيق والمناسبة فقط، وجملته التي تكرر الحقائق وحدها تُحذف.
 // الفئات المغطاة: ملابس نسائية وعبايات (حيث رُصدت الأخطاء). غيرها يبقى على الملاحظات الحرة.
 import { logError } from "../core/errorLog.js";
 import { attributeCategoryFor } from "../ai/attributeDictionary.js";
@@ -31,6 +31,8 @@ const ENUMS = {
 };
 const LABELS = { color: "اللون", length: "الطول", fit: "القصّة", waist: "الخصر", neckline: "الياقة", sleeves: "الأكمام", details: "التفاصيل", surface: "سطح القماش", pattern: "النقشة", mood: "الطابع العام" };
 const TOP_ONLY = ["neckline", "sleeves"];
+// صيغ التفصيل كما تكتبها أسماء التجار: «عباية مطرزة» فيها «تطريز» فلا يتكرر.
+const DETAIL_ALIASES = { "تطريز": ["تطريز", "مطرز"], "ترتر": ["ترتر", "مترتر"], "خرز": ["خرز", "مخرز"], "كشكش": ["كشكش", "مكشكش"], "كسرات عريضة": ["كسرات", "كسره"], "طبقات": ["طبقات", "طبقه"], "فتحة جانبية": ["فتحه"], "أزرار": ["ازرار"], "جيوب": ["جيوب", "جيب"], "تصميم غير متماثل": ["غير متماثل"], "سحاب ظاهر": ["سحاب"] };
 
 const norm = (t) => String(t || "").replace(/[ً-ْٰـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim().toLowerCase();
 
@@ -48,8 +50,24 @@ function cleanColor(value) {
   return c;
 }
 
+// بيانات التاجر أعلى ثقة من الصورة: فستان «كلوش» بمزاياه قرأه Qwen «ضيقة» (جولة ثبات 2026-09-12).
+// القصّة تُؤخذ فقط بصيغة «قصة X» أو «كلوش» الصريحة (لا «أكمام واسعة»)، والطول بكلماته الصريحة.
+function preferMerchant(facts, sourceText) {
+  const src = norm(sourceText);
+  if (!src) return facts;
+  const f = { ...facts };
+  const fitSaid = ENUMS.fit.filter((e) => {
+    const t = norm(e).replace(/^بقصه\s+/, "");
+    return t.length >= 3 && (new RegExp(`(?<!\\p{L})(?:ب)?قصه\\s+(?:ال)?${t}`, "u").test(src) || (t === "كلوش" && /(?<!\p{L})كلوش(?!\p{L})/u.test(src)));
+  });
+  if (fitSaid.length === 1) f.fit = fitSaid[0];
+  const lengthSaid = ["ميني", "ميدي", "ماكسي"].filter((e) => new RegExp(`(?<!\\p{L})${e}(?!\\p{L})`, "u").test(src));
+  if (lengthSaid.length === 1) f.length = lengthSaid[0];
+  return f;
+}
+
 /** null = المخرج ليس JSON (ملاحظات حرة)؛ وإلا الحقائق الصالحة وحدها (قد تكون {}). */
-function parseVisionFacts(input, name = "") {
+function parseVisionFacts(input, name = "", sourceText = "") {
   let j = input;
   if (typeof input === "string") {
     const start = input.indexOf("{");
@@ -73,7 +91,7 @@ function parseVisionFacts(input, name = "") {
       if (c) facts[field] = c;
     }
   }
-  return facts;
+  return Object.keys(facts).length ? preferMerchant(facts, `${name} ${sourceText}`) : facts;
 }
 
 const enough = (facts) => Boolean(facts) && Object.keys(facts).length >= MIN_FACTS;
@@ -84,15 +102,16 @@ async function sha256Hex(text) {
 }
 
 /** هل تُقرأ الصورة منظّمة، ومفتاح حفظها، وحقائقها المحفوظة إن وُجدت. عطل D1 = قراءة جديدة. */
-export async function visionFactsContext(env, { merchantId, imageUrl, name, category }) {
+export async function visionFactsContext(env, { merchantId, imageUrl, name, category, sourceText = "" }) {
   const structured = Boolean(imageUrl) && STRUCTURED_CATEGORIES.has(attributeCategoryFor({ category, name }));
-  const ctx = { structured, key: null, facts: null };
+  const ctx = { structured, key: null, facts: null, sourceText };
   if (!structured || !merchantId) return ctx;
   ctx.key = await sha256Hex(`${FACTS_VERSION}|${imageUrl}|${String(name || "").trim()}`);
   if (!env?.DB) return ctx;
   try {
     const row = await env.DB.prepare("SELECT facts FROM vision_facts WHERE merchant_id = ? AND image_key = ?").bind(merchantId, ctx.key).first();
-    const facts = row?.facts ? parseVisionFacts(JSON.parse(row.facts), name) : null;
+    // بيانات التاجر تُطبَّق عند القراءة أيضاً: تعديل التاجر لمزاياه بعد الحفظ يسري فوراً.
+    const facts = row?.facts ? parseVisionFacts(JSON.parse(row.facts), name, sourceText) : null;
     if (enough(facts)) ctx.facts = facts;
   } catch { /* الجدول غير مطبَّق أو عطل D1: تُقرأ الصورة من جديد */ }
   return ctx;
@@ -121,7 +140,7 @@ export function structuredVisionBlock(ctx, name = "") {
  */
 export async function settleVisionFacts(env, ctx, { merchantId, name, text, model }) {
   if (!ctx?.structured) return null;
-  const facts = parseVisionFacts(text, name);
+  const facts = parseVisionFacts(text, name, ctx.sourceText || "");
   if (facts === null) return null;
   if (!enough(facts)) {
     logError({ env }, { requestId: null, path: "api/copy:vision", code: "VISION_FACTS_INVALID", internal: `model=${model || "?"} ${String(text || "").slice(0, 300).replace(/\s+/g, " ")}`, storeId: merchantId });
@@ -152,11 +171,13 @@ function agreeColor(noun, color) {
   if (agreed === color) return color;
   return agreed.replace(/(?<!\p{L})(فاتح|غامق)(?!\p{L})/u, "$1ة");
 }
+const definite = (color) => color.split(" ").map((w) => (w.startsWith("ال") ? w : `ال${w}`)).join(" ");
+const LENGTH_PHRASE = (l) => (l.startsWith("بطول") ? l : `بطول ${l}`);
 const WAIST = { "مرتفع": "بخصر مرتفع", "منخفض": "بخصر منخفض", "بحزام": "بحزام عند الخصر", "مطاطي": "بخصر مطاطي", "برباط": "برباط عند الخصر" };
 const NECK = (v) => (v === "ياقة قميص" ? "بياقة قميص" : v === "مكشوفة الكتفين" ? "بكتفين مكشوفين" : `بياقة ${v}`);
 const SLEEVE = (v) => (["بلا أكمام", "بحمالات رفيعة"].includes(v) ? v : `بأكمام ${v}`);
 const DETAIL = (d) => (d === "بليسيه" ? "طيّات بليسيه" : d);
-const SURFACE = (s) => `قماش ${s}`;
+const FIT = (v) => (v.startsWith("بقصّة") ? v : `بقصّة ${v}`);
 // «بقصّة واسعة وخصر مرتفع»: الأولى بالباء، والتالية بالواو (و«بلا» تبقى «وبلا»).
 const chain = (list) => list.map((p, i) => {
   const b = p.startsWith("ب") ? p : `ب${p}`;
@@ -166,21 +187,34 @@ const chain = (list) => list.map((p, i) => {
 function factsCopy(facts, name) {
   const words = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (!words.length) return { opening: "", title: "" };
-  const has = (t) => norm(words.join(" ")).includes(norm(String(t).split(" ")[0]));
+  const inName = (terms) => terms.some((t) => norm(words.join(" ")).includes(norm(t)));
   const f = facts || {};
-  const head = [words[0], ...(f.length && !has(f.length) ? [f.length] : []), ...(f.color && !has(f.color) ? [agreeColor(words[0], f.color)] : []), ...words.slice(1)].join(" ");
+  const lengthNew = f.length && !inName([f.length.replace(/^بطول\s+/, "")]);
+  const colorNew = f.color && !inName([f.color.split(" ")[0]]);
+  // اسم عام («تنورة»): «تنورة ميدي سوداء». اسم التاجر المفصّل يبقى كما كتبه، والحقائق بعده: «… باللون الأسود وطول ماكسي».
+  const short = words.length <= 2;
+  const head = short
+    ? [words[0], ...(lengthNew ? [f.length] : []), ...(colorNew ? [agreeColor(words[0], f.color)] : []), ...words.slice(1)].join(" ")
+    : words.join(" ");
   const cuts = [
-    ...(f.fit && !has(f.fit) ? [f.fit.startsWith("بقصّة") ? f.fit : `بقصّة ${f.fit}`] : []),
+    ...(!short && colorNew ? [`باللون ${definite(f.color)}`] : []),
+    ...(!short && lengthNew ? [LENGTH_PHRASE(f.length)] : []),
+    ...(f.fit && !inName([f.fit.replace(/^بقصّة\s+/, "")]) ? [FIT(f.fit)] : []),
     ...(f.waist ? [WAIST[f.waist]] : []),
     ...(f.neckline ? [NECK(f.neckline)] : []),
     ...(f.sleeves ? [SLEEVE(f.sleeves)] : [])
   ];
-  const extras = [...(f.details || []).filter((d) => !has(d)).map(DETAIL), ...(f.surface ? [SURFACE(f.surface)] : [])];
+  const details = (f.details || []).filter((d) => !inName(DETAIL_ALIASES[d] || [d]));
+  const extras = [...details.map(DETAIL), ...(f.surface ? [`قماش ${f.surface}`] : [])];
   const opening = `${head}${cuts.length ? ` ${chain(cuts)}` : ""}${extras.length ? `${cuts.length ? "،" : ""} ${chain(extras)}` : ""}.`;
-  const lead = f.details?.[0] ? `ب${DETAIL(f.details[0])}` : f.fit ? (f.fit.startsWith("بقصّة") ? f.fit : `بقصّة ${f.fit}`) : "";
-  const title = `${head}${lead && !has(lead.replace(/^ب/, "")) ? ` ${lead}` : ""}`.slice(0, 60).trim();
+  const lead = details[0] ? `ب${DETAIL(details[0])}` : f.fit && !inName([f.fit]) ? FIT(f.fit) : "";
+  const title = `${head}${lead ? ` ${lead}` : ""}`.slice(0, 60).trim();
   return { opening, title };
 }
+
+// كلمة مجردة للمقارنة: بلا تشكيل ولا واو عطف ولا باء جر ولا «ال».
+const bareWord = (w) => norm(w).replace(/[^\p{L}]/gu, "").replace(/^و(?=\p{L}{3,})/u, "").replace(/^ب(?=\p{L}{3,})/u, "").replace(/^ال(?=\p{L}{2,})/u, "");
+const ECHO_STOP = new Set(["مع", "في", "من", "على", "ذات", "ذو", "و"]);
 
 /** الجملة الأولى والمواصفات (والعنوان ونص البديل لاسم عام) من الحقائق المحفوظة. */
 export function applyVisionFacts(parsed, facts, { name = "" } = {}) {
@@ -193,7 +227,11 @@ export function applyVisionFacts(parsed, facts, { name = "" } = {}) {
     const noun = norm(String(name).trim().split(/\s+/)[0] || "");
     // جملة النموذج الأولى تبدأ باسم المنتج = جملة الحقائق عنده؛ تُستبدل. غير ذلك تُسبق بجملة الحقائق.
     if (sentences.length && noun && norm(sentences[0]).startsWith(noun)) sentences[0] = opening; else sentences.unshift(opening);
-    paras[0] = sentences.join(" ");
+    // «السطح مطفي والنقشة سادة، مع أكمام واسعة.» (عباية، جولة ثبات 2026-09-12): جملة لا تضيف كلمة واحدة
+    // خارج الحقائق وعناوينها واسم المنتج تكرار — تُحذف.
+    const known = new Set([...Object.values(LABELS), String(name), ...Object.values(facts).flat()].flatMap((t) => String(t).split(/\s+/)).map(bareWord));
+    const echo = (s) => s.split(/\s+/).map(bareWord).filter((w) => w && !ECHO_STOP.has(w) && !known.has(w)).length <= 1;
+    paras[0] = [sentences[0], ...sentences.slice(1).filter((s) => !echo(s))].join(" ");
     cw.description = paras.filter((p) => p.trim()).join("\n\n");
   }
   const FACT_KEY = /(لون|طول|قص|خصر|ياق|اكمام|تفاصيل|سطح|نقش|طابع)/u;
