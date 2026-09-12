@@ -9,9 +9,11 @@ import { fenceUntrusted, UNTRUSTED_DATA_NOTICE } from "../ai/guards.js";
 import { getProfile, profileToPromptBlock } from "./storeProfile.js";
 import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
-import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields, splitSentences, propItemIn } from "./copyParse.js";
+import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
-import { fixNoteLabels, splitSentencesKeep, joinSentences, dropUnseenLength, dropForeignScript, isBottomItem, dropSleevesForBottoms, withSizeChartLine, fixLatinWords } from "./copyPhrases.js";
+import { fixNoteLabels, splitSentencesKeep, dropUnseenLength, dropForeignScript, dropSleevesForBottoms, withSizeChartLine, fixLatinWords } from "./copyPhrases.js";
+import { productOnlyNotes, dropAttachedClaims, ATTACHED, otherItem } from "./copyNotes.js";
+import { loadLessons, lessonsBlock, learnFromCopy } from "./copyLessons.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -79,37 +81,6 @@ async function saveCopy(env, { merchantId, productName, opening, keywords }) {
 // below AND by cron/bulk_process.js (B3), which calls this directly instead
 // of self-fetching over HTTP to avoid an extra round-trip per product in a
 // job that's already rate-limited to ~1/sec by Salla.
-// جمل عن العارضة أو عن قطعة غير المنتج تُحذف من ملاحظات الصورة **قبل** الكاتب. السجل الحي
-// (2026-09-11، بلوزة متجر المراجعة) أثبت أن النموذج أصرّ على «التنورة…» عبر ثلاث محاولات
-// لأن الملاحظات نفسها تصفها — الحارس بعد الكتابة كان يحذف، والمصدر يعيد الإغراء كل مرة.
-// ووضعية العارضة أيضاً: «اليد اليمنى في الجيب» وصل وصف بلوزة حقيقي (2026-09-11 22:42 UTC).
-const MODEL_PERSON = /(العارضة|عارضة الأزياء|(?<!\p{L})(?:اليد|يدها|يديها|اليدين|ذراعها|تقف|واقفة|وضعية|شعرها|وجهها|الخلفية)(?!\p{L})|(?<!\p{L})model(?!\p{L})|wearing|paired with|pocket|background)/iu;
-// قطعة أخرى بأي موضع من الجملة (propItemIn يفحص أول كلمة فقط): «ومرفق به تنورة».
-const otherItem = (text, name) => String(text || "").split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, "")).some((w) => w && (propItemIn(w, name) || propItemIn(w.replace(/^[وب]/, ""), name)));
-const ATTACHED = /(?<!\p{L})(?:مرفق|مرفقة|مرفقه|يأتي مع|تأتي مع|يشمل|تشمل|طقم)(?!\p{L})/u;
-/** ادعاء أن قطعة أخرى تأتي مع المنتج كذب على العميلة: الجملة تُحذف كاملة. */
-function dropAttachedClaims(text, name) {
-  return joinSentences(splitSentencesKeep(text).filter(({ s }) => !(ATTACHED.test(s) && otherItem(s, name))));
-}
-function productOnlyNotes(notes, name) {
-  // بلوزة 2026-09-12 00:06: «اللون: أبيض مع أجزاء سفلية بدرجات من الأزرق…» و«…، ومرفق به تنورة بقصّة A».
-  // التصفية على مستوى المقطع: جملة الطول نفسها فيها «توب بقصّة واسعة» الصحيحة.
-  return splitSentences(notes)
-    .filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name))
-    // تنورة 2026-09-12 00:40: «الأكمام: لا يوجد.» صارت «وبدون أكمام» بالوصف المنشور.
-    .filter((s) => !(isBottomItem(name) && /^\s*(?:الأكمام|الاكمام|الياقة|الكتفان)/u.test(s)))
-    .map((s) => fixLatinWords(dropForeignScript(s.replace(/\s*\([A-Za-z][A-Za-z\s-]*\)/g, "")))
-      // «وردة فاتح» و«ضيئة» من Qwen نُقلتا حرفياً إلى وصف منشور (2026-09-12 00:42).
-      .replace(/(?<!\p{L})وردة(?=\s+(?:فاتح|غامق|سادة|سادة))/gu, "وردي").replace(/(?<!\p{L})ضيئة(?!\p{L})/gu, "ضيقة"))
-    .map((s) => s.split(/،\s*|\s+(?=و(?:مرفق|مع|يأتي|تأتي))/u).filter((c) => !otherItem(c, name)).join("، ")
-      .replace(/\s*مع\s+(?:ال)?[أا]جزاء\s+سفلي(?:ة|ه)?[^.،]*/gu, "")
-      .replace(/مبطن(?:ة|ه)?\s+بالدانتيل/gu, "مطعّمة بالدانتيل")
-      .replace(/([^.!؟\s])\s*$/u, "$1."))
-    .filter((s) => s.replace(/^[^:]*:\s*/, "").replace(/[.\s]/g, ""))
-    .join(" ")
-    // Qwen كتب «كاسرات» (2026-09-11 23:58) فنقلها الكاتب حرفياً إلى الوصف المنشور.
-    .replace(/(?<!\p{L})(و|ب)?كاسرات(?!\p{L})/gu, "$1كسرات").trim();
-}
 const descWords = (p) => String(p?.copywriting?.description || "").split(/\s+/).filter(Boolean).length;
 
 /**
@@ -177,7 +148,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   }
 
   const taxonomyBlock = taxonomyForProduct({ category, name });
-  const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock);
+  // ذاكرة الدروس: أخطاء رُصدت بتوليدات سابقة تُعاد للكاتب ولقارئ الصورة (طلب المالك 2026-09-12).
+  const lessons = await loadLessons(env);
+  const visionPrompt = visionPromptFromTaxonomy(taxonomyBlock) + lessonsBlock(lessons, "vision");
   // فشل الرؤية كان يُبلع بـ`.catch(() => null)` بلا سطر واحد بالسجل — فحين
   // طلع وصف مفبرك على متجر حي لم يكن بالسجل ما يفسّره. الآن يُسجَّل السبب
   // الحقيقي (أي نموذج فشل وبأي رسالة) بلا أن يُسقط التوليد.
@@ -236,7 +209,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
     : [];
 
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock, productName: name });
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock, productName: name }) + lessonsBlock(lessons, "writer");
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
   // السعر لا يُمرَّر للنموذج (2026-09-11): كان يعود داخل نص الوصف («السعر: 83
   // ريال») فيتقادم مع أول تعديل سعر بالمتجر. يبقى لـJSON-LD فقط عبر parseSeoResponse.
@@ -306,6 +279,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // تُنشر مع الوصف على صفحة المنتج (sallaProductPayload.js).
   const allIssues = (p) => [...descriptionQualityIssues(p.copywriting, { hasVision, sourceText, productName: name }), ...publishedFieldIssues(p, { sourceText, productName: name })];
   let issues = allIssues(parsed);
+  const firstDraft = { description: String(parsed.copywriting.description || ""), codes: issues.map((i) => i.code) };
   if (issues.length) {
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
@@ -331,7 +305,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       const variantsText = parsedVariants.map((v) => `${v.name}: ${(v.values || []).join("، ")}`).join(" · ");
       const raw = await askWorkersAI({
         env,
-        system: focusedDescriptionSystem(name, visionNotes, variantsText),
+        system: focusedDescriptionSystem(name, visionNotes, variantsText) + lessonsBlock(lessons, "writer"),
         messages: [{ role: "user", content: `اكتبي وصف «${name}» الآن.` }],
         maxTokens: 500,
         temperature: 0.4,
@@ -385,6 +359,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   if (Array.isArray(parsed.copywriting.highlights)) {
     parsed.copywriting.highlights = parsed.copywriting.highlights.filter((h) => typeof h !== "string" || !(ATTACHED.test(h) && otherItem(h, name)));
   }
+  await learnFromCopy(env, { draft: firstDraft.description, codes: firstDraft.codes, final: parsed.copywriting.description, rawNotes: rawVisionNotes || "", notes: visionNotes, sourceText });
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
   parsed.usedImage = Boolean(visionNotes);
   // تصنيف المتجر بيانات تاجر قد تكون خاطئة — رُصد فستان تحت «التنانير». حين
