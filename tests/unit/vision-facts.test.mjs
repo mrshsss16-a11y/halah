@@ -111,6 +111,15 @@ async function main() {
     assert(/القصّة: مستقيمة/.test(sleevesOnly), "VFX-22: «أكمام واسعة» بالمزايا ليست قصّة ولا تغيّر القراءة");
   }
   {
+    // توليدان حقيقيان 2026-09-13.
+    const skirt = { copywriting: { description: "تنورة ميدي متعدد الألوان بقصّة كلوش.\n\nتُلبس في المناسبات النهارية." } };
+    applyVisionFacts(skirt, { color: "متعدد الألوان", length: "ميدي", fit: "كلوش", waist: "بحزام", details: ["طبقات", "حزام"], surface: "مطفي", pattern: "مورد", mood: "نهاري" }, { name: "تنورة" });
+    assert(skirt.copywriting.description.startsWith("تنورة ميدي متعددة الألوان بقصّة كلوش وحزام عند الخصر، بطبقات ونقشة مورّدة وقماش مطفي."), `VFX-23: «متعددة الألوان» لتنورة، والنقشة المورّدة بالجملة الأولى، و«حزام» لا يتكرر («${skirt.copywriting.description}»)`);
+    const dress = { copywriting: { description: "فستان ميدي بيج بقصّة واسعة. يمتاز الفستان بتفاصيل بليسيه وكشكش وطبقات تمنحه مظهراً نهارياً. تنسدل الطيّات من الصدر حتى منتصف الساق بحركة واضحة.\n\nمناسب للمناسبات النهارية." } };
+    applyVisionFacts(dress, { color: "بيج", length: "ميدي", fit: "واسعة", neckline: "دائرية", sleeves: "قصيرة", details: ["بليسيه", "كشكش", "طبقات"], surface: "مطفي", pattern: "سادة", mood: "نهاري" }, { name: "فستان" });
+    assert(!/يمتاز الفستان/.test(dress.copywriting.description) && /تنسدل الطيّات من الصدر حتى منتصف الساق/.test(dress.copywriting.description), `VFX-24: جملة تكرر الحقائق بكلمات حشو تُحذف، وجملة تضيف وصفاً جديداً تبقى («${dress.copywriting.description}»)`);
+  }
+  {
     const privacy = readFileSync(new URL("../../privacy.html", import.meta.url), "utf8").replace(/\s+/g, " ");
     assert(PURGE_TABLES.includes("vision_facts") && /نص مختصر لما ظهر في صورة المنتج/.test(privacy) && /لا تُخزَّن/.test(privacy), "VFX-18: الحقائق ضمن محو بيانات التاجر ومذكورة بمدد الاحتفاظ، والصورة نفسها لا تُخزَّن");
   }

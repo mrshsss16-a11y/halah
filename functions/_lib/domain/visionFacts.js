@@ -166,7 +166,10 @@ export function factsToNotes(facts) {
     .join(" ");
 }
 
+const isFeminineItem = (noun) => fixColorAgreement(`${noun} أسود`) !== `${noun} أسود`;
 function agreeColor(noun, color) {
+  // «تنورة متعدد الألوان» (2026-09-13): «متعدد» ليس بجدول ألوان copyPhrases فلا يؤنَّث هناك.
+  if (isFeminineItem(noun)) color = color.replace(/^متعدد(?=\s)/u, "متعددة");
   const agreed = fixColorAgreement(`${noun} ${color}`).slice(noun.length + 1);
   if (agreed === color) return color;
   return agreed.replace(/(?<!\p{L})(فاتح|غامق)(?!\p{L})/u, "$1ة");
@@ -177,6 +180,8 @@ const WAIST = { "مرتفع": "بخصر مرتفع", "منخفض": "بخصر م�
 const NECK = (v) => (v === "ياقة قميص" ? "بياقة قميص" : v === "مكشوفة الكتفين" ? "بكتفين مكشوفين" : `بياقة ${v}`);
 const SLEEVE = (v) => (["بلا أكمام", "بحمالات رفيعة"].includes(v) ? v : `بأكمام ${v}`);
 const DETAIL = (d) => (d === "بليسيه" ? "طيّات بليسيه" : d);
+// النقشة أوضح ما بصورة تنورة ورود — كانت تُترك للمواصفات وحدها. «سادة» لا تُذكر بالجملة الأولى.
+const PATTERN = { "مورد": "نقشة مورّدة", "مخطط": "نقشة مخططة", "كاروهات": "نقشة كاروهات", "منقوش": "نقوش", "منقط": "نقاط" };
 const FIT = (v) => (v.startsWith("بقصّة") ? v : `بقصّة ${v}`);
 // «بقصّة واسعة وخصر مرتفع»: الأولى بالباء، والتالية بالواو (و«بلا» تبقى «وبلا»).
 const chain = (list) => list.map((p, i) => {
@@ -204,8 +209,10 @@ function factsCopy(facts, name) {
     ...(f.neckline ? [NECK(f.neckline)] : []),
     ...(f.sleeves ? [SLEEVE(f.sleeves)] : [])
   ];
-  const details = (f.details || []).filter((d) => !inName(DETAIL_ALIASES[d] || [d]));
-  const extras = [...details.map(DETAIL), ...(f.surface ? [`قماش ${f.surface}`] : [])];
+  // «بحزام عند الخصر» ثم «بطبقات وحزام»: التفصيل المكرر من الخصر لا يُعاد.
+  const details = (f.details || []).filter((d) => !inName(DETAIL_ALIASES[d] || [d]) && !(d === "حزام" && f.waist === "بحزام") && !(d === "رباط" && f.waist === "برباط"));
+  const pattern = PATTERN[f.pattern] && !inName([f.pattern]) ? [PATTERN[f.pattern]] : [];
+  const extras = [...details.map(DETAIL), ...pattern, ...(f.surface ? [`قماش ${f.surface}`] : [])];
   const opening = `${head}${cuts.length ? ` ${chain(cuts)}` : ""}${extras.length ? `${cuts.length ? "،" : ""} ${chain(extras)}` : ""}.`;
   const lead = details[0] ? `ب${DETAIL(details[0])}` : f.fit && !inName([f.fit]) ? FIT(f.fit) : "";
   const title = `${head}${lead ? ` ${lead}` : ""}`.slice(0, 60).trim();
@@ -230,7 +237,13 @@ export function applyVisionFacts(parsed, facts, { name = "" } = {}) {
     // «السطح مطفي والنقشة سادة، مع أكمام واسعة.» (عباية، جولة ثبات 2026-09-12): جملة لا تضيف كلمة واحدة
     // خارج الحقائق وعناوينها واسم المنتج تكرار — تُحذف.
     const known = new Set([...Object.values(LABELS), String(name), ...Object.values(facts).flat()].flatMap((t) => String(t).split(/\s+/)).map(bareWord));
-    const echo = (s) => s.split(/\s+/).map(bareWord).filter((w) => w && !ECHO_STOP.has(w) && !known.has(w)).length <= 1;
+    // «يمتاز الفستان بتفاصيل بليسيه وكشكش وطبقات تمنحه مظهراً نهارياً» (2026-09-13): كلمات حشو قليلة حول الحقائق
+    // نفسها تكرار أيضاً — نصف كلماتها أو أكثر حقائق، وما يضيفه ثلاث كلمات فأقل.
+    const echo = (s) => {
+      const content = s.split(/\s+/).map(bareWord).filter((w) => w && !ECHO_STOP.has(w));
+      const novel = content.filter((w) => !known.has(w) && !known.has(w.replace(/(?:ا|ه)$/u, "")));
+      return novel.length <= 1 || (content.length >= 4 && novel.length <= 3 && novel.length * 2 <= content.length);
+    };
     paras[0] = [sentences[0], ...sentences.slice(1).filter((s) => !echo(s))].join(" ");
     cw.description = paras.filter((p) => p.trim()).join("\n\n");
   }
