@@ -2,7 +2,7 @@
 // لمنع التكرار. مُنقول من `core/db.js` (المرحلة ٣) ومن `api/copy.js`
 // (المرحلة ٤ — ARCHITECTURE §٢) بلا تغيير سلوكي.
 import { askWorkersAI, COPY_MODEL } from "../ai/gateway.js";
-import { askVisionDetailed } from "../ai/vision.js";
+import { askVisionDetailed, summarizeVisionErrors } from "../ai/vision.js";
 import { buildSeoSystem, visionPromptFromTaxonomy } from "../ai/prompts/seo.js";
 import { recallStyleExamples } from "../ai/memory.js";
 import { fenceUntrusted, UNTRUSTED_DATA_NOTICE } from "../ai/guards.js";
@@ -165,13 +165,13 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       const out = await askVisionDetailed({ env, imageUrl, prompt });
       rawVisionNotes = out.text || null;
       visionModel = out.model;
-      visionErrors = (out.errors || []).join(" | ").replace(/\s+/g, " ").slice(0, 300);
+      visionErrors = summarizeVisionErrors(out.errors);
       if (!out.text) {
         logError({ env }, {
           requestId: null,
           path: "api/copy:vision",
           code: "VISION_EMPTY",
-          internal: (out.errors || []).join(" | ").slice(0, 300) || "no text from any vision model",
+          internal: summarizeVisionErrors(out.errors) || "no text from any vision model",
           storeId: merchantId
         });
       }

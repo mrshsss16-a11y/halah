@@ -195,3 +195,24 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
 
   return { text: "", model: null, errors };
 }
+
+/**
+ * ملخص أخطاء نماذج الرؤية للسجل: رسالة مكررة تُجمع بنماذجها، والمزوّدون الخارجيون أولاً.
+ * عيّنة الجودة (2026-09-12): قص ٣٠٠ حرف ملأته أربع رسائل Cloudflare متطابقة فاختفى سبب فشل Groq.
+ */
+export function summarizeVisionErrors(errors = []) {
+  const groups = new Map();
+  for (const e of errors || []) {
+    const s = String(e || "");
+    const at = s.indexOf(": ");
+    const model = at > 0 ? s.slice(0, at) : "?";
+    const msg = (at > 0 ? s.slice(at + 2) : s).replace(/\s+/g, " ").trim().slice(0, 140);
+    groups.set(msg, [...(groups.get(msg) || []), model]);
+  }
+  const external = (models) => (models.some((m) => /^(?:groq|openrouter):/.test(m)) ? 1 : 0);
+  return [...groups.entries()]
+    .sort((a, b) => external(b[1]) - external(a[1]))
+    .map(([msg, models]) => `${models.join(",")}: ${msg}`)
+    .join(" | ")
+    .slice(0, 700);
+}

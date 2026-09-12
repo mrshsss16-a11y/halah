@@ -1,7 +1,7 @@
 // احتياط الرؤية الخارجي — قرار المالك 2026-09-12 بعد نفاد حصة Workers AI اليومية المجانية:
 // Groq (Qwen 3.8 نفسه) ثم نماذج OpenRouter المجانية التي تقبل الصور.
 import { createRunner } from "../_helpers.mjs";
-import { askVisionDetailed } from "../../functions/_lib/ai/vision.js";
+import { askVisionDetailed, summarizeVisionErrors } from "../../functions/_lib/ai/vision.js";
 
 const { assert, done } = createRunner("vision-fallback");
 
@@ -52,6 +52,16 @@ async function main() {
     const out = await withFetch(async (url) => (url.includes("groq") ? ok("اللون: أبيض.") : new Response("no", { status: 500 })),
       () => askVisionDetailed({ env: { GROQ_API_KEY: "g" }, imageUrl: IMAGE, prompt: "صف" }));
     assert(out.text === "اللون: أبيض.", "VF-7: غياب ربط Cloudflare لا يرمي خطأ ما دام مزوّد خارجي مضبوطاً");
+  }
+  {
+    const quota = "4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.";
+    const s = summarizeVisionErrors([
+      `@cf/qwen/qwen3.8-27b: ${quota}`, `@cf/google/gemma-4-26b-a4b-it: ${quota}`, `@cf/meta/llama-4-scout-17b-16e-instruct: ${quota}`,
+      "@cf/meta/llama-3.2-11b-vision-instruct: empty text",
+      "groq:qwen/qwen3.8-27b: 429: Rate limit reached for model qwen/qwen3.8-27b on input tokens per minute (ITPM): Limit 7000",
+      "openrouter:google/gemma-4-31b-it:free: 429: rate limited"
+    ]);
+    assert(/^groq:qwen\/qwen3\.8-27b: 429: Rate limit/.test(s) && /openrouter:google\/gemma-4-31b-it:free: 429/.test(s) && (s.match(/4006/g) || []).length === 1 && /@cf\/qwen\/qwen3\.8-27b,@cf\/google/.test(s), `VF-8: سبب فشل المزوّدين الخارجيين يظهر أولاً، ورسالة Cloudflare المكررة تُجمع مرة واحدة («${s.slice(0, 160)}»)`);
   }
 }
 
