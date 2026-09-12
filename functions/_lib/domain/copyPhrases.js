@@ -78,3 +78,20 @@ export function dropUnseenLength(text, notes) {
     .replace(/(?:[ \t]*،)?[ \t]*(?:و)?(?:ب)?(?:ال)?طول[ \t]+(ميدي|ماكسي|ميني)(?!\p{L})/gu, (m, w) => (notes.includes(w) ? m : ""))
     .replace(/(^|[.!؟][ \t]+|\n)[ \t]*و(?=قص|ب|مع)/gu, "$1");
 }
+
+// حروف صينية/يابانية/كورية وسط النص: «مع بلوزة خفيفة وقب鞋 رياضية» (2026-09-12 00:40). يُحذف
+// المعطوف الذي فيه الحرف حتى نهاية المقطع، لا الكلمة وحدها («مع بلوزة خفيفة رياضية» خطأ آخر).
+const FOREIGN_SCRIPT = "[\\u3040-\\u30ff\\u3400-\\u9fff\\uf900-\\ufaff\\uac00-\\ud7af]";
+export function dropForeignScript(text) {
+  return String(text || "")
+    .replace(new RegExp(`[ \\t]*،?[ \\t]*(?:و|أو)?[^\\s.،؟!]*${FOREIGN_SCRIPT}[^.،؟!\\n]*`, "gu"), "")
+    .replace(new RegExp(FOREIGN_SCRIPT, "gu"), "");
+}
+
+// قطعة سفلية لا أكمام لها ولا ياقة: «تنورة ميدي… وبدون أكمام».
+const BOTTOM_ITEM = /^(?:ال)?(?:تنور|تنانير|بنطال|بنطلون|بناطيل|شورت|جينز)/u;
+export const isBottomItem = (name) => BOTTOM_ITEM.test(String(name || "").trim());
+export function dropSleevesForBottoms(text, name) {
+  if (!isBottomItem(name)) return String(text || "");
+  return String(text || "").replace(/[ \t]*(?:،[ \t]*)?(?:و)?(?:بدون|بلا|بلا\s+ولا)[ \t]+(?:ال)?[أا]كمام(?!\p{L})/gu, "");
+}

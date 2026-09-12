@@ -11,7 +11,7 @@ import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields, splitSentences, propItemIn } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
-import { fixNoteLabels, splitSentencesKeep, joinSentences, dropUnseenLength } from "./copyPhrases.js";
+import { fixNoteLabels, splitSentencesKeep, joinSentences, dropUnseenLength, dropForeignScript, isBottomItem, dropSleevesForBottoms } from "./copyPhrases.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -96,6 +96,9 @@ function productOnlyNotes(notes, name) {
   // التصفية على مستوى المقطع: جملة الطول نفسها فيها «توب بقصّة واسعة» الصحيحة.
   return splitSentences(notes)
     .filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name))
+    // تنورة 2026-09-12 00:40: «الأكمام: لا يوجد.» صارت «وبدون أكمام» بالوصف المنشور.
+    .filter((s) => !(isBottomItem(name) && /^\s*(?:الأكمام|الاكمام|الياقة|الكتفان)/u.test(s)))
+    .map((s) => dropForeignScript(s.replace(/\s*\([A-Za-z][A-Za-z\s-]*\)/g, "")))
     .map((s) => s.split(/،\s*|\s+(?=و(?:مرفق|مع|يأتي|تأتي))/u).filter((c) => !otherItem(c, name)).join("، ")
       .replace(/\s*مع\s+(?:ال)?[أا]جزاء\s+سفلي(?:ة|ه)?[^.،]*/gu, "")
       .replace(/مبطن(?:ة|ه)?\s+بالدانتيل/gu, "مطعّمة بالدانتيل")
@@ -345,7 +348,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
       internal: `${issues.map((i) => i.code).join(",")} words=${descWords(parsed)}`, storeId: merchantId
     });
   }
-  parsed.copywriting.description = dropUnseenLength(fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name)), visionNotes);
+  parsed.copywriting.description = dropSleevesForBottoms(dropForeignScript(dropUnseenLength(fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name)), visionNotes)), name);
+  parsed.copywriting.excerpt = dropForeignScript(parsed.copywriting.excerpt);
+  parsed.copywriting.whatsapp = dropForeignScript(parsed.copywriting.whatsapp);
   parsed.copywriting.excerpt = dropAttachedClaims(parsed.copywriting.excerpt, name);
   parsed.copywriting.whatsapp = dropAttachedClaims(parsed.copywriting.whatsapp, name);
   if (Array.isArray(parsed.copywriting.highlights)) {

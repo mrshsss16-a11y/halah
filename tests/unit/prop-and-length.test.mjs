@@ -222,6 +222,31 @@ async function main() {
       const usage = cleanDescription("هذه البلوزة مثالية للمناسبات النهارية والكاجوال، ويمكن ارتداؤها مع سروال جينز أو تنورة قصيرة لإطلالة مريحة وعصرية.", { sourceText: "", productName: "بلوزة" });
       assert(usage === "تناسب المناسبات النهارية والكاجوال، ويمكن ارتداؤها مع سروال جينز أو تنورة قصيرة.", `PL-59: فقرة الاستخدام الإشارية تُنظَّف ولا تُحذف كاملة («${usage}»)`);
     }
+    {
+      // تنورة متجر المراجعة 2026-09-12 00:40 — نص الكاتب الحقيقي وملاحظات Qwen الحقيقية.
+      const { dropForeignScript, dropSleevesForBottoms } = await import("../../functions/_lib/domain/copyPhrases.js");
+      const cjk = dropForeignScript("تُلبس في النهار، ويمكن تنسيقها مع بلوزة خفيفة وقب鞋 رياضية.");
+      assert(cjk === "تُلبس في النهار، ويمكن تنسيقها مع بلوزة خفيفة.", `PL-60: معطوف فيه حرف صيني يُحذف كاملاً لا الحرف وحده («${cjk}»)`);
+      const sleeves = dropSleevesForBottoms("تنورة ميدي بقصّة واسعة وبدون أكمام، مكوّنة من طبقات أفقية متراكبة.", "تنورة");
+      assert(sleeves === "تنورة ميدي بقصّة واسعة، مكوّنة من طبقات أفقية متراكبة.", `PL-61: «بدون أكمام» تُحذف من وصف تنورة («${sleeves}»)`);
+      assert(dropSleevesForBottoms("فستان أسود بحمالات وبلا أكمام.", "فستان") === "فستان أسود بحمالات وبلا أكمام.", "PL-62: «بلا أكمام» تبقى في وصف فستان");
+
+      const skirtNotes = "اللون: متعدد الألوان بطبعات نباتية، يتضمن أخضر، وردي، أصفر، أزرق، وأبيض. الأكمام: لا يوجد. التفاصيل: مكوّنة من طبقات أفقية متراكبة (Tiered) تنتهي بطرف متموج (Ruffled). الطول والقصّة: ميدي، حيث ينتهي الطرف أسفل الركبة بقليل. الطابع العام: نهاري، صيفي، كاجوال.";
+      const skirtDesc = "تنورة ميدي بطبعات نباتية بقصّة واسعة وبدون أكمام، مكوّنة من طبقات أفقية متراكبة تنتهي بطرف متموج وتنزل حتى أسفل الركبة بقليل بألوان الأخضر والوردي والأصفر والأزرق والأبيض.\n\nتُلبس في المناسبات النهارية الصيفية الكاجوال، ويمكن تنسيقها مع بلوزة خفيفة وقب鞋 رياضية.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.";
+      const seenSys = [];
+      const skirtAi = { AI: { run: async (_m, input) => {
+        const c = input?.messages?.[0]?.content;
+        if (Array.isArray(c)) return { response: skirtNotes };
+        seenSys.push(c || "");
+        return { response: copyJson(skirtDesc) };
+      } } };
+      const out = await withImageFetch(() => generateProductCopy(args({ ...skirtAi }, { name: "تنورة", imageUrl: "https://cdn.example.com/skirt.jpg" })));
+      const all = seenSys[0] || "";
+      const notes = all.slice(all.lastIndexOf("اللون:"), all.indexOf("---", all.lastIndexOf("اللون:")));
+      assert(notes && !/الأكمام/.test(notes) && !/Tiered|Ruffled/.test(notes) && /طبقات أفقية متراكبة تنتهي بطرف متموج/.test(notes), `PL-63: ملاحظات التنورة بلا سطر أكمام ولا مصطلحات إنجليزية («${notes}»)`);
+      const d = out.copywriting.description;
+      assert(!/أكمام/.test(d) && !/鞋/.test(d) && /مع بلوزة خفيفة\./.test(d) && /^تنورة ميدي/.test(d), `PL-64: وصف التنورة المنشور بلا «أكمام» ولا حرف صيني («${d}»)`);
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
