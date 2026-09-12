@@ -275,6 +275,11 @@ async function main() {
       assert(out.copywriting.description === `${onePara}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.` && threePara.length > 0, `PL-69: وصف تنورة بلا جملة جدول المقاسات يُنشر معها بفقرة مستقلة («${out.copywriting.description}»)`);
     }
     {
+      // فستان مورّد 2026-09-12 04:34 على Cloudflare Qwen: «ياقة عالية ومربعة»، «كتفان عريضان»، «ميني» لطرف عند الركبة.
+      const { VISION_PROMPT: VP } = await import("../../functions/_lib/ai/prompts/seo.js");
+      assert(/«مربعة» فقط لفتحة رقبة بزوايا قائمة/.test(VP) && /«أكماماً مكشكشة» لا «كتفين عريضين»/.test(VP) && /«بطول الركبة»/.test(VP) && /«ميني» فقط إن انتهى فوق الركبة بوضوح/.test(VP) && /الأطراف \(دانتيل أو شريط/.test(VP), "PL-74: توجيه الرؤية يسمّي أنواع الياقة والأكمام والأطراف ويعرّف «بطول الركبة»");
+    }
+    {
       // تنورة 2026-09-12: «بطرف متموج في أسفل كل couche» نُشرت.
       const { fixLatinWords } = await import("../../functions/_lib/domain/copyPhrases.js");
       assert(fixLatinWords("بطرف متموج في أسفل كل couche.") === "بطرف متموج في أسفل كل طبقة.", "PL-70: «couche» تُعرَّب «طبقة»");
