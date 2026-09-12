@@ -1,5 +1,5 @@
 // public/js/dashboard/store.js — تبويب «متجري» (حالة الربط، المنتجات)
-// وعدّادات الحصة الشهرية بالشريط العلوي، والخروج.
+// وعدّاد الأوصاف اليومي بالشريط العلوي، والخروج.
 import { S } from "./state.js";
 import { confirmAction } from "./embedded.js";
 import { postStoreOverview, postUsage, postLogout, postStoreDelete } from "./api.js";

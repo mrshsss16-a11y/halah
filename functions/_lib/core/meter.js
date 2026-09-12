@@ -1,35 +1,39 @@
-// Daily free-tier usage metering with KV-first fast path.
+// Usage metering with KV-first fast path.
 //
 // Hot path (KV cache hit):
 //   READ  KV  quota key → if under limit → WRITE KV increment → return ok
-//   The D1 write happens async in the background (context.waitUntil or fire-and-forget).
 //   This cuts meter latency from ~60ms (2× D1 round-trips) to ~5ms (1× KV read).
 //
 // Cold path (first request of the day, or KV miss):
-//   Falls back to atomic D1 INSERT..ON CONFLICT upsert (unchanged behaviour).
+//   Falls back to atomic D1 INSERT..ON CONFLICT upsert.
 //   D1 row is still the source of truth — KV is a performance overlay only.
 //
 // KV key format: meter:{merchantId}:{YYYY-MM-DD}
 // KV TTL:        25h (auto-expires slightly after UTC midnight rollover)
 const DAILY_LIMIT = 50;
 const MONTHLY_FREE_LIMIT = 1000; // Meta's WhatsApp service-conversation free tier is uncapped since 2026-11-01 — this constant is unused, kept only as a documented historical note (see docs/ROADMAP.md m2.2.5).
-// ── Monthly merchant quota (docs/ROADMAP.md m2.2.5) ─────────────────────────
-// Two independent buckets instead of one blended daily credit pool — the old
-// DAILY_LIMIT let a single merchant exhaust the entire account's shared free
-// AI capacity in one day (see migrations/0011_monthly_quota.sql for the math).
+// ── Merchant quota buckets (docs/ROADMAP.md m2.2.5) ─────────────────────────
 // "hala" is Aura's own operational line, not a trial merchant — exempt from
-// both buckets, same as the image-generation admin beta is exempt by gate.
-export const MONTHLY_BUCKET_LIMITS = { description: 60, message: 300, image: 20 };
+// every bucket, same as the image-generation admin beta is exempt by gate.
+export const MONTHLY_BUCKET_LIMITS = { message: 300, image: 20 };
+// الأوصاف يومية منذ 2026-09-12 (قرار المالك): مصادر الذكاء الاصطناعي المجانية تتجدد يومياً
+// (نحو ٢٥–٣٠ وصفاً باليوم للمشروع كله)، و٦٠ شهرياً بلا حد يومي تركت تاجراً واحداً يستهلك سعة
+// يوم كامل على الجميع، ويحمّل هالة بتجربته المجانية فيولّد متجره كله ثم يحذفها.
+export const DAILY_BUCKET_LIMITS = { description: 5 };
+// سقف يومي للمشروع كله فوق حد كل متجر: يوقف التوليد برسالة صادقة قبل أن تنفد الحصص المجانية فجأة.
+const GLOBAL_DAILY_LIMITS = { description: 25 };
+// صف العدّاد العام بجدول usage_quota. لا يطابق معرّف تاجر (m_…) ولا يُمحى مع بيانات متجر.
+const GLOBAL_ID = "_all";
 const UNMETERED_MERCHANT_IDS = new Set(["hala"]);
 
 /**
- * معفى من الحصة الشهرية؟ `hala` ثابت بالكود (خط أورا التشغيلي). وفوقه قائمة
+ * معفى من الحصة؟ `hala` ثابت بالكود (خط أورا التشغيلي). وفوقه قائمة
  * مؤقتة بمتغيّر البيئة `UNMETERED_MERCHANT_IDS` (معرّفات مفصولة بفواصل) —
  * أُضيفت 2026-09-10 لمتجر مراجعة سلة: مراجع يجرّب التوليد بالجملة على عشرين
- * منتجاً ويكرّر يصطدم بسقف ٦٠ وسط التقييم. بمتغيّر لا بالكود: يُزال بسطر بعد
+ * منتجاً ويكرّر يصطدم بالسقف وسط التقييم. بمتغيّر لا بالكود: يُزال بسطر بعد
  * القبول بلا نشر، ولا يبقى معرّف تاجر إنتاجي محفوراً بالمصدر.
  *
- * الإعفاء للحصة الشهرية **وحدها**: حدود المعدل (checkRateLimit) وحدّ سلة
+ * الإعفاء للحصة **وحدها**: حدود المعدل (checkRateLimit) وحدّ سلة
  * (طلب/ثانية) لا تمرّ من هنا وتبقى سارية. المطابقة تامة بعد التشذيب — لا
  * `includes` على النص كي لا يُعفى `m_ab` لأن `m_abc` مُدرج.
  */
@@ -60,18 +64,8 @@ function monthlyKvKey(merchantId, bucket) {
   return `quota:${merchantId}:${bucket}:${currentMonth()}`;
 }
 
-/** Background D1 sync — called from KV fast path, never blocks the response. */
-async function syncToD1(env, merchantId, cost) {
-  const day = today();
-  await env.DB.prepare(
-    `INSERT INTO usage_meter (merchant_id, day, credits_used, updated_at)
-     VALUES (?, ?, ?, datetime('now'))
-     ON CONFLICT (merchant_id, day) DO UPDATE SET
-       credits_used = credits_used + ?,
-       updated_at = datetime('now')`
-  )
-    .bind(merchantId, day, cost, cost)
-    .run();
+function dailyKvKey(id, bucket, day) {
+  return `quota:${id}:${bucket}:${day}`;
 }
 
 export async function getUsage(env, merchantId) {
@@ -98,15 +92,112 @@ export async function getUsage(env, merchantId) {
   return { used, remaining: Math.max(0, DAILY_LIMIT - used), limit: DAILY_LIMIT, monthlyFreeLimit: MONTHLY_FREE_LIMIT, monthlyFreeInfo: "1,000 محادثة / رسالة مجانية شهرياً من Meta" };
 }
 
+// ── D1 helpers for usage_quota (period = "YYYY-MM" monthly, "YYYY-MM-DD" daily) ──
+function upsertQuota(env, id, period, bucket, cost, limit) {
+  return env.DB.prepare(
+    `INSERT INTO usage_quota (merchant_id, period, bucket, used, updated_at)
+     VALUES (?, ?, ?, ?, datetime('now'))
+     ON CONFLICT (merchant_id, period, bucket) DO UPDATE SET
+       used = used + ?,
+       updated_at = datetime('now')
+     WHERE used + ? <= ?`
+  )
+    .bind(id, period, bucket, cost, cost, cost, limit)
+    .run();
+}
+
+async function readQuota(env, id, period, bucket) {
+  const row = await env.DB.prepare(
+    "SELECT used FROM usage_quota WHERE merchant_id = ? AND period = ? AND bucket = ?"
+  )
+    .bind(id, period, bucket)
+    .first();
+  return (row && row.used) || 0;
+}
+
+/** Background D1 sync for a KV fast path — unconditional add (KV already enforced the limit). */
+async function syncQuotaToD1(env, id, period, bucket, cost) {
+  await env.DB.prepare(
+    `INSERT INTO usage_quota (merchant_id, period, bucket, used, updated_at)
+     VALUES (?, ?, ?, ?, datetime('now'))
+     ON CONFLICT (merchant_id, period, bucket) DO UPDATE SET
+       used = used + ?,
+       updated_at = datetime('now')`
+  )
+    .bind(id, period, bucket, cost, cost)
+    .run();
+}
+
 /**
- * Monthly quota check + consume for one bucket ("description" | "message").
- * Same KV-first / D1-source-of-truth shape as checkAndConsume above, just
- * keyed by calendar month instead of day, and by bucket instead of a single
- * blended credit pool. "hala" (Aura's own line) is always unmetered.
+ * حصة يومية لكل متجر + سقف يومي للمشروع كله. `scope` يقول أيهما رفض:
+ * "store" = حد المتجر لليوم، "global" = اكتملت سعة هالة لليوم.
+ */
+async function consumeDaily(env, merchantId, bucket, cost) {
+  const limit = DAILY_BUCKET_LIMITS[bucket];
+  const globalLimit = GLOBAL_DAILY_LIMITS[bucket] ?? Infinity;
+  const base = { limit, bucket, period: "day" };
+  if (isUnmetered(env, merchantId) || !env.DB) return { ok: true, remaining: limit, used: 0, ...base };
+
+  const day = today();
+  const storeKey = dailyKvKey(merchantId, bucket, day);
+  const globalKey = dailyKvKey(GLOBAL_ID, bucket, day);
+
+  // ── Fast path: KV ─────────────────────────────────────────────────────────
+  // الكتابات تُنتظر هنا (لا fire-and-forget): الحد ٥ فقط، وعدّاد ضائع = وصف مجاني زائد.
+  // ويبقى عدّاد KV ٢٥ ساعة حتى لو مُحيت صفوف D1 بإزالة التطبيق: إعادة التثبيت بنفس اليوم لا تصفّر الحد.
+  if (env.HALA_CACHE) {
+    try {
+      const [s, g] = await Promise.all([env.HALA_CACHE.get(storeKey), env.HALA_CACHE.get(globalKey)]);
+      const used = s ? parseInt(s, 10) : 0;
+      const globalUsed = g ? parseInt(g, 10) : 0;
+      if (used + cost > limit) return { ok: false, scope: "store", remaining: 0, used, ...base };
+      if (globalUsed + cost > globalLimit) return { ok: false, scope: "global", remaining: 0, used, ...base };
+      await Promise.all([
+        env.HALA_CACHE.put(storeKey, String(used + cost), { expirationTtl: METER_TTL_SECONDS }),
+        ...(Number.isFinite(globalLimit) ? [env.HALA_CACHE.put(globalKey, String(globalUsed + cost), { expirationTtl: METER_TTL_SECONDS })] : [])
+      ]);
+      await syncQuotaToD1(env, merchantId, day, bucket, cost).catch(() => {});
+      if (Number.isFinite(globalLimit)) await syncQuotaToD1(env, GLOBAL_ID, day, bucket, cost).catch(() => {});
+      return { ok: true, remaining: Math.max(0, limit - used - cost), used: used + cost, ...base };
+    } catch {
+      // KV unavailable — fall through to D1
+    }
+  }
+
+  // ── Cold path: D1 (source of truth) ────────────────────────────────────────
+  const store = await upsertQuota(env, merchantId, day, bucket, cost, limit);
+  if (!store.meta.changes) {
+    return { ok: false, scope: "store", remaining: 0, used: await readQuota(env, merchantId, day, bucket), ...base };
+  }
+  if (Number.isFinite(globalLimit)) {
+    const global = await upsertQuota(env, GLOBAL_ID, day, bucket, cost, globalLimit);
+    if (!global.meta.changes) {
+      await releaseD1(env, merchantId, day, bucket, cost);
+      return { ok: false, scope: "global", remaining: 0, used: await readQuota(env, merchantId, day, bucket), ...base };
+    }
+  }
+  const used = await readQuota(env, merchantId, day, bucket);
+  return { ok: true, remaining: Math.max(0, limit - used), used, ...base };
+}
+
+function releaseD1(env, id, period, bucket, cost) {
+  return env.DB.prepare(
+    "UPDATE usage_quota SET used = MAX(0, used - ?), updated_at = datetime('now') WHERE merchant_id = ? AND period = ? AND bucket = ?"
+  )
+    .bind(cost, id, period, bucket)
+    .run();
+}
+
+/**
+ * Quota check + consume for one bucket. The name is historical: "description" is
+ * daily (per store + project-wide cap), "message" and "image" are monthly.
+ * "hala" (Aura's own line) is always unmetered.
  *
- * @returns {Promise<{ok: boolean, remaining: number, used: number, limit: number, bucket: string}>}
+ * @returns {Promise<{ok: boolean, remaining: number, used: number, limit: number, bucket: string, period?: string, scope?: string}>}
  */
 export async function checkAndConsumeMonthly(env, merchantId, bucket, cost = 1) {
+  if (DAILY_BUCKET_LIMITS[bucket]) return consumeDaily(env, merchantId, bucket, cost);
+
   const limit = MONTHLY_BUCKET_LIMITS[bucket];
   if (!limit) throw new Error(`checkAndConsumeMonthly: unknown bucket "${bucket}"`);
 
@@ -128,7 +219,7 @@ export async function checkAndConsumeMonthly(env, merchantId, bucket, cost = 1) 
 
       const newUsed = used + cost;
       env.HALA_CACHE.put(key, String(newUsed), { expirationTtl: MONTHLY_TTL_SECONDS }).catch(() => {});
-      syncQuotaToD1(env, merchantId, bucket, cost).catch(() => {});
+      syncQuotaToD1(env, merchantId, currentMonth(), bucket, cost).catch(() => {});
 
       return { ok: true, remaining: Math.max(0, limit - newUsed), used: newUsed, limit, bucket };
     } catch {
@@ -138,23 +229,8 @@ export async function checkAndConsumeMonthly(env, merchantId, bucket, cost = 1) 
 
   // ── Cold path: D1 (source of truth) ────────────────────────────────────
   const period = currentMonth();
-  const result = await env.DB.prepare(
-    `INSERT INTO usage_quota (merchant_id, period, bucket, used, updated_at)
-     VALUES (?, ?, ?, ?, datetime('now'))
-     ON CONFLICT (merchant_id, period, bucket) DO UPDATE SET
-       used = used + ?,
-       updated_at = datetime('now')
-     WHERE used + ? <= ?`
-  )
-    .bind(merchantId, period, bucket, cost, cost, cost, limit)
-    .run();
-
-  const row = await env.DB.prepare(
-    "SELECT used FROM usage_quota WHERE merchant_id = ? AND period = ? AND bucket = ?"
-  )
-    .bind(merchantId, period, bucket)
-    .first();
-  const used = (row && row.used) || 0;
+  const result = await upsertQuota(env, merchantId, period, bucket, cost, limit);
+  const used = await readQuota(env, merchantId, period, bucket);
 
   if (env.HALA_CACHE && result.meta.changes > 0) {
     env.HALA_CACHE.put(key, String(used), { expirationTtl: MONTHLY_TTL_SECONDS }).catch(() => {});
@@ -163,48 +239,68 @@ export async function checkAndConsumeMonthly(env, merchantId, bucket, cost = 1) 
   return { ok: result.meta.changes > 0, remaining: Math.max(0, limit - used), used, limit, bucket };
 }
 
-/** Background D1 sync for the monthly quota's KV fast path. */
-async function syncQuotaToD1(env, merchantId, bucket, cost) {
-  const period = currentMonth();
-  await env.DB.prepare(
-    `INSERT INTO usage_quota (merchant_id, period, bucket, used, updated_at)
-     VALUES (?, ?, ?, ?, datetime('now'))
-     ON CONFLICT (merchant_id, period, bucket) DO UPDATE SET
-       used = used + ?,
-       updated_at = datetime('now')`
-  )
-    .bind(merchantId, period, bucket, cost, cost)
-    .run();
+/**
+ * يعيد وحدة مستهلكة لم تُنتج شيئاً (فشل التوليد، نفاد سعة المزوّدين). بحد ٥ يومياً،
+ * خصم محاولة فاشلة يأكل خُمس يوم التاجر بلا وصف. لا يرمي أبداً.
+ */
+export async function refundQuota(env, merchantId, bucket, cost = 1) {
+  const daily = Boolean(DAILY_BUCKET_LIMITS[bucket]);
+  if ((!daily && !MONTHLY_BUCKET_LIMITS[bucket]) || isUnmetered(env, merchantId) || !env?.DB) return;
+  const period = daily ? today() : currentMonth();
+  const ids = daily && Number.isFinite(GLOBAL_DAILY_LIMITS[bucket] ?? Infinity) ? [merchantId, GLOBAL_ID] : [merchantId];
+  for (const id of ids) {
+    const key = daily ? dailyKvKey(id, bucket, period) : monthlyKvKey(id, bucket);
+    if (env.HALA_CACHE) {
+      try {
+        const cached = await env.HALA_CACHE.get(key);
+        if (cached !== null) {
+          await env.HALA_CACHE.put(key, String(Math.max(0, parseInt(cached, 10) - cost)), { expirationTtl: daily ? METER_TTL_SECONDS : MONTHLY_TTL_SECONDS });
+        }
+      } catch { /* KV unavailable */ }
+    }
+    await releaseD1(env, id, period, bucket, cost).catch(() => {});
+  }
 }
 
-/** Both monthly buckets for a merchant, for the dashboard's quota display. */
+async function readCached(env, key) {
+  if (!env.HALA_CACHE) return null;
+  try {
+    const cached = await env.HALA_CACHE.get(key);
+    return cached !== null ? parseInt(cached, 10) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Every bucket for a merchant, for the dashboard's quota display and bulk planning. */
 export async function getMonthlyUsage(env, merchantId) {
-  const buckets = Object.keys(MONTHLY_BUCKET_LIMITS);
   const result = {};
 
-  for (const bucket of buckets) {
+  for (const bucket of Object.keys(DAILY_BUCKET_LIMITS)) {
+    const limit = DAILY_BUCKET_LIMITS[bucket];
+    if (isUnmetered(env, merchantId) || !env.DB) {
+      result[bucket] = { used: 0, remaining: limit, limit, period: "day" };
+      continue;
+    }
+    const day = today();
+    const used = (await readCached(env, dailyKvKey(merchantId, bucket, day))) ?? (await readQuota(env, merchantId, day, bucket));
+    const globalLimit = GLOBAL_DAILY_LIMITS[bucket] ?? Infinity;
+    const globalUsed = Number.isFinite(globalLimit)
+      ? (await readCached(env, dailyKvKey(GLOBAL_ID, bucket, day))) ?? (await readQuota(env, GLOBAL_ID, day, bucket))
+      : 0;
+    // المتبقي الفعلي = الأقل بين حد المتجر وسعة اليوم العامة: خطة التوليد بالجملة لا تعد بما لن يُصرف اليوم.
+    const remaining = Math.max(0, Math.min(limit - used, globalLimit - globalUsed));
+    result[bucket] = { used, remaining, limit, period: "day" };
+  }
+
+  for (const bucket of Object.keys(MONTHLY_BUCKET_LIMITS)) {
     const limit = MONTHLY_BUCKET_LIMITS[bucket];
     if (isUnmetered(env, merchantId) || !env.DB) {
       result[bucket] = { used: 0, remaining: limit, limit };
       continue;
     }
-
-    let used = 0;
-    if (env.HALA_CACHE) {
-      try {
-        const cached = await env.HALA_CACHE.get(monthlyKvKey(merchantId, bucket));
-        if (cached !== null) used = parseInt(cached, 10);
-      } catch { /* fall through to D1 */ }
-    }
-    if (!used) {
-      const row = await env.DB.prepare(
-        "SELECT used FROM usage_quota WHERE merchant_id = ? AND period = ? AND bucket = ?"
-      )
-        .bind(merchantId, currentMonth(), bucket)
-        .first();
-      used = (row && row.used) || 0;
-    }
-
+    let used = (await readCached(env, monthlyKvKey(merchantId, bucket))) || 0;
+    if (!used) used = await readQuota(env, merchantId, currentMonth(), bucket);
     result[bucket] = { used, remaining: Math.max(0, limit - used), limit };
   }
 

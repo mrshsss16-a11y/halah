@@ -43,7 +43,7 @@ export const ERROR_CATALOG = {
   // ── الحصص والاستهلاك ──
   QUOTA_EXCEEDED: {
     status: 429,
-    message: "خلصت حصتك لهذا الشهر. تتجدد تلقائياً أول الشهر الجاي."
+    message: "وصلت حد الاستخدام المتاح. يتجدد تلقائياً — حاول لاحقاً."
   },
   RATE_LIMITED: {
     status: 429,

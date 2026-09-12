@@ -1,13 +1,10 @@
 // تِك طابور الجملة (المرحلة ٤: نُقل من `api/cron/bulk_process.js`).
 // مفصول عن `bulk.js` — ذاك وصولٌ للجداول، وهذا تنسيق المراحل الثلاث فوقه.
-import {
-  listActiveBulkJobItems, completeBulkJobItem, claimNextCatalogSyncJob,
-  advanceCatalogSyncJob, failCatalogSyncJob, listMerchantsWithDeferredItems, reviveDeferredItems
-} from "./bulk.js";
+import { listActiveBulkJobItems, completeBulkJobItem, claimNextCatalogSyncJob, advanceCatalogSyncJob, failCatalogSyncJob, listMerchantsWithDeferredItems, reviveDeferredItems, DEFERRED_MARKER } from "./bulk.js";
 import { syncCatalogPage, getCatalogItem } from "./catalog.js";
 import { enqueue, claimNextPublishMerchant, listApprovedUnpublished } from "./review.js";
 import { publishApproved } from "./publish.js";
-import { checkAndConsumeMonthly, getMonthlyUsage } from "../core/meter.js";
+import { checkAndConsumeMonthly, getMonthlyUsage, refundQuota } from "../core/meter.js";
 import { logError } from "../core/errorLog.js";
 
 // ── المرحلة ٤: تِك طابور الجملة (نُقل من api/cron/bulk_process.js) ──────────
@@ -98,13 +95,16 @@ async function tickGenerate(log, generateCopy) {
   let failed = 0;
 
   for (const item of items) {
+    let consumed = false;
     try {
       const usage = await checkAndConsumeMonthly(env, item.merchant_id, "description");
       if (!usage.ok) {
-        await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "skipped", error: "الحصة الشهرية خلصت" });
+        // حد اليوم (للمتجر أو للمشروع) ⇒ مؤجَّل يُحيا تلقائياً مع تجدد الحد، لا فاشل.
+        await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "skipped", error: DEFERRED_MARKER });
         failed++;
         continue;
       }
+      consumed = true;
 
       // بيانات الكتالوج (إن سُحب): الصورة والوصف الحالي يرفعان جودة التوليد
       // ويظهران بشاشة المراجعة "الحالي ← المقترح". غيابها = مسار CSV اليدوي.
@@ -141,6 +141,7 @@ async function tickGenerate(log, generateCopy) {
       // العمود merchant-facing (يظهر بقائمة الفاشل بالداشبورد) — العربي له،
       // والتفاصيل (مزوّد AI، معرّفات) لسجل الأخطاء.
       log.error("BULK_ITEM_FAILED", item.merchant_id, `item=${item.id} ${String((err && err.message) || err).slice(0, 250)}`);
+      if (consumed) await refundQuota(env, item.merchant_id, "description").catch(() => {});
       await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "failed", error: "تعذّرت معالجة هذا الصف. جرّبه مرة ثانية." });
       failed++;
     }

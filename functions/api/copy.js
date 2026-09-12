@@ -3,7 +3,7 @@
 import { withApi } from "../_lib/core/respond.js";
 import { generateProductCopy, TONE_LABELS } from "../_lib/domain/copy.js";
 import { CopyParseError } from "../_lib/domain/copyParse.js";
-import { checkAndConsumeMonthly } from "../_lib/core/meter.js";
+import { checkAndConsumeMonthly, refundQuota } from "../_lib/core/meter.js";
 import { requireCompletedAccount } from "../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 import { logError } from "../_lib/core/errorLog.js";
@@ -37,7 +37,7 @@ async function copyHandler(body, env, request) {
 
   const usage = await checkAndConsumeMonthly(env, merchantId, "description");
   if (!usage.ok) {
-    return { error: `خلصت أوصاف هالشهر المجانية (${usage.limit} وصف) — تتجدد أول الشهر الجاي.`, code: "OUT_OF_CREDITS", remaining: 0 };
+    return { error: usage.scope === "global" ? "اكتملت سعة هالة لهذا اليوم — تتجدد بكرة تلقائياً، وما ضاع شي." : `وصلت حد اليوم لمتجرك (${usage.limit} أوصاف) — يتجدد بكرة تلقائياً.`, code: "OUT_OF_CREDITS", remaining: 0 };
   }
 
   let parsed;
@@ -46,6 +46,8 @@ async function copyHandler(body, env, request) {
       env, merchantId, name, price, tone, category, features, existingDescription, imageUrl, variants, keywordsExtra: body.keywords
     });
   } catch (err) {
+    // محاولة لم تُنتج وصفاً لا تُحسب من حد اليوم (٥ فقط).
+    await refundQuota(env, merchantId, "description").catch(() => {});
     if (!(err instanceof CopyParseError)) throw err;
     logError({ env }, { requestId: null, path: "api/copy", code: "COPY_PARSE_FAILED", internal: "unparseable model output after one retry", storeId: merchantId });
     return { error: "تعذّر توليد وصف صالح لهذا المنتج. جرّب مرة ثانية أو أضف مزايا أوضح.", code: "COPY_PARSE_FAILED" };

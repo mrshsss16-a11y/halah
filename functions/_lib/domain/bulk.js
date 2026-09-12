@@ -150,21 +150,23 @@ export async function failCatalogSyncJob(env, jobId) {
     .run();
 }
 
-// ── المرحلة ٢: إحياء المؤجَّل شهرياً (docs/PLAN_BULK_SEO.md §٦) ─────────────
-// صفوف قُصّت عن حصة الشهر تُخزَّن بحالة skipped وسبب DEFERRED_MARKER بدل رفضها.
+// ── المرحلة ٢: إحياء المؤجَّل مع تجدد الحد (docs/PLAN_BULK_SEO.md §٦) ─────────────
+// صفوف قُصّت عن الحد (يومي منذ 2026-09-12) تُخزَّن بحالة skipped وسبب DEFERRED_MARKER بدل رفضها.
 // يستدعيها الـcron كل تِك: لكل متجر عنده صفوف مؤجَّلة وحصة متبقية، يُعاد
 // حتى `remaining` صفاً إلى pending ويُفتح الطابور من جديد — التاجر لا يعيد شيئاً.
-export const DEFERRED_MARKER = "مؤجّل للشهر القادم";
+export const DEFERRED_MARKER = "مؤجّل لليوم التالي (حد الأوصاف اليومي)";
+// صفوف أُجّلت قبل تحويل الحد إلى يومي (2026-09-12) تبقى قابلة للإحياء.
+const LEGACY_DEFERRED_MARKER = "مؤجّل للشهر القادم";
 
 export async function listMerchantsWithDeferredItems(env, limit = 20) {
   // tenant-audit-ok: استعلام cron عابر للمتاجر بالتصميم — يجمع المتاجر ذات الصفوف المؤجَّلة ثم كل ما بعده معزول بـmerchant_id.
   const { results } = await env.DB.prepare(
     `SELECT j.merchant_id AS merchant_id, COUNT(*) AS deferred
        FROM bulk_job_items i JOIN bulk_jobs j ON j.id = i.job_id
-      WHERE i.status = 'skipped' AND i.error = ?
+      WHERE i.status = 'skipped' AND i.error IN (?, ?)
       GROUP BY j.merchant_id ORDER BY MIN(i.updated_at) ASC LIMIT ?`
   )
-    .bind(DEFERRED_MARKER, limit)
+    .bind(DEFERRED_MARKER, LEGACY_DEFERRED_MARKER, limit)
     .all();
   return results || [];
 }
@@ -176,10 +178,10 @@ export async function reviveDeferredItems(env, { merchantId, limit }) {
   const { results } = await env.DB.prepare(
     `SELECT i.id AS id, i.job_id AS job_id
        FROM bulk_job_items i JOIN bulk_jobs j ON j.id = i.job_id
-      WHERE j.merchant_id = ? AND i.status = 'skipped' AND i.error = ?
+      WHERE j.merchant_id = ? AND i.status = 'skipped' AND i.error IN (?, ?)
       ORDER BY i.updated_at ASC, i.row_index ASC LIMIT ?`
   )
-    .bind(merchantId, DEFERRED_MARKER, cap)
+    .bind(merchantId, DEFERRED_MARKER, LEGACY_DEFERRED_MARKER, cap)
     .all();
   const rows = results || [];
   if (!rows.length) return 0;

@@ -266,8 +266,8 @@ async function runTests() {
     const dlog = [];
     await listMerchantsWithDeferredItems({ DB: fakeDb([], dlog) }, 20);
     assert(
-      dlog[0].binds[0] === DEFERRED_MARKER && dlog[0].binds[1] === 20,
-      "DOM-24: مسح الـcron للمؤجَّل يطابق العلامة نفسها ويحترم الحد"
+      dlog[0].binds[0] === DEFERRED_MARKER && dlog[0].binds[1] === "مؤجّل للشهر القادم" && dlog[0].binds[2] === 20 && /IN \(\?, \?\)/.test(dlog[0].sql),
+      "DOM-24: مسح الـcron للمؤجَّل يطابق العلامة اليومية والشهرية القديمة ويحترم الحد"
     );
   }
 

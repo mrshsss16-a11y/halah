@@ -25,13 +25,13 @@ function countingDb() {
 }
 
 async function main() {
-  const { checkAndConsumeMonthly, getMonthlyUsage, MONTHLY_BUCKET_LIMITS } = await import("../../functions/_lib/core/meter.js");
+  const { checkAndConsumeMonthly, getMonthlyUsage, DAILY_BUCKET_LIMITS } = await import("../../functions/_lib/core/meter.js");
 
   {
     const DB = countingDb();
     const env = { DB, UNMETERED_MERCHANT_IDS: "m_other, m_review " };
     const r = await checkAndConsumeMonthly(env, "m_review", "description");
-    assert(r.ok && r.used === 0 && r.remaining === MONTHLY_BUCKET_LIMITS.description, "EXEMPT-1: المُدرج يُسمح له بلا استهلاك");
+    assert(r.ok && r.used === 0 && r.remaining === DAILY_BUCKET_LIMITS.description, "EXEMPT-1: المُدرج يُسمح له بلا استهلاك");
     assert(DB.calls === 0, "EXEMPT-2: المُدرج لا يلمس D1 إطلاقاً — لا يُحتسب بأرقام الإنتاج");
     const u = await getMonthlyUsage(env, "m_review");
     assert(u.description.remaining === u.description.limit && DB.calls === 0, "EXEMPT-3: عرض الحصة للمُدرج كامل ولا يقرأ D1");

@@ -5,7 +5,7 @@
 // .claude/skills/salla-integration/SKILL.md — so this can't run inline).
 import { withApi } from "../../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../../_lib/core/session.js";
-import { createBulkJob } from "../../../_lib/domain/bulk.js";
+import { createBulkJob, markDeferredItems } from "../../../_lib/domain/bulk.js";
 import { getMonthlyUsage } from "../../../_lib/core/meter.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
 
@@ -44,29 +44,26 @@ async function bulkUploadHandler(body, env, request) {
   }
   if (!rows.length) return { ok: false, error: "كل الصفوف ناقصة اسم أو SKU." };
 
-  // Cap to remaining monthly description quota up front so the job doesn't
-  // burn cron ticks on items that will fail the quota check one-by-one later.
+  // الحد يومي (2026-09-12): ما يتجاوز متبقي اليوم يُعلَّم مؤجَّلاً فوراً ويُحيا تلقائياً مع تجدد
+  // الحد — كان يُقصّ ويضيع، وبحد ٥ يومياً كان سيضيع أغلب الملف.
   const usage = await getMonthlyUsage(env, merchantId);
-  const remaining = usage.description.remaining;
-  let capped = 0;
-  if (rows.length > remaining) {
-    capped = rows.length - remaining;
-    rows.length = remaining;
-  }
-  if (!rows.length) {
-    return { ok: false, error: `خلصت أوصاف هالشهر المجانية (${usage.description.limit}) — تتجدد أول الشهر الجاي.`, code: "OUT_OF_CREDITS" };
-  }
+  const remaining = Math.max(0, Number(usage.description.remaining) || 0);
+  const nowCount = Math.min(rows.length, remaining);
+  const deferred = rows.length - nowCount;
 
   const jobId = `bulk_${crypto.randomUUID().slice(0, 12)}`;
   await createBulkJob(env, { id: jobId, merchantId, tone, rows });
+  await markDeferredItems(env, { jobId, merchantId, fromIndex: nowCount, count: deferred });
 
   return {
     ok: true,
     jobId,
-    queued: rows.length,
+    queued: nowCount,
+    deferred,
     skippedInvalid,
-    skippedOverQuota: capped,
-    etaMinutes: Math.ceil(rows.length / 60) // ≈60 items/min per store, sequential (rate-limit design)
+    skippedOverQuota: 0,
+    message: deferred ? `بدأنا بـ${nowCount} اليوم (حدك ${usage.description.limit} أوصاف يومياً)، و${deferred} مؤجَّلة تُكمَل تلقائياً يوماً بيوم.` : null,
+    etaMinutes: Math.ceil(nowCount / 60) // ≈60 items/min per store, sequential (rate-limit design)
   };
 }
 

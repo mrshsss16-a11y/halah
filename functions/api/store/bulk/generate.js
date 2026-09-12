@@ -60,7 +60,7 @@ async function bulkGenerateHandler(body, env, request) {
   await markDeferredItems(env, { jobId, merchantId, fromIndex: now.length, count: deferred.length });
 
   const message = deferred.length
-    ? `متجرك فيه ${total} منتج، وباقتك تغطي ${limitMonthly} وصف هالشهر (باقي ${remaining}). بدأنا بـ${now.length} الأعلى أثراً، و${deferred.length} مؤجَّلة تُكمَل تلقائياً أول الشهر الجاي.`
+    ? `متجرك فيه ${total} منتج، وحدك اليومي ${limitMonthly} أوصاف (باقي اليوم ${remaining}). بدأنا بـ${now.length} الأعلى أثراً، و${deferred.length} مؤجَّلة تُكمَل تلقائياً يوماً بيوم.`
     : `بدأنا توليد ${now.length} وصف من ${total} منتج. راجعها هنا قبل أي نشر.`;
 
   return {

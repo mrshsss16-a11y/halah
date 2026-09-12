@@ -4,7 +4,7 @@
 // ويثبت أن ذاكرة RAG تتبع الجدول لا العكس.
 import { createRunner } from "../_helpers.mjs";
 import { HALA_SUPPORT_PROMPT } from "../../functions/_lib/ai/persona.js";
-import { MONTHLY_BUCKET_LIMITS } from "../../functions/_lib/core/meter.js";
+import { MONTHLY_BUCKET_LIMITS, DAILY_BUCKET_LIMITS } from "../../functions/_lib/core/meter.js";
 import { syncHalaFaqEmbeddings, faqFingerprint } from "../../functions/_lib/domain/faqSync.js";
 import { sendAdminAlert } from "../../functions/_lib/domain/health.js";
 
@@ -32,10 +32,10 @@ const toArabicDigits = (n) => String(n).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧�
 // الصور من الأدمن فقط — فذكرهما للزائر وعدٌ بما لا يُستعمل. الحارس الآن: رقم
 // الأوصاف مطابق لـmeter.js، ورقما الرسائل والصور **غائبان**.
 assert(
-  HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(MONTHLY_BUCKET_LIMITS.description)} وصف`) &&
+  HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(DAILY_BUCKET_LIMITS.description)} أوصاف منتجات** يومياً`) &&
     !HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(MONTHLY_BUCKET_LIMITS.message)} رسالة`) &&
     !HALA_SUPPORT_PROMPT.includes(`${toArabicDigits(MONTHLY_BUCKET_LIMITS.image)} صورة`),
-  "HON-2: البرومبت يذكر حد الأوصاف الحقيقي (٦٠) ولا يعد بحصة رسائل أو صور لا يصرفها التاجر"
+  "HON-2: البرومبت يذكر حد الأوصاف اليومي الحقيقي (meter.js) ولا يعد بحصة رسائل أو صور لا يصرفها التاجر"
 );
 assert(
   /سلة فقط/.test(HALA_SUPPORT_PROMPT) && /واتساب التاجر: \*\*غير\s+متوفرة للتجار حالياً/.test(HALA_SUPPORT_PROMPT),
@@ -103,7 +103,7 @@ assert(/ممنوع تمنعاً باتاً/.test(HALA_SUPPORT_PROMPT) && /\[WHAT
   }
   for (const ok of [
     "هالة تعمل مع متاجر سلة فقط حالياً.",
-    "الباقة المجانية شهرية: ٦٠ وصف منتج كل شهر.",
+    "الباقة المجانية: ٥ أوصاف منتجات يومياً.",
     "تقدر تحجز استشارة مجانية مع فريق أورا من صفحة الاستشارة."
   ]) {
     assert(!stripArchivedClaims(ok).stripped, `HON-14: رد صادق لا يُمسّ: "${ok.slice(0, 30)}"`);
@@ -113,7 +113,7 @@ assert(/ممنوع تمنعاً باتاً/.test(HALA_SUPPORT_PROMPT) && /\[WHAT
   {
     const trialReply = stripArchivedClaims("تجربة مجانية ٣٠ يوم بدون بطاقة.").text;
     assert(
-      !/ما فيه تجربة/.test(trialReply) && /سلة/.test(trialReply) && !/\d|[٠-٩]+\s*يوم/.test(trialReply.replace(/٦٠/g, "")),
+      !/ما فيه تجربة/.test(trialReply) && /سلة/.test(trialReply) && !/\d|[٠-٩]+\s*يوم/.test(trialReply.replace(/٥/g, "")),
       "HON-16: رد التجربة الحتمي لا ينفي تجربة سلة ولا يثبّت عدد أيام"
     );
     assert(
@@ -134,7 +134,7 @@ assert(/ممنوع تمنعاً باتاً/.test(HALA_SUPPORT_PROMPT) && /\[WHAT
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<[^>]+>/g, "")
     .replace(/\s+/g, " ");
-  assert(/٦٠ وصف منتج/.test(faq), "HON-17a: الأسئلة الشائعة تذكر حصة الأوصاف الحقيقية (٦٠)");
+  assert(new RegExp(`${toArabicDigits(DAILY_BUCKET_LIMITS.description)} أوصاف منتجات`).test(faq) && /يومياً/.test(faq), "HON-17a: الأسئلة الشائعة تذكر حد الأوصاف اليومي الحقيقي");
   assert(!/٣٠٠ رسالة|رسالة مساعد/.test(faq), "HON-17b: لا حصة رسائل مساعد بالأسئلة الشائعة");
   assert(!/٢٠ صورة/.test(faq), "HON-17c: لا حصة صور منفصلة بالأسئلة الشائعة");
 }
