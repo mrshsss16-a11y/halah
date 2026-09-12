@@ -70,7 +70,7 @@ async function bulkGenerateHandler(body, env, request) {
     queued: now.length,
     deferred: deferred.length,
     quota: { limit: limitMonthly, remaining },
-    upgradeHint: deferred.length ? `${deferred.length} منتج جاهز للتوليد — رقّي الباقة وتنتهي اليوم بدل الانتظار.` : null,
+    upgradeHint: null, // لا مسار ترقية باللوحة بعد (2026-09-13) — وعد بما لا يُصرف يخالف قاعدة الصدق
     etaMinutes: Math.max(1, Math.ceil(now.length / 20) * 10), // ٢٠ توليداً لكل تِك ١٠ دقائق — تقدير صادق لا وعد
     message
   };
