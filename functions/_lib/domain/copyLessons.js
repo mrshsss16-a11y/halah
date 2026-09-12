@@ -56,6 +56,8 @@ export function detectLessons({ draft = "", codes = [], final = "", rawNotes = "
     }
   }
   if (/(?<!\p{L})(?:ال)?طول\s+والقص[ّ]?ة(?!\s*:)/u.test(d)) add("NOTE_LABEL", "نسخ عنوان الملاحظات «الطول والقصّة»", "صياغة جملة: «بطول ميدي»", "writer");
+  if (/(?<!\p{L})(?:ال)?طابع\s+العام(?!\p{L})/u.test(d)) add("NOTE_LABEL", "نسخ عنوان الملاحظات «الطابع العام» بالوصف", "اكتبي المناسبة نفسها: «للإطلالات النهارية»", "writer");
+  if (/(?<!\p{L})ماكسي(?!\p{L})/u.test(d) && /(?<!\p{L})(?:بنطال|بنطلون|جينز)/u.test(src)) add("TROUSER_LENGTH", "«ماكسي» لبنطلون", "«بطول كامل» أو «حتى الكاحل»", "both");
 
   for (const m of rn.matchAll(LATIN_WORD)) add("VISION_LATIN", m[0], fixLatinWords(m[0]) || "كلمة عربية", "vision");
   if (FOREIGN_SCRIPT.test(rn)) add("VISION_FOREIGN", "حروف صينية داخل الملاحظات", "عربي فقط", "vision");

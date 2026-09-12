@@ -67,6 +67,8 @@ async function askExternalVision({ url, apiKey, model, extra, question, dataUrl 
     body: JSON.stringify({
       model,
       max_tokens: 700,
+      // بلا حرارة صريحة يعتمد Groq القيمة 1.0 فخرجت عربية مكسورة («شقين أسود مطاوير»، 2026-09-12 02:22).
+      temperature: 0.2,
       ...extra,
       messages: [{ role: "user", content: [{ type: "text", text: question }, { type: "image_url", image_url: { url: dataUrl } }] }]
     })

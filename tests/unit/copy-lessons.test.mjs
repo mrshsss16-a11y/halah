@@ -58,6 +58,21 @@ async function main() {
     assert(clean.length === 0, `CL-4: لا درس كاذب — حكم ذكره التاجر، ولا طول بلا ملاحظات (${codesOf(clean).join(",")})`);
   }
   {
+    // توليدات 2026-09-12 02:22.
+    const { stripJudgments, fixNoteLabels, fixTrouserLength } = await import("../../functions/_lib/domain/copyPhrases.js");
+    const hang = stripJudgments("بينما تتدلى تركيبة الطبقات باتجاه الحواف لإضفاء حركة مميزة على الإطلالة.");
+    assert(!/على ا\./.test(hang) && /على الإطلالة\./.test(hang), `CL-13: «الإطلالة» لا تُقصّ إلى «ا» عند حذف صفة قبلها («${hang}»)`);
+    const label = fixNoteLabels("يُنصح بتنسيقه مع توب أبيض بسيط أو قميص كتان لإبراز الطابع العام الهادئ.");
+    assert(label === "يُنصح بتنسيقه مع توب أبيض بسيط أو قميص كتان.", `CL-14: «لإبراز الطابع العام الهادئ» لا تُنشر («${label}»)`);
+    const pants = fixTrouserLength("بنطلون وردي بتصميم ماكسي بقصّة واسعة.", "بنطلون");
+    assert(pants === "بنطلون وردي بطول كامل بقصّة واسعة." && fixTrouserLength("تنورة ماكسي.", "تنورة") === "تنورة ماكسي.", `CL-15: «ماكسي» لبنطلون تصير «بطول كامل» وتبقى للتنورة («${pants}»)`);
+    const learned = codesOf(detectLessons({ draft: "بنطلون بتصميم ماكسي لإبراز الطابع العام الهادئ.", final: "بنطلون بطول كامل.", sourceText: "بنطلون" }));
+    assert(learned.includes("NOTE_LABEL") && learned.includes("TROUSER_LENGTH"), `CL-16: الذاكرة تتعلم «الطابع العام» المنسوخ و«ماكسي» للبنطلون (${learned.join(",")})`);
+    const { readFileSync } = await import("node:fs");
+    const visionSrc = readFileSync(new URL("../../functions/_lib/ai/vision.js", import.meta.url), "utf8");
+    assert(/temperature: 0\.2,\n?\s*\.\.\.extra/.test(visionSrc.replace(/\r/g, "")), "CL-17: نداء الرؤية الخارجي بحرارة منخفضة صريحة (Groq يعتمد 1.0)");
+  }
+  {
     const rows = [
       { code: "JUDGMENT", wrong_text: "«أنيقة»", right_text: "تفصيل مرئي", target: "writer" },
       { code: "VISION_COUNT", wrong_text: "«ثلاث طبقات» لخمس", right_text: "عدد بيقين", target: "vision" },
