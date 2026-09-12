@@ -354,7 +354,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // أُصلحت بالوصف فقط (تجربة 2026-09-12). كل تصحيح يمر على كل حقل (copyPage.js).
   polishPage(parsed, { name, sourceText, notes: visionNotes, category });
   // أثر كل توليد (مؤقت حتى قبول سلة): توليد بلا عيب مرصود لم يترك صفاً فتعذّر تشخيص «couche».
-  logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_TRACE", internal: `tier=${lastAsk.tier} vision=${visionModel || "none"} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`, storeId: merchantId });
+  logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_TRACE", internal: `tier=${lastAsk.tier} vision=${visionModel || "none"} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}${rawVisionNotes && rawVisionNotes.trim() !== visionNotes ? ` raw=${rawVisionNotes.slice(0, 500).replace(/\s+/g, " ")}` : ""}`, storeId: merchantId });
+  // حقول الصفحة كلها (العنوان، الميتا، النقاط، الأسئلة، الوسوم…) لم تكن تُحفظ فتعذّر مراجعتها من السجل (2026-09-12).
+  logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_PAGE", internal: pageText(parsed).slice(0, 1900), storeId: merchantId });
   await learnFromCopy(env, { draft: firstDraft.page, codes: firstDraft.codes, final: pageText(parsed), rawNotes: rawVisionNotes || "", notes: visionNotes, sourceText });
   await saveCopy(env, { merchantId, productName: name, opening: parsed.copywriting.description, keywords }).catch(() => {});
   parsed.usedImage = Boolean(visionNotes);

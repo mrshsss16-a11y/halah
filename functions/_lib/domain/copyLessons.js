@@ -8,7 +8,7 @@
 //
 // الجدول عام بلا merchant_id عمداً: يحفظ رمز الخطأ وكلمة من معجم الحراس أو كلمة لاتينية قصيرة
 // كتبها النموذج — لا نص تاجر ولا اسم منتج — فالدرس من متجر ينفع كل المتاجر ولا يكشف بيانات أحد.
-import { fixLatinWords, SALES_CTA, findColorAgreement } from "./copyPhrases.js";
+import { fixLatinWords, SALES_CTA, findColorAgreement, unseenCutPhrases } from "./copyPhrases.js";
 
 const MAX_LESSONS_PER_PROMPT = 10;
 const JUDGMENT_WORDS = /(?<!\p{L})(?:و|ب|ل)?(?:ال)?((?:[أا]نيق|فاخر|مريح|مثالي|جذاب|رائع|عصري|فريد|مميز|راق|جمالي|ساحر|خلاب)(?:ة|ه|ًا|اً|ا)?)(?!\p{L})/gu;
@@ -55,6 +55,8 @@ export function detectLessons({ draft = "", codes = [], final = "", rawNotes = "
       if (!n.includes(m[1])) add("UNSEEN_LENGTH", `«${m[1]}» والصورة لم تذكر طولاً`, "لا طول إلا ما ورد بملاحظات الصورة", "writer");
     }
   }
+  const cutPhrase = unseenCutPhrases(d, n, src)[0];
+  if (cutPhrase) add("UNSEEN_CUT", "قصّة أو خصر أو كسرات لم تذكرها ملاحظات الصورة (مثل «بخصر مرتفع»، «قصّة مستقيمة»)", "لا قصّة ولا خصر ولا كسرات إلا ما ورد بملاحظات الصورة", "writer");
   if (/(?<!\p{L})(?:ال)?طول\s+والقص[ّ]?ة(?!\s*:)/u.test(d)) add("NOTE_LABEL", "نسخ عنوان الملاحظات «الطول والقصّة»", "صياغة جملة: «بطول ميدي»", "writer");
   const cta = d.match(SALES_CTA);
   if (cta) add("SALES_CTA", `«${cta[0]}…» دعوة بيع داخل الوصف`, "وصف القطعة ومتى تُلبس فقط، بلا دعوة شراء", "writer");

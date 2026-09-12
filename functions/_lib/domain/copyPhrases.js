@@ -83,6 +83,46 @@ export function dropUnseenLength(text, notes) {
     .replace(/(^|[.!؟][ \t]+|\n)[ \t]*و(?=قص|ب|مع)/gu, "$1");
 }
 
+// تنورة 2026-09-12 18:29: الملاحظات بلا قصّة ولا خصر، والكاتب نشر «بخصر مرتفع، تتميز بقصّتها المستقيمة»
+// لتنورة واسعة. صفة قصّة أو خصر أو كسرات لم ترد بالملاحظات ولا ببيانات التاجر تُحذف (حين توجد صورة).
+const normCut = (t) => String(t || "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+const FIT_FAMILIES = [["مستقيم"], ["ضيق"], ["واسع", "فضفاض", "منفوش", "منسدل", "كلوش"], ["مرتفع", "عالي"], ["منخفض"], ["مطاطي"]];
+const FIT_RE = /(?<!\p{L})(?:ب|و|ل)?(?:ال)?(?:قص[ّ]?(?:ة|ه|تها|ته)|خصر(?:ها|ه)?)[ \t]+(?:ال)?(مستقيم|ضيق|واسع|فضفاض|منفوش|منسدل|كلوش|مرتفع|عالي|منخفض|مطاطي)\p{L}*/gu;
+const PLEAT_RE = /(?<!\p{L})(?:ب|و)?(?:ال)?(?:كسرات|بليسيه|طي[ّ]?ات)(?:[ \t]+(?:ال)?(?:عريض|رفيع|بارز|ناعم|متباعد|كثيف|منتظم)\p{L}*)*/gu;
+const seenStem = (src, stem) => new RegExp(`(?<!\\p{L})(?:[وبل])?(?:ال)?${normCut(stem)}`, "u").test(src);
+/** عبارات القصّة والخصر والكسرات بالنص التي لا تسندها الملاحظات ولا بيانات التاجر. بلا ملاحظات = لا حكم. */
+export function unseenCutPhrases(text, notes, sourceText = "") {
+  if (!String(notes || "").trim()) return [];
+  const src = normCut(`${notes} ${sourceText}`);
+  const out = [];
+  for (const m of String(text || "").matchAll(FIT_RE)) {
+    const family = FIT_FAMILIES.find((f) => f.includes(m[1])) || [m[1]];
+    if (!family.some((stem) => seenStem(src, stem))) out.push(m[0]);
+  }
+  if (!["كسرات", "بليسيه", "طيات"].some((stem) => seenStem(src, stem))) for (const m of String(text || "").matchAll(PLEAT_RE)) out.push(m[0]);
+  return out;
+}
+/** يحذف العبارة إن بدأ المقطع باسم المنتج («تنورة سوداء بخصر مرتفع»)، وإلا المقطع كاملاً («تتميز بقصّتها المستقيمة…»). */
+export function dropUnseenCut(text, { notes = "", sourceText = "", name = "" } = {}) {
+  const t = String(text || "");
+  if (!unseenCutPhrases(t, notes, sourceText).length) return t;
+  const head = normCut(String(name || "").trim().split(/\s+/)[0] || "");
+  return t.split(/([.!؟،\n])/u).map((clause, i) => {
+    if (i % 2) return clause;
+    const bad = unseenCutPhrases(clause, notes, sourceText);
+    if (!bad.length) return clause;
+    if (head && normCut(clause.trim().split(/\s+/)[0] || "").replace(/^و/, "") === head) return bad.reduce((c, b) => c.replace(b, ""), clause);
+    return "";
+  }).join("")
+    .replace(/،(?:[ \t]*،)+/gu, "،")
+    .replace(/[ \t]*،[ \t]*(?=[.!؟\n]|$)/gu, "")
+    .replace(/([.!؟\n])[ \t]*،[ \t]*/gu, "$1 ")
+    .replace(/([.!؟])(?:[ \t]*[.!؟])+/gu, "$1")
+    .replace(/^[ \t]*[.،][ \t]*/u, "")
+    .replace(/[ \t]{2,}/g, " ").replace(/[ \t]+([.!؟،])/gu, "$1").replace(/\n[ \t]+/g, "\n").replace(/\n[.!؟][ \t]*/gu, "\n")
+    .trim();
+}
+
 // حروف صينية/يابانية/كورية وسط النص: «مع بلوزة خفيفة وقب鞋 رياضية» (2026-09-12 00:40). يُحذف
 // المعطوف الذي فيه الحرف حتى نهاية المقطع، لا الكلمة وحدها («مع بلوزة خفيفة رياضية» خطأ آخر).
 const FOREIGN_SCRIPT = "[\\u3040-\\u30ff\\u3400-\\u9fff\\uf900-\\ufaff\\uac00-\\ud7af]";

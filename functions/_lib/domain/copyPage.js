@@ -6,7 +6,8 @@
 // «بايستيل»، «الطابع العام»، «هذا القطعة». كل تصحيح يُطبَّق هنا على كل حقل يُعرض أو يُنشر.
 import {
   dropForeignScript, fixLatinWords, fixCommonGrammar, fixColorAgreement, fixNoteLabels, dropSalesCta,
-  SALES_CTA, fixTrouserLength, dropUnseenLength, dropSleevesForBottoms, withSizeChartLine
+  SALES_CTA, fixTrouserLength, dropUnseenLength, dropSleevesForBottoms, withSizeChartLine,
+  dropUnseenCut, unseenCutPhrases
 } from "./copyPhrases.js";
 import { dropAttachedClaims, ATTACHED, otherItem } from "./copyNotes.js";
 import { unsourcedClaims, fixSizeChartClosing } from "./copyClaims.js";
@@ -54,34 +55,37 @@ export function pageText(parsed) {
 export function polishPage(parsed, { name = "", sourceText = "", notes = "", category = "" } = {}) {
   const ctx = { name, sourceText };
   const unsourced = (t) => unsourcedClaims(t, sourceText).length > 0;
+  // قصّة أو خصر أو كسرات لم ترها الصورة (تنورة 2026-09-12 18:29) — تُحذف من كل حقل، لا الوصف وحده.
+  const cut = (t) => dropUnseenCut(t, { notes, sourceText, name });
+  const unseenCut = (t) => unseenCutPhrases(t, notes, sourceText).length > 0;
   const cw = parsed.copywriting || (parsed.copywriting = {});
   const seo = parsed.seo || (parsed.seo = {});
 
-  cw.description = fixSizeChartClosing(withSizeChartLine(dropSleevesForBottoms(dropUnseenLength(polishProse(cw.description, ctx), notes), name), name), { name, category });
-  cw.excerpt = polishProse(cw.excerpt, ctx).slice(0, 250);
-  cw.whatsapp = fixSizeChartClosing(polishProse(cw.whatsapp, ctx), { name, category });
+  cw.description = fixSizeChartClosing(withSizeChartLine(dropSleevesForBottoms(dropUnseenLength(cut(polishProse(cw.description, ctx)), notes), name), name), { name, category });
+  cw.excerpt = cut(polishProse(cw.excerpt, ctx)).slice(0, 250);
+  cw.whatsapp = fixSizeChartClosing(cut(polishProse(cw.whatsapp, ctx)), { name, category });
   if (typeof cw.objectionKiller === "string") cw.objectionKiller = polishProse(cw.objectionKiller, ctx);
   if (typeof cw.callToAction === "string" && unsourced(cw.callToAction)) cw.callToAction = "";
   cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
     .filter((h) => typeof h === "string" && !claimsOtherItem(h, name) && !SALES_CTA.test(h) && !unsourced(h))
-    .map((h) => polishShort(h, ctx))
+    .map((h) => cut(polishShort(h, ctx)))
     .filter((h) => words(h) >= MIN_HIGHLIGHT_WORDS);
 
   // سؤال يدّعي قطعة مرفقة يُحذف بسؤاله وجوابه: جواب «نعم مرفق بها بلوزة» كذب على العميلة.
   parsed.faqs = (Array.isArray(parsed.faqs) ? parsed.faqs : [])
     // سؤال جوابه ادعاء غير مسند («مقاومة للماء؟ نعم…») يُحذف كاملاً: حذف الجملة يترك سؤالاً بلا جواب.
-    .filter((f) => f && !claimsOtherItem(`${f.q || ""} ${f.a || ""}`, name) && !unsourced(`${f.q || ""} ${f.a || ""}`))
+    .filter((f) => f && !claimsOtherItem(`${f.q || ""} ${f.a || ""}`, name) && !unsourced(`${f.q || ""} ${f.a || ""}`) && !unseenCut(`${f.q || ""} ${f.a || ""}`))
     .map((f) => ({ ...f, q: polishShort(f.q, ctx), a: polishProse(f.a, ctx) }))
     .filter((f) => f.q && f.a);
 
-  seo.title = polishShort(seo.title, ctx) || String(name || "").trim();
-  seo.seoTitle = polishShort(seo.seoTitle, ctx) || seo.title;
-  seo.metaDescription = fixSizeChartClosing(polishProse(seo.metaDescription, ctx), { name, category });
+  seo.title = cut(polishShort(seo.title, ctx)) || String(name || "").trim();
+  seo.seoTitle = cut(polishShort(seo.seoTitle, ctx)) || seo.title;
+  seo.metaDescription = fixSizeChartClosing(cut(polishProse(seo.metaDescription, ctx)), { name, category });
   if (seo.jsonLdSchema && typeof seo.jsonLdSchema === "object") seo.jsonLdSchema.description = seo.metaDescription;
   if (typeof seo.focusKeyword === "string") seo.focusKeyword = polishShort(seo.focusKeyword, ctx) || String(name || "").trim();
   if (Array.isArray(seo.lsiKeywords)) seo.lsiKeywords = [...new Set(seo.lsiKeywords.map((k) => polishShort(k, ctx)).filter(Boolean))];
 
-  if (typeof parsed.imageAlt === "string") parsed.imageAlt = polishShort(parsed.imageAlt, ctx) || String(name || "").trim();
+  if (typeof parsed.imageAlt === "string") parsed.imageAlt = cut(polishShort(parsed.imageAlt, ctx)) || String(name || "").trim();
   // SEO-20 (قائمة الفحص القديمة المنقّحة): وسوم بلا تكرار بعد تطبيع الحروف (ة/ه، أ/ا، ى/ي).
   if (Array.isArray(parsed.tags)) {
     const tagKey = (t) => t.replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
@@ -91,7 +95,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   if (Array.isArray(parsed.specsTable)) {
     parsed.specsTable = parsed.specsTable
       .map((r) => ({ ...r, key: polishShort(r?.key, ctx), value: polishShort(r?.value, ctx) }))
-      .filter((r) => r.key && r.value && !unsourced(`${r.key} ${r.value}`));
+      .filter((r) => r.key && r.value && !unsourced(`${r.key} ${r.value}`) && !unseenCut(`${r.key} ${r.value}`));
   }
   return parsed;
 }
