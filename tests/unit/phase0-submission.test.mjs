@@ -43,7 +43,12 @@ async function main() {
     // وصفحة الخصوصية لم تكن تذكر ذلك. لا عودة صامتة: لا نداء بالكود ولا سطر بالخصوصية.
     assert(!/api\.deepseek\.com|DEEPSEEK_API_KEY|askDeepSeek/.test(gateway), "P0-8b: لا طبقة DeepSeek بسلسلة الذكاء الاصطناعي");
     assert(!/DeepSeek/.test(privacy), "P0-8c: الخصوصية لا تسمّي مزوّداً لا نستخدمه");
-    assert(/Cloudflare/.test(privacy) && /لا تغادرها/.test(privacy), "P0-9: الصورة تُحلَّل على Cloudflare فقط — يطابق vision.js (env.AI)");
+    // قرار المالك 2026-09-12: الرؤية تسقط لـGroq ثم OpenRouter عند تعذّر Cloudflare — الخصوصية تقول ذلك.
+    const vision = read("../../functions/_lib/ai/vision.js");
+    assert(/Cloudflare أولاً/.test(privacy) && !/لا تغادرها/.test(privacy), "P0-9: الخصوصية لا تعد بأن الصورة لا تغادر Cloudflare — الرؤية لها احتياط خارجي");
+    for (const [host, name] of [["api.groq.com", "Groq"], ["openrouter.ai", "OpenRouter"]]) {
+      if (vision.includes(host)) assert(new RegExp(`${name}[\\s\\S]{0,160}صورة المنتج`).test(read("../../privacy.html").replace(/\s+/g, " ")), `P0-9b: الخصوصية تذكر إرسال الصورة إلى ${name} — مزوّد رؤية فعلي بالكود`);
+    }
     assert(/نظام حماية البيانات الشخصية/.test(privacy) && /تصحيح/.test(privacy) && /سحب موافقتك/.test(privacy) && /شكوى/.test(privacy), "P0-10: حقوق PDPL: الاطلاع والتصحيح والحذف وسحب الموافقة والشكوى");
     assert(/مدة الاحتفاظ/.test(privacy) && /لا تُخزَّن/.test(privacy), "P0-11: جدول مدد احتفاظ، والصورة لا تُخزَّن");
     assert(!/ليست شهادة امتثال/.test(privacy), "P0-12: لا فقرة تُقرأ كإقرار بعدم الامتثال");

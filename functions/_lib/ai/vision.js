@@ -27,8 +27,8 @@ import { fetchExternalImage } from "../core/security.js";
 export const VISION_MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
 // أول محاولة للرؤية (2026-09-11): ملاحظات سكاوت الحقيقية المحفوظة أخطأت ما يظهر بوضوح —
 // «مكشوفة الكتفين» لفستان بحمالات رفيعة، و«الأكمام قصيرة وبدون أكمام ظاهرة» لبلوزة بدانتيل
-// على الكم فاته. Qwen 3.8 مستضاف على Cloudflare نفسها فلا يتغير وعد «الصور لا تغادر
-// Cloudflare». صيغة إدخال الصورة غير موثّقة بصفحته، فأي فشل يسقط لسكاوت كما كان، والسجل
+// على الكم فاته. Qwen 3.8 مستضاف على Cloudflare نفسها أولاً، ثم Groq وOpenRouter احتياطاً (أسفل الملف).
+// صيغة إدخال الصورة غير موثّقة بصفحته، فأي فشل يسقط لسكاوت كما كان، والسجل
 // يسمّي النموذج الذي أجاب (vision= بسطر COPY_LENGTH_RETRY).
 const VISION_DETAIL_MODEL = "@cf/qwen/qwen3.8-27b";
 // أول توليد بعد النشر أجاب فيه سكاوت لا Qwen (سبب الفشل لم يكن يُسجَّل). Gemma 4 على Workers AI
@@ -37,6 +37,43 @@ const VISION_ALT_MODEL = "@cf/google/gemma-4-26b-a4b-it";
 // السابق يبقى **احتياطياً حياً**: صيغة إدخال الصور تختلف بين العائلتين، ولم
 // أتحقق من صيغة سكاوت على الإنتاج بعد. الفشل يسقط للسابق بدل أن يُسقط الميزة.
 export const VISION_FALLBACK_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
+
+// ── احتياط خارجي للرؤية (قرار المالك 2026-09-12) ─────────────────────────────
+// نفدت حصة Workers AI اليومية المجانية («4006: … 10,000 neurons») فتوقفت الرؤية كلها، ولم يكن لها
+// احتياط خارج Cloudflare حفاظاً على وعد «الصور لا تغادر Cloudflare». المالك قدّم استمرار الخدمة،
+// وصفحة الخصوصية تسمّي المزوّدَين لتحليل الصور.
+// Groq يستضيف Qwen 3.8 نفسه (console.groq.com/docs/vision): «reasoning_effort: none» يعطّل التفكير.
+// نماذج OpenRouter المجانية التي تقبل الصور من https://openrouter.ai/api/v1/models بنفس اليوم.
+const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
+const OPENROUTER_VISION_MODELS = ["google/gemma-4-31b-it:free", "google/gemma-4-26b-a4b-it:free"];
+
+function externalVisionTiers(env) {
+  const tiers = [];
+  if (env.GROQ_API_KEY) {
+    tiers.push({ label: `groq:${GROQ_VISION_MODEL}`, url: "https://api.groq.com/openai/v1/chat/completions", apiKey: env.GROQ_API_KEY, model: GROQ_VISION_MODEL, extra: { reasoning_effort: "none" } });
+  }
+  if (env.OPENROUTER_API_KEY) {
+    for (const model of OPENROUTER_VISION_MODELS) {
+      tiers.push({ label: `openrouter:${model}`, url: "https://openrouter.ai/api/v1/chat/completions", apiKey: env.OPENROUTER_API_KEY, model, extra: {} });
+    }
+  }
+  return tiers;
+}
+
+async function askExternalVision({ url, apiKey, model, extra, question, dataUrl }) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model,
+      max_tokens: 700,
+      ...extra,
+      messages: [{ role: "user", content: [{ type: "text", text: question }, { type: "image_url", image_url: { url: dataUrl } }] }]
+    })
+  });
+  if (!res.ok) throw new Error(`${res.status}: ${String(await res.text().catch(() => "")).slice(0, 200)}`);
+  return readVisionText(await res.json());
+}
 
 function bytesToBase64(bytes) {
   let binary = "";
@@ -83,7 +120,7 @@ export async function askVisionAI(opts) {
  * ورسائل فشل ما قبله. المستدعي يسجّلها — لا يبلعها.
  */
 export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mimeType = "image/jpeg" }) {
-  if (!env.AI) throw new Error("AI binding is missing.");
+  if (!env.AI && !env.GROQ_API_KEY && !env.OPENROUTER_API_KEY) throw new Error("AI binding is missing.");
   const errors = [];
 
   let buffer = imageBuffer;
@@ -142,6 +179,16 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
     errors.push(`${VISION_FALLBACK_MODEL}: empty text`);
   } catch (err) {
     errors.push(`${VISION_FALLBACK_MODEL}: ${String(err?.message || err).slice(0, 160)}`);
+  }
+
+  for (const tier of externalVisionTiers(env)) {
+    try {
+      const text = await askExternalVision({ ...tier, question, dataUrl });
+      if (text) return { text, model: tier.label, errors };
+      errors.push(`${tier.label}: empty text`);
+    } catch (err) {
+      errors.push(`${tier.label}: ${String(err?.message || err).slice(0, 160)}`);
+    }
   }
 
   return { text: "", model: null, errors };
