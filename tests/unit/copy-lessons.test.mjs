@@ -84,6 +84,16 @@ async function main() {
     assert(learned.includes("SALES_CTA") && learned.includes("GRAMMAR"), `CL-21: الذاكرة تتعلم دعوة البيع والخطأ النحوي (${learned.join(",")})`);
   }
   {
+    // توليدات 2026-09-12 02:34–02:36.
+    const { fixColorAgreement, fixCommonGrammar } = await import("../../functions/_lib/domain/copyPhrases.js");
+    assert(fixColorAgreement("تنورة فضي لامع بقصّة ميدي.") === "تنورة فضية لامع بقصّة ميدي." && fixColorAgreement("تنورة أسود بكسرات وبلوزة أبيض.") === "تنورة سوداء بكسرات وبلوزة بيضاء.", "CL-22: لون بعد قطعة مؤنثة نكرة يطابقها");
+    assert(fixColorAgreement("تنورة بلون فضي، وفستان فضي، والتنورة فضي.") === "تنورة بلون فضي، وفستان فضي، والتنورة فضي.", "CL-23: «بلون فضي» والمذكر والمعرّف لا تُمس");
+    assert(fixCommonGrammar("جاكيت بطبعة بايستيل زهرية.") === "جاكيت بطبعة بيزلي زهرية.", "CL-24: «بايستيل» ⇒ «بيزلي»");
+    const learned = detectLessons({ draft: "تنورة فضي بطبعة بايستيل.", final: "تنورة فضية بطبعة بيزلي.", rawNotes: "اللون: أخضر بطبعة بايستيل.", sourceText: "تنورة" });
+    const c = codesOf(learned);
+    assert(c.includes("GRAMMAR") && c.includes("TERM") && c.includes("VISION_TERM") && learned.find((l) => l.code === "GRAMMAR")?.right === "«تنورة فضية»", `CL-25: الذاكرة تتعلم المطابقة واسم الطبعة من الكاتب وقارئ الصورة (${c.join(",")})`);
+  }
+  {
     const rows = [
       { code: "JUDGMENT", wrong_text: "«أنيقة»", right_text: "تفصيل مرئي", target: "writer" },
       { code: "VISION_COUNT", wrong_text: "«ثلاث طبقات» لخمس", right_text: "عدد بيقين", target: "vision" },
