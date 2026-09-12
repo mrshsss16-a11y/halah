@@ -95,3 +95,11 @@ export function dropSleevesForBottoms(text, name) {
   if (!isBottomItem(name)) return String(text || "");
   return String(text || "").replace(/[ \t]*(?:،[ \t]*)?(?:و)?(?:بدون|بلا|بلا\s+ولا)[ \t]+(?:ال)?[أا]كمام(?!\p{L})/gu, "");
 }
+
+// ملابس نسائية بلا جملة جدول المقاسات (تنورة 2026-09-12 01:38): جملة ثابتة لا تدّعي شيئاً عن المنتج.
+const WOMEN_APPAREL = /^(?:ال)?(?:فستان|فساتين|تنور|تنانير|بلوز|بلايز|عباي|جمبسوت|كارديجان)/u;
+export function withSizeChartLine(text, name) {
+  const t = String(text || "").trim();
+  if (!t || !WOMEN_APPAREL.test(String(name || "").trim()) || /جدول المقاسات/.test(t)) return t;
+  return `${t}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.`;
+}

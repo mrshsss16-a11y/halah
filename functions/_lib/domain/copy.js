@@ -11,7 +11,7 @@ import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields, splitSentences, propItemIn } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
-import { fixNoteLabels, splitSentencesKeep, joinSentences, dropUnseenLength, dropForeignScript, isBottomItem, dropSleevesForBottoms } from "./copyPhrases.js";
+import { fixNoteLabels, splitSentencesKeep, joinSentences, dropUnseenLength, dropForeignScript, isBottomItem, dropSleevesForBottoms, withSizeChartLine } from "./copyPhrases.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -309,7 +309,8 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   if (issues.length) {
     logError({ env }, {
       requestId: null, path: "api/copy:quality", code: "COPY_QUALITY_RETRY",
-      internal: issues.map((i) => i.code).join(","), storeId: merchantId
+      // المزوّد ونموذج الرؤية والملاحظات: توليد 01:38 لم يترك ما يُشخَّص به «قاعدي» و«بروح راقصة».
+      internal: `${issues.map((i) => i.code).join(",")} tier=${lastAsk.tier} vision=${visionModel || "none"} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`, storeId: merchantId
     });
     const strictQuality = "\n\n## إعادة كتابة مطلوبة — عيوب بالمخرج السابق\n" + issues.map((i) => `- ${i.text}`).join("\n");
     try {
@@ -373,6 +374,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     });
   }
   parsed.copywriting.description = dropSleevesForBottoms(dropForeignScript(dropUnseenLength(fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name)), visionNotes)), name);
+  parsed.copywriting.description = withSizeChartLine(parsed.copywriting.description, name);
   parsed.copywriting.excerpt = dropForeignScript(parsed.copywriting.excerpt);
   parsed.copywriting.whatsapp = dropForeignScript(parsed.copywriting.whatsapp);
   parsed.copywriting.excerpt = dropAttachedClaims(parsed.copywriting.excerpt, name);

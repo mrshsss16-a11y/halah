@@ -263,6 +263,17 @@ async function main() {
       assert(/اللون: وردي فاتح سادة/.test(notes) && !/ضيئة/.test(notes), `PL-65: «وردة فاتح» و«ضيئة» تُصحَّحان قبل الكاتب («${notes}»)`);
       assert(/«ضيقة» فقط إن التصق القماش بالجسم/.test(visionInput), "PL-66: توجيه الرؤية يمنع «ضيقة» لقماش منسدل");
     }
+    {
+      // تنورة 2026-09-12 01:38: فقرة واحدة من ٣٨ كلمة بلا تنسيق ولا جدول مقاسات، ولم يعمل الكاتب المركّز.
+      const { withSizeChartLine } = await import("../../functions/_lib/domain/copyPhrases.js");
+      assert(withSizeChartLine("تنورة ميدي بطبقات.", "تنورة") === "تنورة ميدي بطبقات.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.", "PL-67: ملابس نسائية بلا جملة جدول المقاسات تُضاف لها");
+      assert(withSizeChartLine("شماغ أحمر.", "شماغ") === "شماغ أحمر." && withSizeChartLine("فستان.\n\nراجعي جدول المقاسات قبل الطلب.", "فستان") === "فستان.\n\nراجعي جدول المقاسات قبل الطلب.", "PL-68: لا تُضاف لغير الملابس النسائية ولا تتكرر");
+      const onePara = "تنورة ميدي بطبقات أفقية متراصة بلون أبيض مائل للأصفر مع نقوش نباتية بالأزرق والأخضر والوردي والأصفر والأسود، وطولها ينتهي عند منتصف الساق، وتُلبس في الإطلالات النهارية الصيفية مع بلوزة خفيفة وصندل.";
+      const threePara = "تنورة ميدي بطبقات أفقية متراصة بلون أبيض مائل للأصفر مع نقوش نباتية بالأزرق والأخضر والوردي.\n\nتُلبس في النهار صيفاً مع بلوزة خفيفة وصندل.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.";
+      const ai = mockAi([copyJson(onePara)]);
+      const out = await generateProductCopy(args({ ...ai }, { name: "تنورة" }));
+      assert(out.copywriting.description === `${onePara}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.` && threePara.length > 0, `PL-69: وصف تنورة بلا جملة جدول المقاسات يُنشر معها بفقرة مستقلة («${out.copywriting.description}»)`);
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }
@@ -280,7 +291,7 @@ async function main() {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
     assert(ai.seen.text === 3, "PL-16: الإصرار ⇒ ثلاث محاولات نصية فقط لا حلقة (والكاتب المركّز إن أعاد JSON يُقرأ وصفه ويُرفض لقِصَره)");
-    assert(out.copywriting.description === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية. تناسب المناسبات الصيفية والنهارية." && !/تنورة|مثالية/.test(out.copywriting.description), `PL-17: عند الإصرار لا تصل التنورة ولا «مثالية» صفحة المتجر («${out.copywriting.description}»)`);
+    assert(out.copywriting.description === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية. تناسب المناسبات الصيفية والنهارية.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب." && !/تنورة|مثالية/.test(out.copywriting.description), `PL-17: عند الإصرار لا تصل التنورة ولا «مثالية» صفحة المتجر («${out.copywriting.description}»)`);
   }
   {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);

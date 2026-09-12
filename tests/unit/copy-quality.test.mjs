@@ -14,6 +14,8 @@ import { askWorkersAI } from "../../functions/_lib/ai/gateway.js";
 const { assert, done } = createRunner("copy-quality");
 
 const REAL_BAD = "هذي تنورة نسائية طويلة، لونها أسود جميل. القصة طويلة ومنتفخة قليلاً عند الأسفل، تعطيك إطلالة أنيقة وستثنينية. مناسبة للسهرات والمناسبات الخاصة. السعر: 83 ريال.";
+// الملابس النسائية تُنشر بجملة جدول المقاسات إن غابت (copyPhrases.withSizeChartLine، 2026-09-12).
+const withChart = (d) => `${d}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.`;
 const GOOD_DESC = "تنورة سوداء طويلة بقصّة كلوش تتّسع تدريجياً نحو الأسفل، بخصر مرتفع يبرز القوام ويعطي انسدالاً هادئاً مع كل خطوة. اللون الأسود يجعلها قطعة أساسية تُنسَّق مع بلوزة فاتحة للنهار أو توب لامع للسهرات. متوفرة بمقاسات من XS إلى XL، وتناسب المناسبات المسائية والإطلالات الرسمية على حدّ سواء بلا مجهود.";
 
 const copyJson = (description, extra = {}) => JSON.stringify({
@@ -92,10 +94,10 @@ async function main() {
     const silky = GOOD_DESC.replace("تنورة سوداء طويلة", "تنورة حرير طبيعي سوداء طويلة");
     const ai = mockAi([copyJson(silky), copyJson(GOOD_DESC)]);
     const out = await generateProductCopy({ env: { ...ai }, merchantId: "m_1", name: "تنورة", price: "", tone: "white", category: "", features: "", existingDescription: "", imageUrl: "", keywordsExtra: [] });
-    assert(ai.seen.calls === 2 && /حرير/.test(ai.seen.systems[1]) && out.copywriting.description === GOOD_DESC, "CQ-44: وصف يذكر «حرير» والتاجر لم يذكره ⇒ إعادة محاولة تسمّي الخامة وتُعتمد النسخة السليمة");
+    assert(ai.seen.calls === 2 && /حرير/.test(ai.seen.systems[1]) && out.copywriting.description === withChart(GOOD_DESC), "CQ-44: وصف يذكر «حرير» والتاجر لم يذكره ⇒ إعادة محاولة تسمّي الخامة وتُعتمد النسخة السليمة");
     const ai2 = mockAi([copyJson(silky)]);
     const out2 = await generateProductCopy({ env: { ...ai2 }, merchantId: "m_1", name: "تنورة", price: "", tone: "white", category: "", features: "حرير طبيعي 100%", existingDescription: "", imageUrl: "", keywordsExtra: [] });
-    assert(ai2.seen.calls === 1 && out2.copywriting.description === silky, "CQ-45: التاجر ذكر «حرير طبيعي» بالمزايا ⇒ لا إعادة ولا حذف");
+    assert(ai2.seen.calls === 1 && out2.copywriting.description === withChart(silky), "CQ-45: التاجر ذكر «حرير طبيعي» بالمزايا ⇒ لا إعادة ولا حذف");
   }
 
   // ── أمثلة الأسلوب المنقّحة تحمل عناصر نائبة {الخامة} — لا تصل صفحة متجر ──
@@ -139,7 +141,7 @@ async function main() {
     const out = await generateProductCopy({ env: { ...ai }, merchantId: "m_1", name: "تنورة", price: "83", tone: "white", category: "تنانير", features: "", existingDescription: "", imageUrl: "", keywordsExtra: [] });
     assert(ai.seen.calls === 2, "CQ-17: وصف معيب ⇒ إعادة محاولة واحدة");
     assert(/إعادة كتابة مطلوبة/.test(ai.seen.systems[1]) && /افتتاحية إشارية/.test(ai.seen.systems[1]) && /سعراً/.test(ai.seen.systems[1]), "CQ-18: تعليمة الإعادة تسمّي العيوب المرصودة بالضبط");
-    assert(out.copywriting.description === GOOD_DESC, "CQ-19: المحاولة الثانية السليمة تُعتمد");
+    assert(out.copywriting.description === withChart(GOOD_DESC), "CQ-19: المحاولة الثانية السليمة تُعتمد");
     assert(!/السعر/.test(ai.seen.users[0]), "CQ-20: السعر لا يُمرَّر للنموذج أصلاً (يبقى لـJSON-LD فقط)");
     assert(ai.seen.opts[0].temperature === 0.35, "CQ-21: حرارة الوصف 0.35 تصل لـWorkers AI");
     assert(out.seo.jsonLdSchema?.offers?.price === "83", "CQ-22: السعر ما زال بـJSON-LD رغم غيابه عن البرومبت");
