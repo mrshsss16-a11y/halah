@@ -14,9 +14,10 @@
 //     أجنبية بسجلات تشغيلية، ويمنع إعادة الربط بنفس المعرّف لاحقاً.
 //   - `audit_log`: سجل أفعال الأدمن — دليل مساءلة لا بيانات تاجر. حذفه يمحو
 //     أثر من فعل ماذا، وهو عكس الغرض الذي وُجد له (P9).
-//   - `error_log`: لا يحمل `merchant_id` كعمود تاجر بل `store_id` تشخيصياً،
-//     ويُقلَّم بدورة حياته الخاصة — `domain/retention.js`، مناداً من
-//     `api/cron/healthcheck.js` كل تِك (أقدم من ٩٠ يوماً، بدفعات محدودة).
+//   - `error_log`: لا يحمل `merchant_id` كعمود تاجر بل `store_id` تشخيصياً، ويُقلَّم بدورة
+//     حياته — `domain/retention.js` (أقدم من ٩٠ يوماً). **لكن** صفوف المتجر نفسه تُمحى هنا
+//     بـ`store_id` منذ 2026-09-13: سجلا COPY_TRACE/COPY_PAGE المؤقتان يحملان نص صفحة المنتج
+//     وملاحظات صورته، فبقاؤهما ٩٠ يوماً بعد الإزالة يكذّب وعد الحذف (تدقيق الأمن، البند ٤).
 //   - `consultation_bookings`: حجوزات استشارات أورا من موقعها العام — بلا عمود
 //     `merchant_id` إطلاقاً، فليست بيانات تاجر. (أمسك الحارس PURGE-2 إدراجها
 //     خطأً بأول نسخة من هذي القائمة.)
@@ -126,6 +127,14 @@ export async function purgeMerchantData(env, merchantId, { keepAccount = false }
       const msg = String(err?.message || err);
       if (!/no such table/i.test(msg)) failed.push(`${table}: ${msg.slice(0, 80)}`);
     }
+  }
+
+  // سجل التشخيص الخاص بهذا المتجر (فيه نص صفحات منتجاته مؤقتاً) — بـstore_id لا merchant_id.
+  try {
+    await env.DB.prepare("DELETE FROM error_log WHERE store_id = ?").bind(merchantId).run();
+  } catch (err) {
+    const msg = String(err?.message || err);
+    if (!/no such table/i.test(msg)) failed.push(`error_log: ${msg.slice(0, 80)}`);
   }
 
   // بنود الوظائف تُعزَل عبر bulk_jobs.job_id لا بعمود مباشر — تُمحى بعدها.

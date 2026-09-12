@@ -392,7 +392,11 @@ main()
       }
     };
     const out = await purgeMerchantData(env, "m_x");
-    const deletes = sql.filter((c) => /^DELETE FROM/.test(c.q));
+    const deletes = sql.filter((c) => /^DELETE FROM/.test(c.q) && !/^DELETE FROM error_log/.test(c.q));
+    assert(
+      sql.some((c) => /^DELETE FROM error_log WHERE store_id = \?$/.test(c.q) && c.b[0] === "m_x"),
+      "PURGE-5: سجل تشخيص المتجر (فيه نص صفحات منتجاته مؤقتاً) يُمحى مع بياناته بـstore_id"
+    );
     assert(
       out.purged === true && deletes.length === PURGE_TABLES.length &&
         deletes.every((c) => /WHERE merchant_id = \?/.test(c.q) && c.b[0] === "m_x"),
