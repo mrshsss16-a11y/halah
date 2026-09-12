@@ -26,6 +26,7 @@ async function main() {
   assert(/معالجة بيانات متجرك نيابةً عنك/.test(tv) && /لغرض واحد/.test(tv), "PDPL-6: الشروط تحدد المعالجة نيابةً عن التاجر وغرضها");
   assert(/حد يومي من الأوصاف/.test(tv) && !/أول كل شهر|بداية الشهر التالي/.test(tv), "PDPL-7: بند الحصة بالشروط يطابق الحد اليومي الحقيقي");
 
+  assert(/تحسين جودة الأوصاف/.test(pv) && /نمط الخطأ وحده/.test(pv) && /لا يُحفظ فيه نص وصفك/.test(pv) && /أنماط أخطاء مجهولة/.test(tv) && ropa.includes("`copy_lessons`"), "PDPL-10: تعلّم الجودة من الأخطاء مُفصَح عنه بالخصوصية والشروط والسجل، بلا نص متجر ولا بيانات شخصية");
   const audit = read("../../functions/api/security/pdpl_audit.js");
   assert(!/"Enforced"/.test(audit.replace(/^\s*\/\/.*$/gm, "")), "PDPL-8: لا ادعاء «Enforced» ثابت بلا فحص");
   assert(existsSync(new URL("../../docs/PDPL/ROPA.md", import.meta.url)), "PDPL-9: الوثائق داخل docs/PDPL");
