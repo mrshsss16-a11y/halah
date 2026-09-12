@@ -274,6 +274,16 @@ async function main() {
       const out = await generateProductCopy(args({ ...ai }, { name: "تنورة" }));
       assert(out.copywriting.description === `${onePara}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.` && threePara.length > 0, `PL-69: وصف تنورة بلا جملة جدول المقاسات يُنشر معها بفقرة مستقلة («${out.copywriting.description}»)`);
     }
+    {
+      // تنورة 2026-09-12: «بطرف متموج في أسفل كل couche» نُشرت.
+      const { fixLatinWords } = await import("../../functions/_lib/domain/copyPhrases.js");
+      assert(fixLatinWords("بطرف متموج في أسفل كل couche.") === "بطرف متموج في أسفل كل طبقة.", "PL-70: «couche» تُعرَّب «طبقة»");
+      assert(fixLatinWords("تنورة بقصّة A ومقاسات من XS إلى XL.") === "تنورة بقصّة A ومقاسات من XS إلى XL.", "PL-71: المقاسات والقصّات بالأحرف الكبيرة لا تُمس");
+      assert(fixLatinWords("تنورة من zara بطبقات.", "تنورة zara") === "تنورة من zara بطبقات." && fixLatinWords("تنورة blah بطبقات.") === "تنورة بطبقات.", "PL-72: كلمة لاتينية كتبها التاجر تبقى، وغيرها تُحذف");
+      const { readFileSync } = await import("node:fs");
+      const seoSrc = readFileSync(new URL("../../functions/_lib/ai/prompts/seo.js", import.meta.url), "utf8");
+      assert(/فقط إن عددتها بيقين/.test(seoSrc), "PL-73: توجيه الرؤية لا يذكر عدداً إلا بيقين («ثلاث طبقات» لتنورة بخمس)");
+    }
     assert(!/العارضة تلبس/.test(ai.seen.systems[0]) && /تفصيل دانتيل على الكتف/.test(ai.seen.systems[0]), "PL-19: جملة العارضة تُحذف من ملاحظات الصورة قبل الكاتب، وجمل المنتج تبقى");
     assert(!/اليد اليمنى/.test(ai.seen.systems[0]) && !/اليد اليمنى/.test(ai.seen.systems[2]), "PL-20: وضعية العارضة («اليد اليمنى في الجيب») تُحذف من الملاحظات بكل النداءات");
   }

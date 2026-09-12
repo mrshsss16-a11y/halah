@@ -103,3 +103,15 @@ export function withSizeChartLine(text, name) {
   if (!t || !WOMEN_APPAREL.test(String(name || "").trim()) || /جدول المقاسات/.test(t)) return t;
   return `${t}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.`;
 }
+
+// كلمات لاتينية داخل الوصف العربي: «في أسفل كل couche» (2026-09-12)، و«تنورة midi» بتفكير نموذج.
+// مصطلحات الأزياء الشائعة تُعرَّب؛ غيرها بحروف صغيرة (٣+) يُحذف ما لم يكتبه التاجر (علامة تجارية مثلاً).
+// الأحرف الكبيرة (XL، A) لا تُمس: مقاسات وقصّات.
+const LATIN_FASHION = { couche: "طبقة", couches: "طبقات", layer: "طبقة", layers: "طبقات", tiered: "بطبقات", tier: "طبقة", tiers: "طبقات", midi: "ميدي", maxi: "ماكسي", mini: "ميني", ruffle: "كشكش", ruffles: "كشاكش", ruffled: "بكشكش", pleated: "بكسرات", pleats: "كسرات" };
+export function fixLatinWords(text, sourceText = "") {
+  const src = String(sourceText || "").toLowerCase();
+  return String(text || "")
+    .replace(/(?<![A-Za-z])[a-z][a-z-]{2,}(?![A-Za-z])/g, (w) => LATIN_FASHION[w] || (src.includes(w) ? w : ""))
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+([.،؟!])/g, "$1");
+}

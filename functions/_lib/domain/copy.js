@@ -11,7 +11,7 @@ import { taxonomyForProduct } from "../ai/productTaxonomy.js";
 import { logError } from "../core/errorLog.js";
 import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQualityIssues, cleanDescription, publishedFieldIssues, cleanPublishedFields, splitSentences, propItemIn } from "./copyParse.js";
 import { categoryMismatch } from "../ai/productType.js";
-import { fixNoteLabels, splitSentencesKeep, joinSentences, dropUnseenLength, dropForeignScript, isBottomItem, dropSleevesForBottoms, withSizeChartLine } from "./copyPhrases.js";
+import { fixNoteLabels, splitSentencesKeep, joinSentences, dropUnseenLength, dropForeignScript, isBottomItem, dropSleevesForBottoms, withSizeChartLine, fixLatinWords } from "./copyPhrases.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -98,7 +98,7 @@ function productOnlyNotes(notes, name) {
     .filter((s) => !MODEL_PERSON.test(s) && !propItemIn(s, name))
     // تنورة 2026-09-12 00:40: «الأكمام: لا يوجد.» صارت «وبدون أكمام» بالوصف المنشور.
     .filter((s) => !(isBottomItem(name) && /^\s*(?:الأكمام|الاكمام|الياقة|الكتفان)/u.test(s)))
-    .map((s) => dropForeignScript(s.replace(/\s*\([A-Za-z][A-Za-z\s-]*\)/g, ""))
+    .map((s) => fixLatinWords(dropForeignScript(s.replace(/\s*\([A-Za-z][A-Za-z\s-]*\)/g, "")))
       // «وردة فاتح» و«ضيئة» من Qwen نُقلتا حرفياً إلى وصف منشور (2026-09-12 00:42).
       .replace(/(?<!\p{L})وردة(?=\s+(?:فاتح|غامق|سادة|سادة))/gu, "وردي").replace(/(?<!\p{L})ضيئة(?!\p{L})/gu, "ضيقة"))
     .map((s) => s.split(/،\s*|\s+(?=و(?:مرفق|مع|يأتي|تأتي))/u).filter((c) => !otherItem(c, name)).join("، ")
@@ -374,7 +374,10 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     });
   }
   parsed.copywriting.description = dropSleevesForBottoms(dropForeignScript(dropUnseenLength(fixNoteLabels(dropAttachedClaims(parsed.copywriting.description, name)), visionNotes)), name);
-  parsed.copywriting.description = withSizeChartLine(parsed.copywriting.description, name);
+  parsed.copywriting.description = withSizeChartLine(fixLatinWords(parsed.copywriting.description, sourceText), name);
+  parsed.copywriting.excerpt = fixLatinWords(parsed.copywriting.excerpt, sourceText);
+  // أثر كل توليد (مؤقت حتى قبول سلة): توليد بلا عيب مرصود لم يترك صفاً فتعذّر تشخيص «couche».
+  logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_TRACE", internal: `tier=${lastAsk.tier} vision=${visionModel || "none"} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}`, storeId: merchantId });
   parsed.copywriting.excerpt = dropForeignScript(parsed.copywriting.excerpt);
   parsed.copywriting.whatsapp = dropForeignScript(parsed.copywriting.whatsapp);
   parsed.copywriting.excerpt = dropAttachedClaims(parsed.copywriting.excerpt, name);
