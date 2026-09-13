@@ -38,6 +38,8 @@ const VISION_ALT_MODEL = "@cf/google/gemma-4-26b-a4b-it";
 // أتحقق من صيغة سكاوت على الإنتاج بعد. الفشل يسقط للسابق بدل أن يُسقط الميزة.
 export const VISION_FALLBACK_MODEL = "@cf/meta/llama-3.2-11b-vision-instruct";
 
+import { askNexos, reserveNexosCall, NEXOS_MODEL } from "./nexos.js";
+
 // ── احتياط خارجي للرؤية (قرار المالك 2026-09-12) ─────────────────────────────
 // نفدت حصة Workers AI اليومية المجانية («4006: … 10,000 neurons») فتوقفت الرؤية كلها، ولم يكن لها
 // احتياط خارج Cloudflare حفاظاً على وعد «الصور لا تغادر Cloudflare». المالك قدّم استمرار الخدمة،
@@ -124,7 +126,7 @@ export async function askVisionAI(opts) {
  * ورسائل فشل ما قبله. المستدعي يسجّلها — لا يبلعها.
  */
 export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mimeType = "image/jpeg" }) {
-  if (!env.AI && !env.GROQ_API_KEY && !env.OPENROUTER_API_KEY) throw new Error("AI binding is missing.");
+  if (!env.AI && !env.GROQ_API_KEY && !env.OPENROUTER_API_KEY && !env.NEXOS_API_KEY) throw new Error("AI binding is missing.");
   const errors = [];
 
   let buffer = imageBuffer;
@@ -192,6 +194,17 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
       errors.push(`${tier.label}: empty text`);
     } catch (err) {
       errors.push(`${tier.label}: ${String(err?.message || err).slice(0, 160)}`);
+    }
+  }
+
+  // آخر خيار (قرار المالك 2026-09-13): رصيد Hostinger المدفوع لا يُصرف إلا بعد تعذّر كل الطبقات المجانية.
+  // قراءة الصورة تُحفظ بـvision_facts فلا تُدفع مرتين لنفس المنتج، والسقف اليومي يحمي الرصيد.
+  if (await reserveNexosCall(env)) {
+    try {
+      const text = await askNexos({ apiKey: env.NEXOS_API_KEY, reasoning: "low", maxTokens: 700, messages: [{ role: "user", content: [{ type: "text", text: question }, { type: "image_url", image_url: { url: dataUrl } }] }] });
+      return { text, model: `nexos:${NEXOS_MODEL}`, errors };
+    } catch (err) {
+      errors.push(`nexos:${NEXOS_MODEL}: ${String(err?.message || err).slice(0, 160)}`);
     }
   }
 
