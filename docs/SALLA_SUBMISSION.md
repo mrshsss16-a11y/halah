@@ -157,7 +157,7 @@ marketing.read_write    ← كوبونات حصرية (مرحلة لاحقة)
 |---|---|
 | اسم المنشأة | مؤسسة فريق أورا للتسويق |
 | البريد | `info@aura.sa` |
-| بريد الدعم الفني | `aurateam3@gmail.com` |
+| بريد الدعم الفني | `info@aura.sa` |
 | الموقع | `https://aura.sa` |
 | سياسة الخصوصية | `https://halah.aura.sa/privacy` |
 | الشروط والأحكام | `https://halah.aura.sa/terms` |

@@ -25,7 +25,7 @@ async function forgotPasswordHandler(body, env, request, requestId, context) {
 
   if (!emailResetReady(env) || !env?.DB) {
     logError(context, { requestId, path: PATH, code: "RESET_EMAIL_NOT_CONFIGURED", internal: "RESEND_API_KEY/EMAIL_FROM or DB missing — reset refused" });
-    return json({ ok: false, error: "استعادة كلمة المرور بالبريد غير مفعّلة حالياً. راسلنا على aurateam3@gmail.com ونساعدك.", code: "EMAIL_NOT_CONFIGURED" }, 503);
+    return json({ ok: false, error: "استعادة كلمة المرور بالبريد غير مفعّلة حالياً. راسلنا على info@aura.sa ونساعدك.", code: "EMAIL_NOT_CONFIGURED" }, 503);
   }
 
   // لكل بريد: ٣ روابط بالساعة — يمنع إغراق صندوق شخص ما، ويُطبَّق قبل البحث عن الحساب.
