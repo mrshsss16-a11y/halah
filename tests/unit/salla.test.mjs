@@ -420,6 +420,12 @@ main()
       /MERCHANT_PURGE_PARTIAL/.test(dom),
       "PURGE-7: فشل جزئي بالحذف يُسجَّل — لا ادعاء حذف كامل بلا دليل"
     );
+    assert(
+      uninstallBlock.includes("const known = await getMerchantBySalla(env, sallaMerchantId);") &&
+        uninstallBlock.includes("if (!known) return null;") &&
+        !uninstallBlock.slice(0, uninstallBlock.indexOf("purgeMerchantData")).includes("upsertMerchantFromSalla"),
+      "PURGE-9: إزالة متجر لا نعرفه لا تُنشئ صفّ تاجر لتحذفه"
+    );
     // الواجهة تقول ما يحدث فعلاً.
     const store = readT("../../partials/dashboard-store.html");
     assert(

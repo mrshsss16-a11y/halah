@@ -10,7 +10,7 @@
 //
 // docs.salla.dev/embedded-sdk/authentication
 import { withApi, json } from "../../_lib/core/respond.js";
-import { getMerchantBySalla } from "../../_lib/domain/salla.js";
+import { getMerchantBySalla, getTokens } from "../../_lib/domain/salla.js";
 import { createSessionToken, sessionCookieHeader } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 
@@ -52,17 +52,14 @@ async function sallaEmbeddedHandler(body, env, request) {
   const sallaMerchantId = String(introspectData.data.merchant_id);
   const account = await getMerchantBySalla(env, sallaMerchantId);
   if (!account) {
-    // app.installed fired but app.store.authorize (the event that upserts the
-    // merchant with tokens) hasn't landed yet — the merchant approved
-    // installation but not the in-store data-access consent screen.
-    return json(
-      {
-        ok: false,
-        error: "لسه ما اكتمل ربط متجرك بالكامل — ارجع للوحة تحكم متجرك ووافق على صلاحيات التطبيق.",
-        code: "MERCHANT_NOT_LINKED"
-      },
-      409
-    );
+    // app.installed وصل لكن app.store.authorize (الصفّ مع التوكنات) لم يصل بعد — الموافقة على الصلاحيات ناقصة.
+    return json({ ok: false, error: "لسه ما اكتمل ربط متجرك بالكامل — ارجع للوحة تحكم متجرك ووافق على صلاحيات التطبيق.", code: "MERCHANT_NOT_LINKED" }, 409);
+  }
+
+  // صفّ متجر بلا توكن سلة (متجر 250648969، 2026-09-13) كان يأخذ جلسة: التوليد يعمل والتصنيف والنشر يفشلان.
+  const tokens = await getTokens(env, account.id, "salla").catch(() => null);
+  if (!tokens?.access_token) {
+    return json({ ok: false, error: "ربط متجرك بهالة ما اكتمل — احذف التطبيق من «تطبيقاتي» بمتجرك ثم ثبّته من جديد ووافق على الصلاحيات.", code: "MERCHANT_NOT_LINKED" }, 409);
   }
 
   const sessionToken = await createSessionToken(env, account.id);

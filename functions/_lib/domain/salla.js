@@ -259,7 +259,10 @@ async function handleSallaEvent(env, event, payload, { onFirstSync = async () =>
       });
     case "app.uninstalled": {
       if (!sallaMerchantId) return null;
-      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
+      // متجر لا نعرفه (تثبيت لم يصلنا ويبهوكه) لا يُنشأ له صفّ لنحذفه بعد ثانية (m_497b… 2026-09-13).
+      const known = await getMerchantBySalla(env, sallaMerchantId);
+      if (!known) return null;
+      const merchantId = known.id;
       await revokeSallaConnection(env, merchantId);
       // الوعد بفيديو الاستخدام: «بمجرد ما تحذف هالة، نحذف بياناتك نهائياً».
       // الحذف الفوري مقبول لأن الأوصاف المعتمَدة منشورة على سلة أصلاً — ما

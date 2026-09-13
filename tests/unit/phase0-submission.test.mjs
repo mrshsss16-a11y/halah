@@ -64,6 +64,8 @@ async function main() {
     assert(/SameSite=None; Partitioned; Max-Age/.test(session), "P0-14: كوكي الجلسة Partitioned — لا يسقط داخل إطار سلة عند تقسيم كوكيز الطرف الثالث");
     const emb = read("../../functions/api/auth/salla_embedded.js");
     assert(/"salla_embedded_auth", 20, 60, \{ failClosed: true \}/.test(emb), "P0-15: حد معدل salla_embedded fail-closed كبقية المصادقة");
+    assert(/getTokens\(env, account\.id, "salla"\)/.test(emb) && /if \(!tokens\?\.access_token\)[\s\S]{0,300}MERCHANT_NOT_LINKED/.test(emb) && emb.indexOf("MERCHANT_NOT_LINKED", emb.indexOf("getTokens(env")) < emb.indexOf("createSessionToken(env, account.id)"),
+      "P0-15b: لا جلسة لصفّ متجر بلا توكن سلة — لوحة نصف شغّالة كانت تفشل بالتصنيف والنشر");
     const review = read("../../public/js/dashboard/review.js");
     assert(/data\?\.ok \? "success" : "error"\);\s*\n\s*loadReview\("published"\)/.test(review), "P0-16: نجاح التراجع يُعرض كنجاح لا كخطأ");
     const storeJs = read("../../public/js/dashboard/store.js");
