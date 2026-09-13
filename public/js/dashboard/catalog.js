@@ -183,7 +183,7 @@ export function catalogCard(it, key) {
   // الاقتباسات — escHtml يهرّب ' و " أيضاً.
   const img = it.imageUrl
     ? `<img src="${escHtml(it.imageUrl)}" alt="${escHtml(it.name)}" loading="lazy" referrerpolicy="no-referrer"
-          class="w-full h-28 object-cover bg-slate-100"
+          class="w-full aspect-[3/4] object-contain bg-slate-50"
           onerror="var f=this.parentElement&&this.parentElement.querySelector('.img-fallback'); if(f)f.classList.remove('hidden'); this.remove();"/>`
     : "";
   const badge = it.hasDescription
@@ -201,7 +201,7 @@ export function catalogCard(it, key) {
   card.innerHTML =
     `<div class="relative">
        ${img}
-       <div class="img-fallback ${it.imageUrl ? "hidden" : ""} w-full h-28 bg-slate-100 flex items-center justify-center">
+       <div class="img-fallback ${it.imageUrl ? "hidden" : ""} w-full aspect-[3/4] bg-slate-100 flex items-center justify-center">
          ${noImageIcon}
        </div>
        ${badge}

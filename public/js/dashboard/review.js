@@ -61,7 +61,7 @@ export function reviewCard(r) {
   div.dataset.id = r.id;
   const head = `<div class="flex items-start gap-2">
       ${S.reviewState === "pending" ? `<input type="checkbox" class="review-check mt-1" data-id="${r.id}" aria-label="حدّد ${escHtml(r.name || r.sku || "")}">` : ""}
-      ${r.imageUrl ? `<img src="${escHtml(r.imageUrl)}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-lg object-cover bg-slate-100" onerror="this.remove()">` : ""}
+      ${r.imageUrl ? `<img src="${escHtml(r.imageUrl)}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-lg object-contain bg-slate-50 border border-slate-200" onerror="this.remove()">` : ""}
       <div class="flex-1 min-w-0">
         <div class="text-sm font-black text-black truncate">${escHtml(r.name || r.sku || "")}</div>
         <div class="text-[11px] text-slate-500 font-mono" dir="auto"><bdi>${escHtml(r.sku || "")}</bdi>${r.category ? " · " + "<bdi>" + escHtml(r.category) + "</bdi>" : ""}</div>
