@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar" data-theme="light">
+<head>
+  <!--#include partials/head-common.html-->
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>الأسعار | هالة — أوصاف منتجات سلة</title>
+  <meta name="robots" content="index, follow"/>
+  <meta name="description" content="أسعار هالة لأوصاف منتجات سلة: الباقة الأساسية ٢٩ ر.س شهرياً بخمسة منتجات يومياً مع تجربة ٧ أيام، وباقة النمو ٤٩ ر.س بعشرين منتجاً يومياً، وعرض اليوم الوطني ٩٦."/>
+  <!-- الأسعار معتمدة من المالك 2026-09-14. أسعار متجر تطبيقات سلة تُعرض قبل ضريبة القيمة المضافة ١٥٪
+       (متحقَّق من صفحة تطبيق منافس بسلة: «السعر لا يشمل ضريبة القيمة المضافة (%15)») — نعرض المبلغين. -->
+  <style>
+    :root { --ink:#0F172A; --muted:#475569; --line:#E2E8F0; --soft:#F8FAFC; --brand:#004d5b; --brand-soft:#e6f2f3; --green:#0f6b3e; --green-soft:#e8f5ee; }
+    body { font-family:'IBM Plex Sans Arabic','Tajawal',system-ui,sans-serif; color:var(--ink); background:#fff; margin:0; }
+    .wrap { max-width:1040px; margin:0 auto; padding:0 20px; }
+    .num { font-variant-numeric: tabular-nums; }
+    .card { border:1px solid var(--line); border-radius:20px; background:#fff; padding:24px; display:flex; flex-direction:column; gap:14px; }
+    .card.featured { border:2px solid var(--brand); box-shadow:0 10px 30px -18px rgba(0,77,91,.45); }
+    .pill { display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:999px; }
+    .seg button { padding:8px 16px; border-radius:999px; font-size:13px; font-weight:700; color:var(--muted); }
+    .seg button[aria-pressed="true"] { background:var(--ink); color:#fff; }
+    .seg button:focus-visible, a:focus-visible { outline:2px solid var(--brand); outline-offset:2px; }
+    ul.ticks { list-style:none; padding:0; margin:0; display:grid; gap:8px; font-size:14px; }
+    ul.ticks li { display:flex; gap:8px; align-items:flex-start; line-height:1.7; }
+    ul.ticks li::before { content:"✓"; color:var(--brand); font-weight:800; }
+    details { border-bottom:1px solid var(--line); padding:14px 0; }
+    summary { cursor:pointer; font-weight:700; }
+    details p { color:var(--muted); margin:10px 0 0; line-height:1.9; font-size:14px; }
+  </style>
+</head>
+<body>
+  <header class="wrap flex items-center justify-between py-5">
+    <a href="/" class="text-lg font-extrabold" style="color:var(--ink);text-decoration:none">هالة</a>
+    <nav class="flex items-center gap-4 text-sm font-bold" style="color:var(--muted)">
+      <a href="/faq" style="color:inherit">الأسئلة الشائعة</a>
+      <a href="/login" style="color:inherit">تسجيل الدخول</a>
+    </nav>
+  </header>
+
+  <main class="wrap pb-20">
+    <section class="text-center pt-6 pb-8">
+      <h1 class="text-3xl sm:text-4xl font-extrabold" style="text-wrap:balance">صفحة منتج كاملة لكل منتج — بسعر واضح</h1>
+      <p class="mt-3 text-base" style="color:var(--muted);max-width:60ch;margin-inline:auto;line-height:1.9">
+        «المنتج الواحد» عندنا = الوصف ونقاط البيع وجدول المواصفات والأسئلة الشائعة وحقول السيو، يُحسب مرة واحدة.
+        والمحاولة التي لا تُنتج وصفاً لا تُحسب.
+      </p>
+      <div class="seg inline-flex gap-1 mt-6 p-1 rounded-full" style="background:var(--soft);border:1px solid var(--line)" role="group" aria-label="مدة الاشتراك">
+        <button type="button" id="btnMonthly" aria-pressed="true" onclick="setPeriod('m')">شهري</button>
+        <button type="button" id="btnYearly" aria-pressed="false" onclick="setPeriod('y')">سنوي <span class="pill" style="background:var(--green-soft);color:var(--green)">شهرين مجاناً</span></button>
+      </div>
+    </section>
+
+    <section class="grid gap-5 md:grid-cols-3 items-stretch">
+      <article class="card">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-extrabold">الأساسية</h2>
+          <span class="pill" style="background:var(--brand-soft);color:var(--brand)">تجربة مجانية ٧ أيام</span>
+        </div>
+        <div>
+          <p class="num text-4xl font-extrabold m-0"><span data-m="٢٩" data-y="٢٩٠">٢٩</span> <span class="text-base font-bold" style="color:var(--muted)">ر.س / <span data-m="شهرياً" data-y="سنوياً">شهرياً</span></span></p>
+          <p class="num text-xs mt-1" style="color:var(--muted)">+ ضريبة القيمة المضافة ١٥٪ — الإجمالي <span data-m="٣٣٫٣٥" data-y="٣٣٣٫٥٠">٣٣٫٣٥</span> ر.س</p>
+        </div>
+        <p class="num text-sm font-bold m-0">٥ منتجات يومياً <span style="color:var(--muted);font-weight:500">(≈ ١٥٠ بالشهر)</span></p>
+        <ul class="ticks">
+          <li>مناسبة لمتجر يضيف منتجات باستمرار</li>
+          <li>الحصة تتجدد كل يوم تلقائياً</li>
+          <li>الزائد بالتوليد الجماعي يُؤجَّل ويُكمَل يوماً بيوم</li>
+        </ul>
+      </article>
+
+      <article class="card featured">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-extrabold">النمو</h2>
+          <span class="pill" style="background:var(--brand);color:#fff">الأكثر قيمة</span>
+        </div>
+        <div>
+          <p class="num text-4xl font-extrabold m-0"><span data-m="٤٩" data-y="٤٩٠">٤٩</span> <span class="text-base font-bold" style="color:var(--muted)">ر.س / <span data-m="شهرياً" data-y="سنوياً">شهرياً</span></span></p>
+          <p class="num text-xs mt-1" style="color:var(--muted)">+ ضريبة القيمة المضافة ١٥٪ — الإجمالي <span data-m="٥٦٫٣٥" data-y="٥٦٣٫٥٠">٥٦٫٣٥</span> ر.س</p>
+        </div>
+        <p class="num text-sm font-bold m-0">٢٠ منتجاً يومياً <span style="color:var(--muted);font-weight:500">(≈ ٦٠٠ بالشهر)</span></p>
+        <ul class="ticks">
+          <li>للمتاجر الكبيرة أو اللي تحدّث كتالوجها كثير</li>
+          <li>كل مزايا الأساسية</li>
+          <li>أربعة أضعاف الحصة اليومية</li>
+        </ul>
+      </article>
+
+      <article class="card" style="background:linear-gradient(180deg,var(--green-soft),#fff 55%)">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-extrabold">عرض اليوم الوطني ٩٦</h2>
+          <span class="pill" style="background:var(--green);color:#fff">دفعة واحدة</span>
+        </div>
+        <div>
+          <p class="num text-4xl font-extrabold m-0">٩٦ <span class="text-base font-bold" style="color:var(--muted)">ر.س</span>
+            <span class="text-base font-bold" style="color:var(--muted);text-decoration:line-through">١٤٩</span></p>
+          <p class="num text-xs mt-1" style="color:var(--muted)">+ ضريبة القيمة المضافة ١٥٪ — الإجمالي ١١٠٫٤٠ ر.س</p>
+        </div>
+        <p class="num text-sm font-bold m-0">وصف متجرك كامل — حتى ٥٠٠ منتج</p>
+        <ul class="ticks">
+          <li class="num">متاح من ١٧ إلى ٣٠ سبتمبر ٢٠٢٦ فقط</li>
+          <li>الأوصاف تُجهَّز على دفعات يومية، وتراجعها قبل النشر</li>
+          <li class="num">بعد ٣٠ سبتمبر يصير «تهيئة المتجر» بسعره الدائم ١٤٩ ر.س</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="mt-12 grid gap-8 md:grid-cols-2">
+      <div>
+        <h2 class="text-xl font-extrabold mb-4">كل الباقات تشمل</h2>
+        <ul class="ticks">
+          <li>وصف من صورة المنتج وبياناتك — لا من الاسم وحده</li>
+          <li>نقاط بيع وجدول مواصفات وأسئلة شائعة وعنوان بحث ووصف ميتا</li>
+          <li>مراجعة «قبل وبعد» مع «اعتمد الكل» — لا يُنشر شيء قبل اعتمادك</li>
+          <li>زر «تراجع» يرجّع وصفك الأصلي بعد النشر</li>
+          <li>«لهجة متجري» — اكتب بأسلوب علامتك</li>
+          <li>لا خامة ولا ضمان ولا مدة شحن مخترعة</li>
+        </ul>
+        <p class="text-xs mt-4" style="color:var(--muted);line-height:1.8">حقول السيو (عنوان البحث ووصف الميتا) تُرسل مع كل نشر، وظهورها بمتجرك يتبع ما تتيحه باقة متجرك في سلة.</p>
+      </div>
+      <div>
+        <h2 class="text-xl font-extrabold mb-2">أسئلة عن الاشتراك</h2>
+        <details>
+          <summary>كيف أشترك وأدفع؟</summary>
+          <p>الاشتراك والدفع من متجر تطبيقات سلة عند تثبيت هالة، بنفس طريقة أي تطبيق بسلة. أسعار متجر تطبيقات سلة تُعرض قبل ضريبة القيمة المضافة ١٥٪، والإجمالي مذكور تحت كل سعر.</p>
+        </details>
+        <details>
+          <summary>وش يصير في التجربة المجانية؟</summary>
+          <p>سبعة أيام على الباقة الأساسية بخمسة منتجات يومياً. تجرّب الوصف والمراجعة والنشر على منتجاتك الحقيقية.</p>
+        </details>
+        <details>
+          <summary>هل يُحسب الوصف اللي فشل؟</summary>
+          <p>لا. المحاولة التي لا تُنتج وصفاً لا تُحسب من حصتك.</p>
+        </details>
+        <details>
+          <summary>وش الفرق بين الحصة اليومية وعرض ٩٦؟</summary>
+          <p>الحصة اليومية للاستخدام المستمر مع كل منتج جديد. عرض ٩٦ دفعة واحدة لتجهيز كتالوجك الحالي كله مرة وحدة، حتى ٥٠٠ منتج.</p>
+        </details>
+        <details>
+          <summary>متى تتوفر الباقات؟</summary>
+          <p>هالة قيد مراجعة سلة حالياً. الباقات تتوفر للاشتراك من متجر تطبيقات سلة فور اعتماد التطبيق.</p>
+        </details>
+      </div>
+    </section>
+
+    <section class="mt-12 p-6 rounded-2xl text-center" style="background:var(--soft);border:1px solid var(--line)">
+      <p class="font-bold m-0">عندك سؤال عن الأسعار؟ راسلنا على <a href="mailto:info@aura.sa" style="color:var(--brand)">info@aura.sa</a></p>
+    </section>
+  </main>
+
+  <footer class="wrap py-8 text-xs flex flex-wrap gap-4 justify-center" style="color:var(--muted);border-top:1px solid var(--line)">
+    <span>مؤسسة فريق أورا للتسويق</span>
+    <a href="/privacy" style="color:inherit">الخصوصية</a>
+    <a href="/terms" style="color:inherit">الشروط</a>
+    <a href="/data-deletion" style="color:inherit">حذف البيانات</a>
+  </footer>
+
+  <script>
+    function setPeriod(p) {
+      document.getElementById('btnMonthly').setAttribute('aria-pressed', String(p === 'm'));
+      document.getElementById('btnYearly').setAttribute('aria-pressed', String(p === 'y'));
+      document.querySelectorAll('[data-m]').forEach((el) => { el.textContent = p === 'y' ? el.dataset.y : el.dataset.m; });
+    }
+  </script>
+</body>
+</html>
