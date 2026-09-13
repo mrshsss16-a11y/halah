@@ -42,6 +42,29 @@ async function main() {
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");
+
+  // ── حالات صناعية 2026-09-13: طبقة الأحكام لكل الحقول، والحراس التي كانت لحقل واحد ─────────────────
+  const { stripJudgmentWords, stripJudgments } = await import("../../functions/_lib/domain/copyJudgments.js");
+  const { cleanPublishedFields } = await import("../../functions/_lib/domain/copyParse.js");
+  const { dropSalesCta, fixColorAgreement } = await import("../../functions/_lib/domain/copyPhrases.js");
+  const { dropPhotoLeaks } = await import("../../functions/_lib/domain/copyNotes.js");
+  const { sizeChartKind } = await import("../../functions/_lib/domain/copyClaims.js");
+  assert(stripJudgmentWords("فستان سهرة كلوش ساحر", "فستان سهرة") === "فستان سهرة كلوش" && stripJudgmentWords("سوار فولاذي ثلاثي راقٍ", "") === "سوار فولاذي ثلاثي", "PC-12: حكم العنوان يُزال بكلمته، و«راقٍ» بتنوين الكسر لا تفلت");
+  assert(stripJudgmentWords("قماش قطن مريح جداً", "بلوزة قطن مريحة") === "قماش قطن مريح جداً" && stripJudgmentWords("سوار بلمعة براقة", "") === "سوار بلمعة براقة", "PC-13: «مريح» التي ذكرها التاجر تبقى، و«براقة» لمعة لا «راقٍ»");
+  const hl = cleanPublishedFields({ copywriting: { description: "", highlights: ["عباية كحلي بقماش كريب فاخر"] }, seo: {} }, { sourceText: "عباية كحلي كريب", name: "عباية" });
+  assert(JSON.stringify(hl.copywriting.highlights) === JSON.stringify(["عباية كحلي بقماش كريب"]), `PC-14: نقطة فيها حكم تفقد الكلمة لا النقطة كلها (${JSON.stringify(hl.copywriting.highlights)})`);
+  const praise = stripJudgments("قميص أزرق فاتح قطن مريح، شكله راقٍ ويناسب كل المناسبات.", { sourceText: "قميص قطن مريح", name: "قميص" });
+  assert(praise === "قميص أزرق فاتح قطن مريح.", `PC-15: مقطع المدح الخالص («شكله راقٍ…») يُحذف وتبقى الحقيقة («${praise}»)`);
+  assert(dropSalesCta("عطر ورد عود، حجم 100 مل، الحقي بطلبك الآن.") === "عطر ورد عود، حجم 100 مل.", "PC-16: دعوة البيع بلهجة تُحذف بمقطعها لا بجملتها");
+  assert(sizeChartKind({ name: "ثوب سعودي رجالي" }) === "sized" && sizeChartKind({ name: "دهن عود كمبودي" }) === "none", "PC-17: «عود» داخل «سعودي» لا يُسقط جدول مقاسات الثوب");
+  assert(dropPhotoLeaks("حذاء رياضي رمادي بنعل مطاطي. تظهر العارضة واقفة على أرضية خشبية.", "حذاء رياضي") === "حذاء رياضي رمادي بنعل مطاطي." && dropPhotoLeaks("تنورة ميدي صفراء بكسرات كشكش مع بنطلون جينز فضفاض تحتها.", "تنورة ميدي") === "تنورة ميدي صفراء بكسرات كشكش.", "PC-18: مشهد التصوير وقطعة العارضة «تحتها» يُحذفان من النص المنشور");
+  assert(dropPhotoLeaks("تنورة ميدي صفراء. تُنسَّق مع بنطلون جينز وحذاء مسطح.", "تنورة ميدي") === "تنورة ميدي صفراء. تُنسَّق مع بنطلون جينز وحذاء مسطح.", "PC-19: اقتراح التنسيق مع قطعة أخرى يبقى");
+  assert(fixColorAgreement("تنورة أسود وأبيض") === "تنورة سوداء وبيضاء" && fixColorAgreement("عباية متعدد الألوان") === "عباية متعددة الألوان" && fixColorAgreement("بلون متعدد") === "بلون متعدد", "PC-20: اللون المعطوف و«متعدد الألوان» يطابقان القطعة المؤنثة");
+  const specs = { copywriting: {}, seo: {}, faqs: [], tags: [], specsTable: [{ key: "لون العباية", value: "متعدد الألوان" }, { key: "اللون", value: "أسود" }] };
+  polishPage(specs, { name: "تنورة", sourceText: "تنورة" });
+  const bag = { copywriting: {}, seo: {}, faqs: [], tags: [], specsTable: [{ key: "حزام الكتف", value: "قابل للتعديل" }] };
+  polishPage(bag, { name: "حقيبة كتف", sourceText: "حقيبة كتف" });
+  assert(specs.specsTable.length === 1 && specs.specsTable[0].key === "اللون" && bag.specsTable.length === 1, `PC-21: مواصفة قطعة أخرى تُحذف، و«حزام الكتف» للحقيبة يبقى (${JSON.stringify(specs.specsTable)})`);
 }
 
 main().then(done);

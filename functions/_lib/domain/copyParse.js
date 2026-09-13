@@ -2,7 +2,8 @@
 // نُقل من `api/copy.js` بالمرحلة ٤ (ARCHITECTURE §٢) بلا تغيير سلوكي —
 // انتزاع الـJSON نفسه صار بـ`ai/parseModelJson.js` ويشترك فيه `chat.js`.
 import { extractBalancedJson } from "../ai/parseModelJson.js";
-import { stripJudgments, splitSentencesKeep, joinSentences } from "./copyPhrases.js";
+import { splitSentencesKeep, joinSentences } from "./copyPhrases.js";
+import { stripJudgments, stripJudgmentWords, unsourcedJudgment } from "./copyJudgments.js";
 
 /**
  * خطأ مصنَّف: تعذّر انتزاع JSON من مخرج النموذج بعد إعادة محاولة واحدة.
@@ -247,7 +248,7 @@ export function cleanDescription(text, { sourceText, productName } = {}) {
   let t = String(text || "").trim();
   t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
   // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
-  t = joinSentences(splitSentencesKeep(t).map((p) => ({ ...p, s: sourceText !== undefined && unsourcedJudgment(p.s, sourceText) ? stripJudgments(p.s) : p.s })).filter(({ s }) => s && !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !MECHANISM_LEAK.test(s) && !(productName && propItemIn(s, productName)) && !(sourceText !== undefined && (unsourcedMaterial(s, sourceText) || unsourcedJudgment(s, sourceText)))));
+  t = joinSentences(splitSentencesKeep(t).map((p) => ({ ...p, s: sourceText !== undefined && unsourcedJudgment(p.s, sourceText) ? stripJudgments(p.s, { sourceText, name: productName }) : p.s })).filter(({ s }) => s && !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !MECHANISM_LEAK.test(s) && !(productName && propItemIn(s, productName)) && !(sourceText !== undefined && (unsourcedMaterial(s, sourceText) || unsourcedJudgment(s, sourceText)))));
   return t;
 }
 
@@ -269,16 +270,7 @@ export function cleanDescription(text, { sourceText, productName } = {}) {
 const STORE_POLICY = /(مدة الشحن|الشحن خلال|يتم الشحن|تتم شحن|تتم الشحن|يشحن خلال|يُشحن خلال|شحن مجاني|الشحن مجاني|رسوم الشحن|التوصيل خلال|مدة التوصيل|توصيل مجاني|التوصيل مجاني|الإرجاع|إرجاع|الارجاع|ارجاع|الاسترجاع|استرجاع|الاستبدال|استبدال|طرق الدفع|طريقة الدفع|وسائل الدفع|وسائل دفع|الدفع عند الاستلام|بطاقات الائتمان|بطاقة ائتمان|التحويل البنكي|تحويل بنكي|الضمان|ضمان|تقسيط|تابي|تمارا)/;
 /** كشف آلية قراءة الصورة في نص منشور: «لا يوجد حزام مرئي»، «يبدو أن الفستان…». */
 const MECHANISM_LEAK = /(غير مرئي|يبدو أن|ملاحظات الصورة|(?<!\p{L})مرئي(?:ة|ه)?(?!\p{L}))/u;
-/** أحكام جودة (قاعدة ٥ بالبرومبت) — مسموحة فقط إن وردت ببيانات التاجر. مطبَّعة بـnormAr. */
-// «مثالي» أُضيفت 2026-09-11: «هذه البلوزة مثالية للمناسبات» بمخرج حقيقي على متجر المراجعة.
-const JUDGMENTS = ["مريح", "انيق", "اناقه", "اناقت", "فاخر", "فخم", "فخامه", "فخامت", "جمال", "جمالي", "جميل", "فريد", "مميز", "عصري", "جذاب", "رائع", "متين", "مثالي", "راقي", "عالي الجوده", "جوده عاليه"];
-function unsourcedJudgment(text, sourceText) {
-  const body = normAr(text);
-  const src = normAr(sourceText);
-  return JUDGMENTS.find((j) =>
-    new RegExp(`(?<!\\p{L})(?:و|ب)?(?:ال)?${j}(?:ه|ا|ها)?(?!\\p{L})`, "u").test(body) && !src.includes(j)
-  ) || null;
-}
+// أحكام الجودة (قاعدة ٥ بالبرومبت): copyJudgments.js — طبقة واحدة لكل الحقول (2026-09-13).
 const MIN_HIGHLIGHT_WORDS = 3;
 const words = (t) => String(t || "").trim().split(/\s+/).filter(Boolean).length;
 
@@ -344,13 +336,18 @@ export function publishedFieldIssues(parsed, { sourceText, productName } = {}) {
  */
 export function cleanPublishedFields(parsed, { sourceText, name = "" } = {}) {
   const bad = (t) => textProblems(t, sourceText).length > 0;
+  // الحكم يُزال بكلمته ثم يُفحص الباقي: «عباية كحلي بقماش كريب فاخر» كانت تُحذف نقطةً كاملة (2026-09-13).
+  const sj = (t) => (sourceText === undefined || typeof t !== "string" ? t : stripJudgmentWords(t, sourceText));
   const cw = parsed.copywriting || (parsed.copywriting = {});
-  cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
+  cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : []).map(sj)
     .filter((h) => !bad(h) && words(h) >= MIN_HIGHLIGHT_WORDS && !(name && propItemIn(h, name)));
   parsed.faqs = (Array.isArray(parsed.faqs) ? parsed.faqs : [])
+    .map((f) => { const q = sj(f?.q), a = f && sourceText !== undefined ? cleanDescription(String(f.a || ""), { sourceText }) : f?.a; return !f || (q === f.q && a === f.a) ? f : { ...f, q, a }; })
     .filter((f) => f && String(f.q || "").trim() && String(f.a || "").trim() && !bad(f.q) && !bad(f.a));
   cw.description = cleanDescription(cw.description, { sourceText, productName: name });
   const seo = parsed.seo || (parsed.seo = {});
+  seo.title = sj(seo.title);
+  seo.seoTitle = sj(seo.seoTitle);
   if (bad(seo.title)) seo.title = truncateAtWord(String(name || ""), 60);
   if (bad(seo.seoTitle)) seo.seoTitle = truncateAtWord(seo.title || String(name || ""), 65);
   if (bad(seo.metaDescription)) {
@@ -377,7 +374,8 @@ const ITEM_GROUPS = [
 ];
 function itemGroup(word) {
   const w = normAr(word).replace(/^ال/, "");
-  return ITEM_GROUPS.findIndex((g) => g.includes(w));
+  // المثنى «البلوزتين» و«القميصين» أفلت (حالات صناعية 2026-09-13).
+  return ITEM_GROUPS.findIndex((g) => g.includes(w) || g.includes(w.replace(/ت(?:ين|ان)$/, "ه")) || g.includes(w.replace(/(?:ين|ان)$/, "")));
 }
 export function splitSentences(text) {
   return String(text || "").split(/(?<=[.!؟\n])\s+/).filter((s) => s.trim());

@@ -4,17 +4,26 @@
 // والنقاط والنبذة — وكلها تُنشر على صفحة المنتج بسلة (sallaProductPayload.js) — والوسوم (تظهر للتاجر)
 // ونص البديل والمواصفات نشرت: حرفاً صينياً، «couche»، «تسوقي الآن»، «تنورة فضي»، «مرفق بها بلوزة»،
 // «بايستيل»، «الطابع العام»، «هذا القطعة». كل تصحيح يُطبَّق هنا على كل حقل يُعرض أو يُنشر.
+//
+// 2026-09-13: حالات صناعية أثبتت أن حراساً كثيرة بقيت لحقل واحد — الأحكام والطول غير المرئي و«بدون أكمام»
+// للوصف، «الغير» للنثر، جدول المقاسات للوصف والواتساب والميتا، والسعر والعنصر النائب للنثر. صارت كلها هنا لكل حقل.
 import {
   dropForeignScript, fixLatinWords, fixCommonGrammar, fixColorAgreement, fixNoteLabels, dropSalesCta,
   SALES_CTA, fixTrouserLength, dropUnseenLength, dropSleevesForBottoms, withSizeChartLine,
-  dropUnseenCut, unseenCutPhrases
+  dropUnseenCut, unseenCutPhrases, splitSentencesKeep, joinSentences
 } from "./copyPhrases.js";
-import { dropAttachedClaims, ATTACHED, otherItem } from "./copyNotes.js";
+import { dropAttachedClaims, dropPhotoLeaks, ATTACHED, otherItem } from "./copyNotes.js";
 import { unsourcedClaims, fixSizeChartClosing } from "./copyClaims.js";
-import { splitSentencesKeep, joinSentences } from "./copyPhrases.js";
+import { unsourcedJudgment, stripJudgments, stripJudgmentWords } from "./copyJudgments.js";
+import { propItemIn } from "./copyParse.js";
 
-// دعوة البيع داخل نص قصير (عنوان، نقطة، وسم): تُحذف الكلمة لا العنصر كله.
-const CTA_WORDS = /(?<!\p{L})(?:تسوقي|تسوّقي|اطلبي|اطلبيها|احصلي|سارعي|اقتنيها)(?:[ \t]+(?:الآن|الان))?(?!\p{L})|(?<!\p{L})لا[ \t]+تفوتي(?!\p{L})/gu;
+// دعوة البيع داخل نص قصير (عنوان، نقطة، وسم): تُحذف الكلمة لا العنصر كله — «قميص رجالي كتان اطلبه الحين».
+const CTA_WORDS = /(?<!\p{L})(?:تسوقي|تسوّقي|اطلبي|اطلبيها|اطلبه|اطلبها|احصلي|سارعي|اقتنيها|احجزيها|احجزي|خذيها|كلمينا|راسلينا|الحقي(?:[ \t]+(?:ب|على)[ \t]*\p{L}+)?)(?:[ \t]+(?:الآن|الان|الحين|اليوم))?(?!\p{L})|(?<!\p{L})لا[ \t]+تفوتي(?!\p{L})|(?<!\p{L})(?:تبين|تبغين)[ \t]+تطلبين؟?/gu;
+// عنصر نائب («{الخامة}») وسعر («259 ريال») بوسم أو مواصفة (2026-09-13): حارسهما كان للنثر وحده.
+const PLACEHOLDER_TOKEN = /[ \t]*[^\s{}]*\{[^}]*\}\S*/gu;
+const PRICE_RE = "[\\d٠-٩][\\d٠-٩.,]*[ \\t]*(?:ريال|ر\\.?س\\.?|SAR|﷼)(?!\\p{L})";
+const PRICE_TOKEN = new RegExp(`[ \\t]*(?:(?:ب)?(?:السعر|سعر(?:ه|ها)?)[ \\t]*[:：]?[ \\t]*)?${PRICE_RE}(?:[ \\t]+فقط)?(?:[ \\t]+(?:اليوم|الآن|الان))?`, "gu");
+const hasPlaceholderOrPrice = (s) => /[{}]/.test(s) || new RegExp(PRICE_RE, "u").test(s);
 const MIN_HIGHLIGHT_WORDS = 3;
 // عبارة عامة لا تصف القطعة — بالنثر وبالنقاط («قصة بشت واسعة تناسب جميع المناسبات»، أرشيف 2026-09-13).
 const GENERAL_FILLER = [
@@ -56,36 +65,42 @@ const bareWords = (t) => new Set(normKey(t).split(" ").map((w) => w.replace(/^(?
 const BARE_ADJ_TAG = /^(?:ال)?(?:[أا]سود|سوداء|[أا]بيض|بيضاء|[أا]حمر|حمراء|[أا]زرق|زرقاء|[أا]خضر|خضراء|وردي(?:ة)?|بيج|كحلي(?:ة)?|رمادي(?:ة)?|ذهبي(?:ة)?|فضي(?:ة)?|ميدي|ماكسي|ميني|واسع(?:ة)?|ضيق(?:ة)?|مستقيم(?:ة)?|لامع(?:ة)?|مطفي(?:ة)?|سادة|رسمي(?:ة)?|يومي(?:ة)?|قصير(?:ة)?|طويل(?:ة)?)$/u;
 
 /** نص جمل (وصف، نبذة، واتساب، ميتا، جواب): ما يُحذف يُحذف جملةً كاملة. */
-function polishProse(text, { name, sourceText, sizes }) {
-  // ادعاء لم يذكره التاجر (مقاومة ماء، ضمان، ثبات، أصلي…) يُحذف بجملته — تقييم 2026-09-12.
-  const sourced = joinSentences(splitSentencesKeep(String(text || "")).filter(({ s }) => !unsourcedClaims(s, sourceText).length));
-  const t = dropForeignScript(fixNoteLabels(dropAttachedClaims(sourced, name)));
-  return dropRepeatedSentences(fixSizeRange(fixColorAgreement(fixCommonGrammar(dropSalesCta(fixTrouserLength(fixLatinWords(t, sourceText), name)))), sizes))
+function polishProse(text, { name, sourceText, sizes, notes, category }) {
+  // ادعاء لم يذكره التاجر (مقاومة ماء، ضمان، ثبات، أصلي…) يُحذف بجملته — تقييم 2026-09-12. حكم الجودة يُزال
+  // بعبارته أو مقطعه وتبقى الجملة، ومشهد التصوير بمقطعه (2026-09-13).
+  const sourced = joinSentences(splitSentencesKeep(dropPhotoLeaks(String(text || ""), name))
+    .map((p) => ({ ...p, s: unsourcedJudgment(p.s, sourceText) ? stripJudgments(p.s, { sourceText, name }) : p.s }))
+    .filter(({ s }) => s && !unsourcedClaims(s, sourceText).length && !unsourcedJudgment(s, sourceText) && !hasPlaceholderOrPrice(s)));
+  const t = dropSleevesForBottoms(dropUnseenLength(dropForeignScript(fixNoteLabels(dropAttachedClaims(sourced, name))), notes), name);
+  const out = dropRepeatedSentences(fixSizeRange(fixColorAgreement(fixCommonGrammar(dropSalesCta(fixTrouserLength(fixLatinWords(t, sourceText), name)))), sizes))
     // «…من الخصر، سطحها اللامع.» ⇒ «…، وسطحها لامع.» (نبذة وميتا حقيقيتان 2026-09-12 18:46).
     .replace(/،[ \t]*(\p{L}+ها)[ \t]+ال(\p{L}+)(?=[ \t]*(?:[.!؟]|$))/gu, "، و$1 $2")
     // «ويمكن ارتداؤه في العديد من المناسبات غير الرسمية» — عبارة عامة لا تصف القطعة (فستانان 2026-09-13).
     .replace(/[ \t]*،?[ \t]*(?:و)?(?:يمكن|يمكنك|تقدرين)[ \t]+(?:ارتداؤه|ارتداؤها|ارتداءه|ارتداءها|لبسه|لبسها)[ \t]+(?:في[ \t]+)?(?:العديد[ \t]+من|مختلف|كل|جميع)[ \t]+(?:ال)?مناسبات(?:[ \t]+(?:غير[ \t]+)?(?:ال)?\p{L}+)?/gu, "")
     // «تناسب جميع المناسبات» · «لمختلف الإطلالات» بلا صفة حكم مجاورة (أرشيف ٢٧ توليداً حقيقياً، 2026-09-13).
     .replace(GENERAL_FILLER[0], "").replace(GENERAL_FILLER[1], "")
+    // «متوفر الآن بعدة مقاسات ومناسب لإطلالة.» — بقية حكم حُذف قبل وصول النص (حالات صناعية 2026-09-13).
+    .replace(/[ \t]*(?<!\p{L})(?:و?(?:(?:ت|ي)ناسب|مناسب(?:ة|ه)?)[ \t]+)?(?:ل|ب)(?:إطلالة|اطلالة|مظهر(?:اً|ًا|ا)?|لمسة)(?=[ \t]*(?:[.،!؟]|$))/gu, "")
     // «بقصّة واسعة وتصميم، تتميز…»: اسم بقي معلّقاً بعد حذف صفته بتنظيف سابق.
     .replace(/[ \t]*(?<!\p{L})(?:و|ب)(?:تصميم|طابع|لمسة|مظهر|إطلالة|اطلالة)(?=[ \t]*[،.!؟])/gu, "")
     .replace(/،[ \t]*(?=[.!؟])/gu, "")
     .replace(/(?<=^|[.!؟\n])[ \t]*[.،](?=\s|$)/gu, "")
-    // «المناسبات اليومية والغير رسمية» ⇒ «وغير الرسمية».
-    .replace(/(?<!\p{L})(و)?ال(غير)[ \t]+(?!ال)(\p{L}+)/gu, "$1$2 ال$3")
     // «جدول المقاسات الموجود بالوصف»: الوصف لا يحوي جدولاً.
     .replace(/[ \t]*(?:ال)?موجود[ \t]+(?:ب|في[ \t]+)(?:ال)?وصف(?!\p{L})/gu, "")
     // «راجعي جدول المقاسات الموضح أدناه» (تنورة 2026-09-12 21:11): لا جدول تحت الوصف.
     .replace(/[ \t]*(?:ال)?(?:موضح|موضّح|موجود)[ \t]+(?:أدناه|ادناه|بالأسفل|في[ \t]+الأسفل)(?!\p{L})/gu, "")
     .trim();
+  // جملة جدول المقاسات لعطر أو ساعة — بالأسئلة الشائعة أيضاً لا الوصف وحده (2026-09-13).
+  return fixSizeChartClosing(out, { name, category });
 }
 
 /** نص قصير (عنوان، نقطة، وسم، سؤال، نص بديل، مواصفة): تُحذف الكلمة المعيبة لا العنصر. */
-function polishShort(text, { name, sourceText, sizes, keepLabels = false }) {
+function polishShort(text, { name, sourceText, sizes, notes, category, keepLabels = false }) {
   // مفتاح المواصفة «الطول والقصّة» اسم صحيح لا عنوان ملاحظات مسرّب — صار «بطول» (2026-09-12 18:46).
-  const raw = String(text || "");
+  const raw = stripJudgmentWords(dropPhotoLeaks(String(text || "").replace(PLACEHOLDER_TOKEN, "").replace(PRICE_TOKEN, ""), name), sourceText);
   const t = fixLatinWords(dropForeignScript(keepLabels ? raw : fixNoteLabels(raw)), sourceText);
-  return fixSizeRange(fixColorAgreement(fixCommonGrammar(fixTrouserLength(t, name))), sizes)
+  const fixed = dropSleevesForBottoms(dropUnseenLength(fixSizeRange(fixColorAgreement(fixCommonGrammar(fixTrouserLength(t, name))), sizes), notes), name);
+  return fixSizeChartClosing(fixed, { name, category })
     .replace(GENERAL_FILLER[0], "").replace(GENERAL_FILLER[1], "")
     .replace(CTA_WORDS, "")
     .replace(/[ \t]{2,}/g, " ")
@@ -108,7 +123,7 @@ export function pageText(parsed) {
 
 /** يلمّع كل حقول المخرج في مكانه. */
 export function polishPage(parsed, { name = "", sourceText = "", notes = "", category = "" } = {}) {
-  const ctx = { name, sourceText, sizes: sizeOptions(sourceText) };
+  const ctx = { name, sourceText, notes, category, sizes: sizeOptions(sourceText) };
   const unsourced = (t) => unsourcedClaims(t, sourceText).length > 0;
   // قصّة أو خصر أو كسرات لم ترها الصورة (تنورة 2026-09-12 18:29) — تُحذف من كل حقل، لا الوصف وحده.
   const cut = (t) => dropUnseenCut(t, { notes, sourceText, name });
@@ -116,9 +131,9 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   const cw = parsed.copywriting || (parsed.copywriting = {});
   const seo = parsed.seo || (parsed.seo = {});
 
-  cw.description = fixSizeChartClosing(withSizeChartLine(dropSleevesForBottoms(dropUnseenLength(cut(polishProse(cw.description, ctx)), notes), name), name), { name, category });
+  cw.description = fixSizeChartClosing(withSizeChartLine(cut(polishProse(cw.description, ctx)), name, category), { name, category });
   cw.excerpt = cut(polishProse(cw.excerpt, ctx)).slice(0, 250);
-  cw.whatsapp = fixSizeChartClosing(cut(polishProse(cw.whatsapp, ctx)), { name, category });
+  cw.whatsapp = cut(polishProse(cw.whatsapp, ctx));
   // «يا هلا! إطلالة رسمية. وش رايك فيها؟» — بقي تحية وسؤالاً بعد حذف الأحكام: يُبنى من النبذة بدل رسالة فارغة.
   const whatsappBody = cw.whatsapp.replace(/(?<!\p{L})(?:يا[ \t]+هلا|هلا|أهلاً|اهلا|مرحبا|وش[ \t]+رايك[ \t]+فيها|وش[ \t]+رأيك[ \t]+فيها|إطلالة[ \t]+رسمية)(?!\p{L})/gu, "");
   if (words(whatsappBody.replace(/[^\p{L}\s]/gu, " ")) < 6 && words(cw.excerpt) >= 6) cw.whatsapp = cw.excerpt;
@@ -143,7 +158,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
 
   seo.title = cut(polishShort(seo.title, ctx)) || String(name || "").trim();
   seo.seoTitle = cut(polishShort(seo.seoTitle, ctx)) || seo.title;
-  seo.metaDescription = fixSizeChartClosing(cut(polishProse(seo.metaDescription, ctx)), { name, category });
+  seo.metaDescription = cut(polishProse(seo.metaDescription, ctx));
   if (seo.jsonLdSchema && typeof seo.jsonLdSchema === "object") seo.jsonLdSchema.description = seo.metaDescription;
   if (typeof seo.focusKeyword === "string") seo.focusKeyword = polishShort(seo.focusKeyword, ctx) || String(name || "").trim();
   if (Array.isArray(seo.lsiKeywords)) seo.lsiKeywords = [...new Set(seo.lsiKeywords.filter((k) => !unsourced(k) && !unseenCut(k)).map((k) => polishShort(k, ctx)).filter(Boolean))];
@@ -158,7 +173,8 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   if (Array.isArray(parsed.specsTable)) {
     parsed.specsTable = parsed.specsTable
       .map((r) => ({ ...r, key: polishShort(r?.key, { ...ctx, keepLabels: true }), value: polishShort(r?.value, ctx) }))
-      .filter((r) => r.key && r.value && !unsourced(`${r.key} ${r.value}`) && !unseenCut(`${r.key} ${r.value}`));
+      // مواصفة قطعة أخرى: «لون العباية: متعدد الألوان» بصفحة تنورة (2026-09-13). «حزام الكتف» لحقيبة جزء منها ويبقى.
+      .filter((r) => r.key && r.value && !unsourced(`${r.key} ${r.value}`) && !unseenCut(`${r.key} ${r.value}`) && !propItemIn(r.key.replace(/^(?:لون|نوع|تصميم|شكل|مقاس|خامة|قماش|طول)[ \t]+/u, ""), name));
   }
   return parsed;
 }
