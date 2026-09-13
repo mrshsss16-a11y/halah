@@ -154,8 +154,8 @@ async function main() {
     );
     // catalogNextOffset/catalogRefreshTimer صارا S.catalogNextOffset/S.catalogRefreshTimer بعد التقسيم.
     assert(
-      /if \(S\.catalogNextOffset > 0\) return;/.test(dash) && /clearTimeout\(S\.catalogRefreshTimer\)/.test(dash),
-      "REV-4: التحديث الذاتي لا يمسح صفحات «عرض المزيد» ولا يتوازى مع تحميل يدوي"
+      /if \(S\.catalogPage > 0\) return;/.test(dash) && /clearTimeout\(S\.catalogRefreshTimer\)/.test(dash),
+      "REV-4: التحديث الذاتي لا يرجع التاجر من صفحة لاحقة للأولى ولا يتوازى مع تحميل يدوي"
     );
     assert(
       !/'متجرك على سلة'/.test(dash),

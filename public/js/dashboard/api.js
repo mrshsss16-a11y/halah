@@ -72,6 +72,11 @@ export async function postReviewDecide(payload) {
   return res.json();
 }
 
+// ── لهجة متجري ─────────────────────────────────────────────────────
+export function postBrandVoice(action, voice) {
+  return postSoft("/api/store/voice", { action, voice }, null);
+}
+
 // ── التغذية الراجعة ─────────────────────────────────────────────────
 export function postFeedback(score, comment, context) {
   return postStrict("/api/store/feedback", { score, comment, context });

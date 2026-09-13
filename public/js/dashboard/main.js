@@ -12,11 +12,13 @@ import { postAuthMe, postSallaEmbedded } from "./api.js";
 import { S } from "./state.js";
 import { switchTab } from "./tabs.js";
 import {
-  loadCatalog, loadCatalogMore, startCatalogSync, selectAllCatalog,
+  loadCatalog, goCatalogPage, startCatalogSync, selectAllCatalog,
   generateSelectedCatalog, useCatalogItem, closeCopyPanel, setBulkGenerateEnabled
 } from "./catalog.js";
 import { generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, applySuggestedCategory } from "./studio.js";
 import { startCatalogGenerate } from "./bulk.js";
+import { openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll } from "./reviewModal.js";
+import { loadBrandVoice, openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange } from "./brandVoice.js";
 import {
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback
@@ -35,13 +37,16 @@ Object.assign(window, {
   switchTab,
   handleMerchantLogout,
   // منتجاتي
-  loadCatalog, loadCatalogMore, startCatalogSync, selectAllCatalog,
+  loadCatalog, goCatalogPage, startCatalogSync, selectAllCatalog,
   generateSelectedCatalog, useCatalogItem, closeCopyPanel,
   // الاستوديو والنشر
   generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, copyToClipboard,
   applySuggestedCategory,
   // الجملة
   startCatalogGenerate,
+  // نافذة المراجعة «قبل وبعد» · لهجة متجري
+  openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll,
+  openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange,
   // المراجعة والتغذية الراجعة
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback,
@@ -149,6 +154,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadCatalog(0);
   S.reviewLoadedOnce = true;
   loadReview("pending");
+  loadBrandVoice();
 
   if (inSallaFrame) window.salla?.embedded?.ready?.();
 });

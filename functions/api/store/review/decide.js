@@ -49,10 +49,10 @@ async function decideHandler(body, env, request) {
     return { ok: true, rejected: r.rejected.length, failed: r.failed, counts: await counts() };
   }
 
-  if (action === "update") {
+  if (action === "update" || action === "edit") {
     const description = String(body.description || "").trim().slice(0, 5000);
     if (!description) throw new ApiError(400, "الوصف فارغ.", "REVIEW_INVALID", "decide.update: empty description");
-    const row = await updatePayload(env, { merchantId, id: body.id, patch: { description } });
+    const row = await updatePayload(env, { merchantId, id: body.id ?? idList(body.ids)[0], patch: { description } });
     return { ok: true, id: row.id };
   }
 

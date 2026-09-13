@@ -10,17 +10,20 @@ import { fetchCatalogList, postCatalogSync, postBulkGenerateSelected } from "./a
 import { renderIdentityLine } from "./render.js";
 import { setPublishTarget, generateCopy } from "./studio.js";
 import { pollBulkJob, toneValue } from "./bulk.js";
+import { pageButtons } from "./pager.js";
 
 const escHtml = window.escHtml;
 const showMsg = (id, text, type) => window.showMsg(id, text, type);
+// يطابق limit=24 بـapi.js · fetchCatalogList.
+const PAGE_SIZE = 24;
 
 // تحديث ذاتي أثناء سحب بالخلفية: كل ٢٠ ثانية، ويتوقف لما يخلص السحب.
 function scheduleCatalogRefresh() {
   if (S.catalogRefreshTimer) return;
   S.catalogRefreshTimer = setTimeout(async () => {
     S.catalogRefreshTimer = null;
-    // تاجر ضغط «عرض المزيد» أثناء السحب: لا نمسح صفحاته كل ٢٠ ثانية.
-    if (S.catalogNextOffset > 0) return;
+    // تاجر انتقل لصفحة ثانية أثناء السحب: لا نرجعه للأولى كل ٢٠ ثانية.
+    if (S.catalogPage > 0) return;
     await loadCatalog(0);
   }, 20000);
 }
@@ -39,14 +42,17 @@ export async function loadCatalog(offset = 0) {
   const grid = document.getElementById("catalogGrid");
   const loading = document.getElementById("catalogLoading");
   const empty = document.getElementById("catalogEmpty");
-  const moreBtn = document.getElementById("catalogMoreBtn");
+  const pager = document.getElementById("catalogPager");
 
   // تحميل يدوي يلغي أي تحديث ذاتي معلّق — لا تحميلان متوازيان.
   if (S.catalogRefreshTimer) { clearTimeout(S.catalogRefreshTimer); S.catalogRefreshTimer = null; }
-  if (offset === 0) { S.catalogItems = {}; grid.innerHTML = ""; }
+  // صفحات مرقّمة: كل تحميل يعرض صفحة واحدة، والتحديد المتعدد يبقى عبر الصفحات (S.selectedSkus).
+  S.catalogItems = {};
+  grid.innerHTML = "";
+  S.catalogPage = Math.floor(offset / PAGE_SIZE);
   document.getElementById("catalogFeedback").classList.add("hidden");
   empty.classList.add("hidden");
-  moreBtn.classList.add("hidden");
+  pager?.classList.add("hidden");
   loading.classList.remove("hidden");
 
   try {
@@ -72,8 +78,8 @@ export async function loadCatalog(offset = 0) {
     document.getElementById("catalogSelectBar").classList.toggle("hidden", count === 0);
     renderCatalogSelection();
     S.catalogNextOffset = data.nextOffset || 0;
-    moreBtn.classList.toggle("hidden", !data.hasMore);
     S.lastCatalogTotal = Number(data.total || 0);
+    renderPager(S.lastCatalogTotal);
     setBulkGenerateEnabled(S.lastCatalogTotal > 0);
     renderIdentityLine();
 
@@ -111,7 +117,7 @@ export async function loadCatalog(offset = 0) {
     if (data.syncing && count > 0) scheduleCatalogRefresh();
 
     document.getElementById("catalogCountLine").innerText = count
-      ? `${count} من ${data.total} منتج — اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.`
+      ? `${offset + 1}–${offset + count} من ${data.total} منتج — اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.`
       : "اضغط أي منتج ويكتب الوصف تلقائياً من صورته ووصفه الحالي.";
   } catch (err) {
     loading.classList.add("hidden");
@@ -119,9 +125,43 @@ export async function loadCatalog(offset = 0) {
   }
 }
 
-/** زر «عرض المزيد» — كان onclick="loadCatalog(catalogNextOffset)" على متغيّر عام. */
-export function loadCatalogMore() {
-  return loadCatalog(S.catalogNextOffset);
+/** أرقام الصفحات تحت الشبكة — صفحة واحدة ⇒ لا شريط. كل نص هنا ثابت أو رقم (innerText). */
+function renderPager(total) {
+  const nav = document.getElementById("catalogPager");
+  if (!nav) return;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  nav.innerHTML = "";
+  nav.classList.toggle("hidden", pages <= 1);
+  if (pages <= 1) return;
+  const add = (label, page, { current = false, disabled = false, aria = "" } = {}) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.innerText = label;
+    b.disabled = disabled;
+    if (aria) b.setAttribute("aria-label", aria);
+    if (current) b.setAttribute("aria-current", "page");
+    b.className = (current ? "sleek-btn-black" : "sleek-btn-white") + " min-w-9 px-3 py-2 rounded-xl text-xs font-bold disabled:opacity-40";
+    if (!disabled && !current) b.addEventListener("click", () => goCatalogPage(page));
+    nav.appendChild(b);
+  };
+  add("السابق", S.catalogPage - 1, { disabled: S.catalogPage === 0 });
+  pageButtons(total, S.catalogPage, PAGE_SIZE).forEach((p) => {
+    if (p === "…") {
+      const gap = document.createElement("span");
+      gap.className = "px-1 text-xs text-slate-500";
+      gap.innerText = "…";
+      nav.appendChild(gap);
+    } else {
+      add((p + 1).toLocaleString("ar-SA"), p, { current: p === S.catalogPage, aria: `الصفحة ${p + 1}` });
+    }
+  });
+  add("التالي", S.catalogPage + 1, { disabled: S.catalogPage >= pages - 1 });
+}
+
+/** الانتقال لصفحة من «منتجاتي» — والشبكة تُمرَّر لمجال الرؤية. */
+export function goCatalogPage(page) {
+  const target = Math.max(0, Number(page) || 0);
+  return loadCatalog(target * PAGE_SIZE).then(() => document.getElementById("catalogGrid")?.scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 
 export function catalogCard(it, key) {

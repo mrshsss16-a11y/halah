@@ -23,6 +23,9 @@ export function setReviewCounts(c) {
   document.getElementById("rvPublished").innerText = c.published;
   document.getElementById("rvFailed").innerText = c.publishFailed;
   document.getElementById("rvRejected").innerText = c.rejected;
+  // زر نافذة «قبل وبعد» يظهر فقط حين يوجد ما يُراجَع.
+  const modalBtn = document.getElementById("reviewModalBtn");
+  if (modalBtn) { modalBtn.classList.toggle("hidden", !c.pending); document.getElementById("rvModalCount").innerText = c.pending; }
   const parts = [];
   if (c.pending) parts.push(`${c.pending} بانتظار قرارك`);
   if (c.awaitingPublish) parts.push(`${c.awaitingPublish} معتمد يُنشر خلال دقائق (بحدود سلة: ~٢٠ كل ١٠ دقائق)`);
@@ -74,6 +77,7 @@ export function reviewCard(r) {
         <button onclick="decideOne(${r.id}, 'approve')" class="sleek-btn-black px-3 py-1.5 rounded-lg text-[11px]">اعتمد وانشر</button>
         <button onclick="saveReviewEdit(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">احفظ تعديلي</button>
         <button onclick="decideOne(${r.id}, 'reject')" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px] text-rose-700">ارفض</button>
+        <button onclick="openReviewModal(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">قبل وبعد</button>
         <span class="review-one-msg text-[11px] font-bold text-slate-600" data-msg="${r.id}"></span>
       </div>`;
   } else {

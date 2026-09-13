@@ -37,14 +37,17 @@
           <button type="button" onclick="selectAllCatalog(false)" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">إلغاء التحديد</button>
             <label for="pTone" class="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 sm:mr-auto">
               <span>نبرة الكتابة</span>
-              <select id="pTone" class="bg-white border border-slate-300 text-[11px] rounded-lg px-2 py-1.5 text-black font-bold focus:outline-none focus:border-black">
+              <select id="pTone" onchange="onToneChange()" class="bg-white border border-slate-300 text-[11px] rounded-lg px-2 py-1.5 text-black font-bold focus:outline-none focus:border-black">
                 <option value="white">لهجة بيضاء تسويقية ودودة</option>
                 <option value="formal">فصحى رسمية راقية</option>
                 <option value="luxury">فخامة وحصرية</option>
                 <option value="deals">حماس عروض</option>
                 <option value="funny">خفة دم سعودية</option>
+                <option value="brand">لهجة متجري (مخصصة)</option>
               </select>
             </label>
+            <button type="button" onclick="openBrandVoice()" class="sleek-btn-white px-3 py-1.5 rounded-xl text-[11px] font-bold">إعداد لهجة متجري</button>
+            <span id="brandVoiceState" class="text-[11px] text-slate-500 font-bold"></span>
           </div>
           <div class="flex flex-wrap items-center gap-2">
           <button id="catalogSelectedGenBtn" onclick="generateSelectedCatalog()" disabled
@@ -86,7 +89,8 @@
 
         <div id="catalogGrid" class="hidden grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"></div>
 
-        <button id="catalogMoreBtn" onclick="loadCatalogMore()" class="hidden w-full sleek-btn-white py-3 rounded-xl text-xs transition">عرض المزيد</button>
+        <!-- صفحات مرقّمة (2026-09-13) بدل «عرض المزيد» — catalog.js · renderPager. -->
+        <nav id="catalogPager" aria-label="صفحات منتجاتي" class="hidden flex flex-wrap items-center justify-center gap-1.5 pt-2"></nav>
       </div>
 
       <!-- لوحة الوصف — تُفتح تحت الشبكة عند اختيار منتج، والشبكة تبقى ظاهرة. -->

@@ -27,6 +27,7 @@
 import { DomainError } from "../core/errors.js";
 import { askWorkersAI, TEXT_MODEL } from "../ai/gateway.js";
 import { enqueue as enqueueReview, approve as approveReview } from "./review.js";
+import { normalizeBrandVoice } from "./brandVoice.js";
 
 const MAX_SAMPLE = 40;
 const DEFAULT_SAMPLE = 40;
@@ -211,6 +212,8 @@ export async function buildProfile(env, { merchantId, sampleSize = DEFAULT_SAMPL
     );
   }
 
+  // إعادة بناء البصمة لا تمسح «لهجة متجري» التي كتبها التاجر بنفسه.
+  const keptVoice = (await getProfile(env, { merchantId: mid }).catch(() => null))?.brandVoice || null;
   // العزل: merchant_id هو المفتاح الأساسي، فالكتابة لا تقدر تلمس صف تاجر ثانٍ.
   // إعادة البناء ترجّع الحالة لـ`draft` عمداً: بصمة جديدة لم يرها أحد يجب ألا
   // ترث موافقة بصمة قديمة.
@@ -224,7 +227,7 @@ export async function buildProfile(env, { merchantId, sampleSize = DEFAULT_SAMPL
          source_sample = excluded.source_sample,
          updated_at = datetime('now')`
     )
-    .bind(mid, JSON.stringify(profile), rows.length)
+    .bind(mid, JSON.stringify(keptVoice ? { ...profile, brandVoice: keptVoice } : profile), rows.length)
     .run();
 
   // بوابة المراجعة البشرية. فشل الإدراج لا يجوز يخفي البصمة عن التاجر (هي
@@ -264,8 +267,12 @@ export async function getProfile(env, { merchantId } = {}) {
   if (!row) return { profile: null, status: null, sampleSize: 0, updatedAt: null };
 
   let parsed = null;
+  let brandVoice = null;
   try {
-    parsed = normalizeProfile(JSON.parse(row.profile));
+    const raw = JSON.parse(row.profile);
+    parsed = normalizeProfile(raw);
+    // لهجة متجري (brandVoice.js) تُحفظ بالصف نفسه وخارج حقول البصمة الستة.
+    brandVoice = normalizeBrandVoice(raw?.brandVoice);
   } catch {
     // صف تالف: نعامله كغياب بصمة بدل كسر التوليد. لا حقن ⇒ السلوك القديم.
     return { profile: null, status: null, sampleSize: 0, updatedAt: row.updated_at ?? null };
@@ -275,7 +282,8 @@ export async function getProfile(env, { merchantId } = {}) {
     profile: parsed,
     status: row.status || null,
     sampleSize: Number(row.source_sample || 0),
-    updatedAt: row.updated_at ?? null
+    updatedAt: row.updated_at ?? null,
+    brandVoice
   };
 }
 
@@ -308,7 +316,7 @@ export async function approveProfile(env, { merchantId, profile = null, reviewId
         WHERE merchant_id = ?
         RETURNING merchant_id, status, source_sample, updated_at`
     )
-    .bind(JSON.stringify(next), mid)
+    .bind(JSON.stringify(existing.brandVoice ? { ...next, brandVoice: existing.brandVoice } : next), mid)
     .first();
 
   if (!row) {
@@ -348,4 +356,24 @@ export function profileToPromptBlock(profile) {
 ${lines.join("\n")}
 
 هذي البصمة تصف **المتجر** لا هذا المنتج: استخدميها لتثبيت الأسلوب والنبرة والمفردات عبر كل المنتجات، وممنوع اشتقاق أي مواصفة أو حقيقة عن المنتج الحالي منها.`;
+}
+
+/** «لهجة متجري» (brandVoice.js): تُحفظ بصف البصمة نفسه دون لمس حالة البصمة أو حقولها الستة. */
+export async function saveBrandVoice(env, { merchantId, voice } = {}) {
+  const mid = requireMerchantId(merchantId);
+  const db = requireDb(env);
+  const v = normalizeBrandVoice(voice);
+  if (!v) throw invalid("صف أسلوب متجرك أو الصق نموذجاً من كتابتك (٢٠ حرفاً على الأقل).", "storeProfile: empty brand voice");
+  const row = await db.prepare("SELECT profile FROM store_profiles WHERE merchant_id = ?").bind(mid).first();
+  let current = {};
+  try { current = row ? JSON.parse(row.profile) || {} : {}; } catch { current = {}; }
+  await db
+    .prepare(
+      `INSERT INTO store_profiles (merchant_id, profile, status, source_sample, updated_at)
+       VALUES (?, ?, 'draft', 0, datetime('now'))
+       ON CONFLICT(merchant_id) DO UPDATE SET profile = excluded.profile, updated_at = datetime('now')`
+    )
+    .bind(mid, JSON.stringify({ ...current, brandVoice: v }))
+    .run();
+  return v;
 }

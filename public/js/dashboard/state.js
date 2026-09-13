@@ -20,6 +20,8 @@ export const S = {
   // خيارات المنتج المختار (JSON من سلة) — تُمرَّر للتوليد كبيانات مؤكَّدة.
   selectedVariants: null,
   catalogNextOffset: 0,
+  // رقم صفحة «منتجاتي» الحالية (من الصفر) — صفحات مرقّمة بدل «عرض المزيد».
+  catalogPage: 0,
   catalogLoadedOnce: false,
   lastCatalogTotal: 0,
   catalogRefreshTimer: null,

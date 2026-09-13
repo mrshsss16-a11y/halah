@@ -3,6 +3,7 @@
 import { S } from "./state.js";
 import { postBulkStatus, postBulkGenerateAll } from "./api.js";
 import { loadReview } from "./review.js";
+import { openReviewModal } from "./reviewModal.js";
 
 const escHtml = window.escHtml;
 
@@ -37,7 +38,8 @@ export async function pollBulkJob(jobId) {
         document.getElementById("bulkProgressLabel").innerText = `اكتمل: ${data.succeeded} جاهز للمراجعة، ${data.failed} فشل/مؤجَّل`;
         clearInterval(S.bulkPollTimer);
         document.getElementById("bulkGenerateBtn").disabled = false;
-        loadReview("pending");
+        // اكتمل التوليد الجماعي ⇒ نافذة «قبل وبعد» تُفتح مباشرة لمراجعة الأوصاف واحداً واحداً (طلب المالك 2026-09-13).
+        loadReview("pending").then(() => { if (S.reviewRows.length) openReviewModal(); });
       } else if (data.succeeded > 0 && (data.processed % 20 === 0)) {
         loadReview(S.reviewState);
       }

@@ -13,7 +13,7 @@ import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
 import { listPriorityCatalog, countCatalog, selectCatalogBySkus } from "../../../_lib/domain/catalog.js";
 
 const MAX_ROWS = 500;
-const TONES = ["white", "formal", "luxury", "deals", "funny"];
+const TONES = ["white", "formal", "luxury", "deals", "funny", "brand"];
 
 async function bulkGenerateHandler(body, env, request) {
   const rl = await checkRateLimit(env, clientIp(request), "bulk_generate", 3, 300);

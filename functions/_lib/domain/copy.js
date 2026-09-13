@@ -15,6 +15,7 @@ import { categoryMismatch } from "../ai/productType.js";
 import { splitSentencesKeep } from "./copyPhrases.js";
 import { productOnlyNotes } from "./copyNotes.js";
 import { preserveMerchantFacts } from "./copyFacts.js";
+import { brandVoiceBlock, BRAND_TONE } from "./brandVoice.js";
 import { copyCategoryFor } from "../ai/decisionQuestions.js";
 const WEARABLE = new Set(["apparel", "shoes", "bags", "jewelry", "watches"]);
 import { polishPage, pageText } from "./copyPage.js";
@@ -32,7 +33,8 @@ export const TONE_LABELS = {
   formal: "فصحى رسمية راقية",
   luxury: "فخامة وحصرية",
   deals: "حماس عروض بدون إلحاح كاذب",
-  funny: "خفة دم سعودية لطيفة"
+  funny: "خفة دم سعودية لطيفة",
+  brand: "لهجة متجر التاجر المحفوظة — موصوفة بالتفصيل في تعليمات النظام"
 };
 
 /**
@@ -139,6 +141,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // كما هو حرفياً، لا أن يُسقط توليد المحتوى.
   const profileRow = await getProfile(env, { merchantId }).catch(() => null);
   const profileBlock = approvedProfileBlock(profileRow);
+  // «لهجة متجري» تُحقن فقط حين يختارها التاجر؛ بلا لهجة محفوظة صالحة يرجع التوليد للنبرة الافتراضية.
+  const voiceBlock = tone === BRAND_TONE ? brandVoiceBlock(profileRow?.brandVoice) : "";
+  const writeTone = tone === BRAND_TONE && !voiceBlock ? "white" : tone;
 
   // كتيب مصطلحات الفئة: يوجّه التسمية بمرحلة الرؤية، ثم يُلزم الوصف النهائي
   // بنفس المصطلحات. فئة غير مغطاة ⇒ "" ⇒ لا فرق عن السلوك القديم.
@@ -220,11 +225,11 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
     : [];
 
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock, productName: name, category }) + lessonsBlock(lessons, "writer");
-  const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock, productName: name, category }) + voiceBlock + lessonsBlock(lessons, "writer");
+  const toneLabel = TONE_LABELS[writeTone] || TONE_LABELS.white;
   // السعر لا يُمرَّر للنموذج (2026-09-11): كان يعود داخل نص الوصف («السعر: 83
   // ريال») فيتقادم مع أول تعديل سعر بالمتجر. يبقى لـJSON-LD فقط عبر parseSeoResponse.
-  const userMsg = `اسم المنتج: ${name}\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${tone})`;
+  const userMsg = `اسم المنتج: ${name}\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${writeTone})`;
 
   // آخر مخرج خام ومزوّده: سجل فشل التحليل كان بلا سبب ظاهر (2026-09-12 01:24).
   const lastAsk = { tier: "-", raw: "", errors: "" };

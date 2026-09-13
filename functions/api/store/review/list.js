@@ -35,6 +35,7 @@ function toView(row) {
     excerpt: p.copywriting?.excerpt || null,
     highlights: Array.isArray(p.copywriting?.highlights) ? p.copywriting.highlights.slice(0, 8) : [],
     faqs: Array.isArray(p.faqs) ? p.faqs.slice(0, 5) : [],
+    specsTable: Array.isArray(p.specsTable) ? p.specsTable.slice(0, 15) : [],
     seo: p.seo ? { title: p.seo.title || null, seoTitle: p.seo.seoTitle || null, metaDescription: p.seo.metaDescription || null, focusKeyword: p.seo.focusKeyword || null } : null,
     editedAt: p.editedAt || null,
     reviewedAt: row.reviewed_at || null,
