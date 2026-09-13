@@ -14,7 +14,7 @@ import {
 } from "./copyPhrases.js";
 import { dropAttachedClaims, dropPhotoLeaks, ATTACHED, otherItem } from "./copyNotes.js";
 import { unsourcedClaims, fixSizeChartClosing } from "./copyClaims.js";
-import { unsourcedJudgment, stripJudgments, stripJudgmentWords } from "./copyJudgments.js";
+import { unsourcedJudgment, stripJudgments, stripJudgmentWords, hasPraiseIdiom } from "./copyJudgments.js";
 import { propItemIn } from "./copyParse.js";
 
 // دعوة البيع داخل نص قصير (عنوان، نقطة، وسم): تُحذف الكلمة لا العنصر كله — «قميص رجالي كتان اطلبه الحين».
@@ -121,6 +121,18 @@ export function pageText(parsed) {
   ].filter((x) => typeof x === "string" && x.trim()).join("\n");
 }
 
+// «… للسهرات. فستان سهرة بنفسجي بذيل، بقصّة ضيقة وياقة» (nexos 2026-09-13): ميتا قصيرة أُكملت بنبذة تبدأ بنفس
+// الافتتاح ثم قُصّت عند ١٦٠. التكرار يُقطع، ونصف الجملة الأخيرة يُترك لآخر جملة تامة.
+function trimMetaRepeat(meta) {
+  const t = String(meta || "").trim();
+  const head = t.split(/\s+/).slice(0, 4).join(" ");
+  const again = head.split(" ").length === 4 ? t.indexOf(head, head.length) : -1;
+  let out = again > 0 ? t.slice(0, again).trim() : t;
+  const end = Math.max(out.lastIndexOf("."), out.lastIndexOf("؟"), out.lastIndexOf("!"));
+  if (!/[.!؟]$/u.test(out) && end >= 60) out = out.slice(0, end + 1);
+  return out;
+}
+
 /** يلمّع كل حقول المخرج في مكانه. */
 export function polishPage(parsed, { name = "", sourceText = "", notes = "", category = "" } = {}) {
   const ctx = { name, sourceText, notes, category, sizes: sizeOptions(sourceText) };
@@ -140,7 +152,8 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   if (typeof cw.objectionKiller === "string") cw.objectionKiller = polishProse(cw.objectionKiller, ctx);
   if (typeof cw.callToAction === "string" && unsourced(cw.callToAction)) cw.callToAction = "";
   cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
-    .filter((h) => typeof h === "string" && !claimsOtherItem(h, name) && !SALES_CTA.test(h) && !unsourced(h))
+    // «اللون البنفسجي يلفت النظر في السهرات» — حذف التعبير يترك «اللون البنفسجي في السهرات»: النقطة كلها مدح.
+    .filter((h) => typeof h === "string" && !claimsOtherItem(h, name) && !SALES_CTA.test(h) && !unsourced(h) && !hasPraiseIdiom(h, sourceText))
     .map((h) => cut(polishShort(h, ctx)))
     .filter((h) => words(h) >= MIN_HIGHLIGHT_WORDS);
   // نقطة لا تضيف كلمة خارج العنوان واسم المنتج («تنورة ميدي سوداء بكسرات عريضة») تكرار لا ميزة. تلخيص جملة
@@ -158,7 +171,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
 
   seo.title = cut(polishShort(seo.title, ctx)) || String(name || "").trim();
   seo.seoTitle = cut(polishShort(seo.seoTitle, ctx)) || seo.title;
-  seo.metaDescription = cut(polishProse(seo.metaDescription, ctx));
+  seo.metaDescription = trimMetaRepeat(cut(polishProse(seo.metaDescription, ctx)));
   if (seo.jsonLdSchema && typeof seo.jsonLdSchema === "object") seo.jsonLdSchema.description = seo.metaDescription;
   if (typeof seo.focusKeyword === "string") seo.focusKeyword = polishShort(seo.focusKeyword, ctx) || String(name || "").trim();
   if (Array.isArray(seo.lsiKeywords)) seo.lsiKeywords = [...new Set(seo.lsiKeywords.filter((k) => !unsourced(k) && !unseenCut(k)).map((k) => polishShort(k, ctx)).filter(Boolean))];

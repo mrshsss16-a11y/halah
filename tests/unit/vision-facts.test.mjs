@@ -135,4 +135,13 @@ async function main() {
   }
 }
 
-main().then(done);
+async function nameEcho() {
+  const { applyVisionFacts: apply } = await import("../../functions/_lib/domain/visionFacts.js");
+  const page = { copywriting: { description: "فستان ميدي بصدر مربع وكم منفوش بقصّة واسعة." }, specsTable: [] };
+  apply(page, { length: "ميدي", fit: "بقصّة A", neckline: "مربعة", sleeves: "منفوخة", surface: "مطفي", pattern: "منقوش" }, { name: "فستان ميدي بصدر مربع وكم منفوش" });
+  const first = page.copywriting.description;
+  assert(first === "فستان ميدي بصدر مربع وكم منفوش بقصّة A، بقماش مطفي.", `VFX-1: الياقة والأكمام المذكورة باسم التاجر بصيغة أخرى لا تُعاد، و«منقوش» العامة لا تدخل الجملة («${first}»)`);
+  assert(page.specsTable.some((r) => r.value === "منقوش") && page.specsTable.some((r) => r.value === "مربعة"), "VFX-2: المواصفات تبقى كاملة");
+}
+
+main().then(nameEcho).then(done);

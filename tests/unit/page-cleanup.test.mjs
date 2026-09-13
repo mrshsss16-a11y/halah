@@ -43,6 +43,24 @@ async function main() {
   polishPage(skirtReal, { name: "تنورة", sourceText: "تنورة", notes: "اللون: أسود وأبيض. الخصر: برباط. التفاصيل: بليسيه. النقشة: مورد." });
   assert(skirtReal.copywriting.description.startsWith("تنورة ميدي سوداء وبيضاء برباط عند الخصر، بطيّات بليسيه"), `PC-22: «سوداء وأبيض» تؤنَّث مع فاصل، وحذف «بقصّة مستقيمة» غير المرئية يعيد «برباط» لا «ورباط» («${skirtReal.copywriting.description}»)`);
 
+  const nexosPage = { copywriting: { description: "فستان سهرة بنفسجي بذيل بطول ماكسي.", excerpt: "", whatsapp: "", highlights: ["اللون البنفسجي يلفت النظر في السهرات", "الطول الماكسي يمنح الإطلالة امتداداً واضحاً", "الشق الجانبي يضيف تفصيلاً بارزاً للتنورة", "فتحة ظهر وشق جانبي بالتنورة"] },
+    seo: { metaDescription: "فستان سهرة بنفسجي بذيل، بقصّة ضيقة ولمسة لامعة وفتحة ظهر وشق جانبي. راجعي جدول المقاسات قبل الطلب. فستان سهرة بنفسجي بذيل، بقصّة ضيقة وياقة" },
+    faqs: [{ q: "ما تفاصيل قصّة الفستان؟", a: "الفستان بطول ماكسي وقصّة ضيقة، وياقة دائرية وأكمام بلا أكمام." }], specsTable: [], tags: [] };
+  polishPage(nexosPage, { name: "فستان سهرة بنفسجي بذيل", sourceText: "فستان سهرة بنفسجي بذيل فتحة ظهر شق جانبي", notes: "اللون: بنفسجي. الطول: ماكسي. القصّة: ضيقة. الياقة: دائرية. الأكمام: بلا أكمام. سطح القماش: لامع." });
+  assert(nexosPage.seo.metaDescription === "فستان سهرة بنفسجي بذيل، بقصّة ضيقة ولمسة لامعة وفتحة ظهر وشق جانبي. راجعي جدول المقاسات قبل الطلب.", `PC-23: ميتا بتكملة تعيد الافتتاح تُقطع عند التكرار وتنتهي بجملة تامة («${nexosPage.seo.metaDescription}»)`);
+  assert(nexosPage.faqs[0]?.a === "الفستان بطول ماكسي وقصّة ضيقة، وياقة دائرية وبلا أكمام.", `PC-24: «وأكمام بلا أكمام» ⇒ «وبلا أكمام» («${nexosPage.faqs[0]?.a}»)`);
+  const nexosHl = nexosPage.copywriting.highlights.join(" | ");
+  assert(nexosHl === "فتحة ظهر وشق جانبي بالتنورة", `PC-25: نقطة مبنية على تعبير مدح تُحذف كاملة لا تبقى بقايا («${nexosHl}»)`);
+
+  {
+    const { cleanPublishedFields } = await import("../../functions/_lib/domain/copyParse.js");
+    const full = { copywriting: { description: "فستان سهرة بنفسجي بذيل.", highlights: ["اللون البنفسجي يلفت النظر في السهرات", "الطول الماكسي يمنح الإطلالة امتداداً واضحاً", "فتحة ظهر وشق جانبي بالتنورة"] }, seo: {}, faqs: [], specsTable: [], tags: [] };
+    const src = "فستان سهرة بنفسجي بذيل فتحة ظهر شق جانبي";
+    cleanPublishedFields(full, { sourceText: src, name: "فستان سهرة بنفسجي بذيل" });
+    polishPage(full, { name: "فستان سهرة بنفسجي بذيل", sourceText: src, notes: "" });
+    assert(full.copywriting.highlights.join(" | ") === "فتحة ظهر وشق جانبي بالتنورة", `PC-26: السلسلة كاملة (cleanPublishedFields ثم polishPage) لا تترك بقايا نقطة مدح («${full.copywriting.highlights.join(" | ")}»)`);
+  }
+
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");

@@ -30,7 +30,10 @@ function adjFor(src) {
 
 // تعابير مدح لا تصف القطعة — تُحذف مهما كانت الصفة المجاورة.
 const IDIOMS = [
-  `(?:ت|ي)(?:خطف|لفت|جذب|سرق)[ \\t]+(?:ال)?(?:[أا]نظار|انتباه|قلوب)(?:[ \\t]+فعل${T}ا${T})?`,
+  `(?:ت|ي)(?:خطف|لفت|جذب|سرق)[ \\t]+(?:ال)?(?:[أا]نظار|نظر|انتباه|قلوب)(?:[ \\t]+فعل${T}ا${T})?`,
+  // نقاط nexos 2026-09-13: «الطول الماكسي يمنح الإطلالة امتداداً واضحاً» · «الشق الجانبي يضيف تفصيلاً بارزاً للتنورة».
+  `(?:ت|ي)منح(?:ك|كِ|ها|ه)?[ \\t]+(?:ال)?[إا]طلال(?:ة|ه)[^.،؟!\\n]*`,
+  `(?:ت|ي)ضيف[ \\t]+تفصيل${T}(?:ا${T})?[ \\t]+(?:بارز|واضح|لافت)${T}(?:ا${T})?`,
   `(?:ت|ي)(?:جنن|هبل)`,
   `(?:ت|ي)فتح[ \\t]+(?:ال)?نفس(?:[ \\t]+والله)?`,
   `(?:لا|ما)[ \\t]+(?:مثيل[ \\t]+(?:لها|له)|(?:لها|له)[ \\t]+مثيل)`,
@@ -66,6 +69,11 @@ function firstJudgment(text, sourceText = "") {
   const w = wordRe(sourceText)?.exec(t);
   if (w) hits.push({ text: w[0], index: w.index, idiom: false });
   return hits.sort((a, b) => a.index - b.index)[0] || null;
+}
+/** تعبير مدح كامل غير مسند («يلفت النظر»، «يمنح الإطلالة…») — النقطة المبنية عليه لا يبقى منها وصف. */
+export function hasPraiseIdiom(text, sourceText = "") {
+  const t = String(text || "");
+  return IDIOMS.some((re) => { const m = t.match(re); return m && !idiomSourced(m[0], sourceText); });
 }
 export function unsourcedJudgment(text, sourceText = "") {
   return firstJudgment(text, sourceText)?.text.trim() || null;

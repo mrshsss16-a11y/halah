@@ -3,7 +3,7 @@
 // انتزاع الـJSON نفسه صار بـ`ai/parseModelJson.js` ويشترك فيه `chat.js`.
 import { extractBalancedJson } from "../ai/parseModelJson.js";
 import { splitSentencesKeep, joinSentences } from "./copyPhrases.js";
-import { stripJudgments, stripJudgmentWords, unsourcedJudgment } from "./copyJudgments.js";
+import { stripJudgments, stripJudgmentWords, unsourcedJudgment, hasPraiseIdiom } from "./copyJudgments.js";
 
 /**
  * خطأ مصنَّف: تعذّر انتزاع JSON من مخرج النموذج بعد إعادة محاولة واحدة.
@@ -339,7 +339,9 @@ export function cleanPublishedFields(parsed, { sourceText, name = "" } = {}) {
   // الحكم يُزال بكلمته ثم يُفحص الباقي: «عباية كحلي بقماش كريب فاخر» كانت تُحذف نقطةً كاملة (2026-09-13).
   const sj = (t) => (sourceText === undefined || typeof t !== "string" ? t : stripJudgmentWords(t, sourceText));
   const cw = parsed.copywriting || (parsed.copywriting = {});
-  cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : []).map(sj)
+  // نقطة مبنية على تعبير مدح تُحذف قبل حذف كلماته، وإلا بقي منها «اللون البنفسجي في السهرات» (nexos 2026-09-13).
+  cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
+    .filter((h) => typeof h !== "string" || sourceText === undefined || !hasPraiseIdiom(h, sourceText)).map(sj)
     .filter((h) => !bad(h) && words(h) >= MIN_HIGHLIGHT_WORDS && !(name && propItemIn(h, name)));
   parsed.faqs = (Array.isArray(parsed.faqs) ? parsed.faqs : [])
     .map((f) => { const q = sj(f?.q), a = f && sourceText !== undefined ? cleanDescription(String(f.a || ""), { sourceText }) : f?.a; return !f || (q === f.q && a === f.a) ? f : { ...f, q, a }; })
