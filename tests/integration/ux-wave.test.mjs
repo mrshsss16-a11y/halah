@@ -98,6 +98,23 @@ async function runTests() {
       "U5: معرّف عميل قوقل لا يُكتب بالصفحة — يُقرأ من السر عبر /api/auth/google_client");
     const gc = await readSrc("functions/api/auth/google_client.js");
     assert(/env\?\.GOOGLE_CLIENT_ID/.test(gc) && /onRequestGet/.test(gc) && !/CLIENT_SECRET/.test(gc), "U6: نقطة معرّف العميل تقرأ السر العلني وحده");
+    {
+      const idx = await readSrc("index.html");
+      assert(idx.includes('<link rel="canonical" href="https://halah.aura.sa/"/>') && !idx.includes("hala.sa/\""), "SEO-1: canonical الرئيسية على halah.aura.sa لا نطاق لا نملكه");
+      for (const slug of ["pricing", "faq", "privacy", "terms", "data-deletion"]) {
+        const src = await readSrc(`${slug}.html`);
+        assert(src.includes(`<link rel="canonical" href="https://halah.aura.sa/${slug}"/>`), `SEO-2: canonical ذاتي لـ${slug}`);
+      }
+      for (const f of ["login.html", "consultation.html", "partials/dashboard-head.html", "partials/admin-head.html"]) {
+        assert((await readSrc(f)).includes('<meta name="robots" content="noindex, nofollow"/>'), `SEO-3: ${f} لا يُفهرس`);
+      }
+      const robots = await readSrc("public/robots.txt");
+      const sitemap = await readSrc("public/sitemap.xml");
+      assert(/Disallow: \/api\//.test(robots) && /Sitemap: https:\/\/halah\.aura\.sa\/sitemap\.xml/.test(robots) && !/Disallow: \/(login|dashboard)/.test(robots), "SEO-4: robots يمنع /api/ فقط ويشير لخريطة الموقع");
+      assert(sitemap.startsWith("<?xml") && !/login|dashboard|admin/.test(sitemap) && (sitemap.match(/<loc>/g) || []).length === 6, "SEO-5: خريطة الموقع للصفحات العامة الست فقط");
+      const hdr = await readSrc("_headers");
+      assert(/https:\/\/:project\.pages\.dev\/\*\s+X-Robots-Tag: noindex/.test(hdr), "SEO-6: مرآة pages.dev بـX-Robots-Tag: noindex");
+    }
   }
 
   // ---- U3: index.html ادعاءات صادقة ----
