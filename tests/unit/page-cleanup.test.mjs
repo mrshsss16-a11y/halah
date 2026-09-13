@@ -69,6 +69,23 @@ async function main() {
   polishPage(plaidTags, { name: "فستان", sourceText: "فستان", notes: "النقشة: كاروهات." });
   assert(plaidTags.tags.join("|") === "فستان أحمر|فستان ميدي|فستان كاروهات", `PC-28: وسم يسمّي قطعة أخرى («بلايز نسائية») يُحذف من صفحة فستان («${plaidTags.tags.join("|")}»)`);
 
+  {
+    const src = "عباية نص بشت سوداء عملية خيار طرحة مع العباية";
+    const abaya = { copywriting: { description: "عباية نص بشت سوداء بقصّة واسعة وأكمام واسعة. مصنوعة في السعودية وتُغسل يدوياً.", excerpt: "عباية نص بشت سوداء وتأتي معها طرحة.", whatsapp: "" },
+      seo: { metaDescription: "عباية نص بشت سوداء مع خيار طرحة مع العباية." }, faqs: [], specsTable: [], tags: [] };
+    polishPage(abaya, { name: "عباية نص بشت سوداء عملية", sourceText: src, notes: "" });
+    assert(/تأتي معها طرحة/.test(abaya.copywriting.excerpt) && /طرحة/.test(abaya.seo.metaDescription), `PC-29: قطعة ذكرها التاجر («خيار طرحة مع العباية») لا تُحذف كادعاء مرفق («${abaya.copywriting.excerpt}» / «${abaya.seo.metaDescription}»)`);
+    const bag = { copywriting: { description: "عباية سوداء بقصّة واسعة وأكمام واسعة ولون أسود.", excerpt: "عباية سوداء مرفق بها تنورة.", whatsapp: "" }, seo: { metaDescription: "مرفق بها تنورة." }, faqs: [], specsTable: [], tags: [] };
+    polishPage(bag, { name: "عباية سوداء", sourceText: "عباية سوداء", notes: "" });
+    assert(!/تنورة/.test(bag.copywriting.excerpt) && bag.seo.metaDescription.startsWith("عباية سوداء بقصّة واسعة وأكمام واسعة ولون أسود."), `PC-30: قطعة مرفقة لم يذكرها التاجر تُحذف، والميتا الفارغة تُبنى من الوصف («${bag.seo.metaDescription}»)`);
+  }
+
+  {
+    const honey = { copywriting: { description: "عسل سدر جبلي بوزن 500 جرام. تجيك الحبوب كما وردت في بيانات المنتج. يُحفظ ويُستخدم وفق إرشادات المتجر. راجع طريقة التحضير المناسبة لك قبل الاستخدام.", excerpt: "", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
+    polishPage(honey, { name: "عسل سدر", sourceText: "عسل سدر جبلي 500 جرام", notes: "" });
+    assert(honey.copywriting.description === "عسل سدر جبلي بوزن 500 جرام. تجيك الحبوب.", `PC-31: إحالات بلا مضمون تُحذف («${honey.copywriting.description}»)`);
+  }
+
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");

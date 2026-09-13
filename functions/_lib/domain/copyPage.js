@@ -15,7 +15,7 @@ import {
 import { dropAttachedClaims, dropPhotoLeaks, ATTACHED, otherItem } from "./copyNotes.js";
 import { unsourcedClaims, fixSizeChartClosing } from "./copyClaims.js";
 import { unsourcedJudgment, stripJudgments, stripJudgmentWords, hasPraiseIdiom } from "./copyJudgments.js";
-import { propItemIn } from "./copyParse.js";
+import { propItemIn, sourcedPropItem } from "./copyParse.js";
 
 // دعوة البيع داخل نص قصير (عنوان، نقطة، وسم): تُحذف الكلمة لا العنصر كله — «قميص رجالي كتان اطلبه الحين».
 const CTA_WORDS = /(?<!\p{L})(?:تسوقي|تسوّقي|اطلبي|اطلبيها|اطلبه|اطلبها|احصلي|سارعي|اقتنيها|احجزيها|احجزي|خذيها|كلمينا|راسلينا|الحقي(?:[ \t]+(?:ب|على)[ \t]*\p{L}+)?)(?:[ \t]+(?:الآن|الان|الحين|اليوم))?(?!\p{L})|(?<!\p{L})لا[ \t]+تفوتي(?!\p{L})|(?<!\p{L})(?:تبين|تبغين)[ \t]+تطلبين؟?/gu;
@@ -32,7 +32,7 @@ const GENERAL_FILLER = [
 ];
 
 const words = (t) => String(t || "").split(/\s+/).filter(Boolean).length;
-const claimsOtherItem = (t, name) => ATTACHED.test(String(t || "")) && otherItem(t, name);
+const claimsOtherItem = (t, name, sourceText = "") => ATTACHED.test(String(t || "")) && otherItem(t, name) && !sourcedPropItem(t, name, sourceText);
 
 // ── تنظيف آلي لصفحة كتبها نموذج أضعف (تنورة 2026-09-13 01:01، Cloudflare) ─────────────────────────
 const normKey = (t) => String(t || "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
@@ -71,7 +71,7 @@ function polishProse(text, { name, sourceText, sizes, notes, category }) {
   const sourced = joinSentences(splitSentencesKeep(dropPhotoLeaks(String(text || ""), name))
     .map((p) => ({ ...p, s: unsourcedJudgment(p.s, sourceText) ? stripJudgments(p.s, { sourceText, name }) : p.s }))
     .filter(({ s }) => s && !unsourcedClaims(s, sourceText).length && !unsourcedJudgment(s, sourceText) && !hasPlaceholderOrPrice(s)));
-  const t = dropSleevesForBottoms(dropUnseenLength(dropForeignScript(fixNoteLabels(dropAttachedClaims(sourced, name))), notes), name);
+  const t = dropSleevesForBottoms(dropUnseenLength(dropForeignScript(fixNoteLabels(dropAttachedClaims(sourced, name, sourceText))), notes), name);
   const out = dropRepeatedSentences(fixSizeRange(fixColorAgreement(fixCommonGrammar(dropSalesCta(fixTrouserLength(fixLatinWords(t, sourceText), name)))), sizes))
     // «…من الخصر، سطحها اللامع.» ⇒ «…، وسطحها لامع.» (نبذة وميتا حقيقيتان 2026-09-12 18:46).
     .replace(/،[ \t]*(\p{L}+ها)[ \t]+ال(\p{L}+)(?=[ \t]*(?:[.!؟]|$))/gu, "، و$1 $2")
@@ -85,6 +85,11 @@ function polishProse(text, { name, sourceText, sizes, notes, category }) {
     .replace(/[ \t]*(?<!\p{L})(?:و|ب)(?:تصميم|طابع|لمسة|مظهر|إطلالة|اطلالة)(?=[ \t]*[،.!؟])/gu, "")
     .replace(/،[ \t]*(?=[.!؟])/gu, "")
     .replace(/(?<=^|[.!؟\n])[ \t]*[.،](?=\s|$)/gu, "")
+    // إحالات بلا مضمون (منتجات صعبة 2026-09-13): «كما وردت في بيانات المنتج» كشف آلية، و«وفق إرشادات المتجر»
+    // و«راجع طريقة التحضير المناسبة لك» تحيل لمعلومة غير منشورة — الإحالة ليست إجابة (معيار C2).
+    .replace(/[ \t]*،?[ \t]*(?<!\p{L})(?:كما|مثل[ \t]+ما)[ \t]+(?:ورد(?:ت)?|ذُكر(?:ت)?|ذكرت?)[ \t]+(?:في|ب)[ \t]*(?:ال)?(?:بيانات|وصف|معلومات)[ \t]+(?:ال)?(?:منتج|متجر)(?!\p{L})/gu, "")
+    .replace(/(?<=^|[.!؟\n])[ \t]*[^.!؟\n]*(?:وفق|حسب|بحسب)[ \t]+(?:إرشادات|ارشادات|تعليمات)[ \t]+(?:ال)?متجر[^.!؟\n]*[.!؟]?/gu, "")
+    .replace(/(?<=^|[.!؟\n])[ \t]*راجع(?:ي)?[ \t]+طريقة[ \t]+(?:ال)?(?:تحضير|استخدام)[ \t]+(?:ال)?مناسب(?:ة)?[ \t]+(?:لك|لكِ)[^.!؟\n]*[.!؟]?/gu, "")
     // «جدول المقاسات الموجود بالوصف»: الوصف لا يحوي جدولاً.
     .replace(/[ \t]*(?:ال)?موجود[ \t]+(?:ب|في[ \t]+)(?:ال)?وصف(?!\p{L})/gu, "")
     // «راجعي جدول المقاسات الموضح أدناه» (تنورة 2026-09-12 21:11): لا جدول تحت الوصف.
@@ -153,7 +158,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   if (typeof cw.callToAction === "string" && unsourced(cw.callToAction)) cw.callToAction = "";
   cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
     // «اللون البنفسجي يلفت النظر في السهرات» — حذف التعبير يترك «اللون البنفسجي في السهرات»: النقطة كلها مدح.
-    .filter((h) => typeof h === "string" && !claimsOtherItem(h, name) && !SALES_CTA.test(h) && !unsourced(h) && !hasPraiseIdiom(h, sourceText))
+    .filter((h) => typeof h === "string" && !claimsOtherItem(h, name, sourceText) && !SALES_CTA.test(h) && !unsourced(h) && !hasPraiseIdiom(h, sourceText))
     .map((h) => cut(polishShort(h, ctx)))
     .filter((h) => words(h) >= MIN_HIGHLIGHT_WORDS);
   // نقطة لا تضيف كلمة خارج العنوان واسم المنتج («تنورة ميدي سوداء بكسرات عريضة») تكرار لا ميزة. تلخيص جملة
@@ -164,7 +169,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   // سؤال يدّعي قطعة مرفقة يُحذف بسؤاله وجوابه: جواب «نعم مرفق بها بلوزة» كذب على العميلة.
   parsed.faqs = (Array.isArray(parsed.faqs) ? parsed.faqs : [])
     // سؤال جوابه ادعاء غير مسند («مقاومة للماء؟ نعم…») يُحذف كاملاً: حذف الجملة يترك سؤالاً بلا جواب.
-    .filter((f) => f && !claimsOtherItem(`${f.q || ""} ${f.a || ""}`, name) && !unsourced(`${f.q || ""} ${f.a || ""}`) && !unseenCut(`${f.q || ""} ${f.a || ""}`))
+    .filter((f) => f && !claimsOtherItem(`${f.q || ""} ${f.a || ""}`, name, sourceText) && !unsourced(`${f.q || ""} ${f.a || ""}`) && !unseenCut(`${f.q || ""} ${f.a || ""}`))
     .map((f) => ({ ...f, q: polishShort(f.q, ctx), a: polishProse(f.a, ctx) }))
     // جواب من كلمة أو ثلاث بلا رقم («اللون أسود.») يعيد مواصفة لا يجيب سؤالاً؛ «40 ملم.» معلومة تبقى.
     .filter((f) => f.q && f.a && (words(f.a) >= 4 || /[\d٠-٩]/.test(f.a)));
@@ -172,6 +177,12 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   seo.title = cut(polishShort(seo.title, ctx)) || String(name || "").trim();
   seo.seoTitle = cut(polishShort(seo.seoTitle, ctx)) || seo.title;
   seo.metaDescription = trimMetaRepeat(cut(polishProse(seo.metaDescription, ctx)));
+  // ميتا فارغة أو مبتورة بعد التنظيف (عباية نص بشت 2026-09-13): تُبنى من جمل الوصف المنظّف حتى ١٦٠ حرفاً — لا حقل فارغ.
+  if (words(seo.metaDescription) < 8) {
+    const meta = splitSentencesKeep(cw.description.replace(/\n+/g, " ")).map((x) => x.s.trim()).filter(Boolean)
+      .reduce((acc, x) => (!acc ? x : `${acc} ${x}`.length <= 160 ? `${acc} ${x}` : acc), "");
+    if (words(meta) >= 8) seo.metaDescription = meta.length <= 160 ? meta : meta.slice(0, 160).replace(/\s+\S*$/u, "");
+  }
   if (seo.jsonLdSchema && typeof seo.jsonLdSchema === "object") seo.jsonLdSchema.description = seo.metaDescription;
   if (typeof seo.focusKeyword === "string") seo.focusKeyword = polishShort(seo.focusKeyword, ctx) || String(name || "").trim();
   if (Array.isArray(seo.lsiKeywords)) seo.lsiKeywords = [...new Set(seo.lsiKeywords.filter((k) => !unsourced(k) && !unseenCut(k)).map((k) => polishShort(k, ctx)).filter(Boolean))];

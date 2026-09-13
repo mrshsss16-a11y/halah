@@ -15,6 +15,8 @@ import { categoryMismatch } from "../ai/productType.js";
 import { splitSentencesKeep } from "./copyPhrases.js";
 import { productOnlyNotes } from "./copyNotes.js";
 import { preserveMerchantFacts } from "./copyFacts.js";
+import { copyCategoryFor } from "../ai/decisionQuestions.js";
+const WEARABLE = new Set(["apparel", "shoes", "bags", "jewelry", "watches"]);
 import { polishPage, pageText } from "./copyPage.js";
 import { loadLessons, lessonsBlock, learnFromCopy } from "./copyLessons.js";
 import { visionFactsContext, structuredVisionBlock, settleVisionFacts, factsToNotes, applyVisionFacts } from "./visionFacts.js";
@@ -201,7 +203,8 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // فاخترع خامة وجودة على منتج لم يره. اللغة تُعالَج بالبرومبت لا بالحذف.
   const classified = classifyVisionNotes(rawVisionNotes);
   // الحقائق المنظّمة من قوائم مغلقة تمرّ كما هي: التنقية قصّت «ياقة قميص» إلى «ياقة» و«بحزام» (فستان كاروهات 2026-09-13).
-  const visionNotes = factsCtx.facts ? (classified?.text || "") : productOnlyNotes(classified?.text || "", name);
+  // «الطابع العام» لمنتج غير ملبوس (تمر، قهوة، شاحن) صار «لإطلالة مرتبة بطابع غذائي» (2026-09-13): للملبوسات وحدها.
+  const visionNotes = (factsCtx.facts ? (classified?.text || "") : productOnlyNotes(classified?.text || "", name)).replace(WEARABLE.has(copyCategoryFor({ category, name })) ? /$^/ : /\s*الطابع العام:[^.\n]*\.?/gu, "").trim();
   const visionLanguage = classified?.language || null;
   if (classified?.language === "en") {
     logError({ env }, {

@@ -17,6 +17,8 @@ const UNIT_GROUPS = [
 const MATERIALS = ["قطن", "بوليستر", "حرير", "كريب", "شيفون", "ساتان", "ستان", "جلد", "ستانلس", "فولاذ", "ذهب", "فضة", "زركون", "خشب", "زجاج", "سيراميك", "بلاستيك", "ألمنيوم", "المنيوم", "صوف", "كتان", "نايلون", "مخمل", "دانتيل", "ليكرا", "فيسكوز", "نحاس", "بورسلين"];
 const ORIGIN = /(?<!\p{L})(?:صنع[ \t]+في|صُنع[ \t]+في|المنشأ|منشأ|بلد[ \t]+المنشأ)(?!\p{L})/u;
 const MAX_ROWS = 8;
+// سعر أو خصم أو عرض لا يُنشر أبداً (معيار F5): المتجر يعرض السعر بنفسه ويتغير (بطاقة هدايا 2026-09-13).
+const PRICE_OR_OFFER = /(?<!\p{L})(?:ر\.?\s?س|ريال|﷼|sar|خصم|تخفيض|عرض[ \t]+(?:حالي|خاص|لفترة)|السعر|سعر)(?!\p{L})|\$/iu;
 
 const norm = (t) => String(t || "")
   .replace(/<[^>]+>/g, " ")
@@ -33,7 +35,7 @@ function atoms(clause) {
   const found = [];
   for (const g of UNIT_GROUPS) {
     const alt = g.units.map((u) => esc(norm(u))).join("|");
-    const re = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:${alt})(?![\\p{L}])`, "gu");
+    const re = new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:${alt})(?:ا)?(?![\\p{L}])`, "gu");
     for (const m of n.matchAll(re)) found.push({ kind: "unit", key: g.key, num: m[1], alt });
   }
   const karat = n.match(/عيار\s*(\d{2})/u);
@@ -44,7 +46,8 @@ function atoms(clause) {
 }
 
 function present(atom, visible) {
-  if (atom.kind === "unit") return new RegExp(`(?<![\\d.,])${esc(atom.num)}\\s*(?:${atom.alt})(?![\\p{L}])`, "u").test(visible);
+  // «30 جراماً» بالتنوين = «30 جرام» (قهوة مختصة 2026-09-13).
+  if (atom.kind === "unit") return new RegExp(`(?<![\\d.,])${esc(atom.num)}\\s*(?:${atom.alt})(?:ا)?(?![\\p{L}])`, "u").test(visible);
   if (atom.kind === "karat") return new RegExp(`عيار\\s*${atom.num}`, "u").test(visible);
   if (atom.kind === "material") return new RegExp(`(?<!\\p{L})(?:و|ب)?(?:ال)?${esc(atom.word)}`, "u").test(visible);
   // المنشأ: يكفي ظهور آخر كلمة في المقطع (اسم البلد عادةً).
@@ -83,6 +86,7 @@ export function preserveMerchantFacts(parsed, { name = "", features = "", existi
   const seen = new Set();
   for (const clause of [...clausesOf(features), ...clausesOf(existingDescription)]) {
     if (added >= MAX_ROWS) break;
+    if (PRICE_OR_OFFER.test(clause)) continue;
     const list = atoms(clause);
     if (!list.length) continue;
     const visible = visibleText(parsed, name);
@@ -100,7 +104,7 @@ export function preserveMerchantFacts(parsed, { name = "", features = "", existi
   for (const v of Array.isArray(variants) ? variants : []) {
     if (added >= MAX_ROWS) break;
     const values = (Array.isArray(v?.values) ? v.values : []).map((x) => String(x).trim()).filter(Boolean);
-    if (!v?.name || values.length < 2) continue;
+    if (!v?.name || values.length < 2 || values.some((x) => PRICE_OR_OFFER.test(x)) || PRICE_OR_OFFER.test(v.name)) continue;
     const visible = visibleText(parsed, name);
     const shown = values.filter((x) => visible.includes(norm(x))).length;
     if (shown * 2 >= values.length) continue;

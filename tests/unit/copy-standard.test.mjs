@@ -42,6 +42,28 @@ async function main() {
     assert(n === 0, `CS-6: «65W» تطابق «65 واط» (${n})`);
   }
   {
+    const p = page("بطاقات هدايا المتجر الرقمية تُسلَّم عبر البريد.");
+    preserveMerchantFacts(p, { name: "بطاقات هدايا المتجر", features: "فئة سعرية 50 ر.س (بعرض حالي 25 ر.س)؛ صالحة 12 شهر", variants: [{ name: "القيمة", values: ["50 ر.س", "100 ر.س"] }] });
+    const rows = p.specsTable.map((r) => `${r.key}: ${r.value}`).join(" | ");
+    assert(!/ر\.س|خصم|عرض/.test(rows) && /12 شهر/.test(rows), `CS-12: سعر وخصم وقيم بعملة لا تُنشر بالمواصفات، والمدة تُحفظ («${rows}»)`);
+  }
+  {
+    const p = page("استخدم 30 جراماً لكل لتر ماء.");
+    const n = preserveMerchantFacts(p, { name: "قهوة", features: "طريقة تحضير مقترحة 30 جرام لكل لتر ماء" });
+    assert(n === 0, `CS-13: «30 جراماً» بالتنوين تطابق «30 جرام» (${n})`);
+  }
+  {
+    const { readFileSync } = await import("node:fs");
+    const copySrc = readFileSync(new URL("../../functions/_lib/domain/copy.js", import.meta.url), "utf8");
+    assert(/WEARABLE\.has\(copyCategoryFor\(\{ category, name \}\)\)/.test(copySrc) && /الطابع العام:/.test(copySrc), "CS-14: سطر «الطابع العام» يُحذف من ملاحظات الصورة لغير الملبوسات");
+  }
+  {
+    const { unsourcedClaims } = await import("../../functions/_lib/domain/copyClaims.js");
+    const src = "عسل سدر؛ يُروَّج له بفوائد مضادة للأكسدة تدعم المناعة والهضم";
+    const hits = unsourcedClaims("يُروَّج له بمحتوى من مضادات الأكسدة التي تدعم المناعة والهضم.", src);
+    assert(hits.includes("THERAPEUTIC") && !unsourcedClaims("عسل سدر جبلي بوزن 500 جرام.", src).length, `CS-15: ادعاء صحي على غذاء محظور حتى لو كتبه التاجر، والوصف العادي يمر (${hits.join(",")})`);
+  }
+  {
     const built = buildSallaProductFields({ description: "عسل سدر.", specsTable: [{ key: "الوزن", value: "500 جرام" }, { key: "<b>", value: "x" }] });
     assert(/<h3>المواصفات<\/h3><ul><li>الوزن: 500 جرام<\/li><li>&lt;b&gt;: x<\/li><\/ul>/.test(built.fields.description), "CS-7: المواصفات تُنشر في HTML الوصف ومهرَّبة");
   }

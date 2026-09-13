@@ -1,6 +1,6 @@
 // تنقية ملاحظات الصورة قبل الكاتب، وحذف ادعاء «قطعة مرفقة» — نُقلت من domain/copy.js بلا تغيير
 // سلوكي (2026-09-12) لإفساح سطور ذاكرة الدروس تحت سقف ٤٠٠ سطر.
-import { splitSentences, propItemIn } from "./copyParse.js";
+import { splitSentences, propItemIn, sourcedPropItem } from "./copyParse.js";
 import { splitSentencesKeep, joinSentences, dropForeignScript, isBottomItem, fixLatinWords } from "./copyPhrases.js";
 
 // جمل عن العارضة أو عن قطعة غير المنتج تُحذف من ملاحظات الصورة **قبل** الكاتب. السجل الحي
@@ -27,8 +27,9 @@ function trimAtOtherItem(clause, name) {
 export const otherItem = (text, name) => String(text || "").split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, "")).some((w) => w && (propItemIn(w, name) || propItemIn(w.replace(/^[وب]/, ""), name)));
 export const ATTACHED = /(?<!\p{L})(?:مرفق|مرفقة|مرفقه|يأتي مع|تأتي مع|يشمل|تشمل|طقم)(?!\p{L})/u;
 /** ادعاء أن قطعة أخرى تأتي مع المنتج كذب على العميلة: الجملة تُحذف كاملة. */
-export function dropAttachedClaims(text, name) {
-  return joinSentences(splitSentencesKeep(text).filter(({ s }) => !(ATTACHED.test(s) && otherItem(s, name))));
+export function dropAttachedClaims(text, name, sourceText = "") {
+  // «تأتي معها طرحة» صادقة حين كتبها التاجر («خيار طرحة مع العباية»، 2026-09-13).
+  return joinSentences(splitSentencesKeep(text).filter(({ s }) => !(ATTACHED.test(s) && otherItem(s, name) && !sourcedPropItem(s, name, sourceText))));
 }
 // مشهد التصوير بالنص المنشور (حالات صناعية 2026-09-13): «تظهر العارضة واقفة على أرضية خشبية»، «خلفية استوديو
 // رمادية تحيط بالعارضة»، «لابستها مع قميص»، «مع بنطلون جينز فضفاض تحتها». MODEL_WORD كان يُنقّي الملاحظات وحدها.

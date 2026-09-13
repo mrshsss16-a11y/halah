@@ -318,7 +318,7 @@ export function publishedFieldIssues(parsed, { sourceText, productName } = {}) {
   for (const h of Array.isArray(cw.highlights) ? cw.highlights : []) {
     note(textProblems(h, sourceText), "النقاط");
     if (words(h) < MIN_HIGHLIGHT_WORDS) note(["THIN_HIGHLIGHT"], "النقاط");
-    if (productName && propItemIn(h, productName)) note(["PROP_ITEM"], "النقاط");
+    if (productName && propItemIn(h, productName) && !sourcedPropItem(h, productName, sourceText)) note(["PROP_ITEM"], "النقاط");
   }
   for (const f of Array.isArray(parsed?.faqs) ? parsed.faqs : []) {
     note([...textProblems(f?.q, sourceText), ...textProblems(f?.a, sourceText)], "الأسئلة الشائعة");
@@ -343,7 +343,7 @@ export function cleanPublishedFields(parsed, { sourceText, name = "" } = {}) {
   // نقطة مبنية على تعبير مدح تُحذف قبل حذف كلماته، وإلا بقي منها «اللون البنفسجي في السهرات» (nexos 2026-09-13).
   cw.highlights = (Array.isArray(cw.highlights) ? cw.highlights : [])
     .filter((h) => typeof h !== "string" || sourceText === undefined || !hasPraiseIdiom(h, sourceText)).map(sj)
-    .filter((h) => !bad(h) && words(h) >= MIN_HIGHLIGHT_WORDS && !(name && propItemIn(h, name)));
+    .filter((h) => !bad(h) && words(h) >= MIN_HIGHLIGHT_WORDS && !(name && propItemIn(h, name) && !sourcedPropItem(h, name, sourceText)));
   parsed.faqs = (Array.isArray(parsed.faqs) ? parsed.faqs : [])
     .map((f) => { const q = sj(f?.q), a = f && sourceText !== undefined ? cleanDescription(String(f.a || ""), { sourceText }) : f?.a; return !f || (q === f.q && a === f.a) ? f : { ...f, q, a }; })
     .filter((f) => f && String(f.q || "").trim() && String(f.a || "").trim() && !bad(f.q) && !bad(f.a));
@@ -384,6 +384,7 @@ export function splitSentences(text) {
   return String(text || "").split(/(?<=[.!؟\n])\s+/).filter((s) => s.trim());
 }
 /** اسم القطعة الأخرى إن بدأت بها الجملة، وإلا null. */
+export const sourcedPropItem = (sentence, productName, sourceText = "") => { const src = normAr(sourceText); const items = src ? normAr(sentence).split(/\s+/).map((w) => w.replace(/[^\p{L}]/gu, "")).map((w) => w && (propItemIn(w, productName) || propItemIn(w.replace(/^[وب]/, ""), productName))).filter(Boolean) : []; return items.length > 0 && items.every((w) => src.includes(normAr(w).replace(/^ال/, ""))); }; // قطعة ذكرها التاجر («خيار طرحة مع العباية») ليست قطعة عارضة
 export function propItemIn(sentence, productName) {
   const productGroup = itemGroup(String(productName || "").trim().split(/\s+/)[0] || "");
   if (productGroup < 0) return null;

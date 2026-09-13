@@ -148,7 +148,7 @@ async function shirtCollarNotes() {
   const { readFileSync } = await import("node:fs");
   const { structuredVisionBlock } = await import("../../functions/_lib/domain/visionFacts.js");
   const copySrc = readFileSync(new URL("../../functions/_lib/domain/copy.js", import.meta.url), "utf8");
-  assert(/const visionNotes = factsCtx\.facts \? \(classified\?\.text \|\| ""\) : productOnlyNotes\(/.test(copySrc), "VFX-3: الحقائق المنظّمة لا تمرّ على productOnlyNotes — «ياقة قميص» و«بحزام» كانت تُقصّ");
+  assert(/factsCtx\.facts \? \(classified\?\.text \|\| ""\) : productOnlyNotes\(/.test(copySrc), "VFX-3: الحقائق المنظّمة لا تمرّ على productOnlyNotes — «ياقة قميص» و«بحزام» كانت تُقصّ");
   const block = structuredVisionBlock({ structured: true }, "فستان");
   assert(/معقوداً عند الخصر «درابيه» لا حزام/.test(block) && /«أحمر وأسود»/.test(block), "VFX-4: إرشاد القارئ: العقدة درابيه لا حزام، والكاروهات بلونيها");
 }
