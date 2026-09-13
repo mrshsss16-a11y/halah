@@ -47,7 +47,7 @@ export async function pollBulkJob(jobId) {
       // الشريط كان يتجمّد بصمت للأبد — بعد ٣ فشل متتالٍ نقول ما يصير.
       pollFailures += 1;
       if (pollFailures >= 3) {
-        document.getElementById("bulkProgressLabel").innerText = "توقّف تتبّع التقدّم مؤقتاً بسبب مشكلة اتصال — عملك لسه شغّال بالخلفية، اضغط «تحديث» بتبويب المراجعة لمتابعته.";
+        document.getElementById("bulkProgressLabel").innerText = "توقّف تتبّع التقدّم مؤقتاً بسبب مشكلة اتصال — عملك لسه شغّال بالخلفية، افتح «المراجعة والنشر» واضغط «تحديث» لمتابعته.";
       }
     }
   };
