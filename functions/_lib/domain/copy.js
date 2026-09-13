@@ -199,7 +199,8 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // الملاحظات الإنجليزية تُستخدم ولا تُهدر — إهدارها ترك النموذج بلا حقائق
   // فاخترع خامة وجودة على منتج لم يره. اللغة تُعالَج بالبرومبت لا بالحذف.
   const classified = classifyVisionNotes(rawVisionNotes);
-  const visionNotes = productOnlyNotes(classified?.text || "", name);
+  // الحقائق المنظّمة من قوائم مغلقة تمرّ كما هي: التنقية قصّت «ياقة قميص» إلى «ياقة» و«بحزام» (فستان كاروهات 2026-09-13).
+  const visionNotes = factsCtx.facts ? (classified?.text || "") : productOnlyNotes(classified?.text || "", name);
   const visionLanguage = classified?.language || null;
   if (classified?.language === "en") {
     logError({ env }, {

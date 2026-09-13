@@ -65,6 +65,10 @@ async function main() {
   polishPage(dangling, { name: "ثوب رجالي", sourceText: "ثوب رجالي أبيض ياقة قلاب", notes: "" });
   assert(/بمحاذاة الياقة\./.test(dangling.copywriting.description) && !/للتصميم/.test(dangling.copywriting.description), `PC-27: حذف «تضيف تفصيلاً واضحاً» لا يترك «للتصميم» معلّقة («${dangling.copywriting.description}»)`);
 
+  const plaidTags = { copywriting: { description: "فستان ميدي بنقشة كاروهات.", excerpt: "", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: ["فستان أحمر", "فستان ميدي", "بلايز نسائية", "بلايز", "فستان كاروهات"] };
+  polishPage(plaidTags, { name: "فستان", sourceText: "فستان", notes: "النقشة: كاروهات." });
+  assert(plaidTags.tags.join("|") === "فستان أحمر|فستان ميدي|فستان كاروهات", `PC-28: وسم يسمّي قطعة أخرى («بلايز نسائية») يُحذف من صفحة فستان («${plaidTags.tags.join("|")}»)`);
+
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");

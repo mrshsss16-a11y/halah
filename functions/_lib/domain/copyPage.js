@@ -181,7 +181,8 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   if (Array.isArray(parsed.tags)) {
     const tagKey = (t) => t.replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/\s+/g, " ").trim();
     const seenTags = new Set();
-    parsed.tags = parsed.tags.filter((t) => !unsourced(t) && !unseenCut(t)).map((t) => polishShort(t, ctx)).filter((t) => t && !BARE_ADJ_TAG.test(t) && !seenTags.has(tagKey(t)) && seenTags.add(tagKey(t)));
+    // «بلايز نسائية» وسماً لفستان (تصنيف المتجر، 2026-09-13): وسم يسمّي قطعة أخرى يضلّل البحث.
+    parsed.tags = parsed.tags.filter((t) => !unsourced(t) && !unseenCut(t) && !propItemIn(String(t), name)).map((t) => polishShort(t, ctx)).filter((t) => t && !BARE_ADJ_TAG.test(t) && !seenTags.has(tagKey(t)) && seenTags.add(tagKey(t)));
   }
   if (Array.isArray(parsed.specsTable)) {
     parsed.specsTable = parsed.specsTable
