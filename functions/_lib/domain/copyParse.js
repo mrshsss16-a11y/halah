@@ -1,7 +1,7 @@
 // تحليل مخرَج نموذج الوصف وتطبيعه إلى الكائن الذي يُنشر على صفحة المنتج.
 // نُقل من `api/copy.js` بالمرحلة ٤ (ARCHITECTURE §٢) بلا تغيير سلوكي —
 // انتزاع الـJSON نفسه صار بـ`ai/parseModelJson.js` ويشترك فيه `chat.js`.
-import { extractBalancedJson } from "../ai/parseModelJson.js";
+import { extractBalancedJson, stripTrailingCommas } from "../ai/parseModelJson.js";
 import { splitSentencesKeep, joinSentences } from "./copyPhrases.js";
 import { stripJudgments, stripJudgmentWords, unsourcedJudgment, hasPraiseIdiom } from "./copyJudgments.js";
 
@@ -103,7 +103,8 @@ export function parseSeoResponse(raw, name, price) {
     try {
       p = JSON.parse(jsonString);
     } catch {
-      p = null;
+      // فاصلة زائدة قبل «}» أسقطت ٣ من ١٠ صفحات (2026-09-13) — تُحذف وحدها ويُعاد التحليل مرة.
+      try { p = JSON.parse(stripTrailingCommas(jsonString)); } catch { p = null; }
     }
     if (p) {
       if (p.copywriting && (p.copywriting.description || p.copywriting.excerpt)) {

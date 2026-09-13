@@ -61,6 +61,10 @@ async function main() {
     assert(full.copywriting.highlights.join(" | ") === "فتحة ظهر وشق جانبي بالتنورة", `PC-26: السلسلة كاملة (cleanPublishedFields ثم polishPage) لا تترك بقايا نقطة مدح («${full.copywriting.highlights.join(" | ")}»)`);
   }
 
+  const dangling = { copywriting: { description: "ثوب رجالي أبيض بياقة قلاب. وتظهر خياطة دقيقة بمحاذاة الياقة تضيف تفصيلاً واضحاً للتصميم.", excerpt: "", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
+  polishPage(dangling, { name: "ثوب رجالي", sourceText: "ثوب رجالي أبيض ياقة قلاب", notes: "" });
+  assert(/بمحاذاة الياقة\./.test(dangling.copywriting.description) && !/للتصميم/.test(dangling.copywriting.description), `PC-27: حذف «تضيف تفصيلاً واضحاً» لا يترك «للتصميم» معلّقة («${dangling.copywriting.description}»)`);
+
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");

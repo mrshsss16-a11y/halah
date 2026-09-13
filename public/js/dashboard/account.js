@@ -127,7 +127,8 @@ export async function submitCompleteAccount() {
     // وإعادته بصمت قد تُنفّذ عملية لم يقصدها التاجر الآن.
     window.showToast("تم إنشاء حسابك ✅ — اضغط «اكتب الوصف الآن» لتوليد الوصف.", "success");
     const gb = document.getElementById("genBtn");
-    if (gb) { switchTab("studio"); gb.scrollIntoView({ behavior: "smooth", block: "center" }); }
+    // الزر داخل «studioManual» المطويّ: بلا فتحه يُمرَّر لعنصر مخفي (جولة الجاهزية 2026-09-13).
+    if (gb) { switchTab("studio"); const manual = document.getElementById("studioManual"); if (manual) manual.open = true; gb.scrollIntoView({ behavior: "smooth", block: "center" }); }
   } catch (e) {
     err.innerText = "تعذر الاتصال. حاول مرة ثانية.";
     err.classList.remove("hidden");

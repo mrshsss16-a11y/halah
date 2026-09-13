@@ -154,7 +154,8 @@ export function stripJudgments(sentence, { sourceText = "", name = "" } = {}) {
   s = dropIdioms(s, sourceText);
   for (const re of patternsFor(ADJ)) s = s.replace(re, "");
   // بقايا: «لإطلالة.» و«، هذه البلوزة.» (2026-09-12 00:17)؛ (?<!\p{L}) كي لا يُقص «الإطلالة» (02:22).
-  s = s.replace(/\s*(?<!\p{L})(?:ل|ب)(?:إطلالة|اطلالة|مظهر(?:اً|ًا|ا)?|لمسة)(?=\s*[.،؟!]|\s*$)/gu, "")
+  // «بمحاذاة الياقة للتصميم.» بعد حذف «تضيف تفصيلاً واضحاً» (جولة الجاهزية 2026-09-13).
+  s = s.replace(/\s*(?<!\p{L})(?:ل|ب)(?:إطلالة|اطلالة|مظهر(?:اً|ًا|ا)?|لمسة|لتصميم|التصميم)(?=\s*[.،؟!]|\s*$)/gu, "")
     .replace(/\s*،?\s*(?:هذه|هذا|هذي)\s+\p{L}+(?=\s*[.؟!]|\s*$)/gu, "");
   s = s.replace(/\s*،\s*(?=[.،؟!]|$)/g, "").replace(/\s{2,}/g, " ").replace(/^\s*[،,]\s*/, "").trim();
   const words = s.split(/\s+/).filter(Boolean).length;

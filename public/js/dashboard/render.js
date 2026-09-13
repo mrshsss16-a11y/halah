@@ -2,6 +2,7 @@
 // escHtml من /js/shared.js (window) — كل نص قادم من سلة أو من التاجر يمرّ به
 // قبل أي innerHTML. ثغرة XSS مخزّنة أُغلقت بهذا المسار — لا تُعاد.
 import { S } from "./state.js";
+import { publishExtras } from "./review.js";
 
 const escHtml = window.escHtml;
 
@@ -26,6 +27,10 @@ export function renderCopy(d) {
   document.getElementById("outMeta").innerText = seo.metaDescription || "";
   document.getElementById("outFocusKw").innerText = seo.focusKeyword || "";
   document.getElementById("outTags").innerText = (d.tags || []).join("، ");
+
+  // الأسئلة والنبذة وحقلا البحث تُنشر مع الوصف (sallaProductPayload.js) — تُعرض قبل الاعتماد. النقاط معروضة فوق.
+  const extras = document.getElementById("outPublishExtras");
+  if (extras) extras.innerHTML = publishExtras({ highlights: [], faqs: d.faqs || [], seo, excerpt: cw.excerpt || "" });
 
   const ul = document.getElementById("outHighlights");
   ul.innerHTML = "";

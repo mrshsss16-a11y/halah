@@ -41,6 +41,38 @@ export function extractBalancedJson(source) {
 }
 
 /**
+ * فاصلة زائدة قبل `}` أو `]` خارج السلاسل النصية — الإصلاح الوحيد المسموح.
+ *
+ * جولة الجاهزية 2026-09-13: ٣ من ١٠ منتجات فشلت بالتشغيلتين، والمخرج الخام كله JSON سليم عدا
+ * `"callToAction": "…",\n  },`. رفض الصفحة كلها بفاصلة واحدة خسارة؛ تخمين المفاتيح أو إكمال
+ * الناقص ممنوع — هذا يحذف رمزاً زائداً فقط، ومسح السلاسل نفسه يمنع لمس فاصلة داخل نص.
+ */
+export function stripTrailingCommas(json) {
+  const text = String(json ?? "");
+  let out = "";
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inString) {
+      out += ch;
+      if (escaped) escaped = false;
+      else if (ch === "\\") escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; out += ch; continue; }
+    if (ch === ",") {
+      let j = i + 1;
+      while (j < text.length && /\s/.test(text[j])) j++;
+      if (text[j] === "}" || text[j] === "]") continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
+/**
  * نفس الانتزاع ثم `JSON.parse`، ويرجّع `null` عند أي فشل بدل الرمي.
  *
  * هذا هو ما يحتاجه مسار المحادثة: مخرج غير قابل للتحليل هناك ليس خطأً بل
