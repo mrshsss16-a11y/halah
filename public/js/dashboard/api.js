@@ -48,10 +48,6 @@ export function postBulkGenerateAll(tone) {
   return postStrict("/api/store/bulk/generate", { tone });
 }
 
-export function postBulkUpload(rows, tone) {
-  return postStrict("/api/store/bulk/upload", { rows, tone });
-}
-
 export function postBulkStatus(jobId) {
   return postSoft("/api/store/bulk/status", { jobId }, null);
 }

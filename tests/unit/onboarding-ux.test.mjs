@@ -232,10 +232,12 @@ main()
       /if \(tab === "catalog"\) \{[\s\S]*?loadReview\("pending"\)/.test(tabs),
       "MERGE-9: طابور المراجعة يُحمَّل مع «منتجاتي»"
     );
-    // المسار اليدوي باقٍ لكن مطويّاً.
+    // الإدخال اليدوي (منتج مو بسلة) أُزيل — publishToSalla يرفض بلا productId
+    // حقيقي من الكتالوج فلا وجهة نشر له. النموذج نفسه باقٍ مخفياً، تملأه
+    // useCatalogItem برمجياً فقط بعد اختيار منتج حقيقي.
     assert(
-      /id="studioManual"/.test(dashM) && /أو اكتب منتجاً يدوياً/.test(dashM) &&
+      /id="studioManual"[^>]*\bhidden\b/.test(dashM) && !/أو اكتب منتجاً يدوياً/.test(dashM) &&
         /id="pName"/.test(dashM),
-      "MERGE-10: المسار اليدوي محفوظ داخل <details> لا محذوفاً"
+      "MERGE-10: الإدخال اليدوي أُزيل، النموذج باقٍ مخفياً للمسار الحقيقي فقط"
     );
   }

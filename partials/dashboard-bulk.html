@@ -1,26 +1,9 @@
-      <!-- ── «طرق أخرى» (2026-09-13): المسارات الثانوية مطويّة أسفل الصفحة ──
-           كانت بطاقة الجملة والنموذج اليدوي بين الشبكة وطابور المراجعة، فيمرّ
-           التاجر على نموذجين لا يحتاجهما قبل أن يصل لما ينتظر قراره. التوليد
-           من المنتجات المسحوبة صار بشريط أدوات «منتجاتي» نفسه. -->
-      <div id="otherWaysCard" class="sleek-card rounded-3xl p-5 space-y-3 shadow-sm">
-        <h2 class="text-sm font-black text-black">طرق أخرى للتوليد</h2>
-        <p class="text-[11px] text-slate-600 font-medium">للمنتجات اللي مو مسحوبة من سلة بعد. نفس القواعد: تُحسب من أوصاف اليوم، ولا يُنشر شيء قبل مراجعتك.</p>
-
-        <details id="bulkPasteBox" class="rounded-2xl border border-slate-200 p-4">
-          <summary class="cursor-pointer select-none text-xs font-black text-black">الصق قائمة منتجات (سطر لكل منتج)</summary>
-          <div class="space-y-3 pt-3">
-            <p class="text-[11px] text-slate-600 font-medium">الصيغة: <span dir="auto" class="font-mono">اسم,سعر,فئة,<bdi>SKU</bdi></span> — المنتج بلا SKU يُتجاهل. تُستخدم نبرة الكتابة المختارة بشريط «منتجاتي».</p>
-            <label for="bulkRows" class="sr-only">قائمة المنتجات</label>
-        <textarea id="bulkRows" rows="5" placeholder="عباية سوداء مطرزة,350,عبايات,SKU-001&#10;عطر عود ملكي 100مل,220,عطور,SKU-002" dir="auto" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-mono focus:outline-none focus:border-black"></textarea>
-        <button id="bulkBtn" onclick="startBulkJob()" class="w-full sleek-btn-white py-3.5 rounded-xl text-xs transition">ولّد أوصاف القائمة</button>
-          </div>
-        </details>
-
-      <details id="studioManual" class="rounded-2xl border border-slate-200 p-4">
-        <summary class="cursor-pointer select-none flex items-center gap-2 text-xs font-black text-black">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M15.5 2V5M6.5 2V5M11 2V5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M19 12V10.5C19 7.20017 19 5.55025 17.9749 4.52512C16.9497 3.5 15.2998 3.5 12 3.5H10C6.70017 3.5 5.05025 3.5 4.02513 4.52513C3 5.55025 3 7.20017 3 10.5V15C3 18.2998 3 19.9497 4.02513 20.9749C5.05025 22 6.70017 22 10 22H11" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M7 15H11M7 11H15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M15.7367 21.6527L14 22L14.3473 20.2633C14.4179 19.9106 14.5913 19.5866 14.8456 19.3323L18.9111 15.2668C19.2668 14.9111 19.8437 14.9111 20.1995 15.2668L20.7332 15.8005C21.0889 16.1563 21.0889 16.7332 20.7332 17.0889L16.6677 21.1544C16.4134 21.4087 16.0894 21.5821 15.7367 21.6527Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
-          <span>أو اكتب منتجاً يدوياً — لمنتج مو بسلة بعد</span>
-        </summary>
+      <!-- ── نموذج الاستوديو (2026-09-13): يظهر فقط بعد اختيار منتج حقيقي من
+           «منتجاتي» — أُزيل مساران بلا وجهة نشر فعلية: لصق قائمة يدوية بـSKU
+           مطبوع يدوياً (لا رابط بمنتج حقيقي)، وفتح النموذج فارغاً لمنتج "مو
+           بسلة بعد" (publishToSalla يرفض بلا productId من الكتالوج أصلاً —
+           توليد بلا أي مسار نشر ممكن). التوليد الحقيقي دائماً من كتالوج مسحوب. -->
+      <div id="studioManual" class="sleek-card rounded-3xl p-5 space-y-3 shadow-sm hidden">
         <div class="space-y-4 pt-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input id="pName" type="text" placeholder="اسم المنتج (مثال: عطر عود ملكي 100مل)" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"/>
@@ -54,5 +37,4 @@
         </button>
 
         </div>
-      </details>
       </div>

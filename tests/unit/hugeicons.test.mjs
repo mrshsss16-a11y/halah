@@ -21,7 +21,7 @@ async function main() {
   assert(!/material-symbols-outlined/.test(html) && !/material-symbols-outlined/.test(js), "HGI-1: لا أيقونة Material Symbols بلوحة التاجر");
 
   const svgs = html.match(/<svg[^>]*class="hgi[^"]*"[^>]*>[\s\S]*?<\/svg>/g) || [];
-  assert(svgs.length >= 25, `HGI-2: كل مواضع الأيقونات صارت SVG مضمَّناً (${svgs.length})`);
+  assert(svgs.length >= 24, `HGI-2: كل مواضع الأيقونات صارت SVG مضمَّناً (${svgs.length})`);
   assert(
     svgs.every((s) => /viewBox="0 0 24 24"/.test(s) && /width="1em"/.test(s) && /aria-hidden="true"/.test(s)),
     "HGI-3: كل SVG بمقاس 1em (يتبع صنف النص) ومخفي عن قارئ الشاشة"

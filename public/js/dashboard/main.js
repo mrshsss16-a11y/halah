@@ -16,7 +16,7 @@ import {
   generateSelectedCatalog, useCatalogItem, closeCopyPanel, setBulkGenerateEnabled
 } from "./catalog.js";
 import { generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, applySuggestedCategory } from "./studio.js";
-import { startBulkJob, startCatalogGenerate } from "./bulk.js";
+import { startCatalogGenerate } from "./bulk.js";
 import {
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback
@@ -41,7 +41,7 @@ Object.assign(window, {
   generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, copyToClipboard,
   applySuggestedCategory,
   // الجملة
-  startBulkJob, startCatalogGenerate,
+  startCatalogGenerate,
   // المراجعة والتغذية الراجعة
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback,

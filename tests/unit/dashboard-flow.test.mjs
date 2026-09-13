@@ -28,11 +28,11 @@ async function main() {
 
   // ── ترتيب الخطوات بالصفحة ──
   const at = (id) => visible.indexOf(`id="${id}"`);
-  const order = ["flowSteps", "catalogSelectBar", "catalogGrid", "copyResult", "reviewCard", "otherWaysCard"].map(at);
+  const order = ["flowSteps", "catalogSelectBar", "catalogGrid", "copyResult", "reviewCard"].map(at);
   assert(order.every((i) => i > 0) && order.every((i, k) => k === 0 || i > order[k - 1]),
-    "FLOW-6: الخطوات ← أدوات التوليد ← الشبكة ← لوحة الوصف ← المراجعة ← «طرق أخرى»");
-  assert(at("studioManual") > at("reviewCard") && at("bulkRows") > at("reviewCard"),
-    "FLOW-7: النموذج اليدوي والقائمة الملصوقة بعد طابور المراجعة لا قبله");
+    "FLOW-6: الخطوات ← أدوات التوليد ← الشبكة ← لوحة الوصف ← المراجعة");
+  assert(at("studioManual") > 0 && /id="studioManual"[^>]*\bhidden\b/.test(visible),
+    "FLOW-7: نموذج الاستوديو مخفي افتراضياً — يظهره JS فقط بعد اختيار منتج حقيقي من «منتجاتي»");
 
   // ── أدوات التوليد بمكان واحد ──
   // readComposedPage يُلحق الـpartials الخام بعد الصفحة المبنية — العدّ على المبنية وحدها.

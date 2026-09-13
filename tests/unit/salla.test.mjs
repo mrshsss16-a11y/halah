@@ -297,10 +297,6 @@ async function main() {
     );
 
     assert(
-      !/dir="ltr" class="font-mono">اسم/.test(dash) && /<bdi>SKU<\/bdi>/.test(dash),
-      "BIDI-1: سطر صيغة الجملة يعزل SKU بدل فرض LTR على العربي"
-    );
-    assert(
       /id="outSlug" dir="auto"/.test(dash),
       "BIDI-2: الرابط العربي بخط مونو له اتجاه صريح"
     );

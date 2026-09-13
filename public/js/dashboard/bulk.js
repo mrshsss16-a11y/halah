@@ -1,7 +1,7 @@
 // public/js/dashboard/bulk.js — التوليد بالجملة (B3): رفع قائمة ملصوقة، أو
 // توليد من الكتالوج المسحوب، ومتابعة تقدّم الوظيفة.
 import { S } from "./state.js";
-import { postBulkUpload, postBulkStatus, postBulkGenerateAll } from "./api.js";
+import { postBulkStatus, postBulkGenerateAll } from "./api.js";
 import { loadReview } from "./review.js";
 
 const escHtml = window.escHtml;
@@ -11,39 +11,6 @@ export function toneValue() {
   return document.getElementById("pTone")?.value || "white";
 }
 const showMsg = (id, text, type) => window.showMsg(id, text, type);
-
-export function parseBulkRows(raw) {
-  return raw.split("\n").map((l) => l.trim()).filter(Boolean).map((line) => {
-    const [name, price, category, sku] = line.split(",").map((s) => (s || "").trim());
-    return { name, price, category, sku };
-  }).filter((r) => r.name && r.sku);
-}
-
-export async function startBulkJob() {
-  const rows = parseBulkRows(document.getElementById("bulkRows").value);
-  if (!rows.length) { showMsg("bulkFeedback", "أدخل صف واحد على الأقل بصيغة اسم,سعر,فئة,SKU.", "error"); return; }
-
-  const btn = document.getElementById("bulkBtn");
-  btn.disabled = true;
-  document.getElementById("bulkFeedback").classList.add("hidden");
-
-  try {
-    const { data } = await postBulkUpload(rows, toneValue());
-    if (!data?.ok) {
-      showMsg("bulkFeedback", data?.error || "تعذر بدء المعالجة.", "error");
-      btn.disabled = false;
-      return;
-    }
-    // رسالة الخادم تقول كم بدأ اليوم وكم تأجّل — كانت تُهمَل فيظن التاجر أن الكل اليوم.
-    showMsg("bulkFeedback", (data.message ? data.message + " " : "") + `تم استلام ${data.queued} منتج — تقدير الوقت ${data.etaMinutes} دقيقة.`, "success");
-    // الرسالة والشريط بشريط «منتجاتي» أعلى الصفحة، والزر بآخرها — نمرّر إليهما.
-    document.getElementById("bulkFeedback")?.scrollIntoView({ behavior: "smooth", block: "center" });
-    pollBulkJob(data.jobId);
-  } catch (e) {
-    showMsg("bulkFeedback", "تعذر الاتصال.", "error");
-    btn.disabled = false;
-  }
-}
 
 export async function pollBulkJob(jobId) {
   if (S.bulkPollTimer) clearInterval(S.bulkPollTimer);
@@ -69,7 +36,7 @@ export async function pollBulkJob(jobId) {
       if (data.status === "done") {
         document.getElementById("bulkProgressLabel").innerText = `اكتمل: ${data.succeeded} جاهز للمراجعة، ${data.failed} فشل/مؤجَّل`;
         clearInterval(S.bulkPollTimer);
-        document.getElementById("bulkBtn").disabled = false;
+        document.getElementById("bulkGenerateBtn").disabled = false;
         loadReview("pending");
       } else if (data.succeeded > 0 && (data.processed % 20 === 0)) {
         loadReview(S.reviewState);
