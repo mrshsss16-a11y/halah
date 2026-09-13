@@ -34,6 +34,11 @@ async function main() {
   assert(/مناسب للمناسبات النهارية\. يمكن تنسيقه مع حذاء مسطح\./.test(filler.copywriting.description) && !/العديد من المناسبات/.test(filler.copywriting.description), `PC-8: حشو «ويمكن ارتداؤه في العديد من المناسبات غير الرسمية» يُحذف وتبقى الجملة («${filler.copywriting.description}»)`);
   assert(filler.copywriting.excerpt === "تُلبس في المناسبات اليومية وغير الرسمية.", `PC-9: «والغير رسمية» ⇒ «وغير الرسمية» («${filler.copywriting.excerpt}»)`);
 
+  const general = { copywriting: { description: "فستان ميدي أخضر بقصّة واسعة وتصميم، بكشكش عند الذيل.\n\nتناسب جميع المناسبات. تُنسّق مع حذاء مسطح لمختلف الإطلالات.", excerpt: "عباية سوداء بتطريز يدوي تناسب جميع الإطلالات الرسمية.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
+  polishPage(general, { name: "فستان", sourceText: "فستان", notes: "" });
+  assert(!/جميع المناسبات|مختلف الإطلالات|وتصميم،/.test(general.copywriting.description) && /بقصّة واسعة، بكشكش عند الذيل\./.test(general.copywriting.description) && /تُنسّق مع حذاء مسطح\./.test(general.copywriting.description), `PC-10: حشو المناسبات بلا حكم مجاور يُحذف، و«وتصميم،» المعلّقة تُزال («${general.copywriting.description}»)`);
+  assert(general.copywriting.excerpt === "عباية سوداء بتطريز يدوي.", `PC-11: «تناسب جميع الإطلالات الرسمية» تُحذف مع صفتها («${general.copywriting.excerpt}»)`);
+
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");

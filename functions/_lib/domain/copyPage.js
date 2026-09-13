@@ -16,6 +16,11 @@ import { splitSentencesKeep, joinSentences } from "./copyPhrases.js";
 // دعوة البيع داخل نص قصير (عنوان، نقطة، وسم): تُحذف الكلمة لا العنصر كله.
 const CTA_WORDS = /(?<!\p{L})(?:تسوقي|تسوّقي|اطلبي|اطلبيها|احصلي|سارعي|اقتنيها)(?:[ \t]+(?:الآن|الان))?(?!\p{L})|(?<!\p{L})لا[ \t]+تفوتي(?!\p{L})/gu;
 const MIN_HIGHLIGHT_WORDS = 3;
+// عبارة عامة لا تصف القطعة — بالنثر وبالنقاط («قصة بشت واسعة تناسب جميع المناسبات»، أرشيف 2026-09-13).
+const GENERAL_FILLER = [
+  /[ \t]*،?[ \t]*(?:و)?(?:ت|ي)?(?:ناسب|مناسب(?:ة|ه)?|ملائم(?:ة|ه)?)[ \t]+(?:ل)?(?:مختلف|جميع|كل|العديد[ \t]+من)[ \t]+(?:ال)?(?:مناسبات|إطلالات|اطلالات|أوقات|اوقات|أذواق|اذواق|أعمار|اعمار)(?:[ \t]+(?:غير[ \t]+)?ال\p{L}+)?(?!\p{L})/gu,
+  /[ \t]*،?[ \t]*(?:و)?ل(?:مختلف|جميع|كل)[ \t]+(?:ال)?(?:مناسبات|إطلالات|اطلالات|أوقات|اوقات)(?:[ \t]+(?:غير[ \t]+)?ال\p{L}+)?(?!\p{L})/gu
+];
 
 const words = (t) => String(t || "").split(/\s+/).filter(Boolean).length;
 const claimsOtherItem = (t, name) => ATTACHED.test(String(t || "")) && otherItem(t, name);
@@ -60,6 +65,12 @@ function polishProse(text, { name, sourceText, sizes }) {
     .replace(/،[ \t]*(\p{L}+ها)[ \t]+ال(\p{L}+)(?=[ \t]*(?:[.!؟]|$))/gu, "، و$1 $2")
     // «ويمكن ارتداؤه في العديد من المناسبات غير الرسمية» — عبارة عامة لا تصف القطعة (فستانان 2026-09-13).
     .replace(/[ \t]*،?[ \t]*(?:و)?(?:يمكن|يمكنك|تقدرين)[ \t]+(?:ارتداؤه|ارتداؤها|ارتداءه|ارتداءها|لبسه|لبسها)[ \t]+(?:في[ \t]+)?(?:العديد[ \t]+من|مختلف|كل|جميع)[ \t]+(?:ال)?مناسبات(?:[ \t]+(?:غير[ \t]+)?(?:ال)?\p{L}+)?/gu, "")
+    // «تناسب جميع المناسبات» · «لمختلف الإطلالات» بلا صفة حكم مجاورة (أرشيف ٢٧ توليداً حقيقياً، 2026-09-13).
+    .replace(GENERAL_FILLER[0], "").replace(GENERAL_FILLER[1], "")
+    // «بقصّة واسعة وتصميم، تتميز…»: اسم بقي معلّقاً بعد حذف صفته بتنظيف سابق.
+    .replace(/[ \t]*(?<!\p{L})(?:و|ب)(?:تصميم|طابع|لمسة|مظهر|إطلالة|اطلالة)(?=[ \t]*[،.!؟])/gu, "")
+    .replace(/،[ \t]*(?=[.!؟])/gu, "")
+    .replace(/(?<=^|[.!؟\n])[ \t]*[.،](?=\s|$)/gu, "")
     // «المناسبات اليومية والغير رسمية» ⇒ «وغير الرسمية».
     .replace(/(?<!\p{L})(و)?ال(غير)[ \t]+(?!ال)(\p{L}+)/gu, "$1$2 ال$3")
     // «جدول المقاسات الموجود بالوصف»: الوصف لا يحوي جدولاً.
@@ -75,6 +86,7 @@ function polishShort(text, { name, sourceText, sizes, keepLabels = false }) {
   const raw = String(text || "");
   const t = fixLatinWords(dropForeignScript(keepLabels ? raw : fixNoteLabels(raw)), sourceText);
   return fixSizeRange(fixColorAgreement(fixCommonGrammar(fixTrouserLength(t, name))), sizes)
+    .replace(GENERAL_FILLER[0], "").replace(GENERAL_FILLER[1], "")
     .replace(CTA_WORDS, "")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/^[\s،,.:؛-]+|[\s،,:؛-]+$/g, "")
