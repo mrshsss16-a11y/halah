@@ -63,7 +63,15 @@ export function dropUnseenCut(text, { notes = "", sourceText = "", name = "" } =
     if (i % 2) return clause;
     const bad = unseenCutPhrases(clause, notes, sourceText);
     if (!bad.length) return clause;
-    if (head && normCut(clause.trim().split(/\s+/)[0] || "").replace(/^و/, "") === head) return bad.reduce((c, b) => c.replace(b, ""), clause);
+    // «بقصّة مستقيمة ورباط عند الخصر» ⇒ «برباط عند الخصر»: حذف أول عبارة بالباء يعيد الباء لما عُطف بعدها.
+    if (head && normCut(clause.trim().split(/\s+/)[0] || "").replace(/^و/, "") === head) {
+      return bad.reduce((c, b) => {
+        const at = c.indexOf(b);
+        if (at < 0) return c;
+        const rest = c.slice(at + b.length);
+        return c.slice(0, at) + (/^[ \t]*ب/u.test(b) ? rest.replace(/^([ \t]+)و(?=\p{L})/u, "$1ب") : rest);
+      }, clause);
+    }
     return "";
   }).join("")
     .replace(/،(?:[ \t]*،)+/gu, "،")
@@ -152,8 +160,9 @@ const COLOR_FEMININE = { "أسود": "سوداء", "اسود": "سوداء", "أ
 const MASC_COLORS = Object.keys(COLOR_FEMININE).filter((k) => k !== "متعدد");
 const COLOR_ALT = [...MASC_COLORS, "متعدد(?=[ \\t]+ال[أا]لوان)"].join("|");
 const AGREEMENT = new RegExp(`(?<!\\p{L})((?:و|ب|ل)?${FEMININE_ITEM})[ \\t]+(${COLOR_ALT})(?!\\p{L})`, "gu");
-// لون ثانٍ معطوف: «تنورة سوداء وأبيض» ⇒ «تنورة سوداء وبيضاء».
-const CONJOINED = new RegExp(`(?<!\\p{L})((?:و|ب|ل)?${FEMININE_ITEM}[ \\t]+(?:${[...new Set(Object.values(COLOR_FEMININE))].join("|")})[ \\t]+و)(${MASC_COLORS.join("|")})(?!\\p{L})`, "gu");
+// لون ثانٍ معطوف: «تنورة سوداء وأبيض» ⇒ «تنورة سوداء وبيضاء». اللون الأول المؤنث دليل التأنيث وحده:
+// «تنورة ميدي سوداء وأبيض» (2026-09-13) كانت تفلت لأن «ميدي» تفصل القطعة عن اللون.
+const CONJOINED = new RegExp(`(?<!\\p{L})((?:${[...new Set(Object.values(COLOR_FEMININE))].join("|")})[ \\t]+و)(${MASC_COLORS.join("|")})(?!\\p{L})`, "gu");
 export function findColorAgreement(text) {
   const t = String(text || "");
   return [...t.matchAll(AGREEMENT), ...t.matchAll(CONJOINED)].map((m) => ({ wrong: `${m[1]} ${m[2]}`.replace(/و /, "و"), right: `${m[1]} ${COLOR_FEMININE[m[2]]}`.replace(/و /, "و") }));

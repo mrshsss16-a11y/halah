@@ -39,6 +39,10 @@ async function main() {
   assert(!/جميع المناسبات|مختلف الإطلالات|وتصميم،/.test(general.copywriting.description) && /بقصّة واسعة، بكشكش عند الذيل\./.test(general.copywriting.description) && /تُنسّق مع حذاء مسطح\./.test(general.copywriting.description), `PC-10: حشو المناسبات بلا حكم مجاور يُحذف، و«وتصميم،» المعلّقة تُزال («${general.copywriting.description}»)`);
   assert(general.copywriting.excerpt === "عباية سوداء بتطريز يدوي.", `PC-11: «تناسب جميع الإطلالات الرسمية» تُحذف مع صفتها («${general.copywriting.excerpt}»)`);
 
+  const skirtReal = { copywriting: { description: "تنورة ميدي سوداء وأبيض بقصّة مستقيمة ورباط عند الخصر، بطيّات بليسيه ونقشة مورّدة وقماش مطفي.", excerpt: "", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
+  polishPage(skirtReal, { name: "تنورة", sourceText: "تنورة", notes: "اللون: أسود وأبيض. الخصر: برباط. التفاصيل: بليسيه. النقشة: مورد." });
+  assert(skirtReal.copywriting.description.startsWith("تنورة ميدي سوداء وبيضاء برباط عند الخصر، بطيّات بليسيه"), `PC-22: «سوداء وأبيض» تؤنَّث مع فاصل، وحذف «بقصّة مستقيمة» غير المرئية يعيد «برباط» لا «ورباط» («${skirtReal.copywriting.description}»)`);
+
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");
