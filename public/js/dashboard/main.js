@@ -21,7 +21,7 @@ import { openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, r
 import { loadBrandVoice, openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange } from "./brandVoice.js";
 import {
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
-  retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback
+  retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback, openReviewPanel, closeReviewPanel
 } from "./review.js";
 import { loadStore, loadUsage, handleMerchantLogout, onDeleteConfirmInput, requestDeletion } from "./store.js";
 import { copyToClipboard, renderIdentityLine } from "./render.js";
@@ -45,7 +45,7 @@ Object.assign(window, {
   // الجملة
   startCatalogGenerate,
   // نافذة المراجعة «قبل وبعد» · لهجة متجري
-  openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll,
+  openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll, openReviewPanel, closeReviewPanel,
   openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange,
   // المراجعة والتغذية الراجعة
   loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,

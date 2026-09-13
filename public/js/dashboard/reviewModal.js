@@ -30,7 +30,8 @@ export async function openReviewModal(startId) {
 
 export function closeReviewModal() {
   $("reviewModal")?.classList.add("hidden");
-  document.body.style.overflow = "";
+  // نافذة «المراجعة والنشر» تحتها تبقى مفتوحة إن كانت — والصفحة لا تتمرر خلفها.
+  if ($("reviewPanel")?.classList.contains("hidden") !== false) document.body.style.overflow = "";
   loadReview("pending");
 }
 

@@ -278,12 +278,11 @@ export async function generateSelectedCatalog() {
       showMsg("catalogFeedback", data?.error || "تعذر بدء التوليد. حاول مرة ثانية.", "error");
     } else {
       // المراجعة صارت بنفس التبويب — لا إحالة لتبويب ثانٍ، والقائمة أسفل الشبكة.
-      showMsg("bulkFeedback", (data.message || `بدأ توليد ${skus.length} وصفاً`) + " — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة)، وتظهر بقائمة المراجعة تحت لتعتمدها واحداً واحداً.", "success");
+      showMsg("bulkFeedback", (data.message || `بدأ توليد ${skus.length} وصفاً`) + " — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة)، ولما تجهز تُفتح لك نافذة «قبل وبعد» لتعتمدها واحداً واحداً.", "success");
       S.selectedSkus.clear();
       selectAllCatalog(false);
       renderCatalogSelection();
       if (data.jobId) pollBulkJob(data.jobId);
-      document.getElementById("reviewCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   } catch (e) {
     showMsg("catalogFeedback", "ما قدرنا نتصل — تأكد من الإنترنت وجرّب مرة ثانية.", "error");

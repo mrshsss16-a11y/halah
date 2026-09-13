@@ -65,6 +65,16 @@ async function main() {
   assert(/action === "update" \|\| action === "edit"/.test(read("../../functions/api/store/review/decide.js")),
     "RM-8: حفظ التعديل قبل الاعتماد المفرد («edit») مدعوم — كان يُرفض فيُنشر النص الأصلي");
 
+  // ── «المراجعة والنشر» نافذة لا قسم ثابت ──
+  const reviewPartial = read("../../partials/dashboard-review.html");
+  const reviewJs = read("../../public/js/dashboard/review.js");
+  assert(/id="reviewPanel" class="hidden fixed inset-0[^"]*"[\s\S]{0,300}id="reviewCard"/.test(reviewPartial) && /closeReviewPanel\(\)/.test(reviewPartial),
+    "RP-1: قسم المراجعة داخل نافذة مخفية افتراضياً وفيها زر إغلاق");
+  assert(/id="reviewPanelBtn"[^>]*onclick="openReviewPanel\(\)"/.test(catalogPartial) && /id="rvBadge"/.test(catalogPartial) && /badge\.innerText = c\.pending/.test(reviewJs),
+    "RP-2: زر «المراجعة والنشر» بشريط «منتجاتي» بعدّاد ما ينتظر");
+  assert(!/getElementById\("reviewCard"\)\?\.scrollIntoView/.test(catalogJs) && /تُفتح لك نافذة «قبل وبعد»/.test(catalogJs), "RP-3: توليد المحدد لا يقفز لقسم ثابت — نافذة «قبل وبعد» تُفتح عند الجاهزية");
+  assert(/openReviewPanel, closeReviewPanel/.test(main) && /console\.error\("\[review\] load failed", e\)/.test(reviewJs), "RP-4: دوال النافذة منشورة، وفشل التحميل يُسجَّل بسببه");
+
   // ── لهجة متجري ──
   assert(normalizeBrandVoice({ notes: "قصير" }) === null, "BV-1: لهجة بلا وصف كافٍ لا تُحفظ");
   const voice = normalizeBrandVoice({ name: "نجدية ودودة", notes: "نخاطب العميلة بيا الغالية وجملنا قصيرة", likes: "يا الغالية، طلّتك", avoids: ["رخيص"], sample: "<b>يا الغالية</b> هذي العباية تناسب مشاويرك" });

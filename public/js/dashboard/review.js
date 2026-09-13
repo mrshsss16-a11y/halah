@@ -23,6 +23,9 @@ export function setReviewCounts(c) {
   document.getElementById("rvPublished").innerText = c.published;
   document.getElementById("rvFailed").innerText = c.publishFailed;
   document.getElementById("rvRejected").innerText = c.rejected;
+  // عدّاد زر «المراجعة والنشر» بشريط «منتجاتي»: ما ينتظر قرار التاجر.
+  const badge = document.getElementById("rvBadge");
+  if (badge) { badge.innerText = c.pending; badge.classList.toggle("hidden", !c.pending); }
   // زر نافذة «قبل وبعد» يظهر فقط حين يوجد ما يُراجَع.
   const modalBtn = document.getElementById("reviewModalBtn");
   if (modalBtn) { modalBtn.classList.toggle("hidden", !c.pending); document.getElementById("rvModalCount").innerText = c.pending; }
@@ -116,8 +119,34 @@ export async function loadReview(state) {
     S.reviewRows = data.rows || [];
     if (!S.reviewRows.length) { empty.innerText = REVIEW_EMPTY[S.reviewState] || REVIEW_EMPTY.pending; empty.classList.remove("hidden"); return; }
     S.reviewRows.forEach((r) => list.appendChild(reviewCard(r)));
-  } catch (e) { loading.classList.add("hidden"); showMsg("reviewFeedback", "تعذر الاتصال.", "error"); }
+  } catch (e) {
+    // «تعذر الاتصال.» وحدها أخفت سبب فشل حقيقي (2026-09-13) — السبب بوحدة التحكم، والرسالة تقول ما يفعله التاجر.
+    console.error("[review] load failed", e);
+    loading.classList.add("hidden");
+    showMsg("reviewFeedback", "تعذر تحميل قائمة المراجعة — تأكد من الإنترنت ثم اضغط «تحديث».", "error");
+  }
 }
+
+/** نافذة «المراجعة والنشر» — كل حالات الطابور (بانتظارك، معتمد، نُشر مع التراجع، فشل، مرفوض) بمكان واحد. */
+export function openReviewPanel(state) {
+  const panel = document.getElementById("reviewPanel");
+  if (!panel) return;
+  panel.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  loadReview(state || S.reviewState || "pending");
+}
+
+export function closeReviewPanel() {
+  document.getElementById("reviewPanel")?.classList.add("hidden");
+  if (document.getElementById("reviewModal")?.classList.contains("hidden") !== false) document.body.style.overflow = "";
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || document.getElementById("reviewPanel")?.classList.contains("hidden") !== false) return;
+  // نافذة «قبل وبعد» فوقها تُغلق أولاً (reviewModal.js).
+  if (document.getElementById("reviewModal")?.classList.contains("hidden") === false) return;
+  closeReviewPanel();
+});
 
 /** زر «تحديث» — كان onclick="loadReview(reviewState)" على متغيّر عام. */
 export function reloadReview() {
