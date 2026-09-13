@@ -14,6 +14,7 @@ import { CopyParseError, parseSeoResponse, classifyVisionNotes, descriptionQuali
 import { categoryMismatch } from "../ai/productType.js";
 import { splitSentencesKeep } from "./copyPhrases.js";
 import { productOnlyNotes } from "./copyNotes.js";
+import { preserveMerchantFacts } from "./copyFacts.js";
 import { polishPage, pageText } from "./copyPage.js";
 import { loadLessons, lessonsBlock, learnFromCopy } from "./copyLessons.js";
 import { visionFactsContext, structuredVisionBlock, settleVisionFacts, factsToNotes, applyVisionFacts } from "./visionFacts.js";
@@ -216,7 +217,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     ? await recallStyleExamples({ env, category, productContext: `${name} ${features}`.trim(), topK: 3 }).catch(() => [])
     : [];
 
-  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock, productName: name }) + lessonsBlock(lessons, "writer");
+  const system = buildSeoSystem({ recent, keywords, existingDescription, visionNotes, visionLanguage, variants: parsedVariants, styleExamples, profileBlock, taxonomyBlock, productName: name, category }) + lessonsBlock(lessons, "writer");
   const toneLabel = TONE_LABELS[tone] || TONE_LABELS.white;
   // السعر لا يُمرَّر للنموذج (2026-09-11): كان يعود داخل نص الوصف («السعر: 83
   // ريال») فيتقادم مع أول تعديل سعر بالمتجر. يبقى لـJSON-LD فقط عبر parseSeoResponse.
@@ -363,8 +364,10 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // أُصلحت بالوصف فقط (تجربة 2026-09-12). كل تصحيح يمر على كل حقل (copyPage.js).
   polishPage(parsed, { name, sourceText, notes: visionNotes, category });
   applyVisionFacts(parsed, factsCtx.facts, { name });
+  // معيار C1: حقيقة من بيانات التاجر لم تظهر بأي حقل منشور تُضاف لجدول المواصفات (المنشور) بكلماته.
+  const factsAdded = preserveMerchantFacts(parsed, { name, features, existingDescription, variants: parsedVariants });
   // أثر كل توليد (مؤقت حتى قبول سلة): توليد بلا عيب مرصود لم يترك صفاً فتعذّر تشخيص «couche».
-  logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_TRACE", internal: `tier=${lastAsk.tier} vision=${visionModel || "none"} words=${descWords(parsed)} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}${rawVisionNotes && rawVisionNotes.trim() !== visionNotes ? ` raw=${rawVisionNotes.slice(0, 500).replace(/\s+/g, " ")}` : ""}`, storeId: merchantId });
+  logError({ env }, { requestId: null, path: "api/copy:trace", code: "COPY_TRACE", internal: `tier=${lastAsk.tier} vision=${visionModel || "none"} words=${descWords(parsed)} facts+=${factsAdded} notes=${visionNotes.slice(0, 300).replace(/\s+/g, " ")}${rawVisionNotes && rawVisionNotes.trim() !== visionNotes ? ` raw=${rawVisionNotes.slice(0, 500).replace(/\s+/g, " ")}` : ""}`, storeId: merchantId });
   // حقول الصفحة كلها (العنوان، الميتا، النقاط، الأسئلة، الوسوم…) لم تكن تُحفظ فتعذّر مراجعتها من السجل (2026-09-12).
   // مؤقت حتى قبول سلة، ويُمحى مع بيانات المتجر عند الإزالة (merchantPurge، error_log بـstore_id).
   // سطر واحد: السجل يقص عند 3 أسطر فضاع كل ما بعد فقرة الوصف الثانية (توليد 18:40).

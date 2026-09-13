@@ -45,6 +45,7 @@ function buildDescriptionPayload({ item, parsed, catalogRow }) {
     seo: parsed?.seo || null,
     copywriting: parsed?.copywriting || null,
     faqs: Array.isArray(parsed?.faqs) ? parsed.faqs.slice(0, 5) : [],
+    specsTable: Array.isArray(parsed?.specsTable) ? parsed.specsTable.slice(0, 15) : [],
     generatedAt: new Date().toISOString()
   };
 }

@@ -213,7 +213,7 @@ async function main() {
       !/ضمان سنتين/.test(copySrc) && !/2-5 أيام/.test(copySrc) && !/جودة عالية مضمونة/.test(copySrc) && !/أفضل جودة وسعر/.test(copySrc) && !/InStock/.test(copySrc) && !/price \|\| "0"/.test(copySrc),
       "SALLA-8: صفر ضمان/توصيل/توفر/سعر مخترع بسقوط parseSeoResponse (§11)"
     );
-    assert(/لا مواصفة معروفة = لا نقطة/.test(copySrc) && /٣-٥ جمل/.test(copySrc), "SALLA-9: البرومبت يمنع نقاط مخترعة ويطلب وصفاً بحجم صفحة منتج");
+    assert(/لا مواصفة معروفة = لا نقطة/.test(copySrc) && /٤٠-١٥٠ كلمة حسب الحقائق المتاحة/.test(copySrc), "SALLA-9: البرومبت يمنع نقاط مخترعة ويطلب وصفاً بقدر الحقائق المتاحة (معيار هالة: لا حشو)");
     const sallaSrc = read("../../functions/_lib/integrations/salla.js");
     assert(/err\.status = res\.status/.test(sallaSrc) && /Retry-After/.test(sallaSrc), "SALLA-10: أخطاء سلة مصنَّفة بالحالة وRetry-After (توثيق حد المعدل)");
     // lastCopy صار S.lastCopy بحالة مشتركة state.js بعد التقسيم.

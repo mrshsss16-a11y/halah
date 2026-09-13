@@ -221,7 +221,8 @@ export async function publishToSalla() {
       // metadata_title/metadata_description/subtitle + وصف HTML منظّم.
       seo: S.lastCopy.seo || null,
       copywriting: S.lastCopy.copywriting || null,
-      faqs: S.lastCopy.faqs || []
+      faqs: S.lastCopy.faqs || [],
+      specsTable: S.lastCopy.specsTable || []
     });
     if (data?.ok) {
       const publishedItem = Object.values(S.catalogItems).find((p) => String(p.productId) === String(productId));

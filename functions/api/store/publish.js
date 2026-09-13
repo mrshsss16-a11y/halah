@@ -1,4 +1,4 @@
-// POST /api/store/publish — body: { storeId?, productId, description, seo?, copywriting?, faqs? }
+// POST /api/store/publish — body: { storeId?, productId, description, seo?, copywriting?, faqs?, specsTable? }
 // النشر الفردي من الاستوديو: نفس حقول سلة التي يستخدمها النشر الجماعي
 // (domain/sallaProductPayload.js) — الوصف HTML منظّم + subtitle + metadata_title +
 // metadata_description. كان يرسل الوصف وحده ويُسقط السيو الذي عرضه للتاجر.
@@ -34,6 +34,7 @@ async function publishHandler(body, env, request, requestId, context) {
     excerpt: body.copywriting?.excerpt || "",
     highlights: Array.isArray(body.copywriting?.highlights) ? body.copywriting.highlights.slice(0, 8) : [],
     faqs: Array.isArray(body.faqs) ? body.faqs.slice(0, 5) : [],
+    specsTable: Array.isArray(body.specsTable) ? body.specsTable.slice(0, 15) : [],
     seo: body.seo && typeof body.seo === "object" ? body.seo : null
   });
 

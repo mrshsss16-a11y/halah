@@ -35,14 +35,16 @@ export function setReviewCounts(c) {
 export function publishExtras(r) {
   const hl = (r.highlights || []).map((h) => `<li>${escHtml(h)}</li>`).join("");
   const faqs = (r.faqs || []).map((f) => `<li><b>${escHtml(f.q || "")}</b> — ${escHtml(f.a || "")}</li>`).join("");
+  const specs = (r.specsTable || []).map((x) => `<li>${escHtml(x.key || "")}: ${escHtml(x.value || "")}</li>`).join("");
   const meta = [
     r.seo?.seoTitle || r.seo?.title ? `عنوان البحث: ${escHtml(r.seo.seoTitle || r.seo.title)}` : "",
     r.seo?.metaDescription ? `وصف البحث: ${escHtml(r.seo.metaDescription)}` : "",
     r.excerpt ? `تحت اسم المنتج: ${escHtml(r.excerpt)}` : ""
   ].filter(Boolean).join("<br>");
-  if (!hl && !faqs && !meta) return "";
-  return `<details class="text-[11px] text-slate-700 rounded-xl bg-slate-50 border border-slate-200 p-2"><summary class="cursor-pointer font-bold">ما يُنشر مع الوصف (نقاط · أسئلة · سيو)</summary>
+  if (!hl && !faqs && !meta && !specs) return "";
+  return `<details class="text-[11px] text-slate-700 rounded-xl bg-slate-50 border border-slate-200 p-2"><summary class="cursor-pointer font-bold">ما يُنشر مع الوصف (نقاط · مواصفات · أسئلة · سيو)</summary>
     ${hl ? `<ul class="list-disc pr-4 mt-1">${hl}</ul>` : ""}
+    ${specs ? `<ul class="pr-4 mt-1">${specs}</ul>` : ""}
     ${faqs ? `<ul class="pr-4 mt-1">${faqs}</ul>` : ""}
     ${meta ? `<div class="mt-1 text-slate-600">${meta}</div>` : ""}</details>`;
 }

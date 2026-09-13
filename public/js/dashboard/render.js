@@ -30,7 +30,7 @@ export function renderCopy(d) {
 
   // الأسئلة والنبذة وحقلا البحث تُنشر مع الوصف (sallaProductPayload.js) — تُعرض قبل الاعتماد. النقاط معروضة فوق.
   const extras = document.getElementById("outPublishExtras");
-  if (extras) extras.innerHTML = publishExtras({ highlights: [], faqs: d.faqs || [], seo, excerpt: cw.excerpt || "" });
+  if (extras) extras.innerHTML = publishExtras({ highlights: [], faqs: d.faqs || [], specsTable: d.specsTable || [], seo, excerpt: cw.excerpt || "" });
 
   const ul = document.getElementById("outHighlights");
   ul.innerHTML = "";

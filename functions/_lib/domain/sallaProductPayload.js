@@ -38,7 +38,7 @@ function firstSentence(text, max) {
  * يبني HTML الوصف من الحقول المعتمَدة. الفقرات من الوصف (كل سطر فارغ = فقرة)،
  * ثم النقاط، ثم الأسئلة الشائعة — كل قسم يظهر فقط إن كان له محتوى فعلي.
  */
-export function composeDescriptionHtml({ description, highlights = [], faqs = [] } = {}) {
+export function composeDescriptionHtml({ description, highlights = [], faqs = [], specsTable = [] } = {}) {
   const paragraphs = String(description ?? "")
     .split(/\n{2,}|\r\n\r\n/)
     .map((p) => p.replace(/\s+/g, " ").trim())
@@ -49,6 +49,13 @@ export function composeDescriptionHtml({ description, highlights = [], faqs = []
 
   const bullets = (Array.isArray(highlights) ? highlights : []).map((h) => clean(h, 200)).filter(Boolean);
   if (bullets.length) parts.push(`<ul>${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join("")}</ul>`);
+
+  // المواصفات تُنشر (معيار هالة C1، 2026-09-13): الخامة والقياسات والوزن كانت تُولَّد في specsTable ولا تصل للعميل.
+  const specs = (Array.isArray(specsTable) ? specsTable : [])
+    .map((r) => ({ k: clean(r?.key, 40), v: clean(r?.value, 160) }))
+    .filter((r) => r.k && r.v)
+    .slice(0, 15);
+  if (specs.length) parts.push(`<h3>المواصفات</h3><ul>${specs.map((r) => `<li>${escapeHtml(r.k)}: ${escapeHtml(r.v)}</li>`).join("")}</ul>`);
 
   const qa = (Array.isArray(faqs) ? faqs : [])
     .map((f) => ({ q: clean(f?.q, 200), a: clean(f?.a, 600) }))
@@ -64,8 +71,8 @@ export function composeDescriptionHtml({ description, highlights = [], faqs = []
  * الحقول الجاهزة لـ PUT /products/sku/{sku} (أو /products/{id}).
  * يعيد أيضاً `descriptionOnly` — الحمولة الاحتياطية لو رفضت سلة حقول السيو (٤٢٢).
  */
-export function buildSallaProductFields({ description, excerpt, highlights, faqs, seo } = {}) {
-  const html = composeDescriptionHtml({ description, highlights, faqs });
+export function buildSallaProductFields({ description, excerpt, highlights, faqs, seo, specsTable } = {}) {
+  const html = composeDescriptionHtml({ description, highlights, faqs, specsTable });
   if (!html) throw new Error("الوصف فارغ — لا شيء يُنشر.");
 
   const fields = { description: html };

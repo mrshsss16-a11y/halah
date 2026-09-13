@@ -92,6 +92,7 @@ async function publishDescription(env, { merchantId, payload }) {
     excerpt: payload?.copywriting?.excerpt || payload?.excerpt || "",
     highlights: payload?.copywriting?.highlights || payload?.highlights || [],
     faqs: payload?.faqs || [],
+    specsTable: payload?.specsTable || [],
     seo: payload?.seo || null
   });
 
