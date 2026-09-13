@@ -69,10 +69,9 @@
           <span>الربط المباشر بمتجر سلة (Salla 1-Click)</span>
         </a>
 
-        <button onclick="triggerGoogleSignIn()" type="button" class="w-full bg-slate-100 text-black border border-slate-300 hover:bg-slate-200 font-bold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition">
-          <span class="material-symbols-outlined text-base text-rose-600">account_circle</span>
-          <span>الدخول التلقائي بحساب جوجل (Google 1-Click)</span>
-        </button>
+        <!-- زر قوقل الرسمي (renderButton): One Tap عبر prompt() كان يفشل بصمت بعد اختيار الإيميل (2026-09-13)،
+             والزر الرسمي يفتح نافذة قوقل ويُظهر سبب الرفض (مثل origin_mismatch) بدل «ما يصير شي». -->
+        <div id="googleBtnWrap" class="w-full flex justify-center min-h-[44px]"></div>
       </div>
 
       <div class="relative flex py-1 items-center">
@@ -355,8 +354,17 @@
         callback: (response) => {
           window.__googleCredential = response.credential;
           handleGoogleSignIn();
-        }
+        },
+        use_fedcm_for_button: false
       });
+      const wrap = document.getElementById('googleBtnWrap');
+      if (wrap) {
+        window.google.accounts.id.renderButton(wrap, {
+          type: 'standard', theme: 'outline', size: 'large', shape: 'pill',
+          text: 'continue_with', locale: 'ar', logo_alignment: 'center',
+          width: Math.min(360, wrap.clientWidth || 320)
+        });
+      }
     }
     initGoogleSignIn();
 
@@ -370,7 +378,17 @@
         }
         return;
       }
-      window.google.accounts.id.prompt();
+      window.google.accounts.id.prompt((n) => {
+        // One Tap ما ظهر أو انقطع — نقول السبب بدل صمت.
+        if (n.isNotDisplayed?.() || n.isSkippedMoment?.()) {
+          const feedback = document.getElementById('authFeedback');
+          if (feedback) {
+            feedback.classList.remove('hidden');
+            feedback.className = 'p-3 rounded-xl text-xs font-bold bg-rose-100 text-rose-900 border border-rose-300';
+            feedback.innerText = 'ما قدرنا نفتح نافذة قوقل — استخدم زر «المتابعة باستخدام Google» أو البريد وكلمة المرور.';
+          }
+        }
+      });
     }
 
     async function handleGoogleSignIn() {

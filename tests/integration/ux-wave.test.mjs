@@ -92,6 +92,8 @@ async function runTests() {
     assert(src.includes("إن كان البريد مسجلاً لدينا فقد أرسلنا إليه رابط الاستعادة") && !/otpCode/.test(src), "U2: رسالة نجاح صادقة مشروطة وتسمّي القناة الحقيقية، بلا رمز OTP");
     assert(!/sleek-btn-black/.test(src), "U3: login.html لا يستخدم صنف sleek-btn-black غير المعرَّف");
     assert(src.includes(".wire-btn"), "U3: login.html يعرّف صنف wire-btn البديل");
+    assert(src.includes('id="googleBtnWrap"') && src.includes("google.accounts.id.renderButton(wrap") && !src.includes('onclick="triggerGoogleSignIn()"'),
+      "U4: الدخول بقوقل بالزر الرسمي — One Tap عبر prompt() كان يفشل بصمت بعد اختيار الإيميل");
   }
 
   // ---- U3: index.html ادعاءات صادقة ----
