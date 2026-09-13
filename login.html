@@ -339,12 +339,16 @@
       if (btn) btn.disabled = false;
     }
 
-    // Public per Google's own docs — the Client ID identifies the app, it is
-    // not a secret (unlike the Client Secret, which this ID-token flow never
-    // needs and the server never sees).
-    const GOOGLE_CLIENT_ID = "948393178120-cmao7f4rqsgmrdc6bso83hbj3pejldg9.apps.googleusercontent.com";
-
-    function initGoogleSignIn() {
+    // معرّف العميل من السر نفسه (/api/auth/google_client) — لا نسخة مكتوبة هنا تنفصل عن عميل قوقل (2026-09-14).
+    let GOOGLE_CLIENT_ID = "";
+    async function initGoogleSignIn() {
+      if (!GOOGLE_CLIENT_ID) {
+        try {
+          const cfg = await (await fetch('/api/auth/google_client', { cache: 'no-store' })).json();
+          GOOGLE_CLIENT_ID = cfg?.clientId || "";
+        } catch (err) {}
+        if (!GOOGLE_CLIENT_ID) return;
+      }
       if (!window.google?.accounts?.id) {
         setTimeout(initGoogleSignIn, 300);
         return;

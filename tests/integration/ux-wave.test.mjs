@@ -94,6 +94,10 @@ async function runTests() {
     assert(src.includes(".wire-btn"), "U3: login.html يعرّف صنف wire-btn البديل");
     assert(src.includes('id="googleBtnWrap"') && src.includes("google.accounts.id.renderButton(wrap") && !src.includes('onclick="triggerGoogleSignIn()"'),
       "U4: الدخول بقوقل بالزر الرسمي — One Tap عبر prompt() كان يفشل بصمت بعد اختيار الإيميل");
+    assert(!/\d{6,}-[a-z0-9]+\.apps\.googleusercontent\.com/.test(src) && src.includes("/api/auth/google_client"),
+      "U5: معرّف عميل قوقل لا يُكتب بالصفحة — يُقرأ من السر عبر /api/auth/google_client");
+    const gc = await readSrc("functions/api/auth/google_client.js");
+    assert(/env\?\.GOOGLE_CLIENT_ID/.test(gc) && /onRequestGet/.test(gc) && !/CLIENT_SECRET/.test(gc), "U6: نقطة معرّف العميل تقرأ السر العلني وحده");
   }
 
   // ---- U3: index.html ادعاءات صادقة ----
