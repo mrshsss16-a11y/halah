@@ -101,6 +101,11 @@ async function main() {
     const keep = { copywriting: { description: "ثوب رجالي أبيض.", excerpt: "", whatsapp: "" }, seo: { title: "ثوب رجالي" }, faqs: [], specsTable: [], tags: [] };
     polishPage(keep, { name: "ثوب رجالي", sourceText: "ثوب رجالي", notes: "" });
     assert(/رجالي/.test(keep.seo.title), "PC-34: الجنس الذي ذكره التاجر يبقى");
+    const green = { copywriting: { description: "فستان ميدي أخضر بياقة مربعة.\n\nهذا الفستان مناسب للمناسبات النهارية، ويمكن ارتداؤه في مختلف الفعاليات غير الرسمية.", excerpt: "", whatsapp: "" },
+      seo: { metaDescription: "فستان أخضر فاتح بقصّة A للبيع. طول ميدي وياقة مربعة ونقشة مورّدة." }, faqs: [], specsTable: [], tags: [] };
+    polishPage(green, { name: "فستان", sourceText: "فستان", notes: "" });
+    const gAll = `${green.copywriting.description} ${green.seo.metaDescription}`;
+    assert(!/مختلف الفعاليات|للبيع/.test(gAll), `PC-35: «مختلف الفعاليات غير الرسمية» و«للبيع» يُحذفان («${gAll}»)`);
   }
 
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
