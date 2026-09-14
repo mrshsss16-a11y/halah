@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <!--#include partials/head-common.html-->
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>الدخول بجوجل | هالة</title>
+  <meta name="robots" content="noindex, nofollow"/>
+  <!-- نافذة مستقلة للدخول بجوجل لتاجر داخل سلة (2026-09-14): زر جوجل داخل إطار سلة لم يظهر لتاجر حقيقي.
+       الإطار يصدر رمزاً لمرة واحدة (/api/auth/google_link_start) يحمل صف متجره، وهذه الصفحة تقدّمه مع رد جوجل. -->
+  <style>
+    body { font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+    main { background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 28px; max-width: 380px; width: 100%; text-align: center; }
+    h1 { font-size: 18px; margin: 0 0 6px; }
+    p { font-size: 13px; color: #475569; line-height: 1.8; margin: 0 0 18px; }
+    #gbtn { display: flex; justify-content: center; min-height: 44px; }
+    #msg { margin-top: 16px; font-size: 13px; font-weight: 700; line-height: 1.8; }
+  </style>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <main>
+    <h1>الدخول بحساب جوجل</h1>
+    <p>اختر حسابك، ويُربط متجرك في سلة بهالة. بعدها ارجع لسلة.</p>
+    <div id="gbtn"></div>
+    <div id="msg" role="status"></div>
+  </main>
+  <script>
+    (function () {
+      var nonce = new URLSearchParams(location.search).get("n") || "";
+      var msg = document.getElementById("msg");
+      function say(text, ok) { msg.textContent = text; msg.style.color = ok ? "#0f6b3e" : "#9f1239"; }
+      if (!/^[0-9a-f]{48}$/.test(nonce)) { say("الرابط غير صالح — ارجع لهالة في سلة واضغط «أكمل بجوجل»."); return; }
+
+      async function onCredential(response) {
+        say("جاري الربط…", true);
+        try {
+          var res = await fetch("/api/auth/salla_google", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ credential: response.credential, nonce: nonce })
+          });
+          var data = await res.json().catch(function () { return {}; });
+          if (!res.ok || !data.ok) { say(data.error || "تعذر الدخول بجوجل."); return; }
+          say("تم ✅ — ارجع لسلة، وتتحدث هالة تلقائياً.", true);
+          try { if (window.opener) window.opener.postMessage({ type: "hala-google-linked" }, location.origin); } catch (e) {}
+          setTimeout(function () { window.close(); }, 1500);
+        } catch (e) { say("تعذر الاتصال. حاول مرة ثانية."); }
+      }
+
+      async function init() {
+        if (!(window.google && google.accounts && google.accounts.id)) { setTimeout(init, 300); return; }
+        try {
+          var cfg = await (await fetch("/api/auth/google_client", { cache: "no-store" })).json();
+          if (!cfg || !cfg.clientId) { say("الدخول بجوجل غير مفعّل حالياً."); return; }
+          google.accounts.id.initialize({ client_id: cfg.clientId, callback: onCredential, use_fedcm_for_button: false });
+          google.accounts.id.renderButton(document.getElementById("gbtn"), { type: "standard", theme: "outline", size: "large", shape: "pill", text: "continue_with", locale: "ar" });
+        } catch (e) { say("تعذر تحميل خدمة جوجل. حدّث الصفحة."); }
+      }
+      init();
+    })();
+  </script>
+</body>
+</html>

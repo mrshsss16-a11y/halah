@@ -177,6 +177,20 @@ async function main() {
       const acSrc = read("../../functions/_lib/domain/accountClaim.js");
       assert(/startsWith\(GOOGLE_MERCHANT_PREFIX\)/.test(acSrc) && /NOT_GOOGLE_ACCOUNT/.test(acSrc), "GCLAIM-3: الربط بجوجل لحساب جوجل فقط");
       assert(typeof claimStoreWithGoogleAccount === "function", "GCLAIM-4: دالة الربط بجوجل مصدَّرة");
+      const { createGoogleLinkNonce, consumeGoogleLinkNonce } = await import("../../functions/_lib/domain/googleLink.js");
+      const store = new Map();
+      const kvEnv = { HALA_CACHE: { put: async (k, v) => { store.set(k, v); }, get: async (k) => store.get(k) ?? null, delete: async (k) => { store.delete(k); } } };
+      const n = await createGoogleLinkNonce(kvEnv, "m_store");
+      assert(/^[0-9a-f]{48}$/.test(n) && await consumeGoogleLinkNonce(kvEnv, n) === "m_store" && await consumeGoogleLinkNonce(kvEnv, n) === null,
+        "GCLAIM-5: رمز النافذة لمرة واحدة — الاستعمال الثاني مرفوض");
+      assert(await consumeGoogleLinkNonce(kvEnv, "abc") === null && await consumeGoogleLinkNonce({}, n) === null, "GCLAIM-6: رمز غير صالح أو بلا KV ⇒ لا متجر");
+      assert(/consumeGoogleLinkNonce\(env, nonce\)/.test(sg) && sg.indexOf("verifyGoogleIdToken(env") < sg.indexOf("consumeGoogleLinkNonce(env"), "GCLAIM-7: الرمز يُستهلك بعد التحقق من جوجل");
+      const startSrc = read("../../functions/api/auth/google_link_start.js");
+      assert(/"google_link_start"[^)]*failClosed: true/.test(startSrc) && /getSessionMerchantId\(request, env\)/.test(startSrc), "GCLAIM-8: بدء النافذة من الجلسة وبحد معدل fail-closed");
+      const page = read("../../google-link.html");
+      assert(page.includes('content="noindex, nofollow"') && page.includes("postMessage({ type: \"hala-google-linked\" }, location.origin)"), "GCLAIM-9: صفحة النافذة لا تُفهرس وترسل لأصلها فقط");
+      const accJs = read("../../public/js/dashboard/account.js");
+      assert(/event\.origin !== window\.location\.origin/.test(accJs), "GCLAIM-10: مستمع النافذة يطابق الأصل تماماً");
     }
 
     const { onRequestPost } = await import("../../functions/api/auth/claim_store.js");

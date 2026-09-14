@@ -7,7 +7,7 @@
 //
 // <script type="module"> مؤجَّل بطبيعته: ينفَّذ بعد تحليل المستند وقبل إطلاق
 // DOMContentLoaded — فمستمع DOMContentLoaded أدناه يعمل كما كان بالنص المضمّن.
-import { installAccountGate, submitCompleteAccount, closeAccountModal, toggleAccountMode, openAccountModal } from "./account.js";
+import { installAccountGate, submitCompleteAccount, closeAccountModal, toggleAccountMode, openAccountModal, completeWithGoogle, startGoogleLink } from "./account.js";
 import { postAuthMe, postSallaEmbedded } from "./api.js";
 import { S } from "./state.js";
 import { switchTab } from "./tabs.js";
@@ -53,7 +53,7 @@ Object.assign(window, {
   // الحذف الذاتي
   onDeleteConfirmInput, requestDeletion,
   // إكمال الحساب
-  submitCompleteAccount, closeAccountModal, toggleAccountMode, openAccountModal
+  submitCompleteAccount, closeAccountModal, toggleAccountMode, openAccountModal, completeWithGoogle, startGoogleLink
 });
 
 // Salla Easy-Mode merchants never sign up with email/password — the ONLY

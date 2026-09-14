@@ -116,7 +116,7 @@ async function runTests() {
       assert(/https:\/\/:project\.pages\.dev\/\*\s+X-Robots-Tag: noindex/.test(hdr), "SEO-6: مرآة pages.dev بـX-Robots-Tag: noindex");
       const hero = await readSrc("partials/dashboard-hero.html");
       const mainJs = await readSrc("public/js/dashboard/main.js");
-      assert(hero.includes('id="accountGoogleBanner"') && hero.includes('onclick="openAccountModal()"') && mainJs.includes('getElementById("accountGoogleBanner")') && /toggleAccountMode, openAccountModal/.test(mainJs),
+      assert(hero.includes('id="accountGoogleBanner"') && hero.includes('onclick="completeWithGoogle()"') && mainJs.includes('getElementById("accountGoogleBanner")') && /openAccountModal, completeWithGoogle, startGoogleLink/.test(mainJs),
         "GBAN-1: «أكمل بجوجل» ظاهر لمتجر بلا حساب، ودالة النافذة منشورة");
       const storeP = await readSrc("partials/dashboard-store.html");
       assert(storeP.includes("تطبيقاتي ← هالة") && storeP.includes("أكمل بجوجل"), "GBAN-2: زر الربط من الموقع يشرح الخطوة الثانية الفعلية");

@@ -123,6 +123,11 @@ export function postSallaGoogle(credential) {
   return postRaw("/api/auth/salla_google", { credential });
 }
 
+/** رابط نافذة الدخول بجوجل المستقلة لمتجر داخل سلة (رمز لمرة واحدة). */
+export function postGoogleLinkStart() {
+  return postRaw("/api/auth/google_link_start", {});
+}
+
 export function postSallaEmbedded(token) {
   return postStrict("/api/auth/salla_embedded", { token });
 }

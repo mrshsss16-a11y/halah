@@ -12,7 +12,7 @@
 //   login  — حساب أُنشئ من موقعنا يُربط به المتجر (`/api/auth/claim_store`)
 // بدون الوضع الثاني كان صاحب حساب الموقع يصطدم بـ«هذا البريد مسجّل مسبقاً»
 // ولا يجد طريقاً لربط متجره بحسابه — رُصد عملياً بتجهيز حساب مراجعة سلة.
-import { postCompleteAccount, postClaimStore, postSallaGoogle } from "./api.js";
+import { postCompleteAccount, postClaimStore, postSallaGoogle, postGoogleLinkStart } from "./api.js";
 import { switchTab } from "./tabs.js";
 
 const MODE_TEXT = {
@@ -31,6 +31,7 @@ const MODE_TEXT = {
 };
 
 let acctMode = "create";
+const inSallaFrame = window.self !== window.top;
 
 export function setAccountMode(mode) {
   acctMode = MODE_TEXT[mode] ? mode : "create";
@@ -53,8 +54,57 @@ export function openAccountModal(msg) {
   if (msg) document.getElementById("acctModalMsg").innerText = msg;
   setAccountMode("create");
   el.classList.remove("hidden");
-  renderAccountGoogle();
+  // داخل إطار سلة: زر النافذة المستقلة (زر جوجل المضمَّن لم يظهر لتاجر حقيقي). خارجه: زر جوجل الرسمي.
+  document.getElementById("acctGooglePopupBlock")?.classList.toggle("hidden", !inSallaFrame);
+  if (!inSallaFrame) renderAccountGoogle();
 }
+
+/** زر «أكمل بجوجل» بالشريط: داخل سلة يفتح نافذة الدخول مباشرة، وخارجها نافذة إكمال الحساب. */
+export function completeWithGoogle() {
+  if (inSallaFrame) startGoogleLink();
+  else openAccountModal();
+}
+
+// نافذة الدخول بجوجل المستقلة (2026-09-14): الإطار يصدر رمزاً لمرة واحدة بجلسته، والنافذة (/google-link)
+// تقدّمه مع رد جوجل. نعرف النجاح برسالة من النافذة (أصل مطابق تماماً) أو بعودة التركيز والتحقق من /api/auth/me.
+let awaitingGoogle = false;
+export async function startGoogleLink() {
+  const err = document.getElementById("acctError");
+  err?.classList.add("hidden");
+  try {
+    const res = await postGoogleLinkStart();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.url) throw new Error(data.error || "");
+    const w = window.open(data.url, "hala_google", "width=480,height=640");
+    awaitingGoogle = true;
+    if (!w) {
+      openAccountModal();
+      const target = document.getElementById("acctError");
+      if (target) {
+        target.textContent = "المتصفح منع نافذة جوجل. ";
+        const a = document.createElement("a");
+        a.href = data.url; a.target = "_blank"; a.rel = "noopener"; a.className = "underline font-bold";
+        a.textContent = "افتح نافذة الدخول بجوجل";
+        target.appendChild(a);
+        target.classList.remove("hidden");
+      }
+    }
+  } catch (e) {
+    window.showToast?.(e?.message || "تعذر بدء الدخول بجوجل. حاول مرة ثانية.", "error");
+  }
+}
+
+window.addEventListener("message", (event) => {
+  if (event.origin !== window.location.origin || event.data?.type !== "hala-google-linked") return;
+  window.location.reload();
+});
+
+window.addEventListener("focus", async () => {
+  if (!awaitingGoogle) return;
+  const me = await fetch("/api/auth/me", { method: "POST" }).then((r) => r.json()).catch(() => null);
+  // حساب جديد ⇒ بريد ظاهر. ربط بحساب جوجل قائم ⇒ نسخة الجلسة تغيّرت فتسقط — إعادة التحميل تنشئ جلسة سلة جديدة.
+  if (me?.email || me?.loggedIn === false) { awaitingGoogle = false; window.location.reload(); }
+});
 
 // «أكمل بجوجل» (طلب المالك 2026-09-14): أبسط من بريد وكلمة مرور. زر جوجل الرسمي بنافذة منبثقة
 // (use_fedcm_for_button: false) — FedCM داخل إطار سلة يحتاج إذناً على وسم iframe الخاص بهم لا نملكه.
@@ -114,7 +164,6 @@ export function closeAccountModal() {
 // بـ401 LOGIN_REQUIRED لا 403، فلا تفتح نافذة الحساب، ورسالة الخطأ تُكتب تحت
 // الشبكة بعيداً عن الضغطة. داخل الإطار لا يوجد مخرج «سجّل دخول» (login.html
 // يرفض التأطير)، فالمخرج الوحيد الصادق: أعد تحميل هالة لتُنشأ جلسة جديدة.
-const inSallaFrame = window.self !== window.top;
 let frameSessionToastAt = 0;
 function notifyFrameSessionLost() {
   if (Date.now() - frameSessionToastAt < 30000) return; // مرة كل ٣٠ث — لا سيل إشعارات
