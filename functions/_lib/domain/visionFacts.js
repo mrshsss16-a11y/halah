@@ -100,6 +100,18 @@ function parseVisionFacts(input, name = "", sourceText = "") {
 
 const enough = (facts) => Boolean(facts) && Object.keys(facts).length >= MIN_FACTS;
 
+/**
+ * قراءة صورة ناقصة تستحق التصعيد لـLuna (2026-09-14): أقل من ٥ حقائق صالحة أو بلا أي تفصيل، أو نص حر أقصر من ٦٠ حرفاً.
+ * فستان أخضر حقيقي: قرأه Qwen «أكمام قصيرة» بلا أزرار ولا كشكش الحافة — التفاصيل الغائبة أكثر ما يُضعف الوصف.
+ */
+export function visionTextIsThin(text, name = "") {
+  const t = String(text || "").trim();
+  if (!t) return true;
+  const facts = parseVisionFacts(t, name);
+  if (facts === null) return t.length < 60;
+  return Object.keys(facts).length < 5 || !(facts.details || []).length;
+}
+
 async function sha256Hex(text) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");

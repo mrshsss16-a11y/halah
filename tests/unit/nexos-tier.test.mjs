@@ -65,9 +65,10 @@ async function main() {
   {
     let body = null;
     const diag = {};
+    let freeCalled = false;
     const text = await withFetch(async (url, init) => { if (url === NEXOS_API_URL) { body = JSON.parse(init.body); return ok("{\"description\":\"وصف\"}"); } return new Response("no", { status: 500 }); },
-      () => askWorkersAI({ env: { AI: neverAI, NEXOS_API_KEY: "n", HALA_CACHE: kv() }, system: "s", messages: [{ role: "user", content: "u" }], skipCache: true, maxTokens: 2400, ttlKind: "copy", temperature: 0.35, diag }));
-    assert(text === "{\"description\":\"وصف\"}" && diag.tier === "nexos", "NX-7: كتابة الوصف تصل nexos بعد تعذّر الطبقات المجانية");
+      () => askWorkersAI({ env: { AI: { run: async () => { freeCalled = true; return { response: "مجاني" }; } }, NEXOS_API_KEY: "n", HALA_CACHE: kv() }, system: "s", messages: [{ role: "user", content: "u" }], skipCache: true, maxTokens: 2400, ttlKind: "copy", temperature: 0.35, diag }));
+    assert(text === "{\"description\":\"وصف\"}" && diag.tier === "nexos" && !freeCalled, "NX-7: كتابة الوصف تبدأ بـnexos (Luna) قبل المجاني — قرار المالك 2026-09-14");
     assert(body?.reasoning_effort === "none" && body?.temperature === 0.35 && body?.max_tokens === 2400 && body?.messages?.[0]?.role === "system", "NX-8: الكتابة بلا تفكير وبحرارة الوصف ورسالة النظام");
   }
   {
@@ -80,8 +81,8 @@ async function main() {
   {
     const urls = [];
     await withFetch(async (url) => { urls.push(url); return new Response("no", { status: 500 }); },
-      () => askWorkersAI({ env: { AI: { run: async () => ({ response: "{\"description\":\"مجاني\"}" }) }, NEXOS_API_KEY: "n", HALA_CACHE: kv() }, system: "s", messages: [{ role: "user", content: "u" }], skipCache: true, ttlKind: "copy" }));
-    assert(!urls.includes(NEXOS_API_URL), "NX-9b: وصف كتبته Workers AI المجانية لا يصرف من الرصيد");
+      () => askWorkersAI({ env: { AI: { run: async () => ({ response: "{\"description\":\"مجاني\"}" }) }, NEXOS_API_KEY: "n", HALA_CACHE: kv({ [`nexos:calls:${day()}`]: String(NEXOS_DAILY_CALLS) }) }, system: "s", messages: [{ role: "user", content: "u" }], skipCache: true, ttlKind: "copy" }));
+    assert(!urls.includes(NEXOS_API_URL), "NX-9b: بعد السقف اليومي يكتب المجاني ولا يُصرف من الرصيد");
     let thrown = null;
     await withFetch(async () => new Response("no", { status: 500 }),
       () => askWorkersAI({ env: { AI: neverAI, NEXOS_API_KEY: "n", HALA_CACHE: kv({ [`nexos:calls:${day()}`]: String(NEXOS_DAILY_CALLS) }) }, system: "s", messages: [{ role: "user", content: "u" }], skipCache: true, ttlKind: "copy" }).catch((e) => { thrown = e; }));
@@ -92,6 +93,15 @@ async function main() {
     const transfer = readFileSync(new URL("../../docs/PDPL/TRANSFER_RISK_ASSESSMENT.md", import.meta.url), "utf8");
     assert(/nexos\.ai/.test(privacy) && /Azure/.test(privacy) && /ثم OpenRouter ثم nexos\.ai/.test(privacy) && /nexos\.ai/.test(transfer), "NX-10: الخصوصية وتقييم النقل يسمّيان nexos.ai وAzure وترتيب تحليل الصور");
   }
+}
+
+{
+  const { visionTextIsThin } = await import("../../functions/_lib/domain/visionFacts.js");
+  const thin = JSON.stringify({ color: "أخضر فاتح", length: "ميدي", fit: "بقصّة A", sleeves: "قصيرة", details: [] });
+  const rich = JSON.stringify({ color: "أخضر فاتح", length: "ميدي", fit: "بقصّة A", waist: "برباط", neckline: "مربعة", sleeves: "منفوخة", details: ["كشكش", "أزرار"] });
+  assert(visionTextIsThin(thin, "فستان") && !visionTextIsThin(rich, "فستان") && visionTextIsThin("", "فستان"), "NX-11: قراءة ناقصة (بلا تفاصيل أو أقل من ٥ حقائق) تُكتشف، والغنية لا");
+  const copySrc = readFileSync(new URL("../../functions/_lib/domain/copy.js", import.meta.url), "utf8");
+  assert(/visionTextIsThin\(out\.text, name\)/.test(copySrc) && /nexosOnly: true/.test(copySrc), "NX-12: الوصف يصعّد قراءة الصورة الناقصة لـLuna مرة واحدة");
 }
 
 main().then(done);

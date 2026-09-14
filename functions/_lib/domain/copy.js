@@ -20,7 +20,7 @@ import { copyCategoryFor } from "../ai/decisionQuestions.js";
 const WEARABLE = new Set(["apparel", "shoes", "bags", "jewelry", "watches"]);
 import { polishPage, pageText } from "./copyPage.js";
 import { loadLessons, lessonsBlock, learnFromCopy } from "./copyLessons.js";
-import { visionFactsContext, structuredVisionBlock, settleVisionFacts, factsToNotes, applyVisionFacts } from "./visionFacts.js";
+import { visionFactsContext, structuredVisionBlock, settleVisionFacts, factsToNotes, applyVisionFacts, visionTextIsThin } from "./visionFacts.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -175,7 +175,12 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     try {
       // اسم المنتج يحدد القطعة: بلا اسم وصف Qwen بلوزة العارضة وتنورتها طقماً واحداً.
       const prompt = name ? `${visionPrompt}\n\nالقطعة المعروضة للبيع: «${String(name).slice(0, 60)}». أسطر الوصف عن الجزء المطابق لهذا العنوان من الصورة وحده، وأي قطعة أخرى تلبسها العارضة لا تدخل فيها. باقي الصورة يُستخدم لسطر «الطابع العام» فقط.` : visionPrompt;
-      const out = await askVisionDetailed({ env, imageUrl, prompt });
+      let out = await askVisionDetailed({ env, imageUrl, prompt });
+      // قراءة مجانية ناقصة ⇒ مرة وحدة بـLuna (2026-09-14): الدفع للصور الصعبة وحدها، والنتيجة تُحفظ.
+      if (!String(out.model || "").startsWith("nexos") && visionTextIsThin(out.text, name)) {
+        const paid = await askVisionDetailed({ env, imageUrl, prompt, nexosOnly: true }).catch(() => null);
+        if (paid?.text && !visionTextIsThin(paid.text, name)) out = { ...paid, errors: [...(out.errors || []), ...(paid.errors || [])] };
+      }
       rawVisionNotes = (await settleVisionFacts(env, factsCtx, { merchantId, name, text: out.text, model: out.model })) ?? (out.text || null);
       visionModel = out.model;
       visionErrors = summarizeVisionErrors(out.errors);

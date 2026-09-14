@@ -125,7 +125,7 @@ export async function askVisionAI(opts) {
  * الآن كل نداء يعود بـ`{ text, model, errors }`: أي نموذج أنتج النص فعلاً،
  * ورسائل فشل ما قبله. المستدعي يسجّلها — لا يبلعها.
  */
-export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mimeType = "image/jpeg" }) {
+export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mimeType = "image/jpeg", nexosOnly = false }) {
   if (!env.AI && !env.GROQ_API_KEY && !env.OPENROUTER_API_KEY && !env.NEXOS_API_KEY) throw new Error("AI binding is missing.");
   const errors = [];
 
@@ -146,6 +146,8 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
 
   // المسار الأساسي: صيغة رسائل متعددة الأجزاء (سكاوت متعدد الوسائط أصلاً).
   const dataUrl = `data:${mimeType};base64,${bytesToBase64(bytes)}`;
+  // تصعيد قراءة ناقصة (copy.js، 2026-09-14): Luna مباشرة بلا إعادة المجاني.
+  if (nexosOnly) return (await tryNexosVision(env, question, dataUrl, errors)) || { text: "", model: null, errors };
   for (const model of [VISION_DETAIL_MODEL, VISION_ALT_MODEL, VISION_MODEL]) {
   try {
     const response = await env.AI.run(model, {
@@ -197,18 +199,19 @@ export async function askVisionDetailed({ env, imageUrl, imageBuffer, prompt, mi
     }
   }
 
-  // آخر خيار (قرار المالك 2026-09-13): رصيد Hostinger المدفوع لا يُصرف إلا بعد تعذّر كل الطبقات المجانية.
-  // قراءة الصورة تُحفظ بـvision_facts فلا تُدفع مرتين لنفس المنتج، والسقف اليومي يحمي الرصيد.
-  if (await reserveNexosCall(env)) {
-    try {
-      const text = await askNexos({ apiKey: env.NEXOS_API_KEY, reasoning: "low", maxTokens: 700, messages: [{ role: "user", content: [{ type: "text", text: question }, { type: "image_url", image_url: { url: dataUrl } }] }] });
-      return { text, model: `nexos:${NEXOS_MODEL}`, errors };
-    } catch (err) {
-      errors.push(`nexos:${NEXOS_MODEL}: ${String(err?.message || err).slice(0, 160)}`);
-    }
-  }
+  // بعد تعذّر الطبقات المجانية: رصيد Hostinger. قراءة الصورة تُحفظ بـvision_facts فلا تُدفع مرتين، والسقف اليومي يحمي الرصيد.
+  return (await tryNexosVision(env, question, dataUrl, errors)) || { text: "", model: null, errors };
+}
 
-  return { text: "", model: null, errors };
+async function tryNexosVision(env, question, dataUrl, errors) {
+  if (!(await reserveNexosCall(env))) return null;
+  try {
+    const text = await askNexos({ apiKey: env.NEXOS_API_KEY, reasoning: "low", maxTokens: 700, messages: [{ role: "user", content: [{ type: "text", text: question }, { type: "image_url", image_url: { url: dataUrl } }] }] });
+    return { text, model: `nexos:${NEXOS_MODEL}`, errors };
+  } catch (err) {
+    errors.push(`nexos:${NEXOS_MODEL}: ${String(err?.message || err).slice(0, 160)}`);
+    return null;
+  }
 }
 
 /**
