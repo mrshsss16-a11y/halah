@@ -102,6 +102,7 @@ async function main() {
   assert(visionTextIsThin(thin, "فستان") && !visionTextIsThin(rich, "فستان") && visionTextIsThin("", "فستان"), "NX-11: قراءة ناقصة (بلا تفاصيل أو أقل من ٥ حقائق) تُكتشف، والغنية لا");
   const copySrc = readFileSync(new URL("../../functions/_lib/domain/copy.js", import.meta.url), "utf8");
   assert(/visionTextIsThin\(out\.text, name\)/.test(copySrc) && /nexosOnly: true/.test(copySrc), "NX-12: الوصف يصعّد قراءة الصورة الناقصة لـLuna مرة واحدة");
+  assert(copySrc.includes("factsCtx.structured ? await askVisionDetailed({ env, imageUrl, prompt, nexosOnly: true })") && copySrc.includes("if (!out.text) out = await askVisionDetailed({ env, imageUrl, prompt });"), "NX-13: صور الأزياء (قراءة منظّمة) بـLuna أولاً والمجاني احتياط");
 }
 
 main().then(done);

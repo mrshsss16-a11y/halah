@@ -175,7 +175,9 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
     try {
       // اسم المنتج يحدد القطعة: بلا اسم وصف Qwen بلوزة العارضة وتنورتها طقماً واحداً.
       const prompt = name ? `${visionPrompt}\n\nالقطعة المعروضة للبيع: «${String(name).slice(0, 60)}». أسطر الوصف عن الجزء المطابق لهذا العنوان من الصورة وحده، وأي قطعة أخرى تلبسها العارضة لا تدخل فيها. باقي الصورة يُستخدم لسطر «الطابع العام» فقط.` : visionPrompt;
-      let out = await askVisionDetailed({ env, imageUrl, prompt });
+      // صور الأزياء (قراءة منظّمة) بـLuna أولاً (قرار المالك 2026-09-14): أدق من Qwen على ١٤ صورة (الطول، الحزام، الأكمام المنفوخة).
+      let out = factsCtx.structured ? await askVisionDetailed({ env, imageUrl, prompt, nexosOnly: true }).catch(() => ({ text: "" })) : { text: "" };
+      if (!out.text) out = await askVisionDetailed({ env, imageUrl, prompt });
       // قراءة مجانية ناقصة ⇒ مرة وحدة بـLuna (2026-09-14): الدفع للصور الصعبة وحدها، والنتيجة تُحفظ.
       if (!String(out.model || "").startsWith("nexos") && visionTextIsThin(out.text, name)) {
         const paid = await askVisionDetailed({ env, imageUrl, prompt, nexosOnly: true }).catch(() => null);
