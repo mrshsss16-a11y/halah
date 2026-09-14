@@ -127,6 +127,12 @@ async function main() {
     const long = { copywriting: { description: "وصف." } };
     applyVisionFacts(long, { color: "أسود وأبيض", length: "ميدي", details: ["سموك"] }, { name: "تنورة بليسيه بطبقة مائلة" });
     assert(long.copywriting.description.startsWith("تنورة بليسيه بطبقة مائلة باللون الأسود والأبيض وطول ميدي، بتجعيد سموك."), `VFX-26: «باللون الأسود والأبيض» لا «الوأبيض»، و«سموك» تفصيل («${long.copywriting.description}»)`);
+    // فستان زيتي حقيقي 2026-09-14: جملة ثانية تعيد أربع حقائق بحشو طويل.
+    const green = { copywriting: { description: "فستان ماكسي زيتي بقصّة واسعة. تظهر عليه تفاصيل سموك وكشكش مع نقشة مورّدة وسطح قماش مطفي، ليكون خياراً مناسباً للإطلالات النهارية. يُنسّق مع إكسسوارات بسيطة." } };
+    applyVisionFacts(green, { color: "زيتي", length: "ماكسي", fit: "واسعة", waist: "مطاطي", neckline: "عالية", sleeves: "طويلة", details: ["سموك", "كشكش"], surface: "مطفي", pattern: "مورد", mood: "نهاري" }, { name: "فستان" });
+    assert(!/تظهر عليه تفاصيل/.test(green.copywriting.description) && /يُنسّق مع إكسسوارات بسيطة/.test(green.copywriting.description), `VFX-28: جملة تعيد ثلاث حقائق فأكثر بحشو طويل تُحذف، وجملة التنسيق تبقى («${green.copywriting.description}»)`);
+    const guide = structuredVisionBlock({ structured: true }, "فستان");
+    assert(/لا «ميني» ما دامت الحافة قرب الركبة/.test(guide) && /«شفاف» إن ظهر الجلد أو البطانة عبر أي جزء/.test(guide), "VFX-29: توجيه الطول بموضع الحافة، والشفافية بأي جزء من القطعة");
     assert(/تطريز» خيوط بارزة/.test(structuredVisionBlock({ structured: true }, "فستان")) && /سموك/.test(structuredVisionBlock({ structured: true }, "فستان")), "VFX-27: توجيه قارئ الصورة يفرّق التطريز عن النقشة المطبوعة ويسمّي السموك");
   }
   {

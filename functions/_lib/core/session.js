@@ -1,4 +1,5 @@
 import { getAccountEmail, getMerchant } from "./identity.js";
+import { isAccessExpired } from "./accessState.js";
 import { ApiError } from "./respond.js";
 // Q1 — نسخة واحدة للمقارنة الثابتة الزمن (كانت مكرّرة هنا وبـoauthState.js وreset_password.js).
 import { timingSafeEqualStr } from "./crypto.js";
@@ -321,6 +322,14 @@ export async function requireCompletedAccount(request, env, claimedStoreId) {
       403,
       "أكمل تسجيل حسابك عشان تقدر تستخدم هذي الميزة.",
       "ACCOUNT_REQUIRED"
+    );
+  }
+  // تجربة/اشتراك سلة منتهٍ: الحساب والتوكنات باقية، والاستخدام موقوف حتى التجديد (core/accessState.js).
+  if (await isAccessExpired(env, merchantId)) {
+    throw new ApiError(
+      403,
+      "انتهت تجربتك أو اشتراكك في هالة — جدّده من «التطبيقات» ثم «تطبيقاتي» في متجرك، وترجع كل ميزاتك ومنتجاتك مثل ما كانت.",
+      "SUBSCRIPTION_EXPIRED"
     );
   }
   return merchantId;

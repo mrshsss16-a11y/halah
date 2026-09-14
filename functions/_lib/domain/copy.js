@@ -236,7 +236,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   const toneLabel = TONE_LABELS[writeTone] || TONE_LABELS.white;
   // السعر لا يُمرَّر للنموذج (2026-09-11): كان يعود داخل نص الوصف («السعر: 83
   // ريال») فيتقادم مع أول تعديل سعر بالمتجر. يبقى لـJSON-LD فقط عبر parseSeoResponse.
-  const userMsg = `اسم المنتج: ${name}\nالفئة: ${category || "غير محددة"}\nمزايا: ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${writeTone})`;
+  const userMsg = `اسم المنتج: ${name}\nالفئة: ${category || "غير محددة"}\nما يميز المنتج (من التاجر — معلومة مؤكدة، ابنِ عليها الزاوية التسويقية بلا مبالغة): ${features || "لا يوجد"}\nالنبرة: ${toneLabel} (${writeTone})`;
 
   // آخر مخرج خام ومزوّده: سجل فشل التحليل كان بلا سبب ظاهر (2026-09-12 01:24).
   const lastAsk = { tier: "-", raw: "", errors: "" };

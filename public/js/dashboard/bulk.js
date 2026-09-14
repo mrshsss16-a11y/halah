@@ -5,11 +5,11 @@
 // فلا أثر مرئي بين البدء والاكتمال. الآن: نافذة «أوصاف منتجاتك» بمرحلة «جاري التجهيز» (عدّادات، قائمة
 // المنتجات بحالة كل واحد، «راجع الجاهز الآن» من أول وصف جاهز)، و«أكمل بالخلفية» يصغّرها لشريحة عائمة.
 //
-// التتبّع بذاكرة الصفحة فقط: لا endpoint يعرض الوظائف الشغّالة لمتجر، وتحديث الصفحة ينهي التتبّع (التوليد
+// المعالجة فورية من الصفحة المفتوحة (driveJob ← api/store/bulk/step) والـcron احتياط. التتبّع بذاكرة الصفحة فقط: لا endpoint يعرض الوظائف الشغّالة لمتجر، وتحديث الصفحة ينهي التتبّع (التوليد
 // نفسه مستمر بالخادم، والجاهز يظهر بـ«المراجعة والنشر»). ضغط «ولّد» مرة ثانية أثناء وظيفة شغّالة يرجع
 // GENERATE_ALREADY_RUNNING بمعرّفها — فنلتحق بها بدل رسالة خطأ.
 import { S } from "./state.js";
-import { postBulkStatus, postBulkGenerateAll, postReviewList } from "./api.js";
+import { postBulkStatus, postBulkStep, postBulkGenerateAll, postReviewList } from "./api.js";
 import { loadReview, setReviewCounts } from "./review.js";
 import { showModalShell, syncProgressLinks } from "./reviewModal.js";
 
@@ -30,7 +30,7 @@ function freshTracker() {
     jobId: null, skus: [], meta: new Map(), note: "",
     status: "", total: 0, processed: 0, succeeded: 0, failed: 0, deferred: 0,
     failedBySku: new Map(), ready: new Set(), reviewed: new Set(), pendingCount: 0,
-    pollFailures: 0, ticks: 0, lastSucceeded: -1, finished: false
+    pollFailures: 0, ticks: 0, lastSucceeded: -1, finished: false, driving: null
   };
 }
 const T = freshTracker();
@@ -52,7 +52,35 @@ export async function pollBulkJob(jobId, { items = [], note = "", openModal = tr
   syncProgressLinks();
   if (openModal) openBulkProgress(); else renderAll();
   await tick();
-  if (!T.finished && T.jobId === jobId) S.bulkPollTimer = setInterval(tick, POLL_MS);
+  if (!T.finished && T.jobId === jobId) {
+    S.bulkPollTimer = setInterval(tick, POLL_MS);
+    void driveJob(jobId);
+  }
+}
+
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// المعالجة الفورية (2026-09-14): كانت الأوصاف تنتظر دفعة الـcron كل ١٠ دقائق — «بطيء وغير عملي».
+// الصفحة المفتوحة تطلب منتجاً منتجاً بالتتابع (nexos يرفض التوازي بـ٤٢٩). الحصة والحجز يُحسمان
+// بالخادم عند كل منتج، فلا يتجاوز أحد حد اليوم بتكرار هذا النداء. إغلاق الصفحة = الـcron يكمل.
+async function driveJob(jobId) {
+  if (T.driving === jobId) return;
+  T.driving = jobId;
+  let failures = 0;
+  while (T.jobId === jobId && !T.finished && failures < 3) {
+    try {
+      const { res, data } = await postBulkStep(jobId);
+      if (data?.code === "RATE_LIMITED") { await wait(Math.min(60, Number(data.retryAfter) || 30) * 1000); failures++; continue; }
+      if (!res.ok || !data?.ok) { failures++; await wait(3000); continue; }
+      failures = 0;
+      if (data.idle) break;
+      await tick();
+    } catch (e) {
+      failures++;
+      await wait(3000);
+    }
+  }
+  if (T.driving === jobId) T.driving = null;
 }
 
 async function tick() {
@@ -76,9 +104,12 @@ async function tick() {
     });
     const done = data.status === "done";
     // قائمة الجاهز تُجلب عند تغيّر عدد الجاهز فقط (وكل دقيقة احتياطاً) — لا نداءً مع كل نبضة بلا داعٍ.
-    if (done || T.succeeded !== T.lastSucceeded || T.ticks % 4 === 1) {
+    const grew = T.succeeded !== T.lastSucceeded;
+    if (done || grew || T.ticks % 4 === 1) {
       T.lastSucceeded = T.succeeded;
       await refreshReady();
+      // نافذة المراجعة المفتوحة تُلحق الجاهز الجديد بقائمتها (reviewModal.js · appendReadyRows).
+      if (grew) document.dispatchEvent(new Event("hala:review-ready"));
     }
     if (done) finishTracking();
   } catch (e) {
@@ -274,7 +305,7 @@ export async function startCatalogGenerate() {
     }
     if (!data?.ok) { showMsg("bulkFeedback", data?.error || "تعذر بدء التوليد.", "error"); btn.disabled = false; return; }
     // upgradeHint («رقّي الباقة») لا يُعرض: لا مسار ترقية باللوحة، فهو وعد بلا زر.
-    showMsg("bulkFeedback", data.message + ` — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة، تقدير الإكمال: ~${data.etaMinutes} دقيقة).`, "info");
+    showMsg("bulkFeedback", data.message + ` — نكتبها الحين منتجاً منتجاً (~${data.etaMinutes} دقيقة). خلّ الصفحة مفتوحة للأسرع، ولو قفلتها نكمل بالخلفية.`, "info");
     pollBulkJob(data.jobId, { note: data.message });
   } catch (e) { showMsg("bulkFeedback", "تعذر الاتصال.", "error"); }
   btn.disabled = false;

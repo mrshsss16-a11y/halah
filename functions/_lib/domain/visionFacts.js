@@ -13,8 +13,9 @@ import { logError } from "../core/errorLog.js";
 import { attributeCategoryFor } from "../ai/attributeDictionary.js";
 import { fixColorAgreement, isBottomItem } from "./copyPhrases.js";
 
-// تغيير القوائم أو الصيغة = رفع الإصدار، فتُقرأ الصور من جديد بدل حقائق بقوائم قديمة.
-const FACTS_VERSION = "v3";
+// تغيير القوائم أو الصيغة أو التوجيه = رفع الإصدار، فتُقرأ الصور من جديد بدل حقائق قديمة.
+// v4 (2026-09-14): توجيه الطول بموضع الحافة و«شفاف» لأي جزء شفاف — «ميني» لفستان بطول الركبة و«مطفي» لأكمام شيفون.
+const FACTS_VERSION = "v4";
 const STRUCTURED_CATEGORIES = new Set(["womens_apparel", "abayas"]);
 const MIN_FACTS = 2;
 
@@ -145,6 +146,8 @@ export function structuredVisionBlock(ctx, name = "") {
     "- color: اسم اللون بالعربي بصيغة المذكر (أسود، وردي فاتح، كحلي)",
     ...fields.map((k) => `- ${k}${k === "details" ? " (قائمة من ٠ إلى ٤ عناصر)" : ""}: ${ENUMS[k].join(" | ")}`),
     "- الصفات للقطعة المعروضة للبيع وحدها، لا لما تلبسه العارضة معها.",
+    "- length: بموضع الحافة السفلية على جسم العارضة: فوق منتصف الفخذ «ميني»، عند الركبة أو فوقها/تحتها بقليل «بطول الركبة»، منتصف الساق «ميدي»، الكاحل أو القدم «ماكسي». لا «ميني» ما دامت الحافة قرب الركبة.",
+    "- surface: «شفاف» إن ظهر الجلد أو البطانة عبر أي جزء من القطعة (الأكمام أو الطبقة العلوية مثلاً)؛ «لامع» لانعكاس ضوء واضح؛ «مطفي» فقط إن كان القماش معتماً بلا لمعة.",
     "- fit: «واسعة» إن اتسعت الحافة عن الخصر، «مستقيمة» إن بقي عرضها قريباً من الخصر، «ضيقة» إن التصق القماش بالجسم.",
     "- details: «تطريز» خيوط بارزة مخيطة فوق القماش؛ الرسم المطبوع (ورود، أشكال) نقشة في pattern لا تطريز. «تصميم غير متماثل» إن اختلف طرفا القطعة أو تراكبت طبقة مائلة. «سموك» تجعيد مطاطي كثيف عند الخصر أو الياقة أو الأساور. «أزرار» إن ظهرت صف أزرار. «حزام» شريط منفصل يلتف حول الخصر فقط؛ قماش الفستان نفسه ملفوفاً أو معقوداً عند الخصر «درابيه» لا حزام. «كشكش» قماش مجعّد متموّج بطرف القطعة؛ الحواف المخرّمة أو الكروشيه أو الدانتيل المقصوص على الحافة «تخريم» لا كشكش. «كاب» طبقة قماش قصيرة منفصلة تغطي الكتفين والصدر فوق القطعة.",
     "- waist: «غير واضح» إن غطّت الخصرَ طبقة (كاب، جاكيت) أو لم يظهر خط الخصر بوضوح — لا تستنتج «منخفض» من طول الطبقة العلوية.",
@@ -267,8 +270,19 @@ export function applyVisionFacts(parsed, facts, { name = "" } = {}) {
     const echo = (s) => {
       const content = s.split(/\s+/).map(bareWord).filter((w) => w && !ECHO_STOP.has(w));
       const novel = content.filter((w) => !known.has(w) && !known.has(w.replace(/(?:ا|ه)$/u, "")));
-      return novel.length <= 1 || (content.length >= 4 && novel.length <= 3 && novel.length * 2 <= content.length);
+      return novel.length <= 1 || (content.length >= 4 && novel.length <= 3 && novel.length * 2 <= content.length) || repeatsFacts(s);
     };
+    // «تظهر عليه تفاصيل سموك وكشكش مع نقشة مورّدة وسطح قماش مطفي، ليكون خياراً مناسباً…» (فستان زيتي 2026-09-14):
+    // حشو كثير يخفي أن الجملة تعيد ثلاث حقائق فأكثر قالتها جملة الافتتاح — تكرار يُحذف مهما طال حشوه.
+    const stem = (w) => bareWord(w).replace(/(?:يه|ه|ي|ا)$/u, "");
+    const factStems = ["fit", "neckline", "sleeves", "length", "surface", "pattern", "waist"].flatMap((k) => (facts[k] ? [facts[k]] : []))
+      .concat(facts.details || [])
+      .map((v) => String(v).split(/\s+/).map(stem).filter((w) => w && w.length > 1 && !ECHO_STOP.has(w)))
+      .filter((ws) => ws.length);
+    function repeatsFacts(s) {
+      const words = new Set(s.split(/\s+/).map(stem));
+      return factStems.filter((ws) => ws.every((w) => words.has(w))).length >= 3;
+    }
     paras[0] = [sentences[0], ...sentences.slice(1).filter((s) => !echo(s))].join(" ");
     cw.description = paras.filter((p) => p.trim()).join("\n\n");
   }

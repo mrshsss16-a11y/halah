@@ -40,12 +40,17 @@ export function postCatalogSync() {
 }
 
 // ── التوليد بالجملة ─────────────────────────────────────────────────
-export function postBulkGenerateSelected(skus, tone) {
-  return postSoft("/api/store/bulk/generate", { skus, tone }, null);
+export function postBulkGenerateSelected(skus, tone, notes = {}) {
+  return postSoft("/api/store/bulk/generate", { skus, tone, notes }, null);
 }
 
 export function postBulkGenerateAll(tone) {
   return postStrict("/api/store/bulk/generate", { tone });
+}
+
+// منتج واحد فوراً من وظيفة التاجر (api/store/bulk/step) — الصفحة تناديه بالتتابع.
+export function postBulkStep(jobId) {
+  return postSoft("/api/store/bulk/step", { jobId }, null);
 }
 
 export function postBulkStatus(jobId) {

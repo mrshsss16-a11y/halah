@@ -6,7 +6,7 @@
 // الكتابة، وإلزامياً قبل أي انتقال أو اعتماد أو إغلاق (وإلا نُشر النص الأصلي بدل ما كتبه التاجر).
 //
 // لا استيراد من bulk.js (يستوردنا هو): التواصل بأحداث document — hala:review-decided · hala:review-modal-closed
-// · hala:show-progress. و#reviewModal[data-bulk-tracked="1"] يعني أن توليداً مُتتبَّعاً بهذه الصفحة.
+// · hala:show-progress · hala:review-ready (جهز وصف جديد). و#reviewModal[data-bulk-tracked="1"] يعني أن توليداً مُتتبَّعاً بهذه الصفحة.
 import { confirmAction } from "./embedded.js";
 import { postReviewList, postReviewDecide } from "./api.js";
 import { setReviewCounts, loadReview, maybeShowFeedback } from "./review.js";
@@ -14,7 +14,7 @@ import { sectionsHtml, plainText, updateSeoPreview, syncToggle, collectFields, m
 
 const escHtml = window.escHtml;
 const $ = (id) => document.getElementById(id);
-const M = { phase: "review", rows: [], index: 0, pendingTotal: 0, busy: false, dirty: false, saveTimer: null, saveChain: Promise.resolve(true), lastFocus: null };
+const M = { phase: "review", rows: [], index: 0, pendingTotal: 0, busy: false, dirty: false, saveTimer: null, saveChain: Promise.resolve(true), lastFocus: null, loading: false, decided: new Set() };
 const SAVE_IDLE_MS = 1500;
 const MSG_TONE = { error: "text-rose-700", success: "text-emerald-800", info: "text-slate-600" };
 
@@ -44,6 +44,7 @@ export function showModalShell(phase) {
     document.body.style.overflow = "hidden";
   }
   M.phase = phase;
+  if (phase === "review") startLive(); else stopLive();
   $("rmProgressView").classList.toggle("hidden", phase !== "progress");
   $("rmReviewView").classList.toggle("hidden", phase !== "review");
   $("rmSub").innerText = phase === "progress" ? "جاري التجهيز — تقدر تكمل شغلك والتوليد مستمر" : "مراجعة منتج منتج — ما يُنشر شيء قبل اعتمادك";
@@ -69,6 +70,7 @@ async function loadRows(startId) {
   M.rows = [];
   M.index = 0;
   M.dirty = false;
+  M.loading = true;
   $("rmStepHead").classList.add("hidden");
   $("rmActions").classList.add("hidden");
   $("rmBody").innerHTML = '<div role="status" class="py-16 text-center text-sm text-slate-500">جاري تحميل الأوصاف الجاهزة…</div>';
@@ -80,8 +82,10 @@ async function loadRows(startId) {
     if (data.counts) setReviewCounts(data.counts);
     const at = M.rows.findIndex((r) => r.id === Number(startId));
     M.index = at >= 0 ? at : 0;
+    M.loading = false;
     renderStep();
   } catch (e) {
+    M.loading = false;
     console.error("[review-modal] load failed", e);
     $("rmBody").innerHTML = `<div class="py-16 text-center space-y-3">
       <p class="text-base font-black text-black">ما قدرنا نحمّل الأوصاف</p>
@@ -93,7 +97,7 @@ async function loadRows(startId) {
 
 function emptyStateHtml() {
   const more = bulkTracked()
-    ? '<p class="text-sm text-slate-600">باقي منتجات قيد الكتابة — تجهز على دفعات، ونعرضها هنا أول ما تجهز.</p><button type="button" data-rm-action="to-progress" class="sleek-btn-white px-4 py-2.5 rounded-xl text-sm font-bold">تابع التجهيز</button>'
+    ? '<p class="text-sm text-slate-600">باقي منتجات قيد الكتابة الحين — تظهر هنا تلقائياً أول ما تجهز.</p><button type="button" data-rm-action="to-progress" class="sleek-btn-white px-4 py-2.5 rounded-xl text-sm font-bold">تابع التجهيز</button>'
     : "";
   return `<div class="py-16 text-center space-y-3 max-w-md mx-auto">
     <p class="text-base font-black text-black">ما فيه أوصاف تنتظر مراجعتك الحين</p>
@@ -151,6 +155,49 @@ function renderStep() {
   updateSeoPreview(body, r.name);
   body.scrollTop = 0;
 }
+
+// طابور حي أثناء المراجعة (بلاغ المالك 2026-09-14، مرتين): القائمة كانت تُحمَّل مرة عند الفتح، فالوصف الثاني يجهز
+// والتاجر يراجع الأول ولا يظهر إلا بإغلاق النافذة. الإصلاح الأول انتظر إشعار متتبّع الجملة وحده — يضيع إن كتب
+// الـcron الوصف أو حُدّثت الصفحة. الآن النافذة نفسها تسأل كل ٨ ثوانٍ ما دامت على المراجعة، والإشعار يعجّلها.
+// الجديد يدخل **مباشرة بعد المنتج الحالي** بلا إعادة رسم الخطوة (تعديل قيد الكتابة لا يضيع)، والمقرَّر للتو لا يعود.
+const LIVE_MS = 8000;
+let liveTimer = null;
+
+function startLive() {
+  if (!liveTimer) liveTimer = setInterval(() => { if (!document.hidden) appendReadyRows(); }, LIVE_MS);
+}
+
+function stopLive() {
+  clearInterval(liveTimer);
+  liveTimer = null;
+}
+
+async function appendReadyRows() {
+  if (!modalOpen() || M.phase !== "review" || M.busy || M.loading) return;
+  try {
+    const { data } = await postReviewList("pending", 100);
+    if (!data?.ok || M.busy || M.loading || M.phase !== "review") return;
+    const known = new Set(M.rows.map((r) => r.id));
+    const fresh = (data.rows || data.items || []).filter((r) => !known.has(r.id) && !M.decided.has(r.id));
+    M.pendingTotal = Number(data.counts?.pending ?? M.pendingTotal);
+    if (data.counts) setReviewCounts(data.counts);
+    if (!fresh.length) return;
+    const wasEmpty = !M.rows.length;
+    M.rows.splice(wasEmpty ? 0 : M.index + 1, 0, ...fresh);
+    if (wasEmpty) {
+      M.index = 0;
+      renderStep();
+    } else {
+      $("rmCounter").innerText = `${M.index + 1} من ${M.rows.length}`;
+      $("rmStepBar").style.width = Math.round(((M.index + 1) / M.rows.length) * 100) + "%";
+      $("rmNext").disabled = M.index >= M.rows.length - 1;
+      $("rmApproveAllCount").innerText = String(Math.max(M.pendingTotal, M.rows.length));
+    }
+    const first = fresh[0].name || fresh[0].sku || "منتج";
+    setMsg(fresh.length === 1 ? `جهز وصف «${first}» — تلقاه بعد هذا المنتج.` : `جهزت ${fresh.length} أوصاف جديدة — تلقاها بعد هذا المنتج.`, "success");
+  } catch (e) { /* الإشعار التالي يعيد المحاولة */ }
+}
+document.addEventListener("hala:review-ready", appendReadyRows);
 
 function scheduleSave() {
   M.dirty = true;
@@ -224,6 +271,7 @@ export async function reviewModalDecide(action) {
     if (!data?.ok) { setMsg(data?.error || "تعذر التنفيذ — جرّب مرة ثانية.", "error"); return; }
     if (data.counts) setReviewCounts(data.counts);
     announceDecision([r], action);
+    M.decided.add(r.id);
     if (action === "approve") maybeShowFeedback();
     M.rows.splice(M.index, 1);
     M.pendingTotal = Math.max(0, M.pendingTotal - 1);
@@ -261,6 +309,7 @@ export async function reviewModalApproveAll() {
     if (!data?.ok) { setMsg(data?.error || "تعذر التنفيذ — جرّب مرة ثانية.", "error"); return; }
     if (data.counts) setReviewCounts(data.counts);
     announceDecision(M.rows, "approve");
+    M.rows.forEach((x) => M.decided.add(x.id));
     maybeShowFeedback();
     const approved = data.approved ?? n;
     M.rows = [];
@@ -282,6 +331,7 @@ export async function closeReviewModal() {
   // تعديل لم يُحفظ (فشل اتصال أو وصف فارغ) ⇒ لا نغلق فيضيع — الرسالة تقول السبب.
   if (M.phase === "review" && !(await saveNow())) return;
   modal.classList.add("hidden");
+  stopLive();
   // نافذة «المراجعة والنشر» تحتها تبقى مفتوحة إن كانت — والصفحة لا تتمرر خلفها.
   if ($("reviewPanel")?.classList.contains("hidden") !== false) document.body.style.overflow = "";
   if (M.lastFocus && document.contains(M.lastFocus)) M.lastFocus.focus?.();

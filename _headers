@@ -23,6 +23,10 @@
   ! X-Frame-Options
   ! Content-Security-Policy
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://accounts.google.com https://connect.facebook.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://accounts.google.com https://graph.facebook.com https://www.facebook.com https://unpkg.com; frame-src https://accounts.google.com https://www.facebook.com https://web.facebook.com; frame-ancestors https://s.salla.sa https://*.salla.sa 'self'; base-uri 'self'; form-action 'self'
+  # كاش حافة halah.aura.sa خدم HTML قديماً مع JS جديد فتوقف التوليد (2026-09-14). الصفحة HTML ثابت لكنه يتغيّر مع كل نشر.
+  ! Cache-Control
+  Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
 
 # Salla's iframe requests /dashboard.html; this project 308-redirects that to
 # /dashboard (clean URL). Cover both in case that redirect behavior changes.
@@ -30,6 +34,10 @@
   ! X-Frame-Options
   ! Content-Security-Policy
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://accounts.google.com https://connect.facebook.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://accounts.google.com https://graph.facebook.com https://www.facebook.com https://unpkg.com; frame-src https://accounts.google.com https://www.facebook.com https://web.facebook.com; frame-ancestors https://s.salla.sa https://*.salla.sa 'self'; base-uri 'self'; form-action 'self'
+  # كاش حافة halah.aura.sa خدم HTML قديماً مع JS جديد فتوقف التوليد (2026-09-14). الصفحة HTML ثابت لكنه يتغيّر مع كل نشر.
+  ! Cache-Control
+  Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
 
 # SEO P0-5 (2026-09-14): مرآة pages.dev نسخة مكررة من halah.aura.sa — لا تُفهرس.
 # لا تحويل: فحوص النشر وروابط ويبهوك/OAuth قد تستخدمها. halah.aura.sa لا يطابق هذه الكتل.

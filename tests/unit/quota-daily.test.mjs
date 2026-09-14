@@ -15,6 +15,12 @@ function fakeQuotaDb() {
         bind(...a) {
           return {
             run: async () => {
+              if (/MAX\(used, excluded\.used\)/.test(sql)) {
+                const [m, p, b, floor] = a;
+                const k = `${m}|${p}|${b}`;
+                rows.set(k, Math.max(rows.get(k) || 0, floor));
+                return { meta: { changes: 1 } };
+              }
               if (/INSERT INTO usage_quota/.test(sql)) {
                 const [m, p, b, cost, , , lim] = a;
                 const k = `${m}|${p}|${b}`;
@@ -83,6 +89,16 @@ async function main() {
     await drain(env, "m_x", LIMIT);
     env.DB.rows.clear();
     assert(!(await checkAndConsumeMonthly(env, "m_x", "description")).ok, "QD-6: حذف هالة وإعادة تثبيتها بنفس اليوم لا يعطي أوصافاً جديدة");
+  }
+  {
+    // سباق: عشرة طلبات متوازية (تبويبات/نقرات/وظيفة جملة مع مفرد) — الحجز ذرّي بـD1 فلا يمرّ إلا خمسة.
+    const env = { DB: fakeQuotaDb(), HALA_CACHE: fakeKv() };
+    const results = await Promise.all(Array.from({ length: 10 }, () => checkAndConsumeMonthly(env, "m_race", "description")));
+    const passed = results.filter((r) => r.ok).length;
+    assert(passed === LIMIT, `QD-11: عشرة طلبات متوازية لا تتجاوز حد اليوم (${passed}/${LIMIT})`);
+    const meterSrc = readFileSync(new URL("../../functions/_lib/core/meter.js", import.meta.url), "utf8");
+    const daily = meterSrc.slice(meterSrc.indexOf("async function consumeDaily"), meterSrc.indexOf("function raiseQuotaFloor"));
+    assert(/upsertQuota\(env, merchantId, day, bucket, cost, limit\)/.test(daily) && !/String\(used \+ cost\)/.test(daily), "QD-12: حد اليوم يُحسم بتحديث D1 المشروط لا بقراءة KV ثم كتابتها");
   }
   {
     const env = { DB: fakeQuotaDb() };

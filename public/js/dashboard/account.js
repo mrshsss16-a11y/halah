@@ -174,6 +174,14 @@ function notifyFrameSessionLost() {
   );
 }
 
+// انتهاء تجربة/اشتراك سلة: رسالة واحدة كل ٣٠ ثانية تقول بالضبط كيف يرجع كل شيء (core/accessState.js).
+let subscriptionToastAt = 0;
+function notifySubscriptionExpired(message) {
+  if (Date.now() - subscriptionToastAt < 30000) return;
+  subscriptionToastAt = Date.now();
+  window.showToast?.(message || "انتهى اشتراكك في هالة — جدّده من «تطبيقاتي» في متجرك.", "error");
+}
+
 export function installAccountGate() {
   const nativeFetch = window.fetch.bind(window);
   window.fetch = async function (...args) {
@@ -183,6 +191,7 @@ export function installAccountGate() {
       const peek = await res.clone().json().catch(() => null);
       if (peek && peek.code === "ACCOUNT_REQUIRED") openAccountModal(peek.error);
       if (peek && peek.code === "LOGIN_REQUIRED" && inSallaFrame) notifyFrameSessionLost();
+      if (peek && peek.code === "SUBSCRIPTION_EXPIRED") notifySubscriptionExpired(peek.error);
     }
     return res;
   };

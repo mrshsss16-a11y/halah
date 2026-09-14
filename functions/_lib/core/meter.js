@@ -141,35 +141,22 @@ async function consumeDaily(env, merchantId, bucket, cost) {
   const day = today();
   const storeKey = dailyKvKey(merchantId, bucket, day);
   const globalKey = dailyKvKey(GLOBAL_ID, bucket, day);
+  const hasGlobal = Number.isFinite(globalLimit);
 
-  // ── Fast path: KV ─────────────────────────────────────────────────────────
-  // الكتابات تُنتظر هنا (لا fire-and-forget): الحد ٥ فقط، وعدّاد ضائع = وصف مجاني زائد.
-  // ويبقى عدّاد KV ٢٥ ساعة حتى لو مُحيت صفوف D1 بإزالة التطبيق: إعادة التثبيت بنفس اليوم لا تصفّر الحد.
-  if (env.HALA_CACHE) {
-    try {
-      const [s, g] = await Promise.all([env.HALA_CACHE.get(storeKey), env.HALA_CACHE.get(globalKey)]);
-      const used = s ? parseInt(s, 10) : 0;
-      const globalUsed = g ? parseInt(g, 10) : 0;
-      if (used + cost > limit) return { ok: false, scope: "store", remaining: 0, used, ...base };
-      if (globalUsed + cost > globalLimit) return { ok: false, scope: "global", remaining: 0, used, ...base };
-      await Promise.all([
-        env.HALA_CACHE.put(storeKey, String(used + cost), { expirationTtl: METER_TTL_SECONDS }),
-        ...(Number.isFinite(globalLimit) ? [env.HALA_CACHE.put(globalKey, String(globalUsed + cost), { expirationTtl: METER_TTL_SECONDS })] : [])
-      ]);
-      await syncQuotaToD1(env, merchantId, day, bucket, cost).catch(() => {});
-      if (Number.isFinite(globalLimit)) await syncQuotaToD1(env, GLOBAL_ID, day, bucket, cost).catch(() => {});
-      return { ok: true, remaining: Math.max(0, limit - used - cost), used: used + cost, ...base };
-    } catch {
-      // KV unavailable — fall through to D1
-    }
-  }
+  // القرار ذرّي بـD1 وحده (2026-09-14): مسار KV السابق كان «اقرأ ثم اكتب» — طلبان متوازيان يقرآن ٤
+  // فيمرّ السادس والسابع. KV هنا **أرضية** فقط: عدّاده يبقى ٢٥ ساعة ولو مُحيت صفوف D1 بإزالة
+  // التطبيق، فيُرفع صف D1 إليه قبل الحجز (MAX لا جمع) — إعادة التثبيت بنفس اليوم لا تصفّر الحد.
+  const [kvUsed, kvGlobal] = await Promise.all([readCached(env, storeKey), hasGlobal ? readCached(env, globalKey) : null]);
+  if ((kvUsed || 0) + cost > limit) return { ok: false, scope: "store", remaining: 0, used: kvUsed || 0, ...base };
+  if (hasGlobal && (kvGlobal || 0) + cost > globalLimit) return { ok: false, scope: "global", remaining: 0, used: kvUsed || 0, ...base };
+  if (kvUsed) await raiseQuotaFloor(env, merchantId, day, bucket, kvUsed).catch(() => {});
+  if (hasGlobal && kvGlobal) await raiseQuotaFloor(env, GLOBAL_ID, day, bucket, kvGlobal).catch(() => {});
 
-  // ── Cold path: D1 (source of truth) ────────────────────────────────────────
   const store = await upsertQuota(env, merchantId, day, bucket, cost, limit);
   if (!store.meta.changes) {
     return { ok: false, scope: "store", remaining: 0, used: await readQuota(env, merchantId, day, bucket), ...base };
   }
-  if (Number.isFinite(globalLimit)) {
+  if (hasGlobal) {
     const global = await upsertQuota(env, GLOBAL_ID, day, bucket, cost, globalLimit);
     if (!global.meta.changes) {
       await releaseD1(env, merchantId, day, bucket, cost);
@@ -177,7 +164,29 @@ async function consumeDaily(env, merchantId, bucket, cost) {
     }
   }
   const used = await readQuota(env, merchantId, day, bucket);
+  await mirrorToKv(env, storeKey, used);
+  if (hasGlobal) await mirrorToKv(env, globalKey, await readQuota(env, GLOBAL_ID, day, bucket));
   return { ok: true, remaining: Math.max(0, limit - used), used, ...base };
+}
+
+/** يرفع صف D1 إلى أرضية KV (بعد محو الصفوف) — لا يخفّضه أبداً. */
+function raiseQuotaFloor(env, id, period, bucket, floor) {
+  return env.DB.prepare(
+    `INSERT INTO usage_quota (merchant_id, period, bucket, used, updated_at)
+     VALUES (?, ?, ?, ?, datetime('now'))
+     ON CONFLICT (merchant_id, period, bucket) DO UPDATE SET
+       used = MAX(used, excluded.used),
+       updated_at = datetime('now')`
+  )
+    .bind(id, period, bucket, floor)
+    .run();
+}
+
+async function mirrorToKv(env, key, used) {
+  if (!env.HALA_CACHE) return;
+  try {
+    await env.HALA_CACHE.put(key, String(used), { expirationTtl: METER_TTL_SECONDS });
+  } catch { /* KV مرآة للعرض والأرضية فقط — D1 هو المصدر */ }
 }
 
 function releaseD1(env, id, period, bucket, cost) {

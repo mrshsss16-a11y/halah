@@ -1,16 +1,13 @@
-// POST /api/store/bulk/generate — body: { storeId?, tone?, limit? }
-// توليد جماعي من الكتالوج المسحوب (المرحلة ٢ · docs/PLAN_BULK_SEO.md §٦):
-// صفر كتابة يدوية — المنتجات تُقرأ من store_products بأولوية عائد SEO
-// (بلا وصف ← وصف قصير ← الأحدث)، وما فوق حصة الشهر يُخزَّن **مؤجَّلاً** لا
-// مرفوضاً، ويُحيا تلقائياً أول تِك بعد تجدّد الحصة.
-//
-// الحقيقة تُقال قبل البدء: "متجرك فيه N منتج، باقتك تغطي M هالشهر."
+// POST /api/store/bulk/generate — body: { storeId?, tone?, limit?, skus?, notes?: { sku: «وش يميزه» } }
+// «متجرك فيه N منتج، باقتك تغطي M اليوم» تُقال قبل البدء. توليد جماعي من الكتالوج (docs/PLAN_BULK_SEO.md §٦): ما فوق حد اليوم يُخزَّن **مؤجَّلاً** ويُحيا مع تجدّده.
+// الوظيفة تُنشأ هنا فقط؛ التوليد فوراً من الصفحة (bulk/step) والـcron احتياط.
 import { withApi } from "../../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../../_lib/core/session.js";
 import { createBulkJob, getActiveJobByKind, markDeferredItems } from "../../../_lib/domain/bulk.js";
 import { getMonthlyUsage } from "../../../_lib/core/meter.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
 import { listPriorityCatalog, countCatalog, selectCatalogBySkus } from "../../../_lib/domain/catalog.js";
+import { cleanNotesBySku, saveJobNotes } from "../../../_lib/domain/merchantNote.js";
 
 const MAX_ROWS = 500;
 const TONES = ["white", "formal", "luxury", "deals", "funny", "brand"];
@@ -33,9 +30,7 @@ async function bulkGenerateHandler(body, env, request) {
   const remaining = Math.max(0, Number(usage?.description?.remaining || 0));
   const limitMonthly = Number(usage?.description?.limit || 0);
 
-  // التاجر يختار بنفسه من شبكة «منتجاتي» (صور + أسماء) — قائمة SKU صريحة
-  // تتقدّم على ترتيب الأولوية التلقائي. `selectCatalogBySkus` يقيّد بالتاجر،
-  // فأي SKU لا يخصّه يسقط بصمت بدل أن يصل وظيفة التوليد.
+  // قائمة SKU صريحة من شبكة «منتجاتي» تتقدّم على الأولوية التلقائية؛ `selectCatalogBySkus` يقيّد بالتاجر.
   const chosenSkus = Array.isArray(body.skus)
     ? body.skus.map((s) => String(s ?? "").trim()).filter(Boolean)
     : [];
@@ -55,8 +50,8 @@ async function bulkGenerateHandler(body, env, request) {
 
   const jobId = `bulk_${crypto.randomUUID().slice(0, 12)}`;
   await createBulkJob(env, { id: jobId, merchantId, tone, rows: [...now, ...deferred] });
+  await saveJobNotes(env, jobId, cleanNotesBySku(body.notes, rows.map((r) => r.sku)));
 
-  // ما فوق الحصة يُعلَّم مؤجَّلاً فوراً (لا ينتظر أن يفشل صفاً صفاً بالـcron).
   await markDeferredItems(env, { jobId, merchantId, fromIndex: now.length, count: deferred.length });
 
   const message = deferred.length
@@ -71,7 +66,7 @@ async function bulkGenerateHandler(body, env, request) {
     deferred: deferred.length,
     quota: { limit: limitMonthly, remaining },
     upgradeHint: null, // لا مسار ترقية باللوحة بعد (2026-09-13) — وعد بما لا يُصرف يخالف قاعدة الصدق
-    etaMinutes: Math.max(1, Math.ceil(now.length / 20) * 10), // ٢٠ توليداً لكل تِك ١٠ دقائق — تقدير صادق لا وعد
+    etaMinutes: Math.max(1, Math.ceil((now.length * 20) / 60)), // ~٢٠ث للمنتج بالمعالجة الفورية — تقدير لا وعد
     message
   };
 }

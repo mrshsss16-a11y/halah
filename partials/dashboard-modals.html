@@ -43,6 +43,24 @@
 
   <!-- «أوصاف منتجاتك» (طلب المالك 2026-09-14): نافذة واحدة بمرحلتين — «جاري التجهيز» (bulk.js) ثم «مراجعة» منتج منتج
        (reviewModal.js · reviewSections.js): كل حقل يُنشر قابل للتعديل وبمفتاح «ينشر». كل نص من سلة أو النموذج يمرّ بـescHtml. -->
+  <!-- «وش يميز منتجاتك؟» — بعد تحديد المنتجات وقبل التوليد (notes.js). كل الأسطر اختيارية. -->
+  <div id="notesModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="notesTitle" aria-describedby="notesSub">
+    <div class="bg-white w-full sm:max-w-2xl h-[100dvh] sm:h-auto sm:max-h-[92vh] sm:rounded-3xl border border-slate-200 shadow-xl flex flex-col overflow-hidden">
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-4 border-b border-slate-200">
+        <div class="min-w-0 space-y-1">
+          <h3 id="notesTitle" class="text-lg font-black text-black">وش يميز منتجاتك؟</h3>
+          <p id="notesSub" class="text-sm text-slate-600">اختياري — سطر عن كل منتج (الخامة، المصدر، الضمان، ليش الناس تطلبه) يخلي الوصف أدق وأقوى تسويقياً. اللي تتركه فاضي نكتبه من الصورة.</p>
+        </div>
+        <button type="button" onclick="closeNotesModal()" class="shrink-0 sleek-btn-white w-10 h-10 rounded-xl text-lg leading-none" aria-label="إغلاق النافذة">×</button>
+      </div>
+      <div id="notesList" class="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-3"></div>
+      <div class="flex flex-wrap items-center justify-between gap-2 px-5 sm:px-6 py-4 border-t border-slate-200">
+        <p id="notesQuota" class="text-[11px] text-slate-600 font-medium"></p>
+        <button type="button" onclick="confirmNotes()" class="sleek-btn-black px-5 py-2.5 rounded-xl text-sm font-bold">ابدأ الوصف</button>
+      </div>
+    </div>
+  </div>
+
   <div id="reviewModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="rmTitle" aria-describedby="rmSub">
     <div id="rmPanel" class="bg-white w-full sm:max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[92vh] sm:rounded-3xl border border-slate-200 shadow-xl flex flex-col overflow-hidden">
       <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-4 border-b border-slate-200">

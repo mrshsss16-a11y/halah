@@ -7,6 +7,7 @@ import { checkAndConsumeMonthly, refundQuota } from "../_lib/core/meter.js";
 import { requireCompletedAccount } from "../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../_lib/core/rateLimit.js";
 import { logError } from "../_lib/core/errorLog.js";
+import { cleanMerchantNote } from "../_lib/domain/merchantNote.js";
 
 // إعادة تصدير مؤقتة (تُزال بالمرحلة ٦) لمستوردي cron/bulk_process والاختبارات.
 export { generateProductCopy, seedKeywords, approvedProfileBlock, TONE_LABELS } from "../_lib/domain/copy.js";
@@ -27,7 +28,7 @@ async function copyHandler(body, env, request) {
   const price = (body.price || "").toString().trim().slice(0, 40);
   const tone = TONE_LABELS[body.tone] ? body.tone : "white";
   const category = (body.category || "").toString().trim().slice(0, 60);
-  const features = (body.features || "").toString().trim().slice(0, 500);
+  const features = cleanMerchantNote(body.features, 500); // «وش يميز المنتج؟» — سطر واحد مسطّح
   const existingDescription = (body.existingDescription || "").toString().trim().slice(0, 3000);
   const imageUrl = (body.imageUrl || "").toString().trim().slice(0, 500);
   // خيارات المنتج (ألوان/مقاسات) كما سُحبت من سلة — نص JSON من الكتالوج.

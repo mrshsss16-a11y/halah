@@ -32,13 +32,47 @@ export async function listActiveBulkJobItems(env, limit) {
   const { results } = await env.DB.prepare(
     `SELECT i.*, j.merchant_id AS merchant_id, j.tone AS tone FROM bulk_job_items i
      JOIN bulk_jobs j ON j.id = i.job_id
-     WHERE j.status = 'running' AND i.status = 'pending'
+     WHERE j.status = 'running' AND i.status = 'pending' AND (i.error IS NULL OR i.updated_at < datetime('now', ?))
      ORDER BY j.created_at ASC, i.row_index ASC
      LIMIT ?`
   )
-    .bind(limit)
+    .bind(CLAIM_LEASE, limit)
     .all();
   return results || [];
+}
+
+// حجز الصف قبل توليده: الصفحة المفتوحة (api/store/bulk/step) والـcron قد يلتقطان الصف نفسه بنفس اللحظة.
+// لا عمود حالة جديد (CHECK بالجدول): `error = CLAIM_MARKER` مع updated_at عقدُ إيجار ٣ دقائق — صف علق
+// بتبويب أُغلق وسط التوليد يعود قابلاً للالتقاط بعدها. الحصة نفسها تُحسم ذرّياً بـmeter.js فوق هذا.
+const CLAIM_MARKER = "قيد الكتابة";
+const CLAIM_LEASE = "-180 seconds";
+
+// tenant-audit-ok: itemId من صف قرأه listActiveBulkJobItems أو claimNextJobItem (مقيّد بالتاجر).
+export async function claimBulkItem(env, itemId) {
+  const res = await env.DB.prepare(
+    "UPDATE bulk_job_items SET error = ?, updated_at = datetime('now') WHERE id = ? AND status = 'pending' AND (error IS NULL OR updated_at < datetime('now', ?))"
+  )
+    .bind(CLAIM_MARKER, itemId, CLAIM_LEASE)
+    .run();
+  return Boolean(res?.meta?.changes);
+}
+
+/** الصف التالي لوظيفة هذا التاجر، محجوزاً له — null حين لا شيء قابل للالتقاط الآن. */
+export async function claimNextJobItem(env, { jobId, merchantId }) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const row = await env.DB.prepare(
+      `SELECT i.*, j.merchant_id AS merchant_id, j.tone AS tone FROM bulk_job_items i
+       JOIN bulk_jobs j ON j.id = i.job_id
+       WHERE i.job_id = ? AND j.merchant_id = ? AND j.status = 'running' AND i.status = 'pending'
+         AND (i.error IS NULL OR i.updated_at < datetime('now', ?))
+       ORDER BY i.row_index ASC LIMIT 1`
+    )
+      .bind(jobId, merchantId, CLAIM_LEASE)
+      .first();
+    if (!row) return null;
+    if (await claimBulkItem(env, row.id)) return row;
+  }
+  return null;
 }
 
 // tenant-audit-ok (whole function): itemId/jobId here are never attacker input —

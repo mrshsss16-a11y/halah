@@ -1,11 +1,12 @@
 // تِك طابور الجملة (المرحلة ٤: نُقل من `api/cron/bulk_process.js`).
 // مفصول عن `bulk.js` — ذاك وصولٌ للجداول، وهذا تنسيق المراحل الثلاث فوقه.
-import { listActiveBulkJobItems, completeBulkJobItem, claimNextCatalogSyncJob, advanceCatalogSyncJob, failCatalogSyncJob, listMerchantsWithDeferredItems, reviveDeferredItems, DEFERRED_MARKER } from "./bulk.js";
+import { listActiveBulkJobItems, claimBulkItem, completeBulkJobItem, claimNextCatalogSyncJob, advanceCatalogSyncJob, failCatalogSyncJob, listMerchantsWithDeferredItems, reviveDeferredItems, DEFERRED_MARKER } from "./bulk.js";
 import { syncCatalogPage, getCatalogItem } from "./catalog.js";
 import { enqueue, claimNextPublishMerchant, listApprovedUnpublished } from "./review.js";
 import { publishApproved } from "./publish.js";
 import { checkAndConsumeMonthly, getMonthlyUsage, refundQuota } from "../core/meter.js";
 import { logError } from "../core/errorLog.js";
+import { readJobNote } from "./merchantNote.js";
 
 // ── المرحلة ٤: تِك طابور الجملة (نُقل من api/cron/bulk_process.js) ──────────
 //
@@ -89,6 +90,62 @@ async function tickReviveDeferred(log) {
 }
 
 // ② توليد → بوابة المراجعة. صفر استيراد لسلة هنا (اختبار BULK-1 يحرس ذلك).
+// صف واحد محجوز مسبقاً ← "done" | "deferred" | "failed". يشترك فيه الـcron والمعالجة الفورية
+// من الصفحة (api/store/bulk/step) — مسار واحد للحصة والتوليد والمراجعة، لا نسختان تتباعدان.
+export async function processBulkItem(log, item, generateCopy) {
+  const { env } = log;
+  let consumed = false;
+  try {
+    const usage = await checkAndConsumeMonthly(env, item.merchant_id, "description");
+    if (!usage.ok) {
+      // حد اليوم (للمتجر أو للمشروع) ⇒ مؤجَّل يُحيا تلقائياً مع تجدد الحد، لا فاشل.
+      await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "skipped", error: DEFERRED_MARKER });
+      return "deferred";
+    }
+    consumed = true;
+
+    // بيانات الكتالوج (إن سُحب): الصورة والوصف الحالي يرفعان جودة التوليد
+    // ويظهران بشاشة المراجعة "الحالي ← المقترح". غيابها = مسار CSV اليدوي.
+    const catalogRow = await getCatalogItem(env, { merchantId: item.merchant_id, sku: item.sku }).catch(() => null);
+
+    const parsed = await generateCopy({
+      env,
+      merchantId: item.merchant_id,
+      name: item.name,
+      price: item.price,
+      tone: item.tone,
+      category: item.category,
+      // «وش يميز منتجك؟» — كتبه التاجر قبل البدء (اختياري).
+      features: await readJobNote(env, item.job_id, item.sku),
+      existingDescription: catalogRow?.current_description || "",
+      imageUrl: catalogRow?.image_url || "",
+      // نفس بيانات المسار المفرد: الخيارات مؤكَّدة من التاجر وتتقدّم على الصورة.
+      variants: catalogRow?.variants || null
+    });
+
+    const payload = buildDescriptionPayload({ item, parsed, catalogRow });
+    if (!payload.description) throw new Error("empty description from generator");
+
+    const review = await enqueue(env, { merchantId: item.merchant_id, kind: "description", payload });
+    await completeBulkJobItem(env, {
+      itemId: item.id,
+      jobId: item.job_id,
+      status: "done",
+      description: payload.description,
+      seoPayload: JSON.stringify({ seo: payload.seo, copywriting: payload.copywriting }),
+      reviewId: review?.id ?? null
+    });
+    return "done";
+  } catch (err) {
+    // العمود merchant-facing (يظهر بقائمة الفاشل بالداشبورد) — العربي له،
+    // والتفاصيل (مزوّد AI، معرّفات) لسجل الأخطاء.
+    log.error("BULK_ITEM_FAILED", item.merchant_id, `item=${item.id} ${String((err && err.message) || err).slice(0, 250)}`);
+    if (consumed) await refundQuota(env, item.merchant_id, "description").catch(() => {});
+    await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "failed", error: "تعذّرت معالجة هذا الصف. جرّبه مرة ثانية." });
+    return "failed";
+  }
+}
+
 async function tickGenerate(log, generateCopy) {
   const { env } = log;
   const items = await listActiveBulkJobItems(env, GENERATE_BATCH);
@@ -96,56 +153,11 @@ async function tickGenerate(log, generateCopy) {
   let failed = 0;
 
   for (const item of items) {
-    let consumed = false;
-    try {
-      const usage = await checkAndConsumeMonthly(env, item.merchant_id, "description");
-      if (!usage.ok) {
-        // حد اليوم (للمتجر أو للمشروع) ⇒ مؤجَّل يُحيا تلقائياً مع تجدد الحد، لا فاشل.
-        await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "skipped", error: DEFERRED_MARKER });
-        failed++;
-        continue;
-      }
-      consumed = true;
-
-      // بيانات الكتالوج (إن سُحب): الصورة والوصف الحالي يرفعان جودة التوليد
-      // ويظهران بشاشة المراجعة "الحالي ← المقترح". غيابها = مسار CSV اليدوي.
-      const catalogRow = await getCatalogItem(env, { merchantId: item.merchant_id, sku: item.sku }).catch(() => null);
-
-      const parsed = await generateCopy({
-        env,
-        merchantId: item.merchant_id,
-        name: item.name,
-        price: item.price,
-        tone: item.tone,
-        category: item.category,
-        features: "",
-        existingDescription: catalogRow?.current_description || "",
-        imageUrl: catalogRow?.image_url || "",
-        // نفس بيانات المسار المفرد: الخيارات مؤكَّدة من التاجر وتتقدّم على الصورة.
-        variants: catalogRow?.variants || null
-      });
-
-      const payload = buildDescriptionPayload({ item, parsed, catalogRow });
-      if (!payload.description) throw new Error("empty description from generator");
-
-      const review = await enqueue(env, { merchantId: item.merchant_id, kind: "description", payload });
-      await completeBulkJobItem(env, {
-        itemId: item.id,
-        jobId: item.job_id,
-        status: "done",
-        description: payload.description,
-        seoPayload: JSON.stringify({ seo: payload.seo, copywriting: payload.copywriting }),
-        reviewId: review?.id ?? null
-      });
-      queuedForReview++;
-    } catch (err) {
-      // العمود merchant-facing (يظهر بقائمة الفاشل بالداشبورد) — العربي له،
-      // والتفاصيل (مزوّد AI، معرّفات) لسجل الأخطاء.
-      log.error("BULK_ITEM_FAILED", item.merchant_id, `item=${item.id} ${String((err && err.message) || err).slice(0, 250)}`);
-      if (consumed) await refundQuota(env, item.merchant_id, "description").catch(() => {});
-      await completeBulkJobItem(env, { itemId: item.id, jobId: item.job_id, status: "failed", error: "تعذّرت معالجة هذا الصف. جرّبه مرة ثانية." });
-      failed++;
-    }
+    // صف التقطته الصفحة المفتوحة للتو ⇒ لها، لا توليد مكرر.
+    if (!(await claimBulkItem(env, item.id))) continue;
+    const outcome = await processBulkItem(log, item, generateCopy);
+    if (outcome === "done") queuedForReview++;
+    else failed++;
   }
 
   return { picked: items.length, queuedForReview, failed };

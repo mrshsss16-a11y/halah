@@ -70,7 +70,7 @@ async function main() {
     // بعد التقسيم النداء صار عبر postSoft("/api/store/bulk/generate", { skus, tone }, …)
     // بـpublic/js/dashboard/api.js بدل fetch مباشر بـdashboard.html — نفس الحمولة المُرسلة.
     assert(
-      /postSoft\(\s*["'`]\/api\/store\/bulk\/generate["'`],\s*\{\s*skus,\s*tone\s*\}/.test(dash),
+      /postSoft\(\s*["'`]\/api\/store\/bulk\/generate["'`],\s*\{\s*skus,\s*tone,\s*notes\s*\}/.test(dash),
       "PICK-11: الواجهة ترسل قائمة الـSKU المحددة"
     );
     // catalogItems/selectedSkus صارت S.selectedSkus بحالة مشتركة state.js بعد التقسيم.

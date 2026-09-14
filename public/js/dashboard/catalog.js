@@ -1,7 +1,7 @@
 // public/js/dashboard/catalog.js — تبويب «منتجاتي» (كتالوج سلة المسحوب).
 //
 // الهدف: صفر كتابة يدوية. البطاقة تحمل بيانات المنتج كاملة بذاكرة الصفحة
-// (S.catalogItems)، والنقر يعبّي حقول الاستوديو ويشغّل generateCopy() فوراً.
+// (S.catalogItems)، والنقر يعبّي حقول الاستوديو ثم يسأل «وش يميز المنتج؟» (اختياري) قبل generateCopy().
 // أسماء/أوصاف/روابط سلة كلها من محتوى التاجر ⇒ كل إدراج بـinnerHTML يمرّ
 // بـescHtml (ثغرة XSS أُغلقت بهذا المسار — لا تُعاد).
 import { S } from "./state.js";
@@ -11,6 +11,7 @@ import { renderIdentityLine } from "./render.js";
 import { setPublishTarget, generateCopy } from "./studio.js";
 import { pollBulkJob, toneValue } from "./bulk.js";
 import { pageButtons } from "./pager.js";
+import { openNotesModal } from "./notes.js";
 
 const escHtml = window.escHtml;
 const showMsg = (id, text, type) => window.showMsg(id, text, type);
@@ -269,9 +270,15 @@ export function selectAllCatalog(on) {
  * توليد للمنتجات المحددة — نفس مسار الجملة (طابور مراجعة، حد يومي والزائد
  * مؤجَّل يوماً بيوم، فاصل ١.١ث لكل متجر)، لكن بقائمة التاجر لا بترتيب الأولوية.
  */
-export async function generateSelectedCatalog() {
+// «ولّد أوصاف المحدد» ← نافذة «وش يميز منتجاتك؟» (اختيارية) ← البدء. السطر قبل تحليل الصورة لأن
+// الخامة والمصدر والضمان لا تظهر بالصورة — والوصف يبني زاويته التسويقية عليها (طلب المالك 2026-09-14).
+export function generateSelectedCatalog() {
   const skus = [...S.selectedSkus];
   if (!skus.length) return;
+  openNotesModal(skus.map((sku) => pickedMeta.get(sku) || { sku, name: sku }), (notes) => startSelectedGenerate(skus, notes));
+}
+
+async function startSelectedGenerate(skus, notes) {
   // تُلتقط قبل مسح التحديد: قائمة «جاري التجهيز» تعرض كل منتج بصورته واسمه وحالته.
   const items = skus.map((sku) => pickedMeta.get(sku) || { sku, name: sku });
   const btn = document.getElementById("catalogSelectedGenBtn");
@@ -280,7 +287,7 @@ export async function generateSelectedCatalog() {
   txt.innerText = "جاري البدء…";
   try {
     const tone = toneValue();
-    const { res, data } = await postBulkGenerateSelected(skus, tone);
+    const { res, data } = await postBulkGenerateSelected(skus, tone, notes);
     if (data?.code === "GENERATE_ALREADY_RUNNING" && data.jobId) {
       // وظيفة سابقة ما خلصت: نلتحق بها ونعرض تقدّمها — كانت رسالة خطأ بـcatalogFeedback يمسحها أول تحميل للشبكة.
       showMsg("bulkFeedback", data.error, "info");
@@ -330,6 +337,41 @@ export function useCatalogItem(sku) {
   // لا قفز لتبويب ثانٍ: اللوحة تُفتح تحت الشبكة نفسها. أول ما يُضغط المنتج
   // تظهر حالة انتظار باسمه، فيرى التاجر أن شيئاً بدأ فعلاً — كان يحسّ أن
   // التوليد "بالخلفية" لأن الشاشة تتبدّل ولا أثر مرئي عندها.
+  // سؤال «وش يميز هالمنتج؟» قبل تحليل الصورة — اختياري، و«اكتب الوصف الآن» يبدأ بدونه.
+  askCatalogItemNote(it);
+}
+
+let askedItem = null;
+
+function askCatalogItemNote(it) {
+  // صفحة HTML قديمة من الكاش بلا بطاقة السؤال: التوليد المباشر كما كان، لا ضغطة بلا أثر.
+  if (!document.getElementById("copyAsk") || !document.getElementById("copyAskNote")) {
+    openCopyPanel(it);
+    generateCopy();
+    return;
+  }
+  askedItem = it;
+  closeCopyPanel();
+  document.getElementById("pFeatures").value = "";
+  const note = document.getElementById("copyAskNote");
+  note.value = "";
+  // textContent لا innerHTML — الاسم والرابط من سلة.
+  document.getElementById("copyAskName").textContent = it.name || "";
+  const img = document.getElementById("copyAskImg");
+  if (it.imageUrl) { img.src = it.imageUrl; img.classList.remove("hidden"); } else img.classList.add("hidden");
+  const card = document.getElementById("copyAsk");
+  card.classList.remove("hidden");
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+  note.focus({ preventScroll: true });
+}
+
+/** «اكتب الوصف الآن» من بطاقة السؤال — السطر (إن كُتب) يصير مزايا المنتج بالتوليد. */
+export function confirmCatalogItem() {
+  if (!askedItem) return;
+  const it = askedItem;
+  askedItem = null;
+  document.getElementById("pFeatures").value = document.getElementById("copyAskNote").value.replace(/\s+/g, " ").trim().slice(0, 300);
+  document.getElementById("copyAsk").classList.add("hidden");
   openCopyPanel(it);
   generateCopy();
 }
@@ -371,6 +413,7 @@ export function openCopyPanel(it) {
 /** إغلاق اللوحة — الشبكة تبقى كما هي، لا إعادة تحميل. */
 export function closeCopyPanel() {
   clearTimeout(window.__halaStageTimer);
+  document.getElementById("copyAsk")?.classList.add("hidden");
   document.getElementById("copyPending")?.classList.add("hidden");
   document.getElementById("copyResult")?.classList.add("hidden");
   document.getElementById("copyFeedback")?.classList.add("hidden");

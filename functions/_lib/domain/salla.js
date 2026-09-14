@@ -8,6 +8,8 @@ import { saveAbandonedCart, logWebhook } from "./platforms.js";
 import { purgeMerchantData } from "./merchantPurge.js";
 import { linkSallaToAccount } from "./sallaAccountLink.js";
 import { handleProductEvent } from "./sallaProductEvents.js";
+import { ensureAccountAndWelcome } from "./sallaWelcome.js";
+import { markAccessExpired, clearAccessExpired } from "../core/accessState.js";
 import { logError } from "../core/errorLog.js";
 
 const REFRESH_MARGIN_S = 24 * 3600; // renew when less than a day remains
@@ -185,9 +187,8 @@ export async function getSallaConnectionState(env, merchantId) {
 //   app.store.authorize → upsert التاجر + حفظ التوكنات (هذا **هو** تدفق OAuth
 //                         بـEasy Mode — لا رقصة callback)
 //   app.installed       → upsert التاجر
-//   app.uninstalled / app.subscription.expired / app.trial.expired
-//                       → حذف توكنات سلة + إلغاء مهام الجملة (فك ربط فوري).
-//                         الثلاثة تعني نفس الشيء أمنياً: لم يعد لنا إذن.
+//   app.uninstalled     → حذف توكنات سلة + محو بيانات المتجر (فك ربط فوري).
+//   app.trial|subscription.expired → إيقاف مع بقاء التوكنات (core/accessState.js)؛ started|renewed → رفعه.
 //   abandoned.cart      → حفظ السلة لميزة الاسترجاع بواتساب
 //   غيرها (order.created…) → upsert فقط؛ المستهلكون يقرأون webhook_log
 
@@ -234,6 +235,14 @@ async function handleSallaEvent(env, event, payload, { onFirstSync = async () =>
         expiresAt: Number(data.expires) || Math.floor(Date.now() / 1000) + 14 * 24 * 3600
       });
       await clearDisconnectedStamp(env, merchantId);
+      await clearAccessExpired(env, merchantId);
+
+      // حساب التاجر + بريد الترحيب (متطلب سلة قبل الإطلاق، `domain/sallaWelcome.js`). فشله لا يُسقط التثبيت.
+      try {
+        await ensureAccountAndWelcome(env, { merchantId, accessToken: data.access_token, onLog });
+      } catch (err) {
+        onLog("SALLA_WELCOME_FAILED", merchantId, String(err?.message || err).slice(0, 200));
+      }
 
       // اسم المتجر: الحمولة لا تحمله، والتوكن صار بيدنا الآن. /store/info يحتاج
       // scope `settings.read` — نتحقق من scope الحمولة قبل استهلاك طلب على سلة
@@ -279,14 +288,15 @@ async function handleSallaEvent(env, event, payload, { onFirstSync = async () =>
       }
       return merchantId;
     }
-    // انتهاء الاشتراك/التجربة **ليس حذفاً**: التاجر لم يطلب إزالة التطبيق،
-    // وقد يجدّد غداً. يُقطع الوصول فقط، وتبقى بياناته.
-    case "app.subscription.expired":
-    case "app.trial.expired": {
-      if (!sallaMerchantId) return null;
-      const merchantId = await upsertMerchantFromSalla(env, { sallaMerchantId });
-      await revokeSallaConnection(env, merchantId);
-      return merchantId;
+    // انتهاء التجربة/الاشتراك إيقافٌ لا فك ربط (2026-09-15): التجديد لا يرسل توكنات جديدة، فحذفها كان يعطّل من يجدّد.
+    case "app.subscription.expired": case "app.trial.expired":
+    case "app.trial.started": case "app.subscription.started": case "app.subscription.renewed": {
+      const known = sallaMerchantId ? await getMerchantBySalla(env, sallaMerchantId) : null;
+      if (!known) return null;
+      if (!event.endsWith(".expired")) { await clearAccessExpired(env, known.id); return known.id; }
+      await markAccessExpired(env, known.id, event);
+      await env.DB.prepare("UPDATE bulk_jobs SET status = 'cancelled', updated_at = datetime('now') WHERE merchant_id = ? AND status = 'running'").bind(known.id).run().catch(() => {});
+      return known.id;
     }
     // أحداث المنتجات — المعالج بـ`sallaProductEvents.js` (سقف ٤٠٠ سطر).
     case "product.created":

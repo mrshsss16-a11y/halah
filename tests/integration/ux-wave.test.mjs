@@ -101,7 +101,7 @@ async function runTests() {
     {
       const idx = await readSrc("index.html");
       assert(idx.includes('<link rel="canonical" href="https://halah.aura.sa/"/>') && !idx.includes("hala.sa/\""), "SEO-1: canonical الرئيسية على halah.aura.sa لا نطاق لا نملكه");
-      for (const slug of ["pricing", "faq", "privacy", "terms", "data-deletion"]) {
+      for (const slug of ["faq", "privacy", "terms", "data-deletion"]) {
         const src = await readSrc(`${slug}.html`);
         assert(src.includes(`<link rel="canonical" href="https://halah.aura.sa/${slug}"/>`), `SEO-2: canonical ذاتي لـ${slug}`);
       }
@@ -111,7 +111,8 @@ async function runTests() {
       const robots = await readSrc("public/robots.txt");
       const sitemap = await readSrc("public/sitemap.xml");
       assert(/Disallow: \/api\//.test(robots) && /Sitemap: https:\/\/halah\.aura\.sa\/sitemap\.xml/.test(robots) && !/Disallow: \/(login|dashboard)/.test(robots), "SEO-4: robots يمنع /api/ فقط ويشير لخريطة الموقع");
-      assert(sitemap.startsWith("<?xml") && !/login|dashboard|admin/.test(sitemap) && (sitemap.match(/<loc>/g) || []).length === 6, "SEO-5: خريطة الموقع للصفحات العامة الست فقط");
+      assert(sitemap.startsWith("<?xml") && !/login|dashboard|admin/.test(sitemap) && (sitemap.match(/<loc>/g) || []).length === 5 && !/pricing/.test(sitemap), "SEO-5: خريطة الموقع للصفحات العامة الخمس فقط، والأسعار مخفية حتى القبول");
+      assert(!idx.includes('href="/pricing"') && (await readSrc("pricing.html")).includes('content="noindex, nofollow"'), "SEO-7: صفحة الأسعار مخفية من الواجهة ولا تُفهرس");
       const hdr = await readSrc("_headers");
       assert(/https:\/\/:project\.pages\.dev\/\*\s+X-Robots-Tag: noindex/.test(hdr), "SEO-6: مرآة pages.dev بـX-Robots-Tag: noindex");
       const hero = await readSrc("partials/dashboard-hero.html");
@@ -196,11 +197,11 @@ async function runTests() {
     assert(!/launchWhatsAppSignup/.test(dash), "U5: لا معالج onclick معلّق لدالة أُزيلت — لا خطأ صامت بالكونسول");
   }
 
-  // ---- U9: شريط الجملة يذكر مدة بدء المعالجة ----
+  // ---- U9: شريط الجملة يقول الحقيقة الجديدة: المعالجة فورية من الصفحة (2026-09-14) لا دفعة كل ١٠ دقائق ----
   {
     const src = await readSrc("dashboard.html");
-    assert(src.includes("تبدأ المعالجة خلال ~١٠ دقائق"), "U9: شريط الجملة يعرض 'تبدأ المعالجة خلال ~١٠ دقائق'");
-    assert(src.includes("كل ١٠ دقائق دفعة"), "U9: شريط الجملة يوضح أن الدفعة كل ١٠ دقائق");
+    assert(src.includes("نكتبها الحين منتجاً منتجاً"), "U9: شريط الجملة يقول إن الكتابة بدأت الآن منتجاً منتجاً");
+    assert(!src.includes("كل ١٠ دقائق دفعة"), "U9: لا وعد قديم بانتظار دفعة كل ١٠ دقائق");
   }
 
   // ---- U10: لا alert() متبقٍ، شريط داخلي بديل ----

@@ -57,8 +57,8 @@ async function main() {
       /pName["']\)\.value = it\.name/.test(useFn) &&
         /pImageUrl["']\)\.value = it\.imageUrl/.test(useFn) &&
         /pExistingDescription["']\)\.value = it\.currentDescription/.test(useFn) &&
-        /generateCopy\(\);/.test(useFn.slice(0, useFnEnd)),
-      "CATUI-7: الضغط على بطاقة يعبّي الحقول (اسم/صورة/وصف حالي) ويشغّل التوليد فوراً"
+        /askCatalogItemNote\(it\);/.test(useFn.slice(0, useFnEnd)) && /export function confirmCatalogItem\(\)[\s\S]*?generateCopy\(\);/.test(dashSrc),
+      "CATUI-7: الضغط على بطاقة يعبّي الحقول (اسم/صورة/وصف حالي) ويسأل «وش يميزه؟» ثم يولّد"
     );
     assert(
       /catalogEmpty[\s\S]{0,400}ما سحبنا منتجاتك بعد/.test(dashSrc),

@@ -5,6 +5,22 @@
 
       <!-- حالة الانتظار — تظهر مكان اللوحة فور الضغط على منتج، فلا يحسّ التاجر
            أن شيئاً يجري "بالخلفية" بلا أثر مرئي. -->
+      <!-- «وش يميز هالمنتج؟» — بعد اختيار المنتج وقبل تحليل صورته. اختياري: الخامة والمصدر والضمان لا تظهر
+           بالصورة، وسطر من التاجر يرفع دقة الوصف ويعطيه زاوية تسويقية (طلب المالك 2026-09-14). -->
+      <div id="copyAsk" class="hidden sleek-card rounded-3xl p-6 shadow-sm space-y-3">
+        <div class="flex items-center gap-2 min-w-0">
+          <img id="copyAskImg" class="hidden w-10 h-10 rounded-lg object-contain bg-slate-50 border border-slate-200" referrerpolicy="no-referrer" alt=""/>
+          <p id="copyAskName" class="text-sm font-black text-black truncate"></p>
+        </div>
+        <label for="copyAskNote" class="block text-sm font-black text-black">وش يميز هالمنتج؟ <span class="text-[11px] text-slate-600 font-medium">(اختياري)</span></label>
+        <textarea id="copyAskNote" rows="2" maxlength="300" placeholder="مثال: قطن مصري ١٠٠٪، خياطة يدوية، مناسب للصيف — أو: عسل سدر جبلي من الباحة، محصول هالموسم" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
+        <p class="text-[11px] text-slate-600 font-medium">سطر واحد يكفي — ناخذه كمعلومة مؤكدة منك ونبني عليه الوصف، والصورة تكمل الباقي. تقدر تتركه فاضي.</p>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="confirmCatalogItem()" class="sleek-btn-black px-5 py-2.5 rounded-xl text-sm font-bold">اكتب الوصف الآن</button>
+          <button type="button" onclick="closeCopyPanel()" class="sleek-btn-white px-4 py-2.5 rounded-xl text-sm font-bold">إلغاء</button>
+        </div>
+      </div>
+
       <div id="copyPending" role="status" aria-live="polite" class="hidden sleek-card rounded-3xl p-6 shadow-sm flex items-center gap-3">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-2xl text-black animate-spin" aria-hidden="true" focusable="false"><path d="M12 3V6" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M12 18V21" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M21 12L18 12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M6 12L3 12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M18.3635 5.63672L16.2422 7.75804" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M7.75804 16.2422L5.63672 18.3635" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M18.3635 18.3635L16.2422 16.2422" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M7.75804 7.75804L5.63672 5.63672" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/></svg>
         <div>

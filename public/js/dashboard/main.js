@@ -13,8 +13,9 @@ import { S } from "./state.js";
 import { switchTab } from "./tabs.js";
 import {
   loadCatalog, goCatalogPage, startCatalogSync, selectAllCatalog,
-  generateSelectedCatalog, useCatalogItem, closeCopyPanel, setBulkGenerateEnabled
+  generateSelectedCatalog, useCatalogItem, closeCopyPanel, setBulkGenerateEnabled, confirmCatalogItem
 } from "./catalog.js";
+import { closeNotesModal, confirmNotes } from "./notes.js";
 import { generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, applySuggestedCategory } from "./studio.js";
 import { startCatalogGenerate, openBulkProgress } from "./bulk.js";
 import { openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll } from "./reviewModal.js";
@@ -38,7 +39,7 @@ Object.assign(window, {
   handleMerchantLogout,
   // منتجاتي
   loadCatalog, goCatalogPage, startCatalogSync, selectAllCatalog,
-  generateSelectedCatalog, useCatalogItem, closeCopyPanel,
+  generateSelectedCatalog, useCatalogItem, closeCopyPanel, confirmCatalogItem, closeNotesModal, confirmNotes,
   // الاستوديو والنشر
   generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, copyToClipboard,
   applySuggestedCategory,
