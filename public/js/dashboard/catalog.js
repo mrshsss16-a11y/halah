@@ -40,7 +40,7 @@ export function setBulkGenerateEnabled(on) {
   b.classList.toggle("cursor-not-allowed", !on);
 }
 
-export async function loadCatalog(offset = 0) {
+export async function loadCatalog(offset = 0, { keepFeedback = false } = {}) {
   const grid = document.getElementById("catalogGrid");
   const loading = document.getElementById("catalogLoading");
   const empty = document.getElementById("catalogEmpty");
@@ -52,7 +52,8 @@ export async function loadCatalog(offset = 0) {
   S.catalogItems = {};
   grid.innerHTML = "";
   S.catalogPage = Math.floor(offset / PAGE_SIZE);
-  document.getElementById("catalogFeedback").classList.add("hidden");
+  // رسالة «اسحب منتجاتي» كانت تُمسح بنفس اللحظة لأن السحب يعيد تحميل الشبكة فوراً — «لمحة وتختفي» (2026-09-14).
+  if (!keepFeedback) document.getElementById("catalogFeedback").classList.add("hidden");
   empty.classList.add("hidden");
   pager?.classList.add("hidden");
   loading.classList.remove("hidden");
@@ -62,7 +63,8 @@ export async function loadCatalog(offset = 0) {
     loading.classList.add("hidden");
 
     if (!res.ok || data?.error) {
-      showMsg("catalogFeedback", data?.error || "تعذر تحميل منتجاتك. حاول مرة ثانية.", "error");
+      // الرمز بجانب الرسالة: التاجر ينقله لنا فنعرف السبب (جلسة، حساب، حد معدل) بلا تخمين.
+      showMsg("catalogFeedback", `${data?.error || "تعذر تحميل منتجاتك. حاول مرة ثانية."}${data?.code ? ` (${data.code})` : ` (HTTP ${res.status})`}`, "error");
       return;
     }
 
@@ -382,12 +384,12 @@ export async function startCatalogSync() {
   try {
     const { res, data } = await postCatalogSync();
     if (!res.ok || data?.error) {
-      showMsg("catalogFeedback", data?.error || "تعذر بدء السحب. حاول مرة ثانية.", "error");
+      showMsg("catalogFeedback", `${data?.error || "تعذر بدء السحب. حاول مرة ثانية."}${data?.code ? ` (${data.code})` : ` (HTTP ${res.status})`}`, "error");
     } else {
       // الرسالة تجي من الخادم بناءً على نتيجة الصفحة الأولى الحقيقية
       // (عدد مسحوب فعلاً + هل بقي شيء) — لا وعد بما لم يحصل.
       showMsg("catalogFeedback", data.message || "تم سحب منتجات متجرك.", "success");
-      await loadCatalog(0);
+      await loadCatalog(0, { keepFeedback: true });
       // نجح ⇒ الزر يصير «تحديث» ويهدأ ٦٠ ثانية: الضغط المتكرر كان يصطدم
       // بحد المعدل (٣ محاولات/٥ دقائق) فيُعاقَب التاجر على فعل بدا مسموحاً.
       txt.innerText = "تحديث المنتجات";
