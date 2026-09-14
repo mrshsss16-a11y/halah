@@ -86,6 +86,23 @@ async function main() {
     assert(honey.copywriting.description === "عسل سدر جبلي بوزن 500 جرام. تجيك الحبوب.", `PC-31: إحالات بلا مضمون تُحذف («${honey.copywriting.description}»)`);
   }
 
+  {
+    // فستان الكاب 2026-09-14 02:30 وبنطلون 01:03 — مخرجان حقيقيان من متجر تجريبي.
+    const dress = { copywriting: { description: "فستان ميدي بني فاتح بقصّة A وياقة دائرية، بطيّات بليسيه.\n\nهذا الفستان مناسب للمناسبات اليومية، ويمكن ارتداؤه في مختلف الأوقات. يمكن تنسيقه مع قطعة من الإكسسوارات بسيطة.", excerpt: "", whatsapp: "" },
+      seo: { metaDescription: "فستان بني فاتح بقصّة A وطول ميدي، مناسب للمناسبات اليومية. متوفر الآن!" }, faqs: [], specsTable: [], tags: [] };
+    polishPage(dress, { name: "فستان", sourceText: "فستان", notes: "" });
+    const dAll = `${dress.copywriting.description} ${dress.seo.metaDescription}`;
+    assert(!/مختلف الأوقات|قطعة من الإكسسوارات|متوفر الآن|المناسبات اليومية/.test(dAll) && /للاستخدام اليومي/.test(dAll), `PC-32: حشو متناقض واستعجال يُصلحان («${dAll}»)`);
+    const pants = { copywriting: { description: "بنطلون أحمر وبيج بقصّة واسعة. يتميز هذا البنطلون بتفاصيل درابيه وكسرات عريضة، ما.", excerpt: "", whatsapp: "" },
+      seo: { title: "بنطلون رجالي", seoTitle: "بنطلون رجالي - ملابس رجالية" }, faqs: [], specsTable: [], tags: ["بنطلون رجالي", "ملابس رجالية"] };
+    polishPage(pants, { name: "بنطلون", sourceText: "بنطلون", notes: "", category: "البلايز" });
+    const pAll = [pants.copywriting.description, pants.seo.title, pants.seo.seoTitle, ...pants.tags].join(" | ");
+    assert(!/رجالي/.test(pAll) && !/، ما\./.test(pants.copywriting.description), `PC-33: جنس بلا مصدر وبتر «، ما.» يُحذفان («${pAll}»)`);
+    const keep = { copywriting: { description: "ثوب رجالي أبيض.", excerpt: "", whatsapp: "" }, seo: { title: "ثوب رجالي" }, faqs: [], specsTable: [], tags: [] };
+    polishPage(keep, { name: "ثوب رجالي", sourceText: "ثوب رجالي", notes: "" });
+    assert(/رجالي/.test(keep.seo.title), "PC-34: الجنس الذي ذكره التاجر يبقى");
+  }
+
   const valid = { copywriting: { description: "تنورة.", excerpt: "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(valid, { name: "تنورة", sourceText: `تنورة ${VARIANTS}`, notes: "" });
   assert(valid.copywriting.excerpt === "متوفرة بمقاسات من 36 - XS إلى 44 - XL.", "PC-7: مدى صحيح من خيارات التاجر لا يُمس");

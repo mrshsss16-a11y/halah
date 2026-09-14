@@ -99,6 +99,21 @@ function polishProse(text, { name, sourceText, sizes, notes, category }) {
   return fixSizeChartClosing(out, { name, category });
 }
 
+// «بنطلون رجالي» لبنطلون نسائي بنقشة مورّدة (2026-09-14 01:03): جنس لم يذكره التاجر ولا تصنيفه — يُحذف من كل الحقول.
+// الرجالي وحده: «نسائية» صحيحة غالباً بمتاجر الأزياء، وحذفها كسر تطابق الألوان («تنورة نسائية سوداء» ⇒ «تنورة أسود»).
+const GENDER_WORD = /[ \t]*(?<!\p{L})(?:رجالي(?:ة|ه)?|للرجال)(?!\p{L})/gu;
+function dropUnsourcedGender(parsed, source) {
+  if (/(?<!\p{L})(?:رجال|رجالي|ولادي|شبابي)/u.test(String(source))) return;
+  const clean = (t) => (typeof t === "string" ? fixColorAgreement(t.replace(GENDER_WORD, "")).replace(/[ \t]{2,}/g, " ").replace(/[ \t]+([،,.!؟])/gu, "$1").trim() : t);
+  const cw = parsed.copywriting || {}; const seo = parsed.seo || {};
+  for (const k of ["description", "excerpt", "whatsapp"]) cw[k] = clean(cw[k]);
+  if (Array.isArray(cw.highlights)) cw.highlights = cw.highlights.map(clean).filter(Boolean);
+  for (const k of ["title", "seoTitle", "metaDescription", "focusKeyword"]) seo[k] = clean(seo[k]);
+  if (Array.isArray(seo.lsiKeywords)) seo.lsiKeywords = [...new Set(seo.lsiKeywords.map(clean).filter(Boolean))];
+  if (typeof parsed.imageAlt === "string") parsed.imageAlt = clean(parsed.imageAlt);
+  if (Array.isArray(parsed.tags)) parsed.tags = [...new Set(parsed.tags.map(clean).filter(Boolean))];
+}
+
 /** نص قصير (عنوان، نقطة، وسم، سؤال، نص بديل، مواصفة): تُحذف الكلمة المعيبة لا العنصر. */
 function polishShort(text, { name, sourceText, sizes, notes, category, keepLabels = false }) {
   // مفتاح المواصفة «الطول والقصّة» اسم صحيح لا عنوان ملاحظات مسرّب — صار «بطول» (2026-09-12 18:46).
@@ -195,6 +210,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
     // «بلايز نسائية» وسماً لفستان (تصنيف المتجر، 2026-09-13): وسم يسمّي قطعة أخرى يضلّل البحث.
     parsed.tags = parsed.tags.filter((t) => !unsourced(t) && !unseenCut(t) && !propItemIn(String(t), name)).map((t) => polishShort(t, ctx)).filter((t) => t && !BARE_ADJ_TAG.test(t) && !seenTags.has(tagKey(t)) && seenTags.add(tagKey(t)));
   }
+  dropUnsourcedGender(parsed, `${sourceText || ""} ${category || ""} ${name || ""}`);
   if (Array.isArray(parsed.specsTable)) {
     parsed.specsTable = parsed.specsTable
       .map((r) => ({ ...r, key: polishShort(r?.key, { ...ctx, keepLabels: true }), value: polishShort(r?.value, ctx) }))
