@@ -104,9 +104,13 @@ export function dropSleevesForBottoms(text, name) {
 const WOMEN_APPAREL = /^(?:ال)?(?:فستان|فساتين|تنور|تنانير|بلوز|بلايز|عباي|جمبسوت|كارديجان)/u;
 // ملابس رجالية بمقاسات («ثوب رجالي كلاسيكي» 2026-09-13) تُنشر بصيغة المذكر.
 export function withSizeChartLine(text, name, category = "") {
-  const t = String(text || "").trim();
+  const women = WOMEN_APPAREL.test(String(name || "").trim());
+  // «راجع جدول المقاسات» بصيغة المذكر لفستان (Luna 2026-09-14 04:03): خطاب المؤنث لقطع النساء كسطر هالة نفسه.
+  const t = women
+    ? String(text || "").trim().replace(/(?<!\p{L})راجع(?=[ \t]+جدول[ \t]+المقاسات)/gu, "راجعي")
+    : String(text || "").trim();
   if (!t || /جدول المقاسات/.test(t)) return t;
-  if (WOMEN_APPAREL.test(String(name || "").trim())) return `${t}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.`;
+  if (women) return `${t}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.`;
   const menSized = sizeChartKind({ name, category }) === "sized" && isMenswear({ name, category });
   return menSized ? `${t}\n\nراجع جدول المقاسات قبل الطلب لاختيار المقاس المناسب.` : t;
 }
