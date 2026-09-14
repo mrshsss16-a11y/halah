@@ -6,6 +6,16 @@
       <span>تم ربط متجرك بسلة بنجاح — جاهزين نبدأ بوصف منتجاتك.</span>
     </div>
 
+    <!-- «أكمل حسابك بجوجل» (2026-09-14): لمتجر دخل من سلة بلا حساب عندنا — ظاهر من أول فتح بدل انتظار أول عملية.
+         يُظهره main.js حين لا يرجع /api/auth/me بريداً، ويفتح نافذة إكمال الحساب (زر جوجل أو بريد). -->
+    <div id="accountGoogleBanner" class="hidden p-4 rounded-2xl bg-white border border-slate-300 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div class="space-y-0.5">
+        <p class="text-sm font-black text-black">أكمل حسابك بضغطة</p>
+        <p class="text-xs text-slate-600 font-medium">ادخل بحساب جوجل — ولو سجّلت بموقعنا بنفس البريد يُربط متجرك بحسابك تلقائياً.</p>
+      </div>
+      <button type="button" onclick="openAccountModal()" class="sleek-btn-black px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap">أكمل بجوجل</button>
+    </div>
+
     <!-- Header + store status -->
     <div class="sleek-card-darkborder rounded-3xl p-7 bg-white flex flex-col md:flex-row md:items-center justify-between gap-5 shadow-sm">
       <div class="space-y-2">
