@@ -238,4 +238,10 @@ export async function markDeferredItems(env, { jobId, merchantId, fromIndex, cou
   )
     .bind(count, count, jobId, merchantId)
     .run();
+  // كل الصفوف مؤجَّلة (processed = total) ⇒ الوظيفة لا تبقى «جارية» للأبد فتلتحق بها كل ضغطة توليد
+  // لاحقة وتعلق نافذة التقدّم على ١٠٠٪ (2026-09-14). reviveDeferredItems يعيدها running عند تجدد الحد.
+  // tenant-audit-ok: نفس job_id الموثوق.
+  await env.DB.prepare("UPDATE bulk_jobs SET status = 'done', updated_at = datetime('now') WHERE id = ? AND merchant_id = ? AND processed >= total")
+    .bind(jobId, merchantId)
+    .run();
 }

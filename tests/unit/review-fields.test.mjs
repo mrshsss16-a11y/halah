@@ -129,6 +129,12 @@ async function main() {
     const excerpt = merged.copywriting?.excerpt || merged.excerpt || "";
     assert(excerpt === "" && !buildSallaProductFields({ description: "وصف", excerpt }).fields.subtitle, "RF-EXCERPT-CLEAR: نبذة أفرغها التاجر لا ترجع من الحقل القديم");
   }
+  {
+    const { readFileSync } = await import("node:fs");
+    const bulkSrc = readFileSync(new URL("../../functions/_lib/domain/bulk.js", import.meta.url), "utf8");
+    const fn = bulkSrc.slice(bulkSrc.indexOf("export async function markDeferredItems"), bulkSrc.indexOf("export async function markDeferredItems") + 1600);
+    assert(/SET status = 'done'[^"]*processed >= total/.test(fn) && /status = 'running', processed = processed -/.test(bulkSrc), "BULK-DEFER-DONE: وظيفة كل صفوفها مؤجَّلة تُغلق، والإحياء يعيد فتحها");
+  }
   }
 
   done();
