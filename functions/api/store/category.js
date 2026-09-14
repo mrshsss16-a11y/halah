@@ -5,7 +5,7 @@ import { withApi, ApiError } from "../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { applyProductCategory } from "../../_lib/domain/productCategory.js";
-import { KNOWN_TYPES } from "../../_lib/ai/productType.js";
+import { KNOWN_TYPES, categoryNameFor } from "../../_lib/ai/productType.js";
 import { logError } from "../../_lib/core/errorLog.js";
 
 async function categoryHandler(body, env, request, requestId, context) {
@@ -37,7 +37,7 @@ async function categoryHandler(body, env, request, requestId, context) {
     };
   } catch (err) {
     const status = Number(err?.status) || 0;
-    if (err?.code === "CATEGORY_NOT_FOUND") return { ok: false, error: `ما فيه تصنيف «${type}» بمتجرك — تقدر هالة تنشئه وتطبّقه الآن.`, code: err.code, canCreate: true };
+    if (err?.code === "CATEGORY_NOT_FOUND") return { ok: false, error: `ما فيه تصنيف «${categoryNameFor(type)}» بمتجرك — تقدر هالة تنشئه وتطبّقه الآن.`, code: err.code, canCreate: true };
     if (status === 403) {
       return { ok: false, error: "التطبيق ما عنده صلاحية تعديل التصنيفات على متجرك.", code: "SCOPE_MISSING" };
     }

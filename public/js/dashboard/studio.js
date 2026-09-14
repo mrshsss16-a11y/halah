@@ -76,7 +76,11 @@ function renderCategoryMismatch(mismatch) {
   }
   // innerText لا innerHTML — النصان مشتقّان من بيانات سلة ومن مخرج النموذج.
   document.getElementById("categoryMismatchText").innerText =
-    `هالة تشوف المنتج ${mismatch.detected}، لكنه مصنَّف بمتجرك تحت ${mismatch.current}.`;
+    mismatch.current
+      ? `هالة تشوف المنتج ${mismatch.detected}، لكنه مصنَّف بمتجرك تحت ${mismatch.current}.`
+      : mismatch.currentName
+        ? `هالة تشوف المنتج ${mismatch.detected}، وتصنيفه بمتجرك «${mismatch.currentName}» ما يوضح نوعه — أضف له تصنيف نوع.`
+        : `هالة تشوف المنتج ${mismatch.detected}، وما له تصنيف بمتجرك — أضف له تصنيف نوع.`;
   box.classList.remove("hidden");
   const btn = document.getElementById("applyCategoryBtn");
   const btnText = document.getElementById("applyCategoryBtnText");

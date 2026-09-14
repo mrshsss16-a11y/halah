@@ -276,11 +276,12 @@ main()
       "CAT-3: تصنيف مطابق ⇒ لا تنبيه"
     );
     // تصنيف تسويقي مشروع ليس خطأً — لا تنبيه بلا تعارض نوعين معروفين.
-    assert(
-      categoryMismatch({ visionNotes: "فستان طويل", name: "فستان", category: "وصل حديثاً" }) === null &&
-        categoryMismatch({ visionNotes: "فستان طويل", name: "فستان", category: "" }) === null,
-      "CAT-4: فئة غير معروفة أو فارغة لا تُتهم بالخطأ"
-    );
+    {
+      const mk = categoryMismatch({ visionNotes: "فستان طويل", name: "فستان", category: "وصل حديثاً" });
+      const empty = categoryMismatch({ visionNotes: "فستان طويل", name: "فستان", category: "" });
+      assert(mk?.detected === "فستان" && mk.current === null && mk.currentName === "وصل حديثاً" && empty?.current === null && empty.currentName === "",
+        "CAT-4: فئة تسويقية أو فارغة لا تُتهم بالخطأ — تُقترح إضافة تصنيف نوع (current: null)");
+    }
     // البحث الجزئي هو ما أُغلقت القائمة لمنعه.
     assert(
       detectProductType({ name: "شنطة تناسب الفساتين" }) === "حقيبة" &&
@@ -298,6 +299,13 @@ main()
       "CAT-7: ملاحظات الصورة تتقدّم على اسم المنتج"
     );
     assert(KNOWN_TYPES.length >= 12, "CAT-8: قائمة الأنواع تغطي فئات المتاجر الشائعة");
+    {
+      const { categoryNameFor } = await import("../../functions/_lib/ai/productType.js");
+      const roundTrip = KNOWN_TYPES.filter((t) => productTypeOf(categoryNameFor(t)) !== t);
+      assert(roundTrip.length === 0, `CAT-9: اسم التصنيف الذي تنشئه هالة يُعاد التعرف عليه بنوعه (${roundTrip.join("،")})`);
+      assert(productTypeOf("عسل سدر جبلي") === "عسل" && productTypeOf("ساعة يد رجالية") === "ساعة" && productTypeOf("شاحن سريع 20 واط") === "شاحن" && categoryNameFor("بنطلون") === "بناطيل",
+        "CAT-10: أنواع خارج الأزياء تُستنتج، والتصنيف ينشأ بصيغة الجمع");
+    }
 
     // اقتراح لا تنفيذ: صفر كتابة تصنيف على سلة.
     const { readFileSync } = await import("node:fs");
@@ -368,7 +376,7 @@ main()
     );
     {
       const apiCat = read("../../functions/api/store/category.js");
-      assert(/if \(!target && create\)/.test(domainSrc) && /createCategory\(token, \{ name: type/.test(domainSrc) && /const create = body\.create === true;/.test(apiCat) && /canCreate: true/.test(apiCat),
+      assert(/if \(!target && create\)/.test(domainSrc) && /createCategory\(token, \{ name: categoryNameFor\(type\)/.test(domainSrc) && /const create = body\.create === true;/.test(apiCat) && /canCreate: true/.test(apiCat),
         "CAT-CREATE-1: هالة تنشئ التصنيف فقط بموافقة صريحة (create === true) وباسم من القائمة المغلقة");
     }
 

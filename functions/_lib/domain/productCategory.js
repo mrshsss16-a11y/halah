@@ -9,7 +9,7 @@
 // ينتمي لـ«فساتين» و«وصل حديثاً» و«تخفيضات» — الأخيران ليسا خطأً.
 import { listCategories, getProduct, updateProduct, createCategory } from "../integrations/salla.js";
 import { getValidSallaToken } from "./salla.js";
-import { productTypeOf } from "../ai/productType.js";
+import { productTypeOf, categoryNameFor } from "../ai/productType.js";
 
 const MAX_CATEGORY_PAGES = 5; // ٣٠٠ تصنيف — أكبر من أي متجر واقعي
 
@@ -52,10 +52,10 @@ export async function applyProductCategory(env, { merchantId, productId, type, c
   let target = categories.find((c) => c.type === type);
   let created = false;
   if (!target && create) {
-    const res = await createCategory(token, { name: type, status: "active" });
+    const res = await createCategory(token, { name: categoryNameFor(type), status: "active" });
     const id = res?.data?.id;
     if (!id) throw new Error("salla createCategory: no id in response");
-    target = { id, name: String(res.data.name || type), type };
+    target = { id, name: String(res.data.name || categoryNameFor(type)), type };
     categories.push(target);
     created = true;
   }
