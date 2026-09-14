@@ -366,6 +366,11 @@ main()
       /CATEGORY_NOT_FOUND/.test(domainSrc) && /أنشئه من تصنيفات سلة/.test(domainSrc),
       "APPLY-4: لا تصنيف مطابق ⇒ يطلب إنشاءه ولا يخترع واحداً"
     );
+    {
+      const apiCat = read("../../functions/api/store/category.js");
+      assert(/if \(!target && create\)/.test(domainSrc) && /createCategory\(token, \{ name: type/.test(domainSrc) && /const create = body\.create === true;/.test(apiCat) && /canCreate: true/.test(apiCat),
+        "CAT-CREATE-1: هالة تنشئ التصنيف فقط بموافقة صريحة (create === true) وباسم من القائمة المغلقة");
+    }
 
     const apiSrc = read("../../functions/api/store/category.js");
     assert(

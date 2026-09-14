@@ -105,17 +105,25 @@ export async function applySuggestedCategory() {
   const btn = document.getElementById("applyCategoryBtn");
   const btnText = document.getElementById("applyCategoryBtnText");
   const msg = document.getElementById("applyCategoryMsg");
+  // الضغطة الثانية بعد «ما فيه تصنيف» = موافقة صريحة على إنشائه (2026-09-14).
+  const create = S.categoryCreateFor === `${productId}:${mismatch.detected}`;
   btn.disabled = true;
-  btnText.innerText = "جاري التطبيق…";
+  btnText.innerText = create ? "جاري الإنشاء والتطبيق…" : "جاري التطبيق…";
   msg.innerText = "";
   try {
-    const { res, data } = await postCategory({ productId, type: mismatch.detected });
+    const { res, data } = await postCategory({ productId, type: mismatch.detected, create });
     if (!res.ok || !data?.ok) {
       msg.innerText = data?.error || "ما قدرنا نطبّق التصنيف — جرّب مرة ثانية.";
       btn.disabled = false;
-      btnText.innerText = "طبّق التصنيف على سلة";
+      if (data?.canCreate) {
+        S.categoryCreateFor = `${productId}:${mismatch.detected}`;
+        btnText.innerText = `أنشئ تصنيف «${mismatch.detected}» وطبّقه`;
+      } else {
+        btnText.innerText = "طبّق التصنيف على سلة";
+      }
       return;
     }
+    S.categoryCreateFor = null;
     msg.innerText = data.message || "تم ✅";
     btnText.innerText = "طُبّق ✅";
   } catch (e) {

@@ -131,6 +131,15 @@ export async function listCategories(token, page = 1) {
 
 // GET /products/{id} — لازم قبل تغيير التصنيف: المنتج قد ينتمي لعدة تصنيفات،
 // والكتابة تستبدل المصفوفة كاملة. بلا قراءة أولاً نمحو تصنيفات لم نقصدها.
+// POST /categories — إنشاء تصنيف (صلاحية categories.read_write). يُستدعى فقط بعد ضغطة التاجر
+// على «أنشئ التصنيف وطبّقه» (domain/productCategory.js) — لا ينشئ أي مسار توليد تصنيفاً.
+export async function createCategory(token, { name, status = "active" }) {
+  return sallaFetch(token, "/categories", {
+    method: "POST",
+    body: JSON.stringify({ name, status })
+  });
+}
+
 export async function getProduct(token, productId) {
   return sallaFetch(token, `/products/${encodeURIComponent(productId)}`);
 }

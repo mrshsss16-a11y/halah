@@ -7,7 +7,7 @@
 // `categories` كاملة عند الكتابة، فنقرأ تصنيفات المنتج أولاً، ونستبدل
 // **التصنيف المتعارض وحده** بالتصنيف الصحيح، ونبقي الباقي كما هو. منتج قد
 // ينتمي لـ«فساتين» و«وصل حديثاً» و«تخفيضات» — الأخيران ليسا خطأً.
-import { listCategories, getProduct, updateProduct } from "../integrations/salla.js";
+import { listCategories, getProduct, updateProduct, createCategory } from "../integrations/salla.js";
 import { getValidSallaToken } from "./salla.js";
 import { productTypeOf } from "../ai/productType.js";
 
@@ -38,16 +38,27 @@ async function loadStoreCategories(env, merchantId) {
 }
 
 /**
- * يطبّق التصنيف الصحيح. يرمي بخطأ عربي واضح حين لا يمكن التنفيذ بصدق:
- * لا تصنيف مطابق بالمتجر ⇒ التاجر ينشئه بنفسه، ولا نخترع واحداً.
+ * يطبّق التصنيف الصحيح. لا تصنيف مطابق بالمتجر:
+ *   - `create: false` (الافتراضي) ⇒ يرمي CATEGORY_NOT_FOUND فتعرض الواجهة «أنشئ التصنيف وطبّقه».
+ *   - `create: true` (ضغطة التاجر على ذلك الزر فقط، 2026-09-14) ⇒ ينشئ تصنيفاً ظاهراً باسم النوع نفسه
+ *     (قائمة مغلقة KNOWN_TYPES — لا اسم من مدخل حر) ثم يطبّقه.
  *
  * @returns {{ applied: true, categoryId, categoryName, replaced: string|null }}
  */
-export async function applyProductCategory(env, { merchantId, productId, type }) {
+export async function applyProductCategory(env, { merchantId, productId, type, create = false }) {
   const token = await getValidSallaToken(env, merchantId);
   const categories = await loadStoreCategories(env, merchantId);
 
-  const target = categories.find((c) => c.type === type);
+  let target = categories.find((c) => c.type === type);
+  let created = false;
+  if (!target && create) {
+    const res = await createCategory(token, { name: type, status: "active" });
+    const id = res?.data?.id;
+    if (!id) throw new Error("salla createCategory: no id in response");
+    target = { id, name: String(res.data.name || type), type };
+    categories.push(target);
+    created = true;
+  }
   if (!target) {
     const err = new Error(`ما لقينا تصنيفاً باسم «${type}» بمتجرك — أنشئه من تصنيفات سلة ثم أعد المحاولة.`);
     err.code = "CATEGORY_NOT_FOUND";
@@ -73,5 +84,5 @@ export async function applyProductCategory(env, { merchantId, productId, type })
 
   const next = [...new Set([...kept.map(String), String(target.id)])];
   await updateProduct(token, productId, { categories: next.map(Number) });
-  return { applied: true, categoryId: target.id, categoryName: target.name, replaced };
+  return { applied: true, categoryId: target.id, categoryName: target.name, replaced, created };
 }
