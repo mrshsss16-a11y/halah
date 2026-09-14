@@ -72,7 +72,8 @@ async function main() {
   {
     const pairs = [
       ["functions/_lib/domain/catalog.js", /listProducts\(await getValidSallaToken\(env, merchantId\), page\)/],
-      ["functions/_lib/domain/publish.js", /updateProductBySku\(await getValidSallaToken\(env, merchantId\), sku,/],
+      // النشر بمعرّف المنتج أولاً (2026-09-14): التوكن يُجلب بالطبقة نفسها ثم يُمرَّر للمحوّل.
+      ["functions/_lib/domain/publish.js", /const token = await getValidSallaToken\(env, merchantId\);\s+return productId \? updateProduct\(token, productId, body\) : updateProductBySku\(token, sku, body\)/],
       ["functions/_lib/domain/storeOverview.js", /listProducts\(await getValidSallaToken\(env, merchant\.id\)\)/],
       ["functions/_lib/domain/salla.js", /getStoreInfo\(await getValidSallaToken\(env, merchantId\)\)/]
     ];

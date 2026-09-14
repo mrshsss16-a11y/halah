@@ -135,6 +135,12 @@ async function main() {
     const fn = bulkSrc.slice(bulkSrc.indexOf("export async function markDeferredItems"), bulkSrc.indexOf("export async function markDeferredItems") + 1600);
     assert(/SET status = 'done'[^"]*processed >= total/.test(fn) && /status = 'running', processed = processed -/.test(bulkSrc), "BULK-DEFER-DONE: وظيفة كل صفوفها مؤجَّلة تُغلق، والإحياء يعيد فتحها");
   }
+  {
+    const { readFileSync } = await import("node:fs");
+    const pub = readFileSync(new URL("../../functions/_lib/domain/publish.js", import.meta.url), "utf8");
+    assert(/productId \? updateProduct\(token, productId, body\) : updateProductBySku\(token, sku, body\)/.test(pub) && /return write\(fallback\)/.test(pub) && /revertId \? updateProduct\(/.test(pub),
+      "PUB-BY-ID: النشر والتراجع بمعرّف منتج سلة أولاً والـSKU احتياط (SKU التجريبي بشرطة أخيرة يرجع 404)");
+  }
   }
 
   done();

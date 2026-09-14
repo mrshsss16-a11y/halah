@@ -79,6 +79,14 @@ async function publishInstagram(env, { merchantId, payload }) {
  * ٤٢٩ (حد المعدل): لا إعادة محاولة هنا إطلاقاً — يُرمى خطأ يحمل retryAfter
  * ليوقف الـcron التِك الحالي كاملاً لهذا المتجر (تجاوز الحد يقطع اتصال المتجر).
  */
+/** معرّف منتج سلة: من الحمولة، وإلا من صف الكتالوج بنفس الـSKU. لا معرّف ⇒ null (يُستعمل الـSKU). */
+async function sallaProductIdFor(env, { merchantId, sku, payload }) {
+  const fromPayload = String(payload?.productId || payload?.sallaProductId || "").trim();
+  if (fromPayload) return fromPayload;
+  const row = await getCatalogItem(env, { merchantId, sku }).catch(() => null);
+  return row?.salla_product_id ? String(row.salla_product_id) : null;
+}
+
 async function publishDescription(env, { merchantId, payload }) {
   const sku = String(payload?.sku || "").trim();
   const description = String(payload?.description || "").trim();
@@ -99,9 +107,15 @@ async function publishDescription(env, { merchantId, payload }) {
     seo: exclude.seo ? null : payload?.seo || null
   });
 
+  // بالمعرّف أولاً: SKU سلة التجريبي («…-30000024230-») يرجع 404 بمسار /products/sku (2026-09-14).
+  const productId = await sallaProductIdFor(env, { merchantId, sku, payload });
+  const write = async (body) => {
+    const token = await getValidSallaToken(env, merchantId);
+    return productId ? updateProduct(token, productId, body) : updateProductBySku(token, sku, body);
+  };
   const attempt = async (body, fallback) => {
     try {
-      return await updateProductBySku(await getValidSallaToken(env, merchantId), sku, body);
+      return await write(body);
     } catch (err) {
       const status = Number(err?.status) || Number((String(err?.message || "").match(/HTTP (\d{3})/) || [])[1]) || 0;
       if (status === 429) {
@@ -111,7 +125,7 @@ async function publishDescription(env, { merchantId, payload }) {
       }
       if (status === 422 && fallback) {
         // حقول السيو رُفضت — الوصف وحده مرة واحدة، ثم أي فشل يُسجَّل على الصف.
-        return updateProductBySku(await getValidSallaToken(env, merchantId), sku, fallback);
+        return write(fallback);
       }
       throw err;
     }
@@ -209,7 +223,9 @@ export async function revertProduct(env, { merchantId, sku }) {
   // الأصل قد يكون فارغاً فعلاً (منتج بلا وصف قبل هالة) — نُرجعه فارغاً بصدق،
   // لا نخترع نصاً.
   const original = item.original_description || "";
-  await updateProductBySku(await getValidSallaToken(env, merchantId), sku, { description: original });
+  const revertId = await sallaProductIdFor(env, { merchantId, sku, payload: null });
+  const revertToken = await getValidSallaToken(env, merchantId);
+  await (revertId ? updateProduct(revertToken, revertId, { description: original }) : updateProductBySku(revertToken, sku, { description: original }));
   await markReverted(env, { merchantId, sku });
 
   const seoNote = "عنوان ووصف البحث اللذان أضافتهما هالة يبقيان — عدّلهما من لوحة سلة إن أردت.";
