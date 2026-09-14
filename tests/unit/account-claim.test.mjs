@@ -169,6 +169,15 @@ async function main() {
       "CLAIM-22: كوكي جديد بعد النقل — نسخة الجلسة تغيّرت فالقديم لا يتحقق"
     );
     assert(/export const onRequestPost = withApi\(/.test(api), "CLAIM-23: يمرّ ببوابة CSRF عبر withApi");
+    {
+      const { claimStoreWithGoogleAccount } = await import("../../functions/_lib/domain/accountClaim.js");
+      const sg = read("../../functions/api/auth/salla_google.js");
+      assert(/getSessionMerchantId\(request, env\)/.test(sg) && !/body\.(storeId|merchantId)/.test(sg), "GCLAIM-1: صفّ المتجر من الجلسة فقط");
+      assert(/verifyGoogleIdToken\(env,/.test(sg) && /PASSWORD_ACCOUNT_EXISTS/.test(sg) && /isAdminEmail\(env, email\)/.test(sg), "GCLAIM-2: الهوية من جوجل، وحساب كلمة المرور والمشرف مرفوضان");
+      const acSrc = read("../../functions/_lib/domain/accountClaim.js");
+      assert(/startsWith\(GOOGLE_MERCHANT_PREFIX\)/.test(acSrc) && /NOT_GOOGLE_ACCOUNT/.test(acSrc), "GCLAIM-3: الربط بجوجل لحساب جوجل فقط");
+      assert(typeof claimStoreWithGoogleAccount === "function", "GCLAIM-4: دالة الربط بجوجل مصدَّرة");
+    }
 
     const { onRequestPost } = await import("../../functions/api/auth/claim_store.js");
     const kv = new Map();

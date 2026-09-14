@@ -20,7 +20,7 @@
 import { verifyPassword } from "../core/auth.js";
 import { bumpSessionVersion } from "../core/session.js";
 import { isLoginLocked, recordLoginFailure, clearLoginAttempts } from "./auth.js";
-import { findAccountByEmail, isAccountDisabled } from "./accounts.js";
+import { findAccountByEmail, isAccountDisabled, GOOGLE_MERCHANT_PREFIX } from "./accounts.js";
 import { purgeMerchantData } from "./merchantPurge.js";
 
 /** رفض مصنَّف بحالة HTTP ورسالة عربية للتاجر — لا يكشف شيئاً عن صفّ آخر. */
@@ -41,17 +41,7 @@ const BAD_CREDENTIALS = () => new ClaimError(401, "BAD_CREDENTIALS", "البري
  * كوكي جديد بعده (نسخة الجلسة تغيّرت). يرمي `ClaimError` عند كل رفض.
  */
 export async function claimStoreWithAccount(env, { storeMerchantId, email, password }) {
-  const store = await env.DB.prepare("SELECT id, salla_merchant_id FROM merchants WHERE id = ?")
-    .bind(storeMerchantId)
-    .first();
-  if (!store) throw new ClaimError(404, "MERCHANT_NOT_FOUND", "المتجر غير موجود.");
-  if (!store.salla_merchant_id) {
-    throw new ClaimError(409, "NO_STORE", "ما فيه متجر سلة بهذي الجلسة لربطه. افتح هالة من لوحة متجرك: تطبيقاتي ← هالة.");
-  }
-  const storeHasAccount = await env.DB.prepare("SELECT 1 AS x FROM accounts WHERE merchant_id = ?")
-    .bind(storeMerchantId)
-    .first();
-  if (storeHasAccount) throw new ClaimError(409, "ACCOUNT_EXISTS", "هذا المتجر مربوط بحساب مسبقاً.");
+  await assertClaimableStore(env, storeMerchantId);
 
   // ── إثبات ملكية الحساب — بنفس قفل تسجيل الدخول ─────────────────────────
   if (await isLoginLocked(env, email)) {
@@ -69,7 +59,40 @@ export async function claimStoreWithAccount(env, { storeMerchantId, email, passw
     throw new ClaimError(403, "ACCOUNT_DISABLED", "هذا الحساب معطّل. تواصل مع فريق هالة.");
   }
   await clearLoginAttempts(env, email).catch(() => {});
+  return transferAccountToStore(env, { storeMerchantId, account });
+}
 
+/**
+ * نفس الربط لكن الملكية أثبتتها جوجل (`api/auth/salla_google.js`، 2026-09-14): يُقبل **حساب جوجل فقط**
+ * (`m_g_…`) — حساب بكلمة مرور لا يُربط بجوجل تلقائياً (P41).
+ */
+export async function claimStoreWithGoogleAccount(env, { storeMerchantId, email }) {
+  await assertClaimableStore(env, storeMerchantId);
+  const account = await findAccountByEmail(env, email);
+  if (!account || !String(account.merchant_id).startsWith(GOOGLE_MERCHANT_PREFIX)) {
+    throw new ClaimError(409, "NOT_GOOGLE_ACCOUNT", "هذا البريد له حساب بكلمة مرور — ادخل بكلمة المرور ليُربط المتجر به.");
+  }
+  if (await isAccountDisabled(env, account.merchant_id)) {
+    throw new ClaimError(403, "ACCOUNT_DISABLED", "هذا الحساب معطّل. تواصل مع فريق هالة.");
+  }
+  return transferAccountToStore(env, { storeMerchantId, account });
+}
+
+async function assertClaimableStore(env, storeMerchantId) {
+  const store = await env.DB.prepare("SELECT id, salla_merchant_id FROM merchants WHERE id = ?")
+    .bind(storeMerchantId)
+    .first();
+  if (!store) throw new ClaimError(404, "MERCHANT_NOT_FOUND", "المتجر غير موجود.");
+  if (!store.salla_merchant_id) {
+    throw new ClaimError(409, "NO_STORE", "ما فيه متجر سلة بهذي الجلسة لربطه. افتح هالة من لوحة متجرك: تطبيقاتي ← هالة.");
+  }
+  const storeHasAccount = await env.DB.prepare("SELECT 1 AS x FROM accounts WHERE merchant_id = ?")
+    .bind(storeMerchantId)
+    .first();
+  if (storeHasAccount) throw new ClaimError(409, "ACCOUNT_EXISTS", "هذا المتجر مربوط بحساب مسبقاً.");
+}
+
+async function transferAccountToStore(env, { storeMerchantId, account }) {
   const from = account.merchant_id;
 
   // ── صفّ الحساب يجب أن يكون فارغاً من أي متجر ──────────────────────────

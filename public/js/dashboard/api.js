@@ -118,6 +118,11 @@ export function postClaimStore(email, password) {
   return postRaw("/api/auth/claim_store", { email, password });
 }
 
+/** إكمال الحساب أو ربطه بجوجل لتاجر داخل سلة (`/api/auth/salla_google`). */
+export function postSallaGoogle(credential) {
+  return postRaw("/api/auth/salla_google", { credential });
+}
+
 export function postSallaEmbedded(token) {
   return postStrict("/api/auth/salla_embedded", { token });
 }

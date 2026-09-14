@@ -235,6 +235,7 @@ async function runTests() {
       "google.js": "google_auth",
       "complete_account.js": "complete_account",
       "claim_store.js": "claim_store",
+      "salla_google.js": "salla_google",
       "verify_email.js": "verify_email",
       "send_verification.js": "send_verification"
     };

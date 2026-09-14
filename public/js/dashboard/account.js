@@ -12,7 +12,7 @@
 //   login  — حساب أُنشئ من موقعنا يُربط به المتجر (`/api/auth/claim_store`)
 // بدون الوضع الثاني كان صاحب حساب الموقع يصطدم بـ«هذا البريد مسجّل مسبقاً»
 // ولا يجد طريقاً لربط متجره بحسابه — رُصد عملياً بتجهيز حساب مراجعة سلة.
-import { postCompleteAccount, postClaimStore } from "./api.js";
+import { postCompleteAccount, postClaimStore, postSallaGoogle } from "./api.js";
 import { switchTab } from "./tabs.js";
 
 const MODE_TEXT = {
@@ -53,6 +53,55 @@ export function openAccountModal(msg) {
   if (msg) document.getElementById("acctModalMsg").innerText = msg;
   setAccountMode("create");
   el.classList.remove("hidden");
+  renderAccountGoogle();
+}
+
+// «أكمل بجوجل» (طلب المالك 2026-09-14): أبسط من بريد وكلمة مرور. زر جوجل الرسمي بنافذة منبثقة
+// (use_fedcm_for_button: false) — FedCM داخل إطار سلة يحتاج إذناً على وسم iframe الخاص بهم لا نملكه.
+let googleReady = false;
+async function renderAccountGoogle() {
+  const wrap = document.getElementById("acctGoogleWrap");
+  if (!wrap || googleReady) return;
+  try {
+    const cfg = await (await fetch("/api/auth/google_client", { cache: "no-store" })).json();
+    if (!cfg?.clientId) return;
+    await loadGsi();
+    window.google.accounts.id.initialize({ client_id: cfg.clientId, callback: onAccountGoogle, use_fedcm_for_button: false });
+    document.getElementById("acctGoogleBlock")?.classList.remove("hidden");
+    window.google.accounts.id.renderButton(wrap, { type: "standard", theme: "outline", size: "large", shape: "pill", text: "continue_with", locale: "ar", width: Math.min(320, wrap.clientWidth || 300) });
+    googleReady = true;
+  } catch (e) { /* بلا زر جوجل تبقى الطريقة بالبريد وكلمة المرور */ }
+}
+
+function loadGsi() {
+  if (window.google?.accounts?.id) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const sc = document.createElement("script");
+    sc.src = "https://accounts.google.com/gsi/client";
+    sc.async = true;
+    sc.onload = () => resolve();
+    sc.onerror = () => reject(new Error("gsi"));
+    document.head.appendChild(sc);
+  });
+}
+
+async function onAccountGoogle(response) {
+  const err = document.getElementById("acctError");
+  err?.classList.add("hidden");
+  try {
+    const res = await postSallaGoogle(response?.credential || "");
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) {
+      if (data.code === "PASSWORD_ACCOUNT_EXISTS") setAccountMode("login");
+      if (err) { err.innerText = data.error || "تعذر الدخول بجوجل. حاول مرة ثانية."; err.classList.remove("hidden"); }
+      return;
+    }
+    closeAccountModal();
+    window.showToast(data.linked ? `تم ربط المتجر بحساب ${data.email} ✅` : `تم إنشاء حسابك بـ ${data.email} ✅`, "success");
+    setTimeout(() => window.location.reload(), 1500);
+  } catch (e) {
+    if (err) { err.innerText = "تعذر الاتصال. حاول مرة ثانية."; err.classList.remove("hidden"); }
+  }
 }
 
 export function closeAccountModal() {
