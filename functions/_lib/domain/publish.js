@@ -87,13 +87,16 @@ async function publishDescription(env, { merchantId, payload }) {
 
   // أسماء حقول سلة الحقيقية (metadata_title/metadata_description/subtitle، والوصف HTML)
   // من services/sallaProductPayload.js — المصدر الوحيد لهذا التحويل.
+  // exclude: بند "مراجعة كل حقل" (طلب المالك 2026-09-14) — التاجر يستبعد قسماً
+  // من النشر بلا حذف محتواه من المسودة. description لا يُستبعد أبداً (العقد).
+  const exclude = payload?.exclude || {};
   const { fields, descriptionOnly, hasSeo } = buildSallaProductFields({
     description,
-    excerpt: payload?.copywriting?.excerpt || payload?.excerpt || "",
-    highlights: payload?.copywriting?.highlights || payload?.highlights || [],
-    faqs: payload?.faqs || [],
-    specsTable: payload?.specsTable || [],
-    seo: payload?.seo || null
+    excerpt: exclude.excerpt ? "" : payload?.copywriting?.excerpt || payload?.excerpt || "",
+    highlights: exclude.highlights ? [] : payload?.copywriting?.highlights || payload?.highlights || [],
+    faqs: exclude.faqs ? [] : payload?.faqs || [],
+    specsTable: exclude.specsTable ? [] : payload?.specsTable || [],
+    seo: exclude.seo ? null : payload?.seo || null
   });
 
   const attempt = async (body, fallback) => {

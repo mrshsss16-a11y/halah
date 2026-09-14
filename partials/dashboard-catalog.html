@@ -72,17 +72,19 @@
           </p>
         </div>
 
-        <!-- رسائل التوليد بالجملة وشريط تقدّمه — بمكان الضغطة نفسه. -->
+        <!-- رسائل التوليد بالجملة وشريط تقدّمه — بمكان الضغطة نفسه، والتفاصيل بنافذة «أوصاف منتجاتك» (bulk.js). -->
         <div id="bulkFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
-        <div id="bulkProgress" class="hidden space-y-2" aria-live="polite">
-          <div class="flex justify-between text-[11px] font-bold text-slate-600">
+        <div id="bulkProgress" class="hidden p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5" aria-live="polite">
+          <div class="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-slate-600">
             <span id="bulkProgressLabel">جاري المعالجة…</span>
-            <span id="bulkProgressCount">0 / 0</span>
+            <span class="flex items-center gap-2">
+              <span id="bulkProgressCount" style="font-variant-numeric: tabular-nums">0 / 0</span>
+              <button type="button" onclick="openBulkProgress()" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px] font-bold">اعرض التفاصيل</button>
+            </span>
           </div>
-          <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-            <div id="bulkProgressBar" class="bg-black h-2 rounded-full transition-all" style="width:0%"></div>
+          <div class="w-full bg-white border border-slate-200 rounded-full h-2 overflow-hidden">
+            <div id="bulkProgressBar" class="bg-black h-full rounded-full transition-all" style="width:0%"></div>
           </div>
-          <div id="bulkFailedList" class="text-[11px] text-rose-700 space-y-0.5"></div>
         </div>
 
         <div id="catalogEmpty" class="hidden text-center py-10 space-y-2">

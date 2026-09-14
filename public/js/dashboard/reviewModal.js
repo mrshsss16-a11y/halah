@@ -1,136 +1,253 @@
-// public/js/dashboard/reviewModal.js — مراجعة الأوصاف واحداً واحداً بنافذة (طلب المالك 2026-09-13): صورة المنتج،
-// و«قبل» (وصفه الحالي على سلة) بجانب «بعد» (الجديد، قابل للتعديل)، وما يُنشر معه، ثم اعتماد أو رفض أو «لاحقاً»،
-// و«اعتمد الكل». نفس نقطة القرار (review/decide) — لا مسار نشر ثانٍ يتجاوز بوابة المراجعة.
-import { S } from "./state.js";
+// public/js/dashboard/reviewModal.js — نافذة «أوصاف منتجاتك» (طلب المالك 2026-09-14): مرحلتان بنافذة واحدة.
+//   «جاري التجهيز» — تقدّم التوليد الجماعي (يرسمها bulk.js داخل #rmProgressView).
+//   «مراجعة» — منتج منتج: «قبل» الوصف الحالي على سلة، و«بعد» كل حقل يُنشر (reviewSections.js) قابلاً للتعديل
+//   مع مفتاح «ينشر» لكل قسم؛ ثم رفض · تخطي · «اعتمد وانشر ← التالي»، و«اعتمد الكل وانشر» بتأكيد.
+// نفس نقطة القرار (review/decide) — لا مسار نشر ثانٍ يتجاوز بوابة المراجعة. التعديل يُحفظ تلقائياً بعد توقف
+// الكتابة، وإلزامياً قبل أي انتقال أو اعتماد أو إغلاق (وإلا نُشر النص الأصلي بدل ما كتبه التاجر).
+//
+// لا استيراد من bulk.js (يستوردنا هو): التواصل بأحداث document — hala:review-decided · hala:review-modal-closed
+// · hala:show-progress. و#reviewModal[data-bulk-tracked="1"] يعني أن توليداً مُتتبَّعاً بهذه الصفحة.
 import { confirmAction } from "./embedded.js";
 import { postReviewList, postReviewDecide } from "./api.js";
-import { publishExtras, setReviewCounts, loadReview } from "./review.js";
+import { setReviewCounts, loadReview, maybeShowFeedback } from "./review.js";
+import { sectionsHtml, plainText, updateSeoPreview, syncToggle, collectFields, mergeFields, emptyRow } from "./reviewSections.js";
 
 const escHtml = window.escHtml;
-const M = { rows: [], index: 0, busy: false, dirty: false };
 const $ = (id) => document.getElementById(id);
-const plain = (html) => String(html || "").replace(/<\/(?:p|li|h\d|div)>|<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, " ").replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n\n").trim();
+const M = { phase: "review", rows: [], index: 0, pendingTotal: 0, busy: false, dirty: false, saveTimer: null, saveChain: Promise.resolve(true), lastFocus: null };
+const SAVE_IDLE_MS = 1500;
+const MSG_TONE = { error: "text-rose-700", success: "text-emerald-800", info: "text-slate-600" };
+
+const modalOpen = () => $("reviewModal")?.classList.contains("hidden") === false;
+const bulkTracked = () => $("reviewModal")?.dataset.bulkTracked === "1";
+
+function setMsg(text, tone = "info") {
+  const el = $("rmMsg");
+  if (!el) return;
+  el.innerText = text || "";
+  el.className = "text-sm font-bold " + (MSG_TONE[tone] || MSG_TONE.info);
+}
+
+function setSaveState(text) {
+  const el = $("rmSaveState");
+  if (el) el.innerText = text || "";
+}
+
+/** يفتح النافذة (إن كانت مغلقة) على مرحلة — يستدعيها bulk.js للتقدّم وopenReviewModal للمراجعة. */
+export function showModalShell(phase) {
+  const modal = $("reviewModal");
+  if (!modal) return false;
+  const wasHidden = modal.classList.contains("hidden");
+  if (wasHidden) {
+    M.lastFocus = document.activeElement;
+    modal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  }
+  M.phase = phase;
+  $("rmProgressView").classList.toggle("hidden", phase !== "progress");
+  $("rmReviewView").classList.toggle("hidden", phase !== "review");
+  $("rmSub").innerText = phase === "progress" ? "جاري التجهيز — تقدر تكمل شغلك والتوليد مستمر" : "مراجعة منتج منتج — ما يُنشر شيء قبل اعتمادك";
+  syncProgressLinks();
+  if (wasHidden) $("rmTitle")?.focus();
+  return wasHidden;
+}
+
+/** «تابع تجهيز الباقي» يظهر فقط حين يوجد توليد متتبَّع بهذه الصفحة. */
+export function syncProgressLinks() {
+  const on = bulkTracked();
+  $("rmToProgress")?.classList.toggle("hidden", !on);
+}
 
 export async function openReviewModal(startId) {
-  const modal = $("reviewModal");
-  if (!modal) return;
-  if (S.reviewState === "pending" && S.reviewRows.length) {
-    M.rows = [...S.reviewRows];
-  } else {
-    const { data } = await postReviewList("pending", 100).catch(() => ({ data: null }));
-    M.rows = data?.ok ? data.rows || [] : [];
-    if (data?.counts) setReviewCounts(data.counts);
-  }
-  M.index = Math.max(0, M.rows.findIndex((r) => r.id === Number(startId)));
-  modal.classList.remove("hidden");
-  document.body.style.overflow = "hidden";
-  renderReviewModal();
-  $("rmDesc")?.focus();
+  if (!$("reviewModal")) return;
+  if (modalOpen() && M.phase === "review" && !(await saveNow())) return;
+  showModalShell("review");
+  await loadRows(startId);
 }
 
-export function closeReviewModal() {
-  $("reviewModal")?.classList.add("hidden");
-  // نافذة «المراجعة والنشر» تحتها تبقى مفتوحة إن كانت — والصفحة لا تتمرر خلفها.
-  if ($("reviewPanel")?.classList.contains("hidden") !== false) document.body.style.overflow = "";
-  loadReview("pending");
-}
-
-function setDecisionButtons(disabled) {
-  ["rmApprove", "rmReject", "rmSkip", "rmApproveAll"].forEach((id) => { const b = $(id); if (b) b.disabled = disabled; });
-}
-
-function renderReviewModal() {
-  const body = $("rmBody");
-  const total = M.rows.length;
-  $("rmCounter").innerText = total ? `${M.index + 1} من ${total}` : "";
-  $("rmActions").classList.toggle("hidden", !total);
-  $("rmMsg").innerText = "";
+async function loadRows(startId) {
+  M.rows = [];
+  M.index = 0;
   M.dirty = false;
+  $("rmStepHead").classList.add("hidden");
+  $("rmActions").classList.add("hidden");
+  $("rmBody").innerHTML = '<div role="status" class="py-16 text-center text-sm text-slate-500">جاري تحميل الأوصاف الجاهزة…</div>';
+  try {
+    const { data } = await postReviewList("pending", 100);
+    if (!data?.ok) throw new Error(data?.error || "review list failed");
+    M.rows = data.rows || data.items || [];
+    M.pendingTotal = Number(data.counts?.pending ?? M.rows.length);
+    if (data.counts) setReviewCounts(data.counts);
+    const at = M.rows.findIndex((r) => r.id === Number(startId));
+    M.index = at >= 0 ? at : 0;
+    renderStep();
+  } catch (e) {
+    console.error("[review-modal] load failed", e);
+    $("rmBody").innerHTML = `<div class="py-16 text-center space-y-3">
+      <p class="text-base font-black text-black">ما قدرنا نحمّل الأوصاف</p>
+      <p class="text-sm text-slate-600">تأكد من اتصالك بالإنترنت ثم أعد المحاولة. أوصافك محفوظة عندنا ولا ضاع منها شيء.</p>
+      <button type="button" data-rm-action="reload" class="sleek-btn-white px-4 py-2.5 rounded-xl text-sm font-bold">أعد المحاولة</button>
+    </div>`;
+  }
+}
+
+function emptyStateHtml() {
+  const more = bulkTracked()
+    ? '<p class="text-sm text-slate-600">باقي منتجات قيد الكتابة — تجهز على دفعات، ونعرضها هنا أول ما تجهز.</p><button type="button" data-rm-action="to-progress" class="sleek-btn-white px-4 py-2.5 rounded-xl text-sm font-bold">تابع التجهيز</button>'
+    : "";
+  return `<div class="py-16 text-center space-y-3 max-w-md mx-auto">
+    <p class="text-base font-black text-black">ما فيه أوصاف تنتظر مراجعتك الحين</p>
+    <p class="text-sm text-slate-600 leading-relaxed">المعتمد يُنشر على سلة تدريجياً خلال دقائق، وتقدر تتراجع عن أي منتج بعد نشره من «المراجعة والنشر».</p>
+    ${more}
+  </div>`;
+}
+
+function productHeadHtml(r) {
+  const img = r.imageUrl
+    ? `<img src="${escHtml(r.imageUrl)}" alt="" referrerpolicy="no-referrer" class="w-full h-full object-contain" onerror="this.remove()">`
+    : "";
+  return `<span class="shrink-0 w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">${img}</span>
+    <span class="min-w-0">
+      <span class="block text-base font-black text-black truncate">${escHtml(r.name || r.sku || "منتج بلا اسم")}</span>
+      <span class="block text-xs text-slate-500 truncate" dir="auto"><bdi>${escHtml(r.sku || "")}</bdi>${r.category ? " · <bdi>" + escHtml(r.category) + "</bdi>" : ""}</span>
+    </span>`;
+}
+
+function beforeHtml(r) {
+  const before = plainText(r.currentDescription);
+  const wide = window.matchMedia?.("(min-width: 768px)").matches;
+  return `<details class="rounded-2xl border border-slate-200 bg-slate-50 p-4"${wide ? " open" : ""}>
+    <summary class="cursor-pointer text-sm font-bold text-slate-600">قبل — الوصف الحالي على سلة</summary>
+    <div class="mt-3 max-h-72 overflow-y-auto text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">${before ? escHtml(before) : "بلا وصف حالي"}</div>
+  </details>`;
+}
+
+function renderStep() {
+  const total = M.rows.length;
+  const body = $("rmBody");
+  M.dirty = false;
+  setMsg("");
+  setSaveState("");
+  $("rmStepHead").classList.toggle("hidden", !total);
+  $("rmActions").classList.toggle("hidden", !total);
   if (!total) {
-    body.innerHTML = '<div class="py-12 text-center space-y-2"><p class="text-sm font-black text-black">خلصت المراجعة ✅</p><p class="text-xs text-slate-600">المعتمد يُنشر على سلة تدريجياً خلال دقائق، وتقدر تتراجع عن أي منتج بعد نشره.</p></div>';
+    body.innerHTML = emptyStateHtml();
     return;
   }
   const r = M.rows[M.index];
-  const before = plain(r.currentDescription);
-  body.innerHTML = `
-    <div class="flex items-center gap-3">
-      ${r.imageUrl ? `<img src="${escHtml(r.imageUrl)}" referrerpolicy="no-referrer" alt="" class="w-16 h-16 rounded-xl object-contain bg-slate-50 border border-slate-200" onerror="this.remove()">` : ""}
-      <div class="min-w-0">
-        <div class="text-sm font-black text-black truncate">${escHtml(r.name || r.sku || "")}</div>
-        <div class="text-[11px] text-slate-500" dir="auto"><bdi>${escHtml(r.sku || "")}</bdi>${r.category ? " · <bdi>" + escHtml(r.category) + "</bdi>" : ""}</div>
-      </div>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div class="space-y-1.5">
-        <span class="block text-[11px] font-black text-slate-600">قبل — الوصف الحالي على سلة</span>
-        <div class="h-56 overflow-y-auto rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-black leading-relaxed whitespace-pre-wrap">${before ? escHtml(before) : '<span class="text-slate-500 font-bold">بلا وصف حالي</span>'}</div>
-      </div>
-      <div class="space-y-1.5">
-        <label for="rmDesc" class="block text-[11px] font-black text-black">بعد — الوصف الجديد (عدّله قبل الاعتماد)</label>
-        <textarea id="rmDesc" class="w-full h-56 bg-white border-2 border-slate-400 rounded-xl p-3 text-xs text-black leading-relaxed focus:outline-none focus:border-black">${escHtml(r.description || "")}</textarea>
-      </div>
-    </div>
-    ${publishExtras(r)}`;
-  $("rmDesc").addEventListener("input", () => { M.dirty = true; });
+  $("rmCounter").innerText = `${M.index + 1} من ${total}`;
+  $("rmStepBar").style.width = Math.round(((M.index + 1) / total) * 100) + "%";
+  $("rmProductHead").innerHTML = productHeadHtml(r);
   $("rmPrev").disabled = M.index === 0;
   $("rmNext").disabled = M.index >= total - 1;
+  $("rmApproveAllCount").innerText = String(Math.max(M.pendingTotal, total));
+  body.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 items-start">
+      <aside class="md:sticky md:top-0">${beforeHtml(r)}</aside>
+      <div class="space-y-3">
+        <h3 class="text-sm font-black text-black">بعد — صفحة المنتج الجديدة</h3>
+        ${sectionsHtml(r)}
+      </div>
+    </div>`;
+  updateSeoPreview(body, r.name);
+  body.scrollTop = 0;
 }
 
-/** تعديل التاجر يُحفظ قبل أي انتقال أو اعتماد — وإلا ضاع أو نُشر النص الأصلي. */
-async function saveEditIfNeeded(r) {
-  const ta = $("rmDesc");
-  if (!ta || !M.dirty) return true;
-  const text = ta.value.trim();
-  if (!text) { $("rmMsg").innerText = "الوصف فارغ — اكتب نصاً أو ارفض المنتج."; return false; }
-  const data = await postReviewDecide({ action: "update", id: r.id, description: text }).catch(() => null);
-  if (!data?.ok) { $("rmMsg").innerText = data?.error || "تعذر حفظ تعديلك."; return false; }
-  r.description = text;
+function scheduleSave() {
+  M.dirty = true;
+  setSaveState("تعديلات لم تُحفظ بعد");
+  clearTimeout(M.saveTimer);
+  M.saveTimer = setTimeout(saveNow, SAVE_IDLE_MS);
+}
+
+/** يحفظ ما لم يُحفظ (بالتسلسل — لا حفظان متوازيان) ويرجّع true إن لم يبقَ شيء معلّق. */
+function saveNow() {
+  clearTimeout(M.saveTimer);
+  M.saveChain = M.saveChain.then(persistEdits, persistEdits);
+  return M.saveChain;
+}
+
+async function persistEdits() {
+  const r = M.rows[M.index];
+  const body = $("rmBody");
+  if (!M.dirty || !r || !body.querySelector("#rmDesc")) return true;
+  const fields = collectFields(body);
+  if (!fields.description) {
+    setMsg("الوصف فارغ — اكتب نصاً أو ارفض المنتج.", "error");
+    return false;
+  }
   M.dirty = false;
+  setSaveState("جاري الحفظ…");
+  const data = await postReviewDecide({ action: "update", id: r.id, fields }).catch(() => null);
+  if (!data?.ok) {
+    M.dirty = true;
+    setSaveState("");
+    setMsg(data?.error || "تعذر حفظ تعديلك — تأكد من الإنترنت وجرّب مرة ثانية.", "error");
+    return false;
+  }
+  mergeFields(r, fields);
+  if (!M.dirty) setSaveState("حُفظت تعديلاتك");
   return true;
 }
 
 export async function reviewModalNav(delta) {
   if (M.busy || !M.rows.length) return;
-  if (!(await saveEditIfNeeded(M.rows[M.index]))) return;
-  M.index = Math.min(M.rows.length - 1, Math.max(0, M.index + delta));
-  renderReviewModal();
+  if (!(await saveNow())) return;
+  const next = Math.min(M.rows.length - 1, Math.max(0, M.index + delta));
+  if (next === M.index) return;
+  M.index = next;
+  renderStep();
+}
+
+function setDecisionButtons(disabled) {
+  ["rmApprove", "rmReject", "rmSkip", "rmApproveAll", "rmPrev", "rmNext"].forEach((id) => { const b = $(id); if (b) b.disabled = disabled; });
+}
+
+function announceDecision(rows, action) {
+  rows.forEach((r) => document.dispatchEvent(new CustomEvent("hala:review-decided", { detail: { sku: r.sku, action } })));
 }
 
 export async function reviewModalDecide(action) {
   if (M.busy || !M.rows.length) return;
   const r = M.rows[M.index];
   if (action === "skip") {
-    if (!(await saveEditIfNeeded(r))) return;
-    M.index = (M.index + 1) % M.rows.length;
-    renderReviewModal();
+    if (!(await saveNow())) return;
+    if (M.rows.length > 1) { M.index = (M.index + 1) % M.rows.length; renderStep(); }
+    else setMsg("هذا آخر وصف ينتظر — اعتمده أو ارفضه، أو أغلق النافذة ويبقى بانتظارك.");
     return;
   }
   M.busy = true;
   setDecisionButtons(true);
-  $("rmMsg").innerText = action === "approve" ? "جاري الاعتماد…" : "جاري الرفض…";
+  setMsg(action === "approve" ? "جاري الاعتماد…" : "جاري الرفض…");
   try {
-    if (action === "approve" && !(await saveEditIfNeeded(r))) return;
+    if (action === "approve" && !(await saveNow())) return;
     const data = await postReviewDecide({ action, ids: [r.id] });
-    if (!data?.ok) { $("rmMsg").innerText = data?.error || "تعذر التنفيذ."; return; }
+    if (!data?.ok) { setMsg(data?.error || "تعذر التنفيذ — جرّب مرة ثانية.", "error"); return; }
     if (data.counts) setReviewCounts(data.counts);
+    announceDecision([r], action);
+    if (action === "approve") maybeShowFeedback();
     M.rows.splice(M.index, 1);
+    M.pendingTotal = Math.max(0, M.pendingTotal - 1);
     if (M.index >= M.rows.length) M.index = Math.max(0, M.rows.length - 1);
-    renderReviewModal();
+    renderStep();
+    const name = r.name || r.sku || "المنتج";
+    setMsg(action === "approve" ? `اعتُمد «${name}» — يُنشر على سلة خلال دقائق.` : `رُفض «${name}» — ما يُنشر.`, action === "approve" ? "success" : "info");
   } catch (e) {
-    $("rmMsg").innerText = "تعذر الاتصال.";
+    setMsg("تعذر الاتصال — تأكد من الإنترنت وجرّب مرة ثانية.", "error");
   } finally {
     M.busy = false;
     setDecisionButtons(false);
+    if (M.rows.length) { $("rmPrev").disabled = M.index === 0; $("rmNext").disabled = M.index >= M.rows.length - 1; }
   }
 }
 
 export async function reviewModalApproveAll() {
   if (M.busy || !M.rows.length) return;
-  if (!(await saveEditIfNeeded(M.rows[M.index]))) return;
-  // «اعتمد الكل» ينشر على متجر حي — لا يمر بضغطة عابرة.
+  if (!(await saveNow())) return;
+  const n = Math.max(M.pendingTotal, M.rows.length);
+  // «اعتمد الكل» ينشر على متجر حي — لا يمر بضغطة عابرة، والرسالة تقول بالضبط ما يصير.
   const confirmed = await confirmAction({
-    title: "اعتماد كل الأوصاف",
-    message: `نعتمد ${M.rows.length} وصف بانتظار مراجعتك وننشرها على متجرك بسلة تدريجياً؟ تقدر تتراجع عن أي منتج بعد النشر.`,
+    title: `اعتماد ونشر ${n} وصف`,
+    message: `نعتمد كل الأوصاف الجاهزة بانتظار مراجعتك (${n}) كما هي الآن بتعديلاتك المحفوظة، وننشرها على متجرك بسلة تدريجياً (بحدود سلة: ~٢٠ منتجاً كل ١٠ دقائق). الأقسام اللي أطفأت فيها «ينشر» ما تُنشر، والأوصاف اللي لسه تنكتب ما تدخل بهذا الاعتماد. تقدر تتراجع عن أي منتج بعد نشره من «المراجعة والنشر».`,
     confirmText: "اعتمد وانشر الكل",
     cancelText: "إلغاء",
     variant: "warning"
@@ -138,26 +255,103 @@ export async function reviewModalApproveAll() {
   if (!confirmed) return;
   M.busy = true;
   setDecisionButtons(true);
+  setMsg("جاري اعتماد الكل…");
   try {
     const data = await postReviewDecide({ action: "approve_all" });
-    if (!data?.ok) { $("rmMsg").innerText = data?.error || "تعذر التنفيذ."; return; }
+    if (!data?.ok) { setMsg(data?.error || "تعذر التنفيذ — جرّب مرة ثانية.", "error"); return; }
     if (data.counts) setReviewCounts(data.counts);
+    announceDecision(M.rows, "approve");
+    maybeShowFeedback();
+    const approved = data.approved ?? n;
     M.rows = [];
     M.index = 0;
-    renderReviewModal();
+    M.pendingTotal = 0;
+    renderStep();
+    setMsg(`اعتُمد ${approved} — يُنشر على سلة تدريجياً خلال دقائق.`, "success");
   } catch (e) {
-    $("rmMsg").innerText = "تعذر الاتصال.";
+    setMsg("تعذر الاتصال — تأكد من الإنترنت وجرّب مرة ثانية.", "error");
   } finally {
     M.busy = false;
     setDecisionButtons(false);
   }
 }
 
-// Esc يغلق، والأسهم تتنقل (خارج مربع التعديل) — اتجاه الصفحة من اليمين لليسار.
+export async function closeReviewModal() {
+  const modal = $("reviewModal");
+  if (!modal || modal.classList.contains("hidden")) return;
+  // تعديل لم يُحفظ (فشل اتصال أو وصف فارغ) ⇒ لا نغلق فيضيع — الرسالة تقول السبب.
+  if (M.phase === "review" && !(await saveNow())) return;
+  modal.classList.add("hidden");
+  // نافذة «المراجعة والنشر» تحتها تبقى مفتوحة إن كانت — والصفحة لا تتمرر خلفها.
+  if ($("reviewPanel")?.classList.contains("hidden") !== false) document.body.style.overflow = "";
+  if (M.lastFocus && document.contains(M.lastFocus)) M.lastFocus.focus?.();
+  loadReview("pending");
+  document.dispatchEvent(new Event("hala:review-modal-closed"));
+}
+
+async function onPanelClick(e) {
+  const btn = e.target.closest("[data-rm-action]");
+  if (!btn) return;
+  const action = btn.dataset.rmAction;
+  if (action === "close" || action === "minimize") { closeReviewModal(); return; }
+  if (action === "reload") { loadRows(); return; }
+  if (action === "to-progress") {
+    if (M.phase === "review" && !(await saveNow())) return;
+    document.dispatchEvent(new Event("hala:show-progress"));
+    return;
+  }
+  if (action === "add") {
+    const list = $("rmBody").querySelector(`.rm-list[data-kind="${btn.dataset.kind}"]`);
+    if (!list) return;
+    if (list.children.length >= Number(list.dataset.max || 8)) { setMsg(`وصلت للحد (${list.dataset.max}) بهذا القسم.`); return; }
+    list.insertAdjacentHTML("beforeend", emptyRow(btn.dataset.kind));
+    list.parentElement.querySelector(".rm-list-empty")?.classList.add("hidden");
+    list.lastElementChild?.querySelector("input, textarea")?.focus();
+    return;
+  }
+  if (action === "remove") {
+    const row = btn.closest(".rm-hl-row, .rm-spec-row, .rm-faq-row");
+    const list = row?.parentElement;
+    row?.remove();
+    if (list && !list.children.length) list.parentElement.querySelector(".rm-list-empty")?.classList.remove("hidden");
+    scheduleSave();
+  }
+}
+
+function onBodyInput(e) {
+  if (e.target.id === "rmSeoTitle" || e.target.id === "rmMeta") updateSeoPreview($("rmBody"), M.rows[M.index]?.name);
+  if (e.target.matches("input, textarea")) scheduleSave();
+}
+
+function onBodyChange(e) {
+  if (!e.target.classList.contains("rm-toggle")) return;
+  syncToggle(e.target);
+  scheduleSave();
+}
+
+/** حبس التركيز داخل النافذة — Tab وShift+Tab يدوران بين عناصرها الظاهرة. */
+function trapFocus(e) {
+  const panel = $("rmPanel");
+  const items = [...panel.querySelectorAll("button, [href], input, select, textarea, summary, [tabindex]:not([tabindex='-1'])")]
+    .filter((el) => !el.disabled && el.offsetParent !== null);
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (!panel.contains(document.activeElement)) { e.preventDefault(); first.focus(); return; }
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
+// Esc يغلق، Tab محبوس، والأسهم تتنقل خارج حقول الكتابة — اتجاه الصفحة من اليمين لليسار: ← التالي، → السابق.
 document.addEventListener("keydown", (e) => {
-  if ($("reviewModal")?.classList.contains("hidden") !== false) return;
-  if (e.key === "Escape") { closeReviewModal(); return; }
-  if (e.target && e.target.id === "rmDesc") return;
+  if (!modalOpen()) return;
+  if (e.key === "Escape") { e.preventDefault(); closeReviewModal(); return; }
+  if (e.key === "Tab") { trapFocus(e); return; }
+  if (M.phase !== "review" || e.target?.closest?.("input, textarea, select, [contenteditable]")) return;
   if (e.key === "ArrowLeft") reviewModalNav(1);
   if (e.key === "ArrowRight") reviewModalNav(-1);
 });
+
+$("rmPanel")?.addEventListener("click", onPanelClick);
+$("rmBody")?.addEventListener("input", onBodyInput);
+$("rmBody")?.addEventListener("change", onBodyChange);

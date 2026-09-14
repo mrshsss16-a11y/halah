@@ -16,6 +16,8 @@ const escHtml = window.escHtml;
 const showMsg = (id, text, type) => window.showMsg(id, text, type);
 // يطابق limit=24 بـapi.js · fetchCatalogList.
 const PAGE_SIZE = 24;
+// اسم وصورة كل منتج محدد — التحديد يعبر الصفحات وS.catalogItems يحمل الصفحة الحالية فقط، وقائمة «جاري التجهيز» تحتاجهما.
+const pickedMeta = new Map();
 
 // تحديث ذاتي أثناء سحب بالخلفية: كل ٢٠ ثانية، ويتوقف لما يخلص السحب.
 function scheduleCatalogRefresh() {
@@ -227,7 +229,8 @@ export function catalogCard(it, key) {
     box.setAttribute("aria-label", "حدّد " + (it.name || it.sku));
     box.checked = S.selectedSkus.has(it.sku);
     box.addEventListener("change", () => {
-      if (box.checked) S.selectedSkus.add(it.sku); else S.selectedSkus.delete(it.sku);
+      if (box.checked) { S.selectedSkus.add(it.sku); pickedMeta.set(it.sku, { sku: it.sku, name: it.name, imageUrl: it.imageUrl }); }
+      else { S.selectedSkus.delete(it.sku); pickedMeta.delete(it.sku); }
       wrap.classList.toggle("ring-2", box.checked);
       wrap.classList.toggle("ring-black", box.checked);
       wrap.classList.toggle("rounded-2xl", box.checked);
@@ -267,6 +270,8 @@ export function selectAllCatalog(on) {
 export async function generateSelectedCatalog() {
   const skus = [...S.selectedSkus];
   if (!skus.length) return;
+  // تُلتقط قبل مسح التحديد: قائمة «جاري التجهيز» تعرض كل منتج بصورته واسمه وحالته.
+  const items = skus.map((sku) => pickedMeta.get(sku) || { sku, name: sku });
   const btn = document.getElementById("catalogSelectedGenBtn");
   const txt = document.getElementById("catalogSelectedGenText");
   btn.disabled = true;
@@ -274,15 +279,20 @@ export async function generateSelectedCatalog() {
   try {
     const tone = toneValue();
     const { res, data } = await postBulkGenerateSelected(skus, tone);
-    if (!res.ok || !data?.ok) {
+    if (data?.code === "GENERATE_ALREADY_RUNNING" && data.jobId) {
+      // وظيفة سابقة ما خلصت: نلتحق بها ونعرض تقدّمها — كانت رسالة خطأ بـcatalogFeedback يمسحها أول تحميل للشبكة.
+      showMsg("bulkFeedback", data.error, "info");
+      pollBulkJob(data.jobId, { note: data.error });
+    } else if (!res.ok || !data?.ok) {
       showMsg("catalogFeedback", data?.error || "تعذر بدء التوليد. حاول مرة ثانية.", "error");
     } else {
-      // المراجعة صارت بنفس التبويب — لا إحالة لتبويب ثانٍ، والقائمة أسفل الشبكة.
-      showMsg("bulkFeedback", (data.message || `بدأ توليد ${skus.length} وصفاً`) + " — تبدأ المعالجة خلال ~١٠ دقائق (كل ١٠ دقائق دفعة)، ولما تجهز تُفتح لك نافذة «قبل وبعد» لتعتمدها واحداً واحداً.", "success");
+      // التقدّم بنافذة «أوصاف منتجاتك» (bulk.js): كان شريطاً صامتاً لدقائق والجاهز يُرسم بنافذة مخفية — «يولد ويختفي».
+      showMsg("bulkFeedback", (data.message || `بدأ توليد ${skus.length} وصفاً`) + " — تابع التجهيز بنافذة «أوصاف منتجاتك»، وراجع الجاهز منها أول ما يجهز.", "success");
       S.selectedSkus.clear();
       selectAllCatalog(false);
+      pickedMeta.clear();
       renderCatalogSelection();
-      if (data.jobId) pollBulkJob(data.jobId);
+      if (data.jobId) pollBulkJob(data.jobId, { items, note: data.message });
     }
   } catch (e) {
     showMsg("catalogFeedback", "ما قدرنا نتصل — تأكد من الإنترنت وجرّب مرة ثانية.", "error");

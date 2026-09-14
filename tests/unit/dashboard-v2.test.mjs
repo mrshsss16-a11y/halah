@@ -1,4 +1,4 @@
-// لوحة التاجر v2 (طلب المالك 2026-09-13): صفحات «منتجاتي»، نافذة مراجعة «قبل وبعد» واحداً واحداً مع «اعتمد الكل»،
+// لوحة التاجر v2 (طلب المالك 2026-09-13/14): صفحات «منتجاتي»، نافذة «أوصاف منتجاتك» (تقدّم التوليد ثم مراجعة كل حقل منتج منتج مع «اعتمد الكل»)،
 // و«لهجة متجري».
 import { readFileSync } from "node:fs";
 import { createRunner } from "../_helpers.mjs";
@@ -48,22 +48,58 @@ async function main() {
   assert(/id="catalogPager"/.test(catalogPartial) && !/catalogMoreBtn/.test(catalogPartial + catalogJs) && /export function goCatalogPage/.test(catalogJs) && /S\.catalogPage = Math\.floor\(offset \/ PAGE_SIZE\)/.test(catalogJs),
     "PG-4: «عرض المزيد» صار صفحات مرقّمة");
 
-  // ── نافذة «قبل وبعد» ──
+  // ── نافذة «أوصاف منتجاتك»: تجهيز ثم مراجعة منتج منتج (طلب المالك 2026-09-14) ──
   const modals = read("../../partials/dashboard-modals.html");
   const rm = read("../../public/js/dashboard/reviewModal.js");
+  const rs = read("../../public/js/dashboard/reviewSections.js");
+  const bulkJs = read("../../public/js/dashboard/bulk.js");
   const main = read("../../public/js/dashboard/main.js");
-  assert(/id="reviewModal"/.test(modals) && /id="rmApproveAll"/.test(modals) && /id="rmApprove"/.test(modals) && /id="rmReject"/.test(modals) && /id="rmSkip"/.test(modals) && /id="acctModal"/.test(modals),
-    "RM-1: النافذة فيها اعتماد ورفض و«لاحقاً» و«اعتمد الكل» — ونافذة الحساب باقية");
-  assert(/قبل — الوصف الحالي على سلة/.test(rm) && /بعد — الوصف الجديد/.test(rm) && /publishExtras\(r\)/.test(rm), "RM-2: قبل وبعد جنباً إلى جنب مع ما يُنشر معه");
-  assert(/postReviewDecide\(\{ action, ids: \[r\.id\] \}\)/.test(rm) && !/api\/store\/publish/.test(rm) && /action: "update", id: r\.id, description: text/.test(rm),
-    "RM-3: القرار بنفس نقطة المراجعة، وتعديل التاجر يُحفظ قبل الاعتماد أو الانتقال");
-  assert(/reviewModalApproveAll[\s\S]{0,400}confirmAction\(/.test(rm), "RM-4: «اعتمد الكل» من النافذة يمر بتأكيد");
-  assert(/escHtml\(r\.imageUrl\)/.test(rm) && /escHtml\(before\)/.test(rm) && /escHtml\(r\.description/.test(rm), "RM-5: كل نص من سلة أو النموذج مهرَّب قبل innerHTML");
-  assert(/openReviewModal/.test(read("../../public/js/dashboard/bulk.js")) && /openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll/.test(main),
-    "RM-6: النافذة تُفتح بعد اكتمال التوليد الجماعي، ودوالها منشورة على window");
-  assert(/specsTable: Array\.isArray\(p\.specsTable\)/.test(read("../../functions/api/store/review/list.js")), "RM-7: المواصفات المنشورة تظهر بالمراجعة");
+  assert(/id="reviewModal"[^>]*role="dialog"[^>]*aria-modal="true"[^>]*aria-labelledby="rmTitle"/.test(modals) && /id="rmProgressView"/.test(modals) && /id="rmReviewView"/.test(modals)
+    && /id="rmApproveAll"/.test(modals) && /id="rmApprove"/.test(modals) && /id="rmReject"/.test(modals) && /id="rmSkip"/.test(modals) && /id="acctModal"/.test(modals),
+    "RM-1: نافذة واحدة بمرحلتي «تجهيز» و«مراجعة»، فيها رفض وتخطي واعتماد و«اعتمد الكل» — ونافذة الحساب باقية");
+  assert(/قبل — الوصف الحالي على سلة/.test(rm) && /بعد — صفحة المنتج الجديدة/.test(rm) && /sectionsHtml\(r\)/.test(rm), "RM-2: «قبل» الوصف الحالي بجانب «بعد» صفحة المنتج الجديدة بكل أقسامها");
+  assert(/postReviewDecide\(\{ action, ids: \[r\.id\] \}\)/.test(rm) && !/api\/store\/publish/.test(rm) && /action: "update", id: r\.id, fields/.test(rm)
+    && /if \(action === "approve" && !\(await saveNow\(\)\)\) return;/.test(rm),
+    "RM-3: القرار بنفس نقطة المراجعة، وكل الحقول المعدّلة تُحفظ قبل الاعتماد");
+  assert(/reviewModalApproveAll[\s\S]{0,400}confirmAction\(/.test(rm) && /«ينشر» ما تُنشر/.test(rm) && /اللي لسه تنكتب ما تدخل/.test(rm),
+    "RM-4: «اعتمد الكل» يمر بتأكيد يقول بالضبط ما يُنشر وما لا يُنشر");
+  assert(/escHtml\(r\.imageUrl\)/.test(rm) && /escHtml\(before\)/.test(rm) && /escHtml\(r\.description/.test(rs) && /escHtml\(text\)/.test(rs) && /escHtml\(q\)/.test(rs) && /escHtml\(key\)/.test(rs) && /escHtml\(meta\)/.test(rs),
+    "RM-5: كل نص من سلة أو النموذج مهرَّب قبل HTML — بما فيه قيم حقول التحرير");
+  assert(/openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll/.test(main) && /startCatalogGenerate, openBulkProgress/.test(main),
+    "RM-6: دوال النافذة وتقدّم التوليد منشورة على window");
+  const reviewView = (() => { try { return read("../../functions/_lib/domain/reviewView.js"); } catch { return ""; } })();
+  assert(/specsTable: Array\.isArray\(p\.specsTable\)/.test(read("../../functions/api/store/review/list.js") + reviewView), "RM-7: المواصفات المنشورة تظهر بالمراجعة");
   assert(/action === "update" \|\| action === "edit"/.test(read("../../functions/api/store/review/decide.js")),
     "RM-8: حفظ التعديل قبل الاعتماد المفرد («edit») مدعوم — كان يُرفض فيُنشر النص الأصلي");
+  assert(["الوصف", "النبذة", "نقاط البيع", "جدول المواصفات", "الأسئلة الشائعة", "السيو"].every((t) => rs.includes(`"${t}"`))
+    && ["excerpt", "highlights", "specsTable", "faqs", "seo"].every((k) => new RegExp(`(listCard|card)\\("${k}"`).test(rs))
+    && /ينشر دائماً/.test(rs) && /card\(null, "الوصف"/.test(rs) && /exclude\[b\.dataset\.key\] = !b\.checked/.test(rs),
+    "RM-9: كل حقل يُنشر معروض للتعديل، ولكل قسم مفتاح «ينشر» (الوصف يُنشر دائماً) يُرسل كـexclude");
+  assert(/SEO_TITLE_MAX = 60/.test(rs) && /META_MAX = 160/.test(rs) && /id="rmSnipTitle"/.test(rs) && /بلا رابط مخترع/.test(rs), "RM-10: عدّاد ٦٠/١٦٠ ومعاينة بحث بلا رابط مخترع");
+  assert(/function trapFocus/.test(rm) && /e\.key === "Escape"/.test(rm) && /ArrowLeft"\) reviewModalNav\(1\)/.test(rm) && /closest\?\.\("input, textarea, select, \[contenteditable\]"\)/.test(rm),
+    "RM-11: التركيز محبوس، Esc يغلق، والأسهم تتنقل (RTL) خارج حقول الكتابة فقط");
+  assert(/export async function closeReviewModal\(\) \{[\s\S]{0,300}M\.phase === "review" && !\(await saveNow\(\)\)\) return;/.test(rm) && /setTimeout\(saveNow, SAVE_IDLE_MS\)/.test(rm),
+    "RM-12: حفظ تلقائي بعد توقف الكتابة، والإغلاق لا يضيّع تعديلاً لم يُحفظ");
+
+  // ── تقدّم التوليد بالجملة: لا «يولد ويختفي» (شكوى المالك 2026-09-14) ──
+  const catalogPartialBr = read("../../partials/dashboard-catalog.html");
+  const catalogJsBr = read("../../public/js/dashboard/catalog.js");
+  assert(/export async function pollBulkJob[\s\S]{0,900}openBulkProgress\(\)/.test(bulkJs) && /showModalShell\("progress"\)/.test(bulkJs),
+    "BR-1: بدء أي توليد جماعي يفتح نافذة التقدّم — لا شريط صامت");
+  assert(/id="rmStatReady"/.test(modals) && /id="rmStatWriting"/.test(modals) && /id="rmStatFailed"/.test(modals) && /id="rmItems"/.test(modals) && /object-contain/.test(bulkJs),
+    "BR-2: عدّادات جاهز/قيد الكتابة/تعذّر وقائمة المنتجات بصور غير مقصوصة");
+  assert(/id="rmReviewReady"[^>]*onclick="openReviewModal\(\)"/.test(modals) && /reviewBtn\.disabled = T\.pendingCount < 1/.test(bulkJs),
+    "BR-3: «راجع الجاهز الآن» يتفعّل من أول وصف جاهز");
+  assert(/id="bulkChip"[^>]*onclick="openBulkProgress\(\)"/.test(modals) && /data-rm-action="minimize"/.test(modals) && /hala:review-modal-closed", renderChip/.test(bulkJs),
+    "BR-4: «أكمل بالخلفية» يصغّر النافذة لشريحة عائمة تعيد فتحها");
+  assert(/كل ~١٠ دقائق/.test(bulkJs) && /ما دامت هذي الصفحة مفتوحة/.test(bulkJs) && /DEFERRED_RE/.test(bulkJs) && !/خلال \d+ دقيقة/.test(bulkJs),
+    "BR-5: نص الانتظار صادق — دفعات ~١٠ دقائق، والتتبّع بذاكرة الصفحة، والمؤجَّل يُسمّى مؤجَّلاً");
+  assert(/GENERATE_ALREADY_RUNNING" && data\.jobId[\s\S]{0,300}pollBulkJob\(data\.jobId/.test(catalogJsBr) && /GENERATE_ALREADY_RUNNING" && data\.jobId[\s\S]{0,200}pollBulkJob\(data\.jobId/.test(bulkJs),
+    "BR-6: وظيفة شغّالة سلفاً ⇒ نلتحق بتقدّمها بدل رسالة خطأ تختفي");
+  assert(/const items = skus\.map\(\(sku\) => pickedMeta\.get\(sku\)/.test(catalogJsBr) && /pollBulkJob\(data\.jobId, \{ items/.test(catalogJsBr),
+    "BR-7: المنتجات المحددة (حتى من صفحات أخرى) تُلتقط قبل مسح التحديد وتظهر بقائمة التجهيز");
+  assert(/escHtml\(m\.imageUrl\)/.test(bulkJs) && /escHtml\(m\.name\)/.test(bulkJs) && /escHtml\(st\.note\)/.test(bulkJs) && /onclick="openBulkProgress\(\)"/.test(catalogPartialBr),
+    "BR-8: أسماء المنتجات وأخطاء سلة مهرَّبة بالقائمة، وشريط «منتجاتي» يفتح التفاصيل");
 
   // ── «المراجعة والنشر» نافذة لا قسم ثابت ──
   const reviewPartial = read("../../partials/dashboard-review.html");
@@ -72,7 +108,7 @@ async function main() {
     "RP-1: قسم المراجعة داخل نافذة مخفية افتراضياً وفيها زر إغلاق");
   assert(/id="reviewPanelBtn"[^>]*onclick="openReviewPanel\(\)"/.test(catalogPartial) && /id="rvBadge"/.test(catalogPartial) && /badge\.innerText = c\.pending/.test(reviewJs),
     "RP-2: زر «المراجعة والنشر» بشريط «منتجاتي» بعدّاد ما ينتظر");
-  assert(!/getElementById\("reviewCard"\)\?\.scrollIntoView/.test(catalogJs) && /تُفتح لك نافذة «قبل وبعد»/.test(catalogJs), "RP-3: توليد المحدد لا يقفز لقسم ثابت — نافذة «قبل وبعد» تُفتح عند الجاهزية");
+  assert(!/getElementById\("reviewCard"\)\?\.scrollIntoView/.test(catalogJs) && /تابع التجهيز بنافذة «أوصاف منتجاتك»/.test(catalogJs), "RP-3: توليد المحدد لا يقفز لقسم ثابت — نافذة «قبل وبعد» تُفتح عند الجاهزية");
   assert(/openReviewPanel, closeReviewPanel/.test(main) && /console\.error\("\[review\] load failed", e\)/.test(reviewJs), "RP-4: دوال النافذة منشورة، وفشل التحميل يُسجَّل بسببه");
 
   // ── لهجة متجري ──

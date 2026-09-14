@@ -12,7 +12,7 @@ import { withApi, ApiError } from "../../../_lib/core/respond.js";
 import { requireCompletedAccount } from "../../../_lib/core/session.js";
 import { checkRateLimit, clientIp } from "../../../_lib/core/rateLimit.js";
 import { revertProduct } from "../../../_lib/domain/publish.js";
-import { listPending, approveMany, rejectMany, updatePayload, retryPublish, countByState } from "../../../_lib/domain/review.js";
+import { listPending, approveMany, rejectMany, applyReviewFieldsUpdate, retryPublish, countByState } from "../../../_lib/domain/review.js";
 
 const MAX_IDS = 100;
 
@@ -50,10 +50,12 @@ async function decideHandler(body, env, request) {
   }
 
   if (action === "update" || action === "edit") {
-    const description = String(body.description || "").trim().slice(0, 5000);
-    if (!description) throw new ApiError(400, "الوصف فارغ.", "REVIEW_INVALID", "decide.update: empty description");
-    const row = await updatePayload(env, { merchantId, id: body.id ?? idList(body.ids)[0], patch: { description } });
-    return { ok: true, id: row.id };
+    // توافق خلفي: الشكل القديم {description} بلا `fields` ما زال يعمل.
+    const rawFields = body.fields && typeof body.fields === "object" ? body.fields : {};
+    const fields = body.description !== undefined && rawFields.description === undefined ? { ...rawFields, description: body.description } : rawFields;
+    const id = body.id ?? idList(body.ids)[0];
+    const item = await applyReviewFieldsUpdate(env, { merchantId, id, fields });
+    return { ok: true, item };
   }
 
   if (action === "retry") {

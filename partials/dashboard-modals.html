@@ -41,36 +41,98 @@
     </div>
   </div>
 
-  <!-- مراجعة الأوصاف واحداً واحداً (طلب المالك 2026-09-13): «قبل» الوصف الحالي على سلة بجانب «بعد» الجديد، ثم قرار.
-       المحتوى يُبنى في reviewModal.js (كل نص من سلة أو النموذج يمرّ بـescHtml). -->
-  <div id="reviewModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3" role="dialog" aria-modal="true" aria-labelledby="rmTitle">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-4xl max-h-[92vh] flex flex-col">
-      <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-200">
-        <div class="space-y-0.5">
-          <h3 id="rmTitle" class="text-sm font-black text-black">راجع الأوصاف — قبل وبعد</h3>
-          <p class="text-[11px] text-slate-600 font-medium">ما يُنشر على سلة إلا ما تعتمده، وتعديلك يُحفظ قبل الاعتماد.</p>
+  <!-- «أوصاف منتجاتك» (طلب المالك 2026-09-14): نافذة واحدة بمرحلتين — «جاري التجهيز» (bulk.js) ثم «مراجعة» منتج منتج
+       (reviewModal.js · reviewSections.js): كل حقل يُنشر قابل للتعديل وبمفتاح «ينشر». كل نص من سلة أو النموذج يمرّ بـescHtml. -->
+  <div id="reviewModal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-labelledby="rmTitle" aria-describedby="rmSub">
+    <div id="rmPanel" class="bg-white w-full sm:max-w-5xl h-[100dvh] sm:h-auto sm:max-h-[92vh] sm:rounded-3xl border border-slate-200 shadow-xl flex flex-col overflow-hidden">
+      <div class="flex items-start justify-between gap-3 px-5 sm:px-6 pt-5 pb-4 border-b border-slate-200">
+        <div class="min-w-0 space-y-1">
+          <h3 id="rmTitle" tabindex="-1" class="text-lg font-black text-black focus:outline-none">أوصاف منتجاتك</h3>
+          <p id="rmSub" class="text-sm text-slate-600"></p>
         </div>
-        <div class="flex items-center gap-2">
-          <span id="rmCounter" class="text-xs font-black text-black whitespace-nowrap"></span>
-          <button type="button" onclick="closeReviewModal()" class="sleek-btn-white px-3 py-1.5 rounded-lg text-xs font-bold" aria-label="إغلاق نافذة المراجعة">إغلاق</button>
+        <button type="button" data-rm-action="close" class="shrink-0 sleek-btn-white w-10 h-10 rounded-xl text-lg leading-none" aria-label="إغلاق النافذة">×</button>
+      </div>
+
+      <!-- المرحلة ١: جاري التجهيز — يرسمها bulk.js · renderProgressView. -->
+      <div id="rmProgressView" class="hidden flex-1 min-h-0 flex flex-col">
+        <div class="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5 space-y-5">
+          <div class="space-y-3">
+            <div class="flex items-end justify-between gap-3">
+              <p id="rmProgHeadline" class="text-base font-black text-black" aria-live="polite"></p>
+              <span id="rmProgPct" class="text-sm font-bold text-slate-500" style="font-variant-numeric: tabular-nums">0٪</span>
+            </div>
+            <div class="w-full h-2.5 rounded-full bg-slate-100 overflow-hidden" role="progressbar" aria-label="تقدّم تجهيز الأوصاف" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div id="rmProgBar" class="h-full rounded-full bg-black transition-all duration-700" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-center space-y-0.5">
+              <div id="rmStatReady" class="text-2xl font-black text-black" style="font-variant-numeric: tabular-nums">0</div>
+              <div class="text-xs font-bold text-slate-500">جاهز</div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-center space-y-0.5">
+              <div id="rmStatWriting" class="text-2xl font-black text-black" style="font-variant-numeric: tabular-nums">0</div>
+              <div class="text-xs font-bold text-slate-500">قيد الكتابة</div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 border border-slate-200 p-3 text-center space-y-0.5">
+              <div id="rmStatFailed" class="text-2xl font-black text-black" style="font-variant-numeric: tabular-nums">0</div>
+              <div class="text-xs font-bold text-slate-500">تعذّر</div>
+            </div>
+          </div>
+          <p id="rmStatDeferredWrap" class="hidden text-sm font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2.5 leading-relaxed"><span id="rmStatDeferred">0</span> فوق حد أوصاف اليوم — مؤجَّلة وتُكمَل تلقائياً يوماً بيوم.</p>
+          <div class="space-y-1.5">
+            <p id="rmProgNote" class="hidden text-sm text-black leading-relaxed"></p>
+            <p id="rmEta" class="text-sm text-slate-600 leading-relaxed"></p>
+            <p id="rmProgMsg" role="status" class="text-sm font-bold text-amber-800"></p>
+          </div>
+          <ul id="rmItems" class="rounded-2xl border border-slate-200 px-4" aria-label="المنتجات وحالة كل منتج"></ul>
+        </div>
+        <div class="px-5 sm:px-6 py-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center gap-2">
+          <button id="rmReviewReady" type="button" onclick="openReviewModal()" disabled class="sleek-btn-black px-5 py-3 rounded-xl text-sm font-bold disabled:opacity-40 disabled:cursor-not-allowed"><span id="rmReviewReadyText">راجع الجاهز الآن</span> (<span id="rmReviewReadyCount">0</span>)</button>
+          <button id="rmBackground" type="button" data-rm-action="minimize" class="sm:mr-auto sleek-btn-white px-4 py-3 rounded-xl text-sm font-bold">أكمل بالخلفية</button>
         </div>
       </div>
-      <div id="rmBody" class="px-5 py-4 space-y-3 overflow-y-auto"></div>
-      <div id="rmActions" class="px-5 py-3 border-t border-slate-200 space-y-2">
-        <div class="flex flex-wrap items-center gap-2">
-          <button id="rmPrev" type="button" onclick="reviewModalNav(-1)" class="sleek-btn-white px-3 py-2 rounded-xl text-xs font-bold disabled:opacity-40">→ السابق</button>
-          <button id="rmNext" type="button" onclick="reviewModalNav(1)" class="sleek-btn-white px-3 py-2 rounded-xl text-xs font-bold disabled:opacity-40">التالي ←</button>
-          <span id="rmMsg" role="status" class="text-[11px] font-bold text-slate-600"></span>
-          <button id="rmApproveAll" type="button" onclick="reviewModalApproveAll()" class="mr-auto sleek-btn-white px-3 py-2 rounded-xl text-xs font-bold">اعتمد الكل</button>
+
+      <!-- المرحلة ٢: مراجعة منتج منتج — يرسمها reviewModal.js · renderStep. -->
+      <div id="rmReviewView" class="hidden flex-1 min-h-0 flex flex-col">
+        <div id="rmStepHead" class="hidden px-5 sm:px-6 py-3 border-b border-slate-200 space-y-3">
+          <div class="flex items-center gap-3">
+            <div id="rmProductHead" class="flex-1 min-w-0 flex items-center gap-3"></div>
+            <div class="shrink-0 flex items-center gap-1.5">
+              <button id="rmPrev" type="button" onclick="reviewModalNav(-1)" class="sleek-btn-white w-10 h-10 rounded-xl text-base disabled:opacity-40" aria-label="المنتج السابق">→</button>
+              <span id="rmCounter" class="px-1 text-center text-sm font-bold text-slate-600 whitespace-nowrap" style="font-variant-numeric: tabular-nums" aria-live="polite"></span>
+              <button id="rmNext" type="button" onclick="reviewModalNav(1)" class="sleek-btn-white w-10 h-10 rounded-xl text-base disabled:opacity-40" aria-label="المنتج التالي">←</button>
+            </div>
+          </div>
+          <div class="w-full h-1 rounded-full bg-slate-100 overflow-hidden" aria-hidden="true">
+            <div id="rmStepBar" class="h-full rounded-full bg-black transition-all" style="width:0%"></div>
+          </div>
         </div>
-        <div class="grid grid-cols-3 gap-2">
-          <button id="rmReject" type="button" onclick="reviewModalDecide('reject')" class="sleek-btn-white py-2.5 rounded-xl text-xs font-bold text-rose-700">ارفض</button>
-          <button id="rmSkip" type="button" onclick="reviewModalDecide('skip')" class="sleek-btn-white py-2.5 rounded-xl text-xs font-bold">لاحقاً</button>
-          <button id="rmApprove" type="button" onclick="reviewModalDecide('approve')" class="sleek-btn-black py-2.5 rounded-xl text-xs font-bold">اعتمد وانشر</button>
+        <div id="rmBody" class="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5"></div>
+        <div id="rmActions" class="hidden px-5 sm:px-6 py-4 border-t border-slate-200 space-y-3">
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span id="rmMsg" role="status" class="text-sm font-bold text-slate-600"></span>
+            <span id="rmSaveState" class="mr-auto text-xs text-slate-500" aria-live="polite"></span>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <button id="rmApprove" type="button" onclick="reviewModalDecide('approve')" class="col-span-2 order-first sm:order-last sleek-btn-black px-5 py-3 rounded-xl text-sm font-bold">اعتمد وانشر ← التالي</button>
+            <button id="rmReject" type="button" onclick="reviewModalDecide('reject')" class="sleek-btn-white px-4 py-3 rounded-xl text-sm font-bold text-rose-700">رفض</button>
+            <button id="rmSkip" type="button" onclick="reviewModalDecide('skip')" class="sleek-btn-white px-4 py-3 rounded-xl text-sm font-bold">تخطي</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="rmToProgress" type="button" data-rm-action="to-progress" class="hidden text-sm font-bold text-slate-600 underline underline-offset-4">تابع تجهيز الباقي</button>
+            <button id="rmApproveAll" type="button" onclick="reviewModalApproveAll()" class="mr-auto sleek-btn-white px-4 py-2.5 rounded-xl text-sm font-bold">اعتمد الكل وانشر (<span id="rmApproveAllCount">0</span>)</button>
+          </div>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- «أكمل بالخلفية»: تقدّم التوليد مصغّراً بشريحة عائمة، والضغط يعيد فتح النافذة (bulk.js · renderChip). -->
+  <button id="bulkChip" type="button" onclick="openBulkProgress()" class="hidden fixed bottom-4 left-4 z-40 flex items-center gap-3 px-4 py-3 rounded-full bg-white border border-slate-200 shadow-lg text-sm font-bold text-black max-w-[calc(100vw-2rem)]">
+    <span class="relative shrink-0 w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden" aria-hidden="true"><span id="bulkChipBar" class="absolute inset-y-0 right-0 rounded-full bg-black transition-all" style="width:0%"></span></span>
+    <span id="bulkChipText" class="truncate" aria-live="polite"></span>
+  </button>
 
   <!-- لهجة متجري (طلب المالك 2026-09-13): التاجر يصف أسلوب براندته أو يلصق نموذجاً من محتواه — تُستخدم حين يختار
        نبرة «لهجة متجري». قواعد الصدق تبقى فوقها (domain/brandVoice.js). -->

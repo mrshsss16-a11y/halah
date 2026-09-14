@@ -16,7 +16,7 @@ import {
   generateSelectedCatalog, useCatalogItem, closeCopyPanel, setBulkGenerateEnabled
 } from "./catalog.js";
 import { generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, applySuggestedCategory } from "./studio.js";
-import { startCatalogGenerate } from "./bulk.js";
+import { startCatalogGenerate, openBulkProgress } from "./bulk.js";
 import { openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll } from "./reviewModal.js";
 import { loadBrandVoice, openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange } from "./brandVoice.js";
 import {
@@ -42,9 +42,9 @@ Object.assign(window, {
   // الاستوديو والنشر
   generateCopy, regenerateCopy, publishToSalla, onPublishProductChange, copyToClipboard,
   applySuggestedCategory,
-  // الجملة
-  startCatalogGenerate,
-  // نافذة المراجعة «قبل وبعد» · لهجة متجري
+  // الجملة ونافذة «أوصاف منتجاتك» (تقدّم التوليد ثم المراجعة)
+  startCatalogGenerate, openBulkProgress,
+  // مراجعة «أوصاف منتجاتك» منتج منتج · لهجة متجري
   openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll, openReviewPanel, closeReviewPanel,
   openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange,
   // المراجعة والتغذية الراجعة

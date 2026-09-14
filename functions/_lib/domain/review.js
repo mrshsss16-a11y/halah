@@ -12,6 +12,8 @@ import { DomainError } from "../core/errors.js";
 import { REVIEW_LIST_LIMITS, clampLimit } from "../core/limits.js";
 import { REVIEW_KINDS, MAX_REASON_CHARS, invalid, requireMerchantId, requireDb, requireId, normalizePayload }
   from "./reviewGuards.js";
+import { sanitizeReviewFields } from "./reviewFields.js";
+import { toReviewView } from "./reviewView.js";
 
 /**
  * يضيف مخرج AI للطابور بحالة pending.
@@ -220,7 +222,8 @@ export async function updatePayload(env, { merchantId, id, patch }) {
   const db = requireDb(env);
   const mid = requireMerchantId(merchantId);
   const rowId = requireId(id);
-  if (!patch || typeof patch !== "object" || Array.isArray(patch)) {
+  const patchIsFn = typeof patch === "function";
+  if (!patchIsFn && (!patch || typeof patch !== "object" || Array.isArray(patch))) {
     throw invalid("التعديل غير صالح.", "reviewQueue.updatePayload: patch not an object");
   }
 
@@ -242,7 +245,11 @@ export async function updatePayload(env, { merchantId, id, patch }) {
     throw invalid("محتوى العنصر غير قابل للتعديل.", "reviewQueue.updatePayload: payload not an object");
   }
 
-  const merged = normalizePayload({ ...base, ...patch, editedAt: new Date().toISOString() });
+  const effectivePatch = patchIsFn ? patch(base) : patch;
+  if (!effectivePatch || typeof effectivePatch !== "object" || Array.isArray(effectivePatch)) {
+    throw invalid("التعديل غير صالح.", "reviewQueue.updatePayload: computed patch not an object");
+  }
+  const merged = normalizePayload({ ...base, ...effectivePatch, editedAt: new Date().toISOString() });
   const updated = await db
     .prepare(
       `UPDATE review_queue SET payload = ?
@@ -255,6 +262,27 @@ export async function updatePayload(env, { merchantId, id, patch }) {
     throw new DomainError(404, "العنصر غير موجود أو تمت مراجعته مسبقاً.", "REVIEW_NOT_PENDING", "reviewQueue.updatePayload: lost race");
   }
   return updated;
+}
+
+/**
+ * تحرير حقول المراجعة (وصف/نبذة/نقاط/أسئلة/مواصفات/سيو/استبعاد) بشكل جزئي —
+ * يغلّف sanitizeReviewFields + updatePayload حتى يبقى api/decide.js تحت سقف
+ * ٨٠ سطراً (docs/ARCHITECTURE §٤). يرمي REVIEW_INVALID لو لم ينتج تعديل صالح
+ * (كل الحقول فارغة أو غير معروفة) بدل تحديث بلا أثر.
+ */
+export async function applyReviewFieldsUpdate(env, { merchantId, id, fields }) {
+  const row = await updatePayload(env, {
+    merchantId,
+    id,
+    patch: (base) => {
+      const patch = sanitizeReviewFields(fields, base);
+      if (Object.keys(patch).length === 0) {
+        throw invalid("لا تعديل صالح.", "reviewQueue.applyReviewFieldsUpdate: empty patch after sanitize");
+      }
+      return patch;
+    }
+  });
+  return toReviewView(row);
 }
 
 /** عدّادات صادقة لشاشة المراجعة: معلّق · معتمد بانتظار النشر · نُشر · فشل نشره · مرفوض. */
