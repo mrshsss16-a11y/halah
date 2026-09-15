@@ -211,6 +211,11 @@ const DETAIL = (d) => (d === "بليسيه" ? "طيّات بليسيه" : d === 
 // «منقوش» عامة لا تصف شيئاً («بنقوش وقماش مطفي»، 2026-09-13) — تبقى بالمواصفات لا بالجملة.
 const PATTERN = { "مورد": "نقشة مورّدة", "مخطط": "نقشة مخططة", "كاروهات": "نقشة كاروهات", "منقط": "نقاط" };
 const FIT = (v) => (v.startsWith("بقصّة") ? v : `بقصّة ${v}`);
+// «بنطلون ماكسي زيتي بقصّة واسعة» (صفحة حقيقية 2026-09-15): الجملة الأولى تُبنى هنا بعد polishPage فلا يصلها
+// fixTrouserLength. ماكسي/ميدي/ميني أطوال فساتين وتنانير: البنطلون ماكسي ⇒ «بطول كامل»، وميدي/ميني تُسقط.
+const TROUSERS = /^(?:ال)?(?:بنطال|بنطلون|بناطيل|جينز)/u;
+const FULL_LENGTH = "بطول كامل";
+const lengthFor = (name, length) => (!length || !TROUSERS.test(String(name || "").trim()) ? length : length === "ماكسي" ? FULL_LENGTH : ["ميدي", "ميني"].includes(length) ? undefined : length);
 // «بقصّة واسعة وخصر مرتفع»: الأولى بالباء، والتالية بالواو (و«بلا» تبقى «وبلا»).
 const chain = (list) => list.map((p, i) => {
   const b = p.startsWith("ب") ? p : `ب${p}`;
@@ -221,17 +226,18 @@ function factsCopy(facts, name) {
   const words = String(name || "").trim().split(/\s+/).filter(Boolean);
   if (!words.length) return { opening: "", title: "" };
   const inName = (terms) => terms.some((t) => norm(words.join(" ")).includes(norm(t)));
-  const f = facts || {};
+  const f = { ...(facts || {}), length: lengthFor(name, facts?.length) };
   const lengthNew = f.length && !inName([f.length.replace(/^بطول\s+/, "")]);
+  const lengthInHead = lengthNew && f.length !== FULL_LENGTH;
   const colorNew = f.color && !inName([f.color.split(" ")[0]]);
   // اسم عام («تنورة»): «تنورة ميدي سوداء». اسم التاجر المفصّل يبقى كما كتبه، والحقائق بعده: «… باللون الأسود وطول ماكسي».
   const short = words.length <= 2;
   const head = short
-    ? [words[0], ...(lengthNew ? [f.length] : []), ...(colorNew ? [agreeColor(words[0], f.color)] : []), ...words.slice(1)].join(" ")
+    ? [words[0], ...(lengthInHead ? [f.length] : []), ...(colorNew ? [agreeColor(words[0], f.color)] : []), ...words.slice(1)].join(" ")
     : words.join(" ");
   const cuts = [
     ...(!short && colorNew ? [`باللون ${definite(f.color)}`] : []),
-    ...(!short && lengthNew ? [LENGTH_PHRASE(f.length)] : []),
+    ...(lengthNew && (!short || !lengthInHead) ? [LENGTH_PHRASE(f.length)] : []),
     ...(f.fit && !inName([f.fit.replace(/^بقصّة\s+/, "")]) ? [FIT(f.fit)] : []),
     ...(f.waist ? [WAIST[f.waist]] : []),
     ...(f.neckline && !inName(NECK_IN_NAME[f.neckline] || [`ياقة ${f.neckline}`]) ? [NECK(f.neckline)] : []),
@@ -299,9 +305,10 @@ export function applyVisionFacts(parsed, facts, { name = "" } = {}) {
   }
   const FACT_KEY = /(لون|طول|قص|خصر|ياق|اكمام|تفاصيل|سطح|نقش|طابع)/u;
   const kept = (Array.isArray(parsed.specsTable) ? parsed.specsTable : []).filter((r) => r && !FACT_KEY.test(norm(r.key)));
+  const specFacts = { ...facts, length: lengthFor(name, facts.length)?.replace(/^بطول\s+/, "") };
   const rows = Object.keys(LABELS)
-    .filter((k) => k !== "mood" && (k === "details" ? facts.details?.length : facts[k]))
-    .map((k) => ({ key: LABELS[k], value: k === "details" ? facts.details.join("، ") : facts[k] }));
+    .filter((k) => k !== "mood" && (k === "details" ? specFacts.details?.length : specFacts[k]))
+    .map((k) => ({ key: LABELS[k], value: k === "details" ? specFacts.details.join("، ") : specFacts[k] }));
   parsed.specsTable = [...rows, ...kept];
   if (title && String(name).trim().split(/\s+/).length <= 2) {
     const seo = parsed.seo || (parsed.seo = {});

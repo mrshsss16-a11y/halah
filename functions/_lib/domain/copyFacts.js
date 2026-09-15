@@ -74,6 +74,56 @@ function visibleText(parsed, name) {
   ].filter(Boolean).join(" \n "));
 }
 
+// «ما يميز المنتج» زاوية التاجر التسويقية (قرار المالك 2026-09-15): بنطلون مزاياه «قطن 100% خفيف وبارد صيفي» ظهرت
+// بالنبذة والنقاط والميتا وغابت عن الوصف، والحارس أدناه عدّها منشورة (facts+=0). إن غاب مضمون أول مقطع منها عن
+// الوصف نفسه تُلحق جملة قصيرة بكلمات التاجر بآخر الفقرة الأولى. صيغة لا تُصاغ سليمة (مقطع يبدأ برقم أو اسم عام) تُترك.
+const ADJ_HEAD = ["خفيف", "ناعم", "مريح", "بارد", "دافئ", "مرن", "سهل", "قابل", "مبطن", "مطرز", "مزدوج", "يدوي", "قطني", "صوفي", "حريري"];
+const MAX_NOTE_WORDS = 14;
+const bare = (w) => norm(w).replace(/[^\p{L}\p{N}%]/gu, "").replace(/^(?:و|ب)(?=\p{L}{3,})/u, "").replace(/^ال(?=\p{L}{2,})/u, "");
+const wordSet = (t) => String(t || "").split(/\s+/).map(bare).filter((w) => w.length >= 2);
+
+function featureNote(features) {
+  const first = String(features || "").replace(/<\/(?:p|li|div)>|<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, " ")
+    .split(/[\n؛;•·|]+/u).map((c) => c.trim()).find(Boolean) || "";
+  const value = first.replace(/^[^:：]{2,25}[:：]\s*/u, "").replace(/[^\p{L}\p{N}%\s،.\-]/gu, " ").replace(/\s+/g, " ").replace(/^[\s\-–—*]+|[\s.،]+$/gu, "").trim();
+  if (!value || PRICE_OR_OFFER.test(value) || /^[\d٠-٩]/u.test(value) || !/\p{Script=Arabic}{2,}/u.test(value)) return "";
+  const words = value.split(" ");
+  if (words.length <= MAX_NOTE_WORDS) return value;
+  const cut = value.split("،")[0].trim();
+  return cut.split(" ").length <= MAX_NOTE_WORDS ? cut : "";
+}
+
+function featureSentence(note, name) {
+  const noun = String(name || "").trim().split(/\s+/)[0] || "";
+  const fem = /[ةه]$/u.test(noun);
+  const head = bare(note.split(" ")[0]);
+  if (MATERIALS.some((m) => bare(m) === head)) return `${fem ? "مصنوعة" : "مصنوع"} من ${note}.`;
+  if (!/^\p{Script=Arabic}{2,}$/u.test(noun)) return "";
+  const def = noun.startsWith("ال") ? noun : `ال${noun}`;
+  if (ADJ_HEAD.some((a) => head === norm(a) || head === `${norm(a)}ه`)) {
+    const agreed = fem ? note.split(" ").map((w) => (ADJ_HEAD.includes(w.replace(/^و/u, "")) ? `${w}ة` : w)).join(" ") : note;
+    return `${def} ${agreed}.`;
+  }
+  if (/^(?:مع|من|ذو|ذات)$/u.test(note.split(" ")[0]) || /^ب\p{L}{3,}/u.test(note.split(" ")[0])) return `${def} ${note}.`;
+  return "";
+}
+
+function ensureFeatureInDescription(parsed, { name, features }) {
+  const cw = parsed.copywriting || {};
+  const description = String(cw.description || "").trim();
+  const note = featureNote(features);
+  if (!description || !note) return;
+  const have = new Set(wordSet(description));
+  // الأرقام خارج الحساب: «حرير طبيعي» بالوصف تغطي «حرير طبيعي 100%» (CQ-45)، والنسبة يحفظها صف المواصفات أدناه.
+  const noteWords = wordSet(note).filter((w) => !/[\d%]/u.test(w));
+  if (!noteWords.length || noteWords.filter((w) => have.has(w)).length / noteWords.length >= 0.75) return;
+  const sentence = featureSentence(note, name);
+  if (!sentence) return;
+  const paras = description.split(/\n\s*\n/);
+  paras[0] = `${paras[0].trim().replace(/([^.!؟])$/u, "$1.")} ${sentence}`;
+  cw.description = paras.join("\n\n");
+}
+
 /**
  * يضيف لجدول المواصفات كل حقيقة قابلة للقياس من بيانات التاجر لم تظهر في أي حقل منشور. يرجع عدد الصفوف المضافة.
  * @param {object} parsed - صفحة المنتج بعد التنظيف
@@ -81,6 +131,7 @@ function visibleText(parsed, name) {
  */
 export function preserveMerchantFacts(parsed, { name = "", features = "", existingDescription = "", variants = [] } = {}) {
   if (!parsed) return 0;
+  ensureFeatureInDescription(parsed, { name, features });
   const rows = Array.isArray(parsed.specsTable) ? parsed.specsTable : (parsed.specsTable = []);
   let added = 0;
   const seen = new Set();

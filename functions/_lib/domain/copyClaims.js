@@ -60,16 +60,24 @@ export function sizeChartKind({ name = "", category = "" } = {}) {
 }
 
 const CHART = /(?:جدول[ \t]+المقاسات|اختيار[ \t]+المقاس)/u;
+// بعد حذف خاتمة الجدول (2026-09-15) حلّت محلها: «راجع القياسات المعروضة للعثور على المقاس المناسب لك.» و«اختَر المقاس
+// المناسب لك من الخيارات المتاحة.» — إحالة لقياسات لم تتحقق هالة من نشرها، ودعوة اختيار عامة (معيار ٦.٣، C12).
+// تُحذف دائماً ولو ذكر التاجر جدوله. «تتوفر المقاسات من 36 إلى 44، مع قياسات مختلفة…» حقيقة لا تطابق.
+const SIZE_REFERRAL = /(?<!\p{L})(?:راجع(?:ي)?[ \t]+(?:ال)?(?:قياسات|مقاسات)|(?:ال)?(?:قياسات|مقاسات)[ \t]+(?:ال)?معروض(?:ة|ه)|اخت[ً-ْ]*(?:ا[ً-ْ]*)?ر[ً-ْ]*(?:ي)?[ \t]+(?:ال)?مقاس(?:ك|كِ)?|لل?عثور[ \t]+على[ \t]+(?:ال)?مقاس|(?:ال)?مقاس[ \t]+(?:ال)?مناسب[ \t]+(?:لك|لكِ))(?!\p{L})/u;
+// «من الخيارات المتاحة» ذيل لا مقطع: يُحذف وحده كي لا يُسقط لوناً أو مقاساً قبله.
+const FROM_OPTIONS = /[ \t]*(?<!\p{L})من[ \t]+(?:ال)?خيارات[ \t]+(?:ال)?متاح(?:ة|ه)(?!\p{L})/gu;
+const dropReferrals = (t, re) => t.replace(/[^.!؟\n]+[.!؟]*/gu, (s) => (re.test(s) ? dropChartClauses(s, re) : s))
+  .replace(/[ \t]{2,}/g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n[ \t]+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
 // المقطع لا الجملة (2026-09-15): «يتوفر بالمقاسات 36 - XS، … و44 - XL؛ راجعي جدول المقاسات قبل الاختيار.» — حذف
 // الجملة كلها أسقط المقاسات المتوفرة وهي حقيقة من الخيارات.
-function dropChartClauses(sentence) {
+function dropChartClauses(sentence, re = CHART) {
   const end = (sentence.match(/[.!؟]+$/u) || [""])[0];
   const lead = (sentence.match(/^\s*/u) || [""])[0];
   const parts = sentence.slice(lead.length, sentence.length - end.length).split(/[ \t]*([،؛])[ \t]*/u);
   const kept = [];
   // «للمطابقة الدقيقة قبل إتمام طلبك، راجعي جدول المقاسات» (unseen-cut PF-G): مقطع الغاية أو الوقت تابع للإحالة فيُحذف معها.
-  const TIED = /^(?:لل?(?:مطابق|تأكد|تاكد|اختيار|معرف|حصول)|قبل|عند|عشان|علشان)/u;
-  for (let i = 0; i < parts.length; i += 2) if (parts[i].trim() && !CHART.test(parts[i]) && !TIED.test(parts[i].trim())) kept.push(i ? `${parts[i - 1]} ${parts[i]}` : parts[i]);
+  const TIED = /^(?:لل?(?:مطابق|تأكد|تاكد|اختيار|معرف|حصول|عثور)|قبل|عند|عشان|علشان)/u;
+  for (let i = 0; i < parts.length; i += 2) if (parts[i].trim() && !re.test(parts[i]) && !TIED.test(parts[i].trim())) kept.push(i ? `${parts[i - 1]} ${parts[i]}` : parts[i]);
   if (!kept.length) return "";
   return `${lead}${kept.join("").replace(/^[،؛][ \t]*/u, "")}${end || "."}`;
 }
@@ -80,10 +88,9 @@ function dropChartClauses(sentence) {
  */
 export function fixSizeChartClosing(text, { name = "", category = "", sourceText = "" } = {}) {
   let t = String(text || "");
-  if (!/جدول[ \t]+(?:ال)?مقاسات/u.test(String(sourceText || "")) || sizeChartKind({ name, category }) === "none") {
-    return t.replace(/[^.!؟\n]+[.!؟]*/gu, (s) => (CHART.test(s) ? dropChartClauses(s) : s))
-      .replace(/[ \t]{2,}/g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n[ \t]+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
-  }
+  const bare = t.replace(FROM_OPTIONS, "");
+  if (bare !== t || SIZE_REFERRAL.test(bare)) t = dropReferrals(bare, SIZE_REFERRAL);
+  if (!/جدول[ \t]+(?:ال)?مقاسات/u.test(String(sourceText || "")) || sizeChartKind({ name, category }) === "none") return dropReferrals(t, CHART);
   if (MEN.test(`${name} ${category}`)) {
     t = t.replace(/(?<!\p{L})راجعي(?!\p{L})/gu, "راجع").replace(/(?<!\p{L})تحققي(?!\p{L})/gu, "تحقق").replace(/(?<!\p{L})اختاري(?!\p{L})/gu, "اختر");
   }

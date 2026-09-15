@@ -17,6 +17,8 @@ import { unsourcedClaims, fixSizeChartClosing } from "./copyClaims.js";
 import { unsourcedJudgment, stripJudgments, stripJudgmentWords, hasPraiseIdiom } from "./copyJudgments.js";
 import { propItemIn, sourcedPropItem } from "./copyParse.js";
 import { stripUnsourcedOccasions } from "./copyOccasion.js";
+// «يظهر التصميم… في النموذج المعروض» و«ونقشتها منقوشة» و«جيوب عملية» (صفحتان حقيقيتان 2026-09-15): لكل حقل.
+import { dropMechanismClauses, dropEmptyQualifiers } from "./copyLeaks.js";
 
 // دعوة البيع داخل نص قصير (عنوان، نقطة، وسم): تُحذف الكلمة لا العنصر كله — «قميص رجالي كتان اطلبه الحين».
 const CTA_WORDS = /(?<!\p{L})(?:تسوقي|تسوّقي|اطلبي|اطلبيها|اطلبه|اطلبها|احصلي|سارعي|اقتنيها|احجزيها|احجزي|خذيها|كلمينا|راسلينا|الحقي(?:[ \t]+(?:ب|على)[ \t]*\p{L}+)?)(?:[ \t]+(?:الآن|الان|الحين|اليوم))?(?!\p{L})|(?<!\p{L})لا[ \t]+تفوتي(?!\p{L})|(?<!\p{L})(?:تبين|تبغين)[ \t]+تطلبين؟?/gu;
@@ -69,7 +71,7 @@ const BARE_ADJ_TAG = /^(?:ال)?(?:[أا]سود|سوداء|[أا]بيض|بيضا
 function polishProse(text, { name, sourceText, sizes, notes, category }) {
   // ادعاء لم يذكره التاجر (مقاومة ماء، ضمان، ثبات، أصلي…) يُحذف بجملته — تقييم 2026-09-12. حكم الجودة يُزال
   // بعبارته أو مقطعه وتبقى الجملة، ومشهد التصوير بمقطعه (2026-09-13).
-  const sourced = joinSentences(splitSentencesKeep(dropPhotoLeaks(String(text || ""), name))
+  const sourced = joinSentences(splitSentencesKeep(dropPhotoLeaks(dropEmptyQualifiers(dropMechanismClauses(text), sourceText), name))
     .map((p) => ({ ...p, s: unsourcedJudgment(p.s, sourceText) ? stripJudgments(p.s, { sourceText, name }) : p.s }))
     .filter(({ s }) => s && !unsourcedClaims(s, sourceText).length && !unsourcedJudgment(s, sourceText) && !hasPlaceholderOrPrice(s)));
   const t = dropSleevesForBottoms(dropUnseenLength(dropForeignScript(fixNoteLabels(dropAttachedClaims(sourced, name, sourceText))), notes), name);
@@ -118,7 +120,7 @@ function dropUnsourcedGender(parsed, source) {
 /** نص قصير (عنوان، نقطة، وسم، سؤال، نص بديل، مواصفة): تُحذف الكلمة المعيبة لا العنصر. */
 function polishShort(text, { name, sourceText, sizes, notes, category, keepLabels = false }) {
   // مفتاح المواصفة «الطول والقصّة» اسم صحيح لا عنوان ملاحظات مسرّب — صار «بطول» (2026-09-12 18:46).
-  const raw = stripJudgmentWords(dropPhotoLeaks(String(text || "").replace(PLACEHOLDER_TOKEN, "").replace(PRICE_TOKEN, ""), name), sourceText);
+  const raw = stripJudgmentWords(dropPhotoLeaks(dropEmptyQualifiers(dropMechanismClauses(text), sourceText).replace(PLACEHOLDER_TOKEN, "").replace(PRICE_TOKEN, ""), name), sourceText);
   const t = fixLatinWords(dropForeignScript(keepLabels ? raw : fixNoteLabels(raw)), sourceText);
   const fixed = dropSleevesForBottoms(dropUnseenLength(fixSizeRange(fixColorAgreement(fixCommonGrammar(fixTrouserLength(t, name))), sizes), notes), name);
   return fixSizeChartClosing(fixed, { name, category, sourceText })

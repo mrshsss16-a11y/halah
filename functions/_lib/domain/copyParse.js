@@ -3,6 +3,7 @@
 // انتزاع الـJSON نفسه صار بـ`ai/parseModelJson.js` ويشترك فيه `chat.js`.
 import { extractBalancedJson, stripTrailingCommas } from "../ai/parseModelJson.js";
 import { splitSentencesKeep, joinSentences } from "./copyPhrases.js";
+import { MECHANISM_PHRASE, dropMechanismClauses } from "./copyLeaks.js";
 import { stripJudgments, stripJudgmentWords, unsourcedJudgment, hasPraiseIdiom } from "./copyJudgments.js";
 
 /**
@@ -246,13 +247,12 @@ export function descriptionQualityIssues(copywriting, { hasVision = false, sourc
  * الإشارية ويحذف الجمل التي تذكر سعراً أو ادعاءً محظوراً. لا يخترع نصاً — يحذف فقط.
  */
 export function cleanDescription(text, { sourceText, productName } = {}) {
-  let t = String(text || "").trim();
+  let t = dropMechanismClauses(String(text || "").trim()); // المقطع لا الجملة: «…المعروض، وتتوافر التنورة بالرمادي» (2026-09-15)
   t = t.replace(BAD_OPENERS, "").replace(/^[\s،:,]+/, "");
   // احذف الجملة الحاملة للسعر كاملة (حتى أقرب نقطة/سطر)، لا الرقم وحده.
   t = joinSentences(splitSentencesKeep(t).map((p) => ({ ...p, s: sourceText !== undefined && unsourcedJudgment(p.s, sourceText) ? stripJudgments(p.s, { sourceText, name: productName }) : p.s })).filter(({ s }) => s && !PRICE_IN_PROSE.test(s) && !PROHIBITED_CLAIMS.test(s) && !PLACEHOLDER.test(s) && !MECHANISM_LEAK.test(s) && !(productName && propItemIn(s, productName)) && !(sourceText !== undefined && (unsourcedMaterial(s, sourceText) || unsourcedJudgment(s, sourceText)))));
   return t;
 }
-
 
 // ── حراس الحقول المنشورة الأخرى (2026-09-11) ─────────────────────────────
 //
@@ -270,7 +270,7 @@ export function cleanDescription(text, { sourceText, productName } = {}) {
  */
 const STORE_POLICY = /(مدة الشحن|الشحن خلال|يتم الشحن|تتم شحن|تتم الشحن|يشحن خلال|يُشحن خلال|شحن مجاني|الشحن مجاني|رسوم الشحن|التوصيل خلال|مدة التوصيل|توصيل مجاني|التوصيل مجاني|الإرجاع|إرجاع|الارجاع|ارجاع|الاسترجاع|استرجاع|الاستبدال|استبدال|طرق الدفع|طريقة الدفع|وسائل الدفع|وسائل دفع|الدفع عند الاستلام|بطاقات الائتمان|بطاقة ائتمان|التحويل البنكي|تحويل بنكي|الضمان|ضمان|تقسيط|تابي|تمارا)/;
 /** كشف آلية قراءة الصورة في نص منشور: «لا يوجد حزام مرئي»، «يبدو أن الفستان…». */
-const MECHANISM_LEAK = /(غير مرئي|يبدو أن|ملاحظات الصورة|(?<!\p{L})مرئي(?:ة|ه)?(?!\p{L}))/u;
+const MECHANISM_LEAK = new RegExp(`(غير مرئي|يبدو أن|ملاحظات الصورة|(?<!\\p{L})مرئي(?:ة|ه)?(?!\\p{L}))|${MECHANISM_PHRASE.source}`, "u"); // + «النموذج المعروض»، «تحت الخيارات» (2026-09-15)
 // أحكام الجودة (قاعدة ٥ بالبرومبت): copyJudgments.js — طبقة واحدة لكل الحقول (2026-09-13).
 const MIN_HIGHLIGHT_WORDS = 3;
 const words = (t) => String(t || "").trim().split(/\s+/).filter(Boolean).length;
