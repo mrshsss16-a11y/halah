@@ -1,7 +1,6 @@
 // عبارات النص المنشور: تصحيحات نحوية، دعوات البيع، ملاحظات الصورة المسرّبة، وجدول المقاسات.
 // أحكام الجودة انتقلت إلى copyJudgments.js (2026-09-13) لتكون طبقة واحدة لكل الحقول؛ التصدير هنا للمستوردين القدامى.
 import { dropClauses } from "./copyJudgments.js";
-import { sizeChartKind, isMenswear } from "./copyClaims.js";
 export { stripJudgments } from "./copyJudgments.js";
 
 // الوصف يُنشر فقرات (composeDescriptionHtml: كل سطر فارغ = <p>). التنظيف كان يقسم إلى جمل
@@ -100,19 +99,14 @@ export function dropSleevesForBottoms(text, name) {
   return String(text || "").replace(/[ \t]*(?:،[ \t]*)?(?:و)?(?:بدون|بلا|بلا\s+ولا)[ \t]+(?:ال)?[أا]كمام(?!\p{L})/gu, "");
 }
 
-// ملابس نسائية بلا جملة جدول المقاسات (تنورة 2026-09-12 01:38): جملة ثابتة لا تدّعي شيئاً عن المنتج.
+// سطر جدول المقاسات لم يعد يُضاف (معيار ٦.٧، 2026-09-15): هالة لا تتحقق أن للمتجر جدولاً، والجملة الثابتة كانت
+// تُلحق بكل فستان وتنورة. الخاتمة المقاسات والألوان من الخيارات إن كتبها الكاتب — لا تُكرَّر هنا.
 const WOMEN_APPAREL = /^(?:ال)?(?:فستان|فساتين|تنور|تنانير|بلوز|بلايز|عباي|جمبسوت|كارديجان)/u;
-// ملابس رجالية بمقاسات («ثوب رجالي كلاسيكي» 2026-09-13) تُنشر بصيغة المذكر.
-export function withSizeChartLine(text, name, category = "") {
-  const women = WOMEN_APPAREL.test(String(name || "").trim());
-  // «راجع جدول المقاسات» بصيغة المذكر لفستان (Luna 2026-09-14 04:03): خطاب المؤنث لقطع النساء كسطر هالة نفسه.
-  const t = women
+export function withSizeChartLine(text, name) {
+  // «راجع جدول المقاسات» بصيغة المذكر لفستان (Luna 2026-09-14 04:03): إن بقي السطر لأن التاجر ذكر جدوله، فبالمؤنث.
+  return WOMEN_APPAREL.test(String(name || "").trim())
     ? String(text || "").trim().replace(/(?<!\p{L})راجع(?=[ \t]+جدول[ \t]+المقاسات)/gu, "راجعي")
     : String(text || "").trim();
-  if (!t || /جدول المقاسات/.test(t)) return t;
-  if (women) return `${t}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.`;
-  const menSized = sizeChartKind({ name, category }) === "sized" && isMenswear({ name, category });
-  return menSized ? `${t}\n\nراجع جدول المقاسات قبل الطلب لاختيار المقاس المناسب.` : t;
 }
 
 // كلمات لاتينية داخل الوصف العربي: «في أسفل كل couche» (2026-09-12)، و«تنورة midi» بتفكير نموذج.

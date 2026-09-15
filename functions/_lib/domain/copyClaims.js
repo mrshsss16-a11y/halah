@@ -51,7 +51,6 @@ const SIZED = /(?:فستان|فساتين|تنور|تنانير|بلوز|بلا�
 // حدود كلمة (2026-09-13): «عود» كان يطابق داخل «سعودي» فتُحذف خاتمة جدول المقاسات من «ثوب سعودي».
 const NOT_SIZED = /(?<!\p{L})(?:و|ب|ل)?(?:ال)?(?:شماغ|غتر(?:ة|ه)?|طرح(?:ة|ه|ات)|شال(?:ات)?|وشاح|حقيب(?:ة|ه)|حقائب|شنط(?:ة|ه)?|كلتش|عطر|عطور|بخور|عود|دهن|ساع(?:ة|ه|ات)|خاتم|خواتم|عقد|سوار|[أا]سوار|[أا]سور(?:ة|ه)|[أا]ساور|حلق|قلاد(?:ة|ه|ات)|مجوهرات|نظار(?:ة|ه|ات))(?!\p{L})/u;
 const MEN = /(?:رجال|للرجال|ثوب|ثياب|شماغ|غتر|بشت[ \t]+رجالي|جلابية[ \t]+رجالي)/u;
-export const isMenswear = ({ name = "", category = "" } = {}) => MEN.test(`${name} ${category}`);
 
 /** «sized» (ملابس وأحذية) أو «none» — من اسم المنتج وفئته. */
 export function sizeChartKind({ name = "", category = "" } = {}) {
@@ -60,13 +59,30 @@ export function sizeChartKind({ name = "", category = "" } = {}) {
   return SIZED.test(t) && !NOT_SIZED.test(String(name || "")) ? "sized" : "none";
 }
 
-const CHART_SENTENCE = /[^.!؟\n]*(?:جدول[ \t]+المقاسات|اختيار[ \t]+المقاس)[^.!؟\n]*[.!؟]?/gu;
+const CHART = /(?:جدول[ \t]+المقاسات|اختيار[ \t]+المقاس)/u;
+// المقطع لا الجملة (2026-09-15): «يتوفر بالمقاسات 36 - XS، … و44 - XL؛ راجعي جدول المقاسات قبل الاختيار.» — حذف
+// الجملة كلها أسقط المقاسات المتوفرة وهي حقيقة من الخيارات.
+function dropChartClauses(sentence) {
+  const end = (sentence.match(/[.!؟]+$/u) || [""])[0];
+  const lead = (sentence.match(/^\s*/u) || [""])[0];
+  const parts = sentence.slice(lead.length, sentence.length - end.length).split(/[ \t]*([،؛])[ \t]*/u);
+  const kept = [];
+  // «للمطابقة الدقيقة قبل إتمام طلبك، راجعي جدول المقاسات» (unseen-cut PF-G): مقطع الغاية أو الوقت تابع للإحالة فيُحذف معها.
+  const TIED = /^(?:لل?(?:مطابق|تأكد|تاكد|اختيار|معرف|حصول)|قبل|عند|عشان|علشان)/u;
+  for (let i = 0; i < parts.length; i += 2) if (parts[i].trim() && !CHART.test(parts[i]) && !TIED.test(parts[i].trim())) kept.push(i ? `${parts[i - 1]} ${parts[i]}` : parts[i]);
+  if (!kept.length) return "";
+  return `${lead}${kept.join("").replace(/^[،؛][ \t]*/u, "")}${end || "."}`;
+}
 
-/** خاتمة جدول المقاسات: تُحذف لغير الملابس والأحذية، وتُذكَّر صيغتها لمنتج رجالي. */
-export function fixSizeChartClosing(text, { name = "", category = "" } = {}) {
+/**
+ * خاتمة جدول المقاسات (معيار ٦.٧ و C12(ب)، 2026-09-15): هالة لا تتحقق أن للمتجر جدول مقاسات، فالإحالة إليه تُحذف
+ * لكل الفئات ما لم يذكر التاجر «جدول المقاسات» بنصه. إن ذكره: تُحذف لغير الملابس وتُذكَّر صيغتها لمنتج رجالي.
+ */
+export function fixSizeChartClosing(text, { name = "", category = "", sourceText = "" } = {}) {
   let t = String(text || "");
-  if (sizeChartKind({ name, category }) === "none") {
-    return t.replace(CHART_SENTENCE, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  if (!/جدول[ \t]+(?:ال)?مقاسات/u.test(String(sourceText || "")) || sizeChartKind({ name, category }) === "none") {
+    return t.replace(/[^.!؟\n]+[.!؟]*/gu, (s) => (CHART.test(s) ? dropChartClauses(s) : s))
+      .replace(/[ \t]{2,}/g, " ").replace(/[ \t]+\n/g, "\n").replace(/\n[ \t]+/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   }
   if (MEN.test(`${name} ${category}`)) {
     t = t.replace(/(?<!\p{L})راجعي(?!\p{L})/gu, "راجع").replace(/(?<!\p{L})تحققي(?!\p{L})/gu, "تحقق").replace(/(?<!\p{L})اختاري(?!\p{L})/gu, "اختر");

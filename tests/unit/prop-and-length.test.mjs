@@ -14,7 +14,10 @@ const { assert, done } = createRunner("prop-and-length");
 
 const REAL_BLOUSE = "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية. التنورة مصنوعة من طبقات لونية: أبيض وأزرق فاتح وأزرق غامق. هذه البلوزة مثالية للمناسبات الصيفية والنهارية.";
 const LONG_GOOD = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية واسعة تتجمع بكسرات خفيفة عند خط الصدر، مع تفصيل دانتيل ظاهر على الكتف والكم. قصّتها مستقيمة تنزل حتى الخصر، فتدخل تحت التنورة أو تُلبس فوقها بحرية.\n\nتُنسَّق مع تنورة بطبقات زرقاء أو بنطال بيج واسع للإطلالات الصيفية والنهارية، وتناسب الدوام والزيارات العائلية.\n\nراجعي جدول المقاسات قبل الطلب لمطابقة عرض الكتفين وطول القطعة.";
-const VISION_NOTES = "بلوزة بيضاء بأكمام قصيرة وقصّة مستقيمة وياقة دائرية مع كسرات عند الصدر، وتفصيل دانتيل على الكتف والكم. العارضة تلبس تنورة بطبقات بيضاء وزرقاء. اليد اليمنى في الجيب.";
+// ما يُنشر من LONG_GOOD (2026-09-15): المناسبة التي لم يذكرها التاجر («للإطلالات الصيفية والنهارية»، «وتناسب الدوام…»)
+// وإحالة جدول المقاسات غير المسندة تُحذف (معيار ٦.٢ و٦.٧)، ويبقى وصف القطعة والتنسيق المسمّى.
+const LONG_PUBLISHED = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية واسعة تتجمع بكسرات خفيفة عند خط الصدر، مع تفصيل دانتيل ظاهر على الكتف والكم. قصّتها مستقيمة تنزل حتى الخصر، فتدخل تحت التنورة أو تُلبس فوقها بحرية.\n\nتُنسَّق مع تنورة بطبقات زرقاء أو بنطال بيج واسع.";
+const VISION_NOTES ="بلوزة بيضاء بأكمام قصيرة وقصّة مستقيمة وياقة دائرية مع كسرات عند الصدر، وتفصيل دانتيل على الكتف والكم. العارضة تلبس تنورة بطبقات بيضاء وزرقاء. اليد اليمنى في الجيب.";
 
 const codes = (arr) => arr.map((i) => i.code);
 const copyJson = (description) => JSON.stringify({
@@ -117,7 +120,7 @@ async function main() {
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
     assert(ai.seen.vision >= 1 && ai.seen.text === 3, `PL-13: قصير بعد الإعادة العامة ⇒ كاتب وصف مركّز ثالث (نصية: ${ai.seen.text})`);
     assert(/اكتبي وصف «بلوزة» فقط/.test(ai.seen.systems[2]) && !/specsTable/.test(ai.seen.systems[2]) && ai.seen.systems[2].length < 2000, "PL-14: الكاتب المركّز برومبت قصير مستقل لحقل الوصف وحده، بلا مخطط JSON");
-    assert(out.copywriting.description === LONG_GOOD, "PL-15: النسخة الطويلة السليمة تُعتمد");
+    assert(out.copywriting.description === LONG_PUBLISHED, `PL-15: النسخة الطويلة السليمة تُعتمد، بلا مناسبة أو جدول مقاسات غير مسندين («${out.copywriting.description}»)`);
   }
   {
     // الكاتب المركّز يعيد نصاً طويلاً فيه حكم: يُنظَّف قبل القبول، والمنشور = المقبول.
@@ -164,7 +167,7 @@ async function main() {
       const claim = LONG_GOOD + "\n\nالبلوزة مرفق بها تنورة زرقاء بقصّة A.";
       const ai = mockAi([copyJson(claim)]);
       const out = await generateProductCopy(args({ ...ai }));
-      assert(out.copywriting.description === LONG_GOOD, `PL-43: ادعاء «مرفق بها تنورة» يُحذف من المنشور، وجملة التنسيق «تحت التنورة» تبقى («${out.copywriting.description}»)`);
+      assert(out.copywriting.description === LONG_PUBLISHED, `PL-43: ادعاء «مرفق بها تنورة» يُحذف من المنشور، وجملة التنسيق «تحت التنورة» تبقى («${out.copywriting.description}»)`);
       const { stripJudgments } = await import("../../functions/_lib/domain/copyPhrases.js");
       const look = stripJudgments("للمرأة التي تبحث عن إطلالة أنيقة وعملية في يومها.");
       assert(look === "للمرأة التي تبحث عن إطلالة عملية في يومها.", `PL-44: «إطلالة أنيقة وعملية» ⇒ «إطلالة عملية» بلا واو معلّقة («${look}»)`);
@@ -214,7 +217,7 @@ async function main() {
       const all = seenSys[0] || "";
       const notes = all.slice(all.lastIndexOf("اللون:"), all.indexOf("---", all.lastIndexOf("اللون:")));
       assert(/الطابع العام: نهاري صيفي كاجوال/.test(notes) && !/تنورة/.test(notes), `PL-56: سطر «الطابع العام» يصل الكاتب بلا ذكر ملابس العارضة («${notes}»)`);
-      assert(/«الطابع العام» مصدر اقتراح الاستخدام/.test(all), "PL-57: الكاتب يُبلَّغ أن «الطابع العام» للمناسبة لا لتفاصيل المنتج");
+      assert(/«الطابع العام» ليس مصدراً للمناسبة/.test(all) && /تُكتب فقط إن وردت ببيانات التاجر/.test(all) && !/مصدر اقتراح الاستخدام/.test(all), "PL-57: الكاتب يُبلَّغ أن «الطابع العام» ليس مصدراً للمناسبة، والمناسبة من بيانات التاجر وحدها (معيار ٦.٢، 2026-09-15)");
       const { fixNoteLabels } = await import("../../functions/_lib/domain/copyPhrases.js");
       assert(fixNoteLabels("تُلبس بطابع الطابع العام: نهاري صيفي.") === "تُلبس بطابع نهاري صيفي.", "PL-58: عنوان «الطابع العام:» لا يُنشر");
     }
@@ -266,13 +269,14 @@ async function main() {
     {
       // تنورة 2026-09-12 01:38: فقرة واحدة من ٣٨ كلمة بلا تنسيق ولا جدول مقاسات، ولم يعمل الكاتب المركّز.
       const { withSizeChartLine } = await import("../../functions/_lib/domain/copyPhrases.js");
-      assert(withSizeChartLine("تنورة ميدي بطبقات.", "تنورة") === "تنورة ميدي بطبقات.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.", "PL-67: ملابس نسائية بلا جملة جدول المقاسات تُضاف لها");
-      assert(withSizeChartLine("شماغ أحمر.", "شماغ") === "شماغ أحمر." && withSizeChartLine("فستان.\n\nراجعي جدول المقاسات قبل الطلب.", "فستان") === "فستان.\n\nراجعي جدول المقاسات قبل الطلب.", "PL-68: لا تُضاف لغير الملابس النسائية ولا تتكرر");
+      assert(withSizeChartLine("تنورة ميدي بطبقات.", "تنورة") === "تنورة ميدي بطبقات.", "PL-67: جملة جدول المقاسات لم تعد تُضاف للملابس النسائية — لا نتحقق أن للمتجر جدولاً (معيار ٦.٧، 2026-09-15)");
+      assert(withSizeChartLine("شماغ أحمر.", "شماغ") === "شماغ أحمر." && withSizeChartLine("فستان.\n\nراجع جدول المقاسات قبل الطلب.", "فستان") === "فستان.\n\nراجعي جدول المقاسات قبل الطلب.", "PL-68: لا تُضاف لغير الملابس، وسطر موجود لقطعة نسائية يُصحَّح للمؤنث");
       const onePara = "تنورة ميدي بطبقات أفقية متراصة بلون أبيض مائل للأصفر مع نقوش نباتية بالأزرق والأخضر والوردي والأصفر والأسود، وطولها ينتهي عند منتصف الساق، وتُلبس في الإطلالات النهارية الصيفية مع بلوزة خفيفة وصندل.";
       const threePara = "تنورة ميدي بطبقات أفقية متراصة بلون أبيض مائل للأصفر مع نقوش نباتية بالأزرق والأخضر والوردي.\n\nتُلبس في النهار صيفاً مع بلوزة خفيفة وصندل.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.";
       const ai = mockAi([copyJson(onePara)]);
       const out = await generateProductCopy(args({ ...ai }, { name: "تنورة" }));
-      assert(out.copywriting.description === `${onePara}\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.` && threePara.length > 0, `PL-69: وصف تنورة بلا جملة جدول المقاسات يُنشر معها بفقرة مستقلة («${out.copywriting.description}»)`);
+      const onePublished = onePara.replace("، وتُلبس في الإطلالات النهارية الصيفية مع بلوزة خفيفة وصندل.", ".");
+      assert(out.copywriting.description === onePublished && threePara.length > 0, `PL-69: وصف تنورة بلا جملة جدول المقاسات لا تُضاف له (معيار ٦.٧)، ومقطع المناسبة غير المسندة يُحذف (٦.٢، 2026-09-15) («${out.copywriting.description}»)`);
     }
     {
       // فستان مورّد 2026-09-12 04:34 على Cloudflare Qwen: «ياقة عالية ومربعة»، «كتفان عريضان»، «ميني» لطرف عند الركبة.
@@ -297,7 +301,8 @@ async function main() {
     const shortGood = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية مع كسرات عند الصدر وتفصيل دانتيل على الكتف والكم.\n\nتُنسَّق مع بنطال بيج واسع للدوام والزيارات.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.";
     const ai = mockAi([copyJson(REAL_BLOUSE), copyJson(REAL_BLOUSE), shortGood]);
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
-    assert(out.copywriting.description === shortGood, `PL-36: نص الكاتب المركّز الأطول يُعتمد ولو تحت حد الطول، بفقراته وجملة جدول المقاسات («${out.copywriting.description}»)`);
+    const shortPublished = "بلوزة بيضاء بأكمام قصيرة وياقة دائرية مع كسرات عند الصدر وتفصيل دانتيل على الكتف والكم.\n\nتُنسَّق مع بنطال بيج واسع.";
+    assert(out.copywriting.description === shortPublished, `PL-36: نص الكاتب المركّز الأطول يُعتمد ولو تحت حد الطول بفقراته؛ «للدوام والزيارات» وجدول المقاسات غير المسندين يُحذفان بلا «والزيارات» معلّقة (2026-09-15) («${out.copywriting.description}»)`);
     const { readFileSync } = await import("node:fs");
     const seoSrc = readFileSync(new URL("../../functions/_lib/ai/prompts/seo.js", import.meta.url), "utf8");
     assert(!/طويلة بقصّة كلوش|فستان طويل بقصّة/.test(seoSrc) && /«ميدي» تبقى «ميدي»/.test(seoSrc) && /«ميدي» تبقى «ميدي»/.test(ai.seen.systems[2]), "PL-37: لا أمثلة تزرع «طويل»/«كلوش»، والطول بكلمة الملاحظات بالبرومبتين (نُشر «فستان طويل بتصميم كلوش» لفستان ميدي)");
@@ -306,7 +311,7 @@ async function main() {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);
     const out = await withImageFetch(() => generateProductCopy(args({ ...ai }, { imageUrl: "https://cdn.example.com/blouse.jpg" })));
     assert(ai.seen.text === 3, "PL-16: الإصرار ⇒ ثلاث محاولات نصية فقط لا حلقة (والكاتب المركّز إن أعاد JSON يُقرأ وصفه ويُرفض لقِصَره)");
-    assert(out.copywriting.description === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية. تناسب المناسبات الصيفية والنهارية.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب." && !/تنورة|مثالية/.test(out.copywriting.description), `PL-17: عند الإصرار لا تصل التنورة ولا «مثالية» صفحة المتجر («${out.copywriting.description}»)`);
+    assert(out.copywriting.description === "بلوزة نسائية بيضاء اللون، قصيرة الأكمام، وياقة دائرية." && !/تنورة|مثالية|المناسبات|جدول المقاسات/.test(out.copywriting.description), `PL-17: عند الإصرار لا تصل التنورة ولا «مثالية» صفحة المتجر، ولا مناسبة أو جدول مقاسات لم يذكرهما التاجر (2026-09-15) («${out.copywriting.description}»)`);
   }
   {
     const ai = mockAi([copyJson(REAL_BLOUSE)]);

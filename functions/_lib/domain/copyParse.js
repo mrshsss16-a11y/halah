@@ -236,7 +236,7 @@ export function descriptionQualityIssues(copywriting, { hasVision = false, sourc
   }
   const words = desc ? desc.split(/\s+/).filter(Boolean).length : 0;
   if (hasVision && words < MIN_WORDS_WITH_VISION) {
-    issues.push({ code: "TOO_SHORT", text: `الوصف ${words} كلمة فقط رغم توفّر ملاحظات صورة — اكتبي ٤٠–٨٠ كلمة من المرئيات المذكورة (اللون، القصّة، الطول، التفاصيل) واقتراح استخدام مشتق منها.` });
+    issues.push({ code: "TOO_SHORT", text: `الوصف ${words} كلمة فقط رغم توفّر ملاحظات صورة — اكتبي ٤٠–٨٠ كلمة من المرئيات المذكورة (اللون، القصّة، الطول، التفاصيل) بلا مناسبة لم يذكرها التاجر.` });
   }
   return issues;
 }

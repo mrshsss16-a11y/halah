@@ -88,8 +88,8 @@ async function runTests() {
       category: "عبايات", features: "", existingDescription: "", imageUrl: "", keywordsExtra: []
     });
     assert(
-      out.copywriting.description === "وصف حقيقي للمنتج بجمل متدفقة.\n\nراجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب." && ai.seen.calls === 1,
-      "THIN-COPY-1: JSON سليم ⇒ تمريرة واحدة ونتيجة منظَّمة"
+      out.copywriting.description === "وصف حقيقي للمنتج بجمل متدفقة." && ai.seen.calls === 1,
+      "THIN-COPY-1: JSON سليم ⇒ تمريرة واحدة ونتيجة منظَّمة، بلا سطر جدول مقاسات مضاف (معيار ٦.٧، 2026-09-15)"
     );
     assert(out.usedImage === false, "THIN-COPY-2: بلا صورة ⇒ usedImage=false صراحةً (لا ادعاء)");
   }

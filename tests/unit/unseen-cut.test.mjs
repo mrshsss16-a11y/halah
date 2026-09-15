@@ -21,10 +21,19 @@ async function main() {
     assert(page.copywriting.excerpt.endsWith("، وسطحها لامع.") && page.seo.metaDescription.endsWith("، وسطحها لامع."), `PF-A: «، سطحها اللامع.» تُصحَّح بالنبذة والميتا («${page.copywriting.excerpt}»)`);
     assert(page.copywriting.whatsapp === page.copywriting.excerpt, `PF-B: واتساب بلا مضمون بعد حذف الأحكام يُبنى من النبذة («${page.copywriting.whatsapp}»)`);
     assert(!page.seo.lsiKeywords.some((k) => /خصر/.test(k)) && !page.tags.some((k) => /خصر/.test(k)), "PF-C: «تنورة خصر مرتفع» لم تذكرها الصورة تُحذف من الكلمات المفتاحية والوسوم");
-    assert(!/الموجود بالوصف/.test(page.faqs[0].a) && /جدول المقاسات/.test(page.faqs[0].a), `PF-D: الجواب لا يدّعي جدولاً داخل الوصف («${page.faqs[0].a}»)`);
-    const below = { copywriting: { description: "تنورة سوداء.\n\nللمطابقة الدقيقة قبل إتمام طلبك، راجعي جدول المقاسات الموضح أدناه.", excerpt: "", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
-    polishPage(below, { name: "تنورة", notes, sourceText: "تنورة" });
+    assert(!page.faqs.some((f) => /الموجود بالوصف|جدول المقاسات/.test(f.a)), `PF-D: التاجر لم يذكر جدول مقاسات ⇒ جواب يحيل إليه لا يُنشر (معيار ٦.٧، 2026-09-15) (${JSON.stringify(page.faqs)})`);
+    // التاجر ذكر جدول المقاسات: تبقى الإحالة، وتُحذف ادعاءات مكانه («الموجود بالوصف»، «الموضح أدناه»).
+    const chartSrc = "تنورة؛ جدول المقاسات بالصور";
+    const sourcedFaq = { copywriting: { description: "تنورة ميدي سوداء بكسرات عريضة.", excerpt: "", whatsapp: "" }, seo: {}, faqs: [{ q: "كيف أختار المقاس المناسب لي؟", a: "تقدري تراجعي جدول المقاسات الموجود بالوصف عشان تتأكدي من المقاس اللي يناسبك." }], specsTable: [], tags: [] };
+    polishPage(sourcedFaq, { name: "تنورة", notes, sourceText: chartSrc });
+    assert(sourcedFaq.faqs[0]?.a === "تقدري تراجعي جدول المقاسات عشان تتأكدي من المقاس اللي يناسبك.", `PF-D2: الجواب لا يدّعي جدولاً داخل الوصف («${sourcedFaq.faqs[0]?.a}»)`);
+    const belowText = "تنورة سوداء.\n\nللمطابقة الدقيقة قبل إتمام طلبك، راجعي جدول المقاسات الموضح أدناه.";
+    const below = { copywriting: { description: belowText, excerpt: "", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
+    polishPage(below, { name: "تنورة", notes, sourceText: chartSrc });
     assert(/راجعي جدول المقاسات\./.test(below.copywriting.description) && !/أدناه/.test(below.copywriting.description), `PF-G: «جدول المقاسات الموضح أدناه» بلا جدول تحت الوصف ⇒ تُحذف عبارة المكان («${below.copywriting.description}»)`);
+    const belowUnsourced = { copywriting: { description: belowText, excerpt: "", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
+    polishPage(belowUnsourced, { name: "تنورة", notes, sourceText: "تنورة" });
+    assert(belowUnsourced.copywriting.description === "تنورة سوداء.", `PF-G2: بلا جدول من التاجر تُحذف الإحالة ومقطع الغاية التابع لها «للمطابقة الدقيقة…» (2026-09-15) («${belowUnsourced.copywriting.description}»)`);
     assert(page.specsTable[0].key === "الطول والقصّة", `PF-E: مفتاح المواصفة يبقى «الطول والقصّة» لا «بطول» («${page.specsTable[0].key}»)`);
     assert(/إضاءة نهارية/.test(productOnlyNotes("الطابع العام: إضاءة نهائية، طابع رسمي.", "تنورة")), "PF-F: «إضاءة نهائية» بملاحظات الصورة ⇒ «نهارية»");
   }

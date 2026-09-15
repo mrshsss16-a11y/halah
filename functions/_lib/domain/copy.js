@@ -21,6 +21,7 @@ const WEARABLE = new Set(["apparel", "shoes", "bags", "jewelry", "watches"]);
 import { polishPage, pageText } from "./copyPage.js";
 import { loadLessons, lessonsBlock, learnFromCopy } from "./copyLessons.js";
 import { visionFactsContext, structuredVisionBlock, settleVisionFacts, factsToNotes, applyVisionFacts, visionTextIsThin } from "./visionFacts.js";
+import { stripUnsourcedOccasions } from "./copyOccasion.js";
 
 // نافذة recentCopy مثبّتة على ٥ (docs/PLAN_BULK_SEO.md §٥، المخاطرة ٣):
 // الدالة تجلب "الأخيرة" فقط، فعبر دفعة ٢٠٠ منتج تنجرف — منتج ٢٠٠ يقارن نفسه
@@ -102,12 +103,12 @@ function focusedDescriptionSystem(name, notes, variantsText) {
   return [
     "أنتِ كاتبة أوصاف منتجات لمتاجر سعودية بالعربية البيضاء.",
     `اكتبي وصف «${name}» فقط، نصاً عادياً بلا JSON وبلا عناوين وبلا علامات تنصيص.`,
-    "الطول: من ٦٠ إلى ٩٠ كلمة في ثلاث فقرات قصيرة يفصل بينها سطر فارغ:",
+    "الطول: من ٦٠ إلى ٩٠ كلمة في فقرتين أو ثلاث قصيرة يفصل بينها سطر فارغ:",
     `١) ابدئي بكلمة «${name}» ثم صفي ما في ملاحظات الصورة بالتفصيل: اللون، القصّة، الياقة، الأكمام، الطول، وكل تفصيل ورد فيها.`,
-    "٢) متى وكيف تُلبس، مستندةً إلى سطر «الطابع العام» إن ورد، مع قطعة تنسيق مقترحة.",
+    "٢) باقي التفاصيل المرئية (النقشة، سطح القماش، الخصر). لا مناسبة ولا استخدام ولا موسم («نهاري»، «يومي»، «للسهرات»، «للدوام») — تُكتب فقط من بيانات التاجر، وسطر «الطابع العام» ليس مصدراً لها (معيار ٦.٢، 2026-09-15).",
     "لا تنسخي عناوين الملاحظات («الطول والقصّة»، «الكتفان والحمالات») — صوغيها جملاً: «بقصّة واسعة» لا «الطول والقصّة: واسعة». ولا تذكري طولاً (ميدي، ماكسي، ميني) لم يرد بالملاحظات.",
     "الطول والقصّة بكلمة الملاحظات نفسها («ميدي» تبقى «ميدي»)، لا «طويل» ولا «قصير» ولا «كلوش» ولا «واسع» ما لم تَرِد فيها.",
-    "٣) جملة واحدة بهذه الصيغة أو قريبة منها: «راجعي جدول المقاسات قبل الطلب لاختيار المقاس المناسب.» — فعل أمر موجّه للعميلة، لا «توصي» ولا «يرجى» بلا فاعل.",
+    "٣) إن وردت «الخيارات المتوفرة فعلاً» فجملة تذكر المقاسات والألوان المتوفرة منها، بلا إحالة لجدول المقاسات (المتجر قد لا يملكه)؛ وإلا فقرتان تكفيان.",
     "ممنوع: السعر، الشحن والإرجاع والدفع، أي خامة لم ترد، أحكام الجودة (مريح، أنيق، أناقة، فاخر، فخامة، مثالي، راقٍ)، ذكر العارضة أو الصورة، وأي تفصيل لم يرد بالملاحظات.",
     variantsText ? `الخيارات المتوفرة فعلاً: ${variantsText}` : "",
     UNTRUSTED_DATA_NOTICE,
@@ -378,7 +379,7 @@ export async function generateProductCopy({ env, merchantId, name, price, tone, 
   // الصفحة كلها لا فقرة الوصف وحدها: العنوان والميتا والأسئلة والنقاط والنبذة والوسوم كانت تنشر أخطاء
   // أُصلحت بالوصف فقط (تجربة 2026-09-12). كل تصحيح يمر على كل حقل (copyPage.js).
   polishPage(parsed, { name, sourceText, notes: visionNotes, category });
-  applyVisionFacts(parsed, factsCtx.facts, { name });
+  stripUnsourcedOccasions(applyVisionFacts(parsed, factsCtx.facts, { name }), { sourceText, name }); // usageClause قد يُبقي مقطع مناسبة: الحارس بعده (2026-09-15)
   // معيار C1: حقيقة من بيانات التاجر لم تظهر بأي حقل منشور تُضاف لجدول المواصفات (المنشور) بكلماته.
   const factsAdded = preserveMerchantFacts(parsed, { name, features, existingDescription, variants: parsedVariants });
   // أثر كل توليد (مؤقت حتى قبول سلة): توليد بلا عيب مرصود لم يترك صفاً فتعذّر تشخيص «couche».

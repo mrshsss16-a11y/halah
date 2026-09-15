@@ -30,9 +30,13 @@ async function main() {
   assert(JSON.stringify(page.tags) === JSON.stringify(["تنورة سوداء", "تنورة ميدي", "قصّة واسعة", "قماش لامع", "تنورة"]), `PC-6: وسوم الصفة المفردة («أسود»، «ميدي»، «واسعة») تُحذف (${JSON.stringify(page.tags)})`);
 
   const filler = { copywriting: { description: "فستان ميدي أخضر.\n\nهذا الفستان مناسب للمناسبات النهارية، ويمكن ارتداؤه في العديد من المناسبات غير الرسمية. يمكن تنسيقه مع حذاء مسطح.", excerpt: "تُلبس في المناسبات اليومية والغير رسمية.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
-  polishPage(filler, { name: "فستان", sourceText: "فستان", notes: "" });
+  const fillerCopy = JSON.parse(JSON.stringify(filler));
+  // التاجر ذكر المناسبة هنا كي يبقى الاختبار على الحشو والنحو — بلا مصدر تُحذف المناسبة نفسها (معيار ٦.٢، PC-8b).
+  polishPage(filler, { name: "فستان", sourceText: "فستان للمناسبات اليومية والنهارية", notes: "" });
   assert(/مناسب للمناسبات النهارية\. يمكن تنسيقه مع حذاء مسطح\./.test(filler.copywriting.description) && !/العديد من المناسبات/.test(filler.copywriting.description), `PC-8: حشو «ويمكن ارتداؤه في العديد من المناسبات غير الرسمية» يُحذف وتبقى الجملة («${filler.copywriting.description}»)`);
   assert(filler.copywriting.excerpt === "تُلبس في المناسبات اليومية وغير الرسمية.", `PC-9: «والغير رسمية» ⇒ «وغير الرسمية» («${filler.copywriting.excerpt}»)`);
+  polishPage(fillerCopy, { name: "فستان", sourceText: "فستان", notes: "" });
+  assert(fillerCopy.copywriting.description === "فستان ميدي أخضر.\n\nيمكن تنسيقه مع حذاء مسطح." && fillerCopy.copywriting.excerpt === "", `PC-8b: التاجر لم يذكر مناسبة ⇒ «مناسب للمناسبات النهارية» و«تُلبس في المناسبات اليومية» لا تُنشر، والتنسيق المسمّى يبقى (2026-09-15) («${fillerCopy.copywriting.description}» | «${fillerCopy.copywriting.excerpt}»)`);
 
   const general = { copywriting: { description: "فستان ميدي أخضر بقصّة واسعة وتصميم، بكشكش عند الذيل.\n\nتناسب جميع المناسبات. تُنسّق مع حذاء مسطح لمختلف الإطلالات.", excerpt: "عباية سوداء بتطريز يدوي تناسب جميع الإطلالات الرسمية.", whatsapp: "" }, seo: {}, faqs: [], specsTable: [], tags: [] };
   polishPage(general, { name: "فستان", sourceText: "فستان", notes: "" });
@@ -47,7 +51,7 @@ async function main() {
     seo: { metaDescription: "فستان سهرة بنفسجي بذيل، بقصّة ضيقة ولمسة لامعة وفتحة ظهر وشق جانبي. راجعي جدول المقاسات قبل الطلب. فستان سهرة بنفسجي بذيل، بقصّة ضيقة وياقة" },
     faqs: [{ q: "ما تفاصيل قصّة الفستان؟", a: "الفستان بطول ماكسي وقصّة ضيقة، وياقة دائرية وأكمام بلا أكمام." }], specsTable: [], tags: [] };
   polishPage(nexosPage, { name: "فستان سهرة بنفسجي بذيل", sourceText: "فستان سهرة بنفسجي بذيل فتحة ظهر شق جانبي", notes: "اللون: بنفسجي. الطول: ماكسي. القصّة: ضيقة. الياقة: دائرية. الأكمام: بلا أكمام. سطح القماش: لامع." });
-  assert(nexosPage.seo.metaDescription === "فستان سهرة بنفسجي بذيل، بقصّة ضيقة ولمسة لامعة وفتحة ظهر وشق جانبي. راجعي جدول المقاسات قبل الطلب.", `PC-23: ميتا بتكملة تعيد الافتتاح تُقطع عند التكرار وتنتهي بجملة تامة («${nexosPage.seo.metaDescription}»)`);
+  assert(nexosPage.seo.metaDescription === "فستان سهرة بنفسجي بذيل، بقصّة ضيقة ولمسة لامعة وفتحة ظهر وشق جانبي.", `PC-23: ميتا بتكملة تعيد الافتتاح تُقطع عند التكرار وتنتهي بجملة تامة، وإحالة جدول المقاسات غير المسندة تُحذف (معيار ٦.٧، 2026-09-15) («${nexosPage.seo.metaDescription}»)`);
   assert(nexosPage.faqs[0]?.a === "الفستان بطول ماكسي وقصّة ضيقة، وياقة دائرية وبلا أكمام.", `PC-24: «وأكمام بلا أكمام» ⇒ «وبلا أكمام» («${nexosPage.faqs[0]?.a}»)`);
   const nexosHl = nexosPage.copywriting.highlights.join(" | ");
   assert(nexosHl === "فتحة ظهر وشق جانبي بالتنورة", `PC-25: نقطة مبنية على تعبير مدح تُحذف كاملة لا تبقى بقايا («${nexosHl}»)`);
@@ -90,7 +94,8 @@ async function main() {
     // فستان الكاب 2026-09-14 02:30 وبنطلون 01:03 — مخرجان حقيقيان من متجر تجريبي.
     const dress = { copywriting: { description: "فستان ميدي بني فاتح بقصّة A وياقة دائرية، بطيّات بليسيه.\n\nهذا الفستان مناسب للمناسبات اليومية، ويمكن ارتداؤه في مختلف الأوقات. يمكن تنسيقه مع قطعة من الإكسسوارات بسيطة.", excerpt: "", whatsapp: "" },
       seo: { metaDescription: "فستان بني فاتح بقصّة A وطول ميدي، مناسب للمناسبات اليومية. متوفر الآن!" }, faqs: [], specsTable: [], tags: [] };
-    polishPage(dress, { name: "فستان", sourceText: "فستان", notes: "" });
+    // التاجر ذكر «الاستخدام اليومي» كي يبقى الاختبار على تصحيح التناقض؛ بلا مصدر تُحذف المناسبة كلها (معيار ٦.٢، 2026-09-15).
+    polishPage(dress, { name: "فستان", sourceText: "فستان للاستخدام اليومي", notes: "" });
     const dAll = `${dress.copywriting.description} ${dress.seo.metaDescription}`;
     assert(!/مختلف الأوقات|قطعة من الإكسسوارات|متوفر الآن|المناسبات اليومية/.test(dAll) && /للاستخدام اليومي/.test(dAll), `PC-32: حشو متناقض واستعجال يُصلحان («${dAll}»)`);
     const pants = { copywriting: { description: "بنطلون أحمر وبيج بقصّة واسعة. يتميز هذا البنطلون بتفاصيل درابيه وكسرات عريضة، ما.", excerpt: "", whatsapp: "" },

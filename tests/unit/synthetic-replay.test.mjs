@@ -7,6 +7,8 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { createRunner } from "../_helpers.mjs";
 import { polishPage, pageText } from "../../functions/_lib/domain/copyPage.js";
 import { cleanDescription, cleanPublishedFields } from "../../functions/_lib/domain/copyParse.js";
+import { fixSizeChartClosing } from "../../functions/_lib/domain/copyClaims.js";
+import { dropUnsourcedOccasions } from "../../functions/_lib/domain/copyOccasion.js";
 
 const { assert, done } = createRunner("synthetic-replay");
 const DIR = new URL("../fixtures/synthetic/", import.meta.url);
@@ -34,13 +36,21 @@ async function main() {
   assert(true, `SR-0: ${cases.length} حالة صناعية`);
   const missedRemove = [];
   const overDeleted = [];
+  const retiredKeeps = [];
   for (const c of cases) {
     const text = norm(pageText(runPipeline(c)));
     for (const phrase of c.mustRemove || []) if (text.includes(norm(phrase))) missedRemove.push(`${c.id} [${c.family}]: «${phrase}»`);
-    for (const phrase of c.mustKeep || []) if (!text.includes(norm(phrase))) overDeleted.push(`${c.id} [${c.family}]: «${phrase}»`);
+    // عبارة «يجب أن تبقى» صار المعيار يحذفها عمداً (2026-09-15): إحالة جدول مقاسات لم يذكره التاجر (٦.٧) أو مناسبة
+    // لم يذكرها (٦.٢) — مثل «راجع جدول المقاسات» لثوب و«خيار عملي يومي». لا تُعد حذفاً زائداً، وتُسرد بالرسالة.
+    const src = c.sourceText || c.name;
+    const retired = (phrase) => fixSizeChartClosing(phrase, { name: c.name, sourceText: src }) !== String(phrase).trim() || dropUnsourcedOccasions(phrase, src) !== phrase;
+    for (const phrase of c.mustKeep || []) {
+      if (retired(phrase)) retiredKeeps.push(`${c.id}: «${phrase}»`);
+      else if (!text.includes(norm(phrase))) overDeleted.push(`${c.id} [${c.family}]: «${phrase}»`);
+    }
   }
   assert(missedRemove.length === 0, `SR-1: كل خطأ صناعي يُحذف (${missedRemove.length} أفلت)${missedRemove.length ? ` — ${missedRemove.slice(0, 6).join(" | ")}` : ""}`);
-  assert(overDeleted.length === 0, `SR-2: لا حذف زائد لحقائق صحيحة (${overDeleted.length})${overDeleted.length ? ` — ${overDeleted.slice(0, 6).join(" | ")}` : ""}`);
+  assert(overDeleted.length === 0, `SR-2: لا حذف زائد لحقائق صحيحة (${overDeleted.length})${overDeleted.length ? ` — ${overDeleted.slice(0, 6).join(" | ")}` : ""}${retiredKeeps.length ? ` · مستثناة بمعيار 2026-09-15: ${retiredKeeps.join(" | ")}` : ""}`);
 }
 
 main().then(done);

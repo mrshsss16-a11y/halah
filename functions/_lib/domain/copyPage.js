@@ -16,6 +16,7 @@ import { dropAttachedClaims, dropPhotoLeaks, ATTACHED, otherItem } from "./copyN
 import { unsourcedClaims, fixSizeChartClosing } from "./copyClaims.js";
 import { unsourcedJudgment, stripJudgments, stripJudgmentWords, hasPraiseIdiom } from "./copyJudgments.js";
 import { propItemIn, sourcedPropItem } from "./copyParse.js";
+import { stripUnsourcedOccasions } from "./copyOccasion.js";
 
 // دعوة البيع داخل نص قصير (عنوان، نقطة، وسم): تُحذف الكلمة لا العنصر كله — «قميص رجالي كتان اطلبه الحين».
 const CTA_WORDS = /(?<!\p{L})(?:تسوقي|تسوّقي|اطلبي|اطلبيها|اطلبه|اطلبها|احصلي|سارعي|اقتنيها|احجزيها|احجزي|خذيها|كلمينا|راسلينا|الحقي(?:[ \t]+(?:ب|على)[ \t]*\p{L}+)?)(?:[ \t]+(?:الآن|الان|الحين|اليوم))?(?!\p{L})|(?<!\p{L})لا[ \t]+تفوتي(?!\p{L})|(?<!\p{L})(?:تبين|تبغين)[ \t]+تطلبين؟?/gu;
@@ -96,7 +97,7 @@ function polishProse(text, { name, sourceText, sizes, notes, category }) {
     .replace(/[ \t]*(?:ال)?(?:موضح|موضّح|موجود)[ \t]+(?:أدناه|ادناه|بالأسفل|في[ \t]+الأسفل)(?!\p{L})/gu, "")
     .trim();
   // جملة جدول المقاسات لعطر أو ساعة — بالأسئلة الشائعة أيضاً لا الوصف وحده (2026-09-13).
-  return fixSizeChartClosing(out, { name, category });
+  return fixSizeChartClosing(out, { name, category, sourceText });
 }
 
 // «بنطلون رجالي» لبنطلون نسائي بنقشة مورّدة (2026-09-14 01:03): جنس لم يذكره التاجر ولا تصنيفه — يُحذف من كل الحقول.
@@ -120,7 +121,7 @@ function polishShort(text, { name, sourceText, sizes, notes, category, keepLabel
   const raw = stripJudgmentWords(dropPhotoLeaks(String(text || "").replace(PLACEHOLDER_TOKEN, "").replace(PRICE_TOKEN, ""), name), sourceText);
   const t = fixLatinWords(dropForeignScript(keepLabels ? raw : fixNoteLabels(raw)), sourceText);
   const fixed = dropSleevesForBottoms(dropUnseenLength(fixSizeRange(fixColorAgreement(fixCommonGrammar(fixTrouserLength(t, name))), sizes), notes), name);
-  return fixSizeChartClosing(fixed, { name, category })
+  return fixSizeChartClosing(fixed, { name, category, sourceText })
     .replace(GENERAL_FILLER[0], "").replace(GENERAL_FILLER[1], "")
     .replace(CTA_WORDS, "")
     .replace(/[ \t]{2,}/g, " ")
@@ -163,7 +164,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   const cw = parsed.copywriting || (parsed.copywriting = {});
   const seo = parsed.seo || (parsed.seo = {});
 
-  cw.description = fixSizeChartClosing(withSizeChartLine(cut(polishProse(cw.description, ctx)), name, category), { name, category });
+  cw.description = fixSizeChartClosing(withSizeChartLine(cut(polishProse(cw.description, ctx)), name), { name, category, sourceText });
   cw.excerpt = cut(polishProse(cw.excerpt, ctx)).slice(0, 250);
   cw.whatsapp = cut(polishProse(cw.whatsapp, ctx));
   // «يا هلا! إطلالة رسمية. وش رايك فيها؟» — بقي تحية وسؤالاً بعد حذف الأحكام: يُبنى من النبذة بدل رسالة فارغة.
@@ -217,5 +218,6 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
       // مواصفة قطعة أخرى: «لون العباية: متعدد الألوان» بصفحة تنورة (2026-09-13). «حزام الكتف» لحقيبة جزء منها ويبقى.
       .filter((r) => r.key && r.value && !unsourced(`${r.key} ${r.value}`) && !unseenCut(`${r.key} ${r.value}`) && !propItemIn(r.key.replace(/^(?:لون|نوع|تصميم|شكل|مقاس|خامة|قماش|طول)[ \t]+/u, ""), name));
   }
-  return parsed;
+  // مناسبة لم يذكرها التاجر (معيار ٦.٢، 2026-09-15) — آخر خطوة كي لا تعيدها تصحيحات الحقول أعلاه.
+  return stripUnsourcedOccasions(parsed, { sourceText, name });
 }

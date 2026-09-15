@@ -25,7 +25,7 @@ async function main() {
   assert(neutral.every((t) => !unsourcedClaims(t, "").includes("NATURAL")) && unsourcedClaims("زيت طبيعي للشعر.", "").includes("NATURAL"), "CL2-3: «الخصر الطبيعي» و«إضاءة طبيعية» ليست ادعاءً، و«زيت طبيعي» ادعاء");
   {
     const p = polishPage({ seo: { title: "عباية سوداء", seoTitle: "عباية سوداء", metaDescription: "عباية سوداء بكم واسع." }, copywriting: { description: "عباية سوداء بكم واسع.", excerpt: "عباية سوداء.", whatsapp: "", highlights: [] }, faqs: [], tags: ["عباية سوداء", "عبايه سوداء", "عباية  سوداء", "عبايات يومية"] }, { name: "عباية سوداء", category: "عبايات" });
-    assert(p.tags.length === 2 && p.tags[0] === "عباية سوداء" && p.tags[1] === "عبايات يومية", `CL2-4: الوسوم بلا تكرار بعد تطبيع الحروف (${p.tags.join(" | ")})`);
+    assert(p.tags.length === 2 && p.tags[0] === "عباية سوداء" && p.tags[1] === "عبايات", `CL2-4: الوسوم بلا تكرار بعد تطبيع الحروف، و«يومية» لم يذكرها التاجر تُحذف من الوسم لا الوسم كله (معيار ٦.٢، 2026-09-15) (${p.tags.join(" | ")})`);
   }
 }
 

@@ -6,8 +6,10 @@ import { readFileSync, readdirSync } from "node:fs";
 import { createRunner } from "../_helpers.mjs";
 import { polishPage } from "../../functions/_lib/domain/copyPage.js";
 import { cleanDescription, cleanPublishedFields } from "../../functions/_lib/domain/copyParse.js";
-import { unsourcedClaims } from "../../functions/_lib/domain/copyClaims.js";
-import { findColorAgreement } from "../../functions/_lib/domain/copyPhrases.js";
+import { unsourcedClaims, fixSizeChartClosing } from "../../functions/_lib/domain/copyClaims.js";
+import { findColorAgreement, splitSentencesKeep, joinSentences } from "../../functions/_lib/domain/copyPhrases.js";
+import { stripJudgments, unsourcedJudgment } from "../../functions/_lib/domain/copyJudgments.js";
+import { dropUnsourcedOccasions } from "../../functions/_lib/domain/copyOccasion.js";
 import { ATTACHED, otherItem } from "../../functions/_lib/domain/copyNotes.js";
 
 const { assert, done } = createRunner("corpus-replay");
@@ -65,6 +67,14 @@ const CHECKS = {
     return null;
   }
 };
+// ما يحذفه المعيار عمداً (2026-09-15) لا يُحسب قِصَراً: إحالة جدول مقاسات لم يذكره التاجر (٦.٧)، ومعجم الحشو (٧.٥)،
+// ومناسبة لم يذكرها (٦.٢). الأساس = وصف الأرشيف بعد هذه الإزالات وحدها؛ الحذف الزائد من حراس آخرين يبقى مرصوداً.
+function standardBaseline(c) {
+  const src = c.sourceText;
+  const d = String(c.page?.copywriting?.description || "");
+  const noFiller = joinSentences(splitSentencesKeep(d).map((x) => ({ ...x, s: unsourcedJudgment(x.s, src) ? stripJudgments(x.s, { sourceText: src, name: c.name }) : x.s })));
+  return dropUnsourcedOccasions(fixSizeChartClosing(noFiller, { name: c.name, category: CATEGORY_AR[c.category] || c.category, sourceText: src }), src);
+}
 // عنوان سطر ملاحظات مسرّب بالنثر — مفاتيح جدول المواصفات («سطح القماش: مطفي») أسماء صحيحة لا تسريب.
 const NOTE_LABEL = /(?:الطابع العام|الطول والقصّة|الطول والقصة|سطح القماش)\s*:/u;
 
@@ -81,8 +91,8 @@ async function main() {
       }
       if (!field.startsWith("spec") && NOTE_LABEL.test(String(text))) violations.note_label.push(`${c.id}@${field}`);
     }
-    // وصف قصير بعد التنظيف عيب — إلا إن وصل الأرشيف قصيراً أصلاً، أو وثّقت الحالة سببه بـknownIssues (فقد سابق لا يستعيده التنظيف).
-    if (words(p.copywriting?.description) < 20 && words(c.page?.copywriting?.description) >= 20 && !c.knownIssues?.short_description) violations.short_description.push(`${c.id}: ${words(p.copywriting?.description)} كلمة`);
+    // وصف قصير بعد التنظيف عيب — إلا إن وصل الأرشيف قصيراً أصلاً (بعد إزالات المعيار العمدية)، أو وثّقت الحالة سببه بـknownIssues.
+    if (words(p.copywriting?.description) < 20 && words(standardBaseline(c)) >= 20 && !c.knownIssues?.short_description) violations.short_description.push(`${c.id}: ${words(p.copywriting?.description)} كلمة (الأساس ${words(standardBaseline(c))})`);
   }
   for (const [check, list] of Object.entries(violations)) {
     assert(list.length === 0, `CR-${check}: صفر مخالفة «${check}» على أرشيف التوليدات الحقيقية${list.length ? ` — ${list.slice(0, 4).join(" | ")}` : ""}`);
