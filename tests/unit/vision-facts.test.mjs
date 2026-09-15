@@ -130,7 +130,11 @@ async function main() {
     // فستان زيتي حقيقي 2026-09-14: جملة ثانية تعيد أربع حقائق بحشو طويل.
     const green = { copywriting: { description: "فستان ماكسي زيتي بقصّة واسعة. تظهر عليه تفاصيل سموك وكشكش مع نقشة مورّدة وسطح قماش مطفي، ليكون خياراً مناسباً للإطلالات النهارية. يُنسّق مع إكسسوارات بسيطة." } };
     applyVisionFacts(green, { color: "زيتي", length: "ماكسي", fit: "واسعة", waist: "مطاطي", neckline: "عالية", sleeves: "طويلة", details: ["سموك", "كشكش"], surface: "مطفي", pattern: "مورد", mood: "نهاري" }, { name: "فستان" });
-    assert(!/تظهر عليه تفاصيل/.test(green.copywriting.description) && /يُنسّق مع إكسسوارات بسيطة/.test(green.copywriting.description), `VFX-28: جملة تعيد ثلاث حقائق فأكثر بحشو طويل تُحذف، وجملة التنسيق تبقى («${green.copywriting.description}»)`);
+    assert(!/تظهر عليه تفاصيل/.test(green.copywriting.description) && /يكون خياراً مناسباً للإطلالات النهارية\./.test(green.copywriting.description) && /يُنسّق مع إكسسوارات بسيطة/.test(green.copywriting.description), `VFX-28: إعادة الحقائق تُحذف، وعبارة الاستخدام منها تبقى، وجملة التنسيق تبقى («${green.copywriting.description}»)`);
+    // فستان كاروهات حقيقي 2026-09-15: الوصف نزل ٥١ ⇒ ٣٤ كلمة لأن سطر الاستخدام حُذف مع إعادة الحقائق.
+    const plaid = { copywriting: { description: "فستان ميدي أحمر وأسود. يتميز بياقة عالية وأكمام طويلة مع درابيه، ويناسب الإطلالات اليومية." } };
+    applyVisionFacts(plaid, { color: "أحمر وأسود", length: "ميدي", fit: "بقصّة A", neckline: "عالية", sleeves: "طويلة", details: ["درابيه"], surface: "مطفي", pattern: "كاروهات", mood: "يومي" }, { name: "فستان" });
+    assert(/يناسب الإطلالات اليومية\./.test(plaid.copywriting.description) && !/يتميز بياقة عالية/.test(plaid.copywriting.description), `VFX-30: سطر الاستخدام يبقى بعد حذف إعادة الحقائق («${plaid.copywriting.description}»)`);
     const guide = structuredVisionBlock({ structured: true }, "فستان");
     assert(/لا «ميني» ما دامت الحافة قرب الركبة/.test(guide) && /«شفاف» إن ظهر الجلد أو البطانة عبر أي جزء/.test(guide), "VFX-29: توجيه الطول بموضع الحافة، والشفافية بأي جزء من القطعة");
     assert(/تطريز» خيوط بارزة/.test(structuredVisionBlock({ structured: true }, "فستان")) && /سموك/.test(structuredVisionBlock({ structured: true }, "فستان")), "VFX-27: توجيه قارئ الصورة يفرّق التطريز عن النقشة المطبوعة ويسمّي السموك");

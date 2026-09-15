@@ -270,7 +270,7 @@ export function applyVisionFacts(parsed, facts, { name = "" } = {}) {
     const echo = (s) => {
       const content = s.split(/\s+/).map(bareWord).filter((w) => w && !ECHO_STOP.has(w));
       const novel = content.filter((w) => !known.has(w) && !known.has(w.replace(/(?:ا|ه)$/u, "")));
-      return novel.length <= 1 || (content.length >= 4 && novel.length <= 3 && novel.length * 2 <= content.length) || repeatsFacts(s);
+      return novel.length <= 1 || (content.length >= 4 && novel.length <= 3 && novel.length * 2 <= content.length);
     };
     // «تظهر عليه تفاصيل سموك وكشكش مع نقشة مورّدة وسطح قماش مطفي، ليكون خياراً مناسباً…» (فستان زيتي 2026-09-14):
     // حشو كثير يخفي أن الجملة تعيد ثلاث حقائق فأكثر قالتها جملة الافتتاح — تكرار يُحذف مهما طال حشوه.
@@ -283,7 +283,18 @@ export function applyVisionFacts(parsed, facts, { name = "" } = {}) {
       const words = new Set(s.split(/\s+/).map(stem));
       return factStems.filter((ws) => ws.every((w) => words.has(w))).length >= 3;
     }
-    paras[0] = [sentences[0], ...sentences.slice(1).filter((s) => !echo(s))].join(" ");
+    // «يتميز بياقة عالية وأكمام طويلة مع درابيه، ويناسب الإطلالات اليومية.» (فستان كاروهات 2026-09-15): حذف الجملة كلها
+    // أسقط سطر الاستخدام الوحيد فنزل الوصف ٥١ ⇒ ٣٤ كلمة. الآن تبقى عبارة الاستخدام/التنسيق وحدها، وتُحذف إعادة الحقائق.
+    const USAGE = /(?:يناسب|تناسب|مناسب|يُنسّق|تُنسّق|ينسق|تنسق|يُلبس|تُلبس|يلبس|تلبس|للدوام|للمناسبات|للسهرات|إطلال|خيار)/u;
+    function usageClause(s) {
+      const clauses = s.replace(/[.!؟]\s*$/u, "").split(/،\s*|\s+(?=و(?:ي|ت|ل)\p{L})/u).map((c) => c.trim()).filter(Boolean);
+      const kept = clauses.filter((c) => USAGE.test(c) && !repeatsFacts(c));
+      if (!kept.length) return "";
+      const text = kept.join("، ").replace(/^(?:و|ف)(?=\p{L})/u, "").replace(/^ل(?=(?:ي|ت)\p{L})/u, "");
+      return `${text}.`;
+    }
+    // جملة تكرار (echo أو إعادة ٣ حقائق) تُقصّ لعبارة استخدامها إن وُجدت، وإلا تُحذف.
+    paras[0] = [sentences[0], ...sentences.slice(1).map((s) => (echo(s) || repeatsFacts(s) ? usageClause(s) : s)).filter(Boolean)].join(" ");
     cw.description = paras.filter((p) => p.trim()).join("\n\n");
   }
   const FACT_KEY = /(لون|طول|قص|خصر|ياق|اكمام|تفاصيل|سطح|نقش|طابع)/u;
