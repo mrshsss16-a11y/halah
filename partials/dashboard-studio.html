@@ -12,9 +12,9 @@
           <img id="copyAskImg" class="hidden w-10 h-10 rounded-lg object-contain bg-slate-50 border border-slate-200" referrerpolicy="no-referrer" alt=""/>
           <p id="copyAskName" class="text-sm font-black text-black truncate"></p>
         </div>
-        <label for="copyAskNote" class="block text-sm font-black text-black">وش يميز هالمنتج؟ <span class="text-[11px] text-slate-600 font-medium">(اختياري)</span></label>
+        <label for="copyAskNote" class="block text-sm font-black text-black">وش يميز هالمنتج؟ <span class="text-[13px] text-slate-600 font-medium">(اختياري)</span></label>
         <textarea id="copyAskNote" rows="2" maxlength="300" placeholder="مثال: قطن مصري ١٠٠٪، خياطة يدوية، مناسب للصيف — أو: عسل سدر جبلي من الباحة، محصول هالموسم" class="w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black"></textarea>
-        <p class="text-[11px] text-slate-600 font-medium">سطر واحد يكفي — ناخذه كمعلومة مؤكدة منك ونبني عليه الوصف، والصورة تكمل الباقي. تقدر تتركه فاضي.</p>
+        <p class="text-[13px] text-slate-600 font-medium">سطر واحد يكفي — ناخذه كمعلومة مؤكدة منك ونبني عليه الوصف، والصورة تكمل الباقي. تقدر تتركه فاضي.</p>
         <div class="flex flex-wrap gap-2">
           <button type="button" onclick="confirmCatalogItem()" class="sleek-btn-black px-5 py-2.5 rounded-xl text-sm font-bold">اكتب الوصف الآن</button>
           <button type="button" onclick="closeCopyPanel()" class="sleek-btn-white px-4 py-2.5 rounded-xl text-sm font-bold">إلغاء</button>
@@ -25,7 +25,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-2xl text-black animate-spin" aria-hidden="true" focusable="false"><path d="M12 3V6" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M12 18V21" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M21 12L18 12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M6 12L3 12" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M18.3635 5.63672L16.2422 7.75804" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M7.75804 16.2422L5.63672 18.3635" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M18.3635 18.3635L16.2422 16.2422" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/><path d="M7.75804 7.75804L5.63672 5.63672" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/></svg>
         <div>
           <p id="copyPendingStage" class="text-sm font-black text-black">الخطوة ١ من ٢ — تحليل صورة المنتج…</p>
-          <p id="copyPendingName" class="text-[11px] text-slate-600 font-medium"></p>
+          <p id="copyPendingName" class="text-[13px] text-slate-600 font-medium"></p>
         </div>
       </div>
 
@@ -36,14 +36,14 @@
               <img id="copyResultImg" class="hidden w-10 h-10 rounded-lg object-contain bg-slate-50 border border-slate-200" referrerpolicy="no-referrer" alt=""/>
               <div class="min-w-0">
                 <h3 class="text-sm font-black text-black">راجع الوصف — عدّله إن حبيت، ثم اعتمد</h3>
-                <p id="copyResultName" class="text-[11px] text-slate-600 font-medium truncate"></p>
+                <p id="copyResultName" class="text-[13px] text-slate-600 font-medium truncate"></p>
               </div>
             </div>
             <button type="button" onclick="closeCopyPanel()" class="text-slate-400 hover:text-black order-last" title="إغلاق" aria-label="إغلاق لوحة الوصف">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M18 6L6.00081 17.9992M17.9992 18L6 6.00085" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
             </button>
-            <span id="copyNoImageNote" class="hidden text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">بلا صورة — الوصف مبني على الاسم والوصف الحالي فقط</span>
-            <button onclick="copyToClipboard('outDescription')" class="text-[11px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
+            <span id="copyNoImageNote" class="hidden text-[13px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">بلا صورة — الوصف مبني على الاسم والوصف الحالي فقط</span>
+            <button onclick="copyToClipboard('outDescription')" class="text-[13px] font-bold text-slate-600 hover:text-black underline">نسخ</button>
           </div>
           <!-- تنبيه تصنيف: هالة رأت نوعاً يخالف تصنيف المتجر. اقتراح لا تنفيذ —
                التصنيف يُغيَّر من سلة بيد التاجر. -->
@@ -52,29 +52,29 @@
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-sm align-middle" aria-hidden="true" focusable="false"><circle cx="1.5" cy="1.5" r="1.5" transform="matrix(1 0 0 -1 16 8.00024)" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M2.77423 11.1439C1.77108 12.2643 1.7495 13.9546 2.67016 15.1437C4.49711 17.5033 6.49674 19.5029 8.85633 21.3298C10.0454 22.2505 11.7357 22.2289 12.8561 21.2258C15.8979 18.5022 18.6835 15.6559 21.3719 12.5279C21.6377 12.2187 21.8039 11.8397 21.8412 11.4336C22.0062 9.63798 22.3452 4.46467 20.9403 3.05974C19.5353 1.65481 14.362 1.99377 12.5664 2.15876C12.1603 2.19608 11.7813 2.36233 11.472 2.62811C8.34412 5.31646 5.49781 8.10211 2.77423 11.1439Z" stroke="currentColor" stroke-width="1.5"/><path d="M7.00002 14.0002L10 17.0002" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
               <span id="categoryMismatchText"></span>
             </p>
-            <p class="text-[11px] text-amber-800 font-medium">
+            <p class="text-[13px] text-amber-800 font-medium">
               تصنيف غير مطابق يضعف تصفح متجرك وفلترته ونتائج البحث. التصنيفات الأخرى (عروض، وصل حديثاً…) تبقى كما هي.
             </p>
             <div class="flex items-center gap-2 flex-wrap">
-              <button id="applyCategoryBtn" onclick="applySuggestedCategory()" class="sleek-btn-black px-3.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5">
+              <button id="applyCategoryBtn" onclick="applySuggestedCategory()" class="sleek-btn-black px-3.5 py-1.5 rounded-lg text-[13px] font-bold flex items-center gap-1.5">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-sm" aria-hidden="true" focusable="false"><path d="M22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M8 12.5L10.5 15L16 9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
                 <span id="applyCategoryBtnText">طبّق التصنيف على سلة</span>
               </button>
-              <span id="applyCategoryMsg" class="text-[11px] font-bold text-amber-900"></span>
+              <span id="applyCategoryMsg" class="text-[13px] font-bold text-amber-900"></span>
             </div>
           </div>
 
           <div class="space-y-1.5">
-            <label for="outDescription" class="flex items-center gap-1.5 text-[11px] font-bold text-black">
+            <label for="outDescription" class="flex items-center gap-1.5 text-[13px] font-bold text-black">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-sm" aria-hidden="true" focusable="false"><path d="M15.2141 5.98239L16.6158 4.58063C17.39 3.80646 18.6452 3.80646 19.4194 4.58063C20.1935 5.3548 20.1935 6.60998 19.4194 7.38415L18.0176 8.78591M15.2141 5.98239L6.98023 14.2163C5.93493 15.2616 5.41226 15.7842 5.05637 16.4211C4.70047 17.058 4.3424 18.5619 4 20C5.43809 19.6576 6.94199 19.2995 7.57889 18.9436C8.21579 18.5877 8.73844 18.0651 9.78375 17.0198L18.0176 8.78591M15.2141 5.98239L18.0176 8.78591" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/><path d="M11 20H17" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/></svg>
               تقدر تعدّل هنا
             </label>
             <textarea id="outDescription" rows="7" class="w-full text-xs leading-relaxed text-black whitespace-pre-wrap bg-white border-2 border-slate-400 rounded-xl p-3 focus:outline-none focus:border-black"></textarea>
           </div>
-          <p class="text-[11px] text-slate-500">هذا مسودة — اللي يُنشر بسلة هو النص المكتوب هنا بالضبط وقت الضغط على «اعتمد وانشر».</p>
+          <p class="text-[13px] text-slate-500">هذا مسودة — اللي يُنشر بسلة هو النص المكتوب هنا بالضبط وقت الضغط على «اعتمد وانشر».</p>
 
           <div class="pt-3 border-t border-slate-200 space-y-2">
-            <span class="text-[11px] font-bold text-slate-600">نقاط البيع</span>
+            <span class="text-[13px] font-bold text-slate-600">نقاط البيع</span>
             <ul id="outHighlights" class="text-xs text-black space-y-1 list-disc pr-5"></ul>
             <!-- كل ما يُنشر مع الوصف يُرى قبل «اعتمد وانشر» (2026-09-13): الأسئلة والنبذة وحقلا البحث كانت تُنشر دون عرض. -->
             <div id="outPublishExtras"></div>
@@ -95,7 +95,7 @@
               <span>أعد التوليد</span>
             </button>
           </div>
-          <div id="publishTargetLine" class="hidden text-[11px] font-bold text-black bg-slate-100 border border-slate-300 rounded-xl px-3 py-2"></div>
+          <div id="publishTargetLine" class="hidden text-[13px] font-bold text-black bg-slate-100 border border-slate-300 rounded-xl px-3 py-2"></div>
           <div id="publishFeedback" class="hidden p-3 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
 
         <!-- السيو ونسخة واتساب تفاصيل ثانوية: كانت تفصل بين الوصف وزر النشر

@@ -58,13 +58,16 @@ async function main() {
     && /id="rmApproveAll"/.test(modals) && /id="rmApprove"/.test(modals) && /id="rmReject"/.test(modals) && /id="rmSkip"/.test(modals) && /id="acctModal"/.test(modals),
     "RM-1: نافذة واحدة بمرحلتي «تجهيز» و«مراجعة»، فيها رفض وتخطي واعتماد و«اعتمد الكل» — ونافذة الحساب باقية");
   assert(/قبل — الوصف الحالي على سلة/.test(rm) && /بعد — صفحة المنتج الجديدة/.test(rm) && /sectionsHtml\(r\)/.test(rm), "RM-2: «قبل» الوصف الحالي بجانب «بعد» صفحة المنتج الجديدة بكل أقسامها");
+  assert(/<div id="rmActions" class="hidden rm-actions[^"]*">[\s\S]{0,200}<div class="rm-status[^"]*">[\s\S]{0,120}id="rmMsg"[\s\S]{0,120}id="rmSaveState"/.test(modals)
+    && /<div class="flex items-center gap-2">[\s\S]{0,400}id="rmReject"[\s\S]{0,300}id="rmSkip"[\s\S]{0,300}id="rmApprove"[\s\S]{0,300}<details class="rm-more[^"]*">[\s\S]{0,500}id="rmApproveAll"[\s\S]{0,300}id="rmToProgress"/.test(modals),
+    "RM-1b: شريط إجراءات بصف واحد (رفض·تخطي·اعتمد) وقائمة ⋯ تحوي «اعتمد الكل» و«تابع التجهيز»، و#rmMsg/#rmSaveState داخل .rm-status");
   assert(/postReviewDecide\(\{ action, ids: \[r\.id\] \}\)/.test(rm) && !/api\/store\/publish/.test(rm) && /action: "update", id: r\.id, fields/.test(rm)
     && /if \(action === "approve" && !\(await saveNow\(\)\)\) return;/.test(rm),
     "RM-3: القرار بنفس نقطة المراجعة، وكل الحقول المعدّلة تُحفظ قبل الاعتماد");
   assert(/reviewModalApproveAll[\s\S]{0,400}confirmAction\(/.test(rm) && /«ينشر» ما تُنشر/.test(rm) && /اللي لسه تنكتب ما تدخل/.test(rm),
     "RM-4: «اعتمد الكل» يمر بتأكيد يقول بالضبط ما يُنشر وما لا يُنشر");
-  assert(/escHtml\(r\.imageUrl\)/.test(rm) && /escHtml\(before\)/.test(rm) && /escHtml\(r\.description/.test(rs) && /escHtml\(text\)/.test(rs) && /escHtml\(q\)/.test(rs) && /escHtml\(key\)/.test(rs) && /escHtml\(meta\)/.test(rs),
-    "RM-5: كل نص من سلة أو النموذج مهرَّب قبل HTML — بما فيه قيم حقول التحرير");
+  assert(/escHtml\(r\.imageUrl\)/.test(rm) && /safeDescriptionHtml\(r\.currentDescription\)/.test(rm) && /escHtml\(r\.description/.test(rs) && /escHtml\(text\)/.test(rs) && /escHtml\(q\)/.test(rs) && /escHtml\(key\)/.test(rs) && /escHtml\(meta\)/.test(rs),
+    "RM-5: كل نص من سلة أو النموذج مهرَّب قبل HTML أو مصفّى بقائمة سماح («قبل» عبر safeDescriptionHtml) — بما فيه قيم حقول التحرير");
   assert(/openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll/.test(main) && /startCatalogGenerate, openBulkProgress/.test(main),
     "RM-6: دوال النافذة وتقدّم التوليد منشورة على window");
   const reviewView = (() => { try { return read("../../functions/_lib/domain/reviewView.js"); } catch { return ""; } })();

@@ -10,7 +10,7 @@
 import { confirmAction } from "./embedded.js";
 import { postReviewList, postReviewDecide } from "./api.js";
 import { setReviewCounts, loadReview, maybeShowFeedback } from "./review.js";
-import { sectionsHtml, plainText, updateSeoPreview, syncToggle, collectFields, mergeFields, emptyRow } from "./reviewSections.js";
+import { sectionsHtml, safeDescriptionHtml, updateSeoPreview, syncToggle, collectFields, mergeFields, emptyRow } from "./reviewSections.js";
 
 const escHtml = window.escHtml;
 const $ = (id) => document.getElementById(id);
@@ -110,20 +110,17 @@ function productHeadHtml(r) {
   const img = r.imageUrl
     ? `<img src="${escHtml(r.imageUrl)}" alt="" referrerpolicy="no-referrer" class="w-full h-full object-contain" onerror="this.remove()">`
     : "";
-  return `<span class="shrink-0 w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">${img}</span>
+  return `<span class="rm-thumb shrink-0 w-14 h-14 rounded-xl bg-slate-50 border border-slate-200 overflow-hidden flex items-center justify-center">${img}</span>
     <span class="min-w-0">
       <span class="block text-base font-black text-black truncate">${escHtml(r.name || r.sku || "منتج بلا اسم")}</span>
-      <span class="block text-xs text-slate-500 truncate" dir="auto"><bdi>${escHtml(r.sku || "")}</bdi>${r.category ? " · <bdi>" + escHtml(r.category) + "</bdi>" : ""}</span>
+      <span class="rm-sub-line block text-xs meta-12 text-slate-500 truncate" dir="auto"><bdi>${escHtml(r.sku || "")}</bdi>${r.category ? " · <bdi>" + escHtml(r.category) + "</bdi>" : ""}</span>
     </span>`;
 }
 
 function beforeHtml(r) {
-  const before = plainText(r.currentDescription);
+  const safe = safeDescriptionHtml(r.currentDescription);
   const wide = window.matchMedia?.("(min-width: 768px)").matches;
-  return `<details class="rounded-2xl border border-slate-200 bg-slate-50 p-4"${wide ? " open" : ""}>
-    <summary class="cursor-pointer text-sm font-bold text-slate-600">قبل — الوصف الحالي على سلة</summary>
-    <div class="mt-3 max-h-72 overflow-y-auto text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">${before ? escHtml(before) : "بلا وصف حالي"}</div>
-  </details>`;
+  return `<details class="rm-before rounded-2xl border border-slate-200 bg-slate-50 p-4"${wide ? " open" : ""}><summary class="cursor-pointer text-sm font-bold text-slate-600">قبل — الوصف الحالي على سلة</summary><div class="rm-before-body mt-3 text-sm text-slate-600 leading-relaxed">${safe || "بلا وصف حالي"}</div></details>`;
 }
 
 function renderStep() {
@@ -145,14 +142,16 @@ function renderStep() {
   $("rmPrev").disabled = M.index === 0;
   $("rmNext").disabled = M.index >= total - 1;
   $("rmApproveAllCount").innerText = String(Math.max(M.pendingTotal, total));
-  body.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 items-start">
-      <aside class="md:sticky md:top-0">${beforeHtml(r)}</aside>
-      <div class="space-y-3">
+  body.innerHTML = `<div class="cq-box"><div class="rm-grid2 grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-4 items-start">
+      <aside class="min-w-0 md:sticky md:top-0">${beforeHtml(r)}</aside>
+      <div class="min-w-0 space-y-3">
         <h3 class="text-sm font-black text-black">بعد — صفحة المنتج الجديدة</h3>
         ${sectionsHtml(r)}
       </div>
-    </div>`;
+    </div></div>`;
   updateSeoPreview(body, r.name);
+  // 2026-09-17: تصفير أي قائمة «rm-more» مفتوحة عند إعادة الرسم — لا تبقى مفتوحة على منتج آخر.
+  body.querySelectorAll("details.rm-more[open]").forEach((d) => { d.open = false; });
   body.scrollTop = 0;
 }
 
@@ -340,6 +339,12 @@ export async function closeReviewModal() {
 }
 
 async function onPanelClick(e) {
+  // 2026-09-17: النقر خارج قائمة «rm-more» المفتوحة، أو على زر داخل نافذتها
+  // المنبثقة، يغلقها — بدل ما تبقى مفتوحة فوق باقي الأزرار.
+  const openMore = $("rmPanel")?.querySelector("details.rm-more[open]");
+  if (openMore && (!e.target.closest("details.rm-more") || e.target.closest(".rm-more-pop button"))) {
+    openMore.open = false;
+  }
   const btn = e.target.closest("[data-rm-action]");
   if (!btn) return;
   const action = btn.dataset.rmAction;
@@ -395,6 +400,15 @@ function trapFocus(e) {
 // Esc يغلق، Tab محبوس، والأسهم تتنقل خارج حقول الكتابة — اتجاه الصفحة من اليمين لليسار: ← التالي، → السابق.
 document.addEventListener("keydown", (e) => {
   if (!modalOpen()) return;
+  // 2026-09-17: Escape أثناء فتح قائمة «rm-more» يغلق القائمة فقط ويرجع التركيز
+  // لزر فتحها، بدل إغلاق النافذة كلها فوق رأس التاجر.
+  const openMore = $("rmPanel")?.querySelector("details.rm-more[open]");
+  if (e.key === "Escape" && openMore) {
+    e.preventDefault();
+    openMore.open = false;
+    openMore.querySelector("summary")?.focus();
+    return;
+  }
   if (e.key === "Escape") { e.preventDefault(); closeReviewModal(); return; }
   if (e.key === "Tab") { trapFocus(e); return; }
   if (M.phase !== "review" || e.target?.closest?.("input, textarea, select, [contenteditable]")) return;

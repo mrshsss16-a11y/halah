@@ -67,7 +67,7 @@ export function showPublishSuccess(revertAvailable, sku, onRevert) {
   if (revertAvailable && sku) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "block text-[11px] font-bold text-rose-700 underline";
+    btn.className = "block text-[13px] font-bold text-rose-700 underline";
     btn.innerText = "تراجع — رجّع الأصل";
     btn.dataset.revertSku = sku;
     btn.onclick = () => onRevert(btn.dataset.revertSku);

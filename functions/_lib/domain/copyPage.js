@@ -37,6 +37,100 @@ const GENERAL_FILLER = [
 const words = (t) => String(t || "").split(/\s+/).filter(Boolean).length;
 const claimsOtherItem = (t, name, sourceText = "") => ATTACHED.test(String(t || "")) && otherItem(t, name) && !sourcedPropItem(t, name, sourceText);
 
+// ── تكرار الكلمة المفتاحية (COPY_STANDARD §5.2/§7.4 C10(ب)، 2026-09-16) ─────────────────
+//
+// «تنورة ميدي» — نوع المنتج وصفته الرئيسة كما وردا بـseo.title — تكررت 6 مرات على صفحة
+// حقيقية بين الوصف والنقاط والأسئلة الشائعة. المعيار يسمح بثلاث ورودات كحدّ أقصى بالمنشور
+// كاملاً؛ ما بعدها يُستبدل بضمير أو صيغة أقصر («تنورة ميدي» ⇐ «التنورة») بلا مساس بالجملة
+// الأولى من الوصف ولا بعنوان السيو — أول ثلاث ورودات هي ما يبقى بلفظه الكامل.
+const normKw = (t) => String(t || "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي");
+const MAX_KEYWORD_REPEATS = 3;
+// طابق التهجئة الفعلية بالنص (لا صيغتها المطبَّعة) وإلا فشلت المطابقة على أي كلمة بها «ة» أو «ى» —
+// «تنورة» تطبّع إلى «تنوره» ولا ترد بالنص المنشور أبداً بهذا الرسم (خطأ حقيقي ظهر أول تشغيل للاختبار).
+function primaryKeywordRegex(seoTitle, name) {
+  const tokens = String(seoTitle || name || "").trim().split(/\s+/).filter(Boolean).map((w) => w.replace(/^ال/, ""));
+  const type = tokens[0];
+  if (!type) return null;
+  const attr = tokens[1] || "";
+  const esc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return { type, re: new RegExp(`(?<!\\p{L})(و|ب|ل|ف)?(?:ال)?${esc(type)}${attr ? `(?:[ \\t]+(?:ال)?${esc(attr)})?` : ""}(?!\\p{L})`, "gu") };
+}
+/** أول جملة تامة من نص، وبقيّته — لاستثناء الجملة الأولى من إعادة الكتابة مع احتسابها بالسقف. */
+function splitFirstSentence(text) {
+  const t = String(text || "");
+  const m = t.match(/^(.+?[.!؟])(\s|$)/u);
+  const head = m ? m[1] : t;
+  return { head, rest: t.slice(head.length) };
+}
+/**
+ * تُحدّ ورودات الكلمة المفتاحية الرئيسة إلى ٣ عبر الوصف والنقاط والأسئلة الشائعة معاً
+ * (بترتيب النشر نفسه)؛ ما بعد الثالثة يُستبدل بـ«ال» + نوع المنتج وحده، محافظةً على أي
+ * حرف عطف/جر ملتصق («و»/«ب»/«ل»/«ف»).
+ */
+function capKeywordRepetition(parsed, { name } = {}) {
+  const seo = parsed.seo || {};
+  const kw = primaryKeywordRegex(seo.title, name);
+  if (!kw) return parsed;
+  let count = 0;
+  const rewrite = (text) => {
+    if (typeof text !== "string" || !text) return text;
+    return text.replace(kw.re, (m0, prefix) => {
+      count += 1;
+      return count > MAX_KEYWORD_REPEATS ? `${prefix || ""}ال${kw.type}` : m0;
+    });
+  };
+  const cw = parsed.copywriting || {};
+  if (typeof cw.description === "string") {
+    // الجملة الأولى من الوصف تُحتسب بالسقف لكن لا تُعاد كتابتها أبداً (معيار C10(ب)).
+    const { head, rest } = splitFirstSentence(cw.description);
+    count += (head.match(kw.re) || []).length;
+    cw.description = head + rewrite(rest);
+  }
+  if (Array.isArray(cw.highlights)) cw.highlights = cw.highlights.map(rewrite);
+  if (Array.isArray(parsed.faqs)) {
+    parsed.faqs = parsed.faqs.map((f) => (f ? { ...f, q: rewrite(f.q), a: rewrite(f.a) } : f));
+  }
+  return parsed;
+}
+
+// ── ازدواج النبذة مع افتتاحية الوصف (COPY_STANDARD §7.4 C8، 2026-09-16) ─────────────────
+//
+// نبذة حقيقية: افتتاحية الوصف «فستان ميدي بيج بقصّة واسعة وياقة دائرية وأكمام واسعة، بطيّات
+// بليسيه ودانتيل وقماش مطفي.» والنبذة «فستان ميدي بقصّة واسعة ولون بيج، مع ياقة دائرية
+// وأكمام واسعة وتفاصيل بليسيه ودانتيل. متوفر بالزيتي والبيج…» — جملتها الأولى تكرار شبه
+// تام لافتتاحية الوصف ولا تضيف شيئاً؛ المعلومة الجديدة (الألوان) مدفونة بجملة ثانية.
+// تطابق التوكنز المطبَّعة (بلا تشكيل/همزات موحّدة، وبلا «و/ب/ل/ف» العطف الملتصقة ولا «ال» التعريف —
+// وإلا فالجملتان الحقيقيتان أعلاه تُحسبان تقاطعاً ضعيفاً رغم كونهما إعادة صياغة صريحة، لأن العطف
+// يقع أحياناً قبل «ياقة» وأحياناً قبل «قصّة» بلا فارق بالمعنى) ≥ ٧٠٪ من نسبة التقاطع/أصغر المجموعتين
+// (overlap coefficient — أنسب من تقاطع/اتحاد لجملتين بطولين متفاوتين قليلاً) = ازدواج. حينها تتقدّم أول
+// جملة لاحقة لا تتداخل بالافتتاحية (انظر enforceExcerptDistinct)؛ فإن لم توجد جملة لاحقة أصلاً أو لم توجد
+// معلومة جديدة بينها، تبقى النبذة كما هي — لا مجازفة بتفكيكها كلمة كلمة وكسر نحوها.
+const tokenSet = (t) => new Set(normKw(t).replace(/[^\p{L}\p{N}\s]/gu, " ").split(/\s+/)
+  .map((w) => w.replace(/^(?:و|ب|ل|ف)(?=\p{L}{3,})/u, "").replace(/^ال(?=\p{L}{2,})/u, ""))
+  .filter(Boolean));
+function tokenOverlapRatio(a, b) {
+  const A = tokenSet(a), B = tokenSet(b);
+  if (!A.size || !B.size) return 0;
+  let inter = 0;
+  for (const w of A) if (B.has(w)) inter += 1;
+  return inter / Math.min(A.size, B.size);
+}
+const DUPLICATE_OVERLAP = 0.7;
+// نطاق محافظ عمداً (2026-09-16): نبذ حقيقية كثيرة بجملة واحدة تعيد حقائق الافتتاحية نفسها بصياغة مصححة
+// نحوياً («…سطحها اللامع.» ⇒ «…وسطحها لامع.») وهذا مقبول ومتوقَّع بالكود القائم — لا تمسّه هذه القاعدة
+// إطلاقاً. تتدخل فقط حين تحوي النبذة جملة **تامة** لاحقة لا تتداخل بالافتتاحية (معلومة حقيقية جديدة
+// كالألوان بالعيّنة الحقيقية أعلاه) بينما جملتها الأولى تكرار شبه تام لتلك الافتتاحية — عندها تتقدّم
+// الجملة الجديدة أول النبذة وتتبعها الجملة المكرَّرة (إعادة ترتيب لا حذف، فلا يضيع سياقها).
+function enforceExcerptDistinct(excerpt, description) {
+  const opening = splitFirstSentence(description).head.trim();
+  const sentences = splitSentencesKeep(excerpt).map((x) => x.s).filter(Boolean);
+  if (!opening || sentences.length < 2 || tokenOverlapRatio(sentences[0], opening) < DUPLICATE_OVERLAP) return excerpt;
+  const rest = sentences.slice(1);
+  const fresh = rest.find((s) => tokenOverlapRatio(s, opening) < 0.5);
+  if (!fresh) return excerpt;
+  return [fresh, sentences[0], ...rest.filter((s) => s !== fresh)].join(" ").trim();
+}
+
 // ── تنظيف آلي لصفحة كتبها نموذج أضعف (تنورة 2026-09-13 01:01، Cloudflare) ─────────────────────────
 const normKey = (t) => String(t || "").replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 // نبذة «…لامع. متوفرة… تنورة سوداء ميدي بقصّة واسعة… لامع.» كررت جملتها الأولى داخل الحقل نفسه.
@@ -167,7 +261,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
   const seo = parsed.seo || (parsed.seo = {});
 
   cw.description = fixSizeChartClosing(withSizeChartLine(cut(polishProse(cw.description, ctx)), name), { name, category, sourceText });
-  cw.excerpt = cut(polishProse(cw.excerpt, ctx)).slice(0, 250);
+  cw.excerpt = enforceExcerptDistinct(cut(polishProse(cw.excerpt, ctx)).slice(0, 250), cw.description);
   cw.whatsapp = cut(polishProse(cw.whatsapp, ctx));
   // «يا هلا! إطلالة رسمية. وش رايك فيها؟» — بقي تحية وسؤالاً بعد حذف الأحكام: يُبنى من النبذة بدل رسالة فارغة.
   const whatsappBody = cw.whatsapp.replace(/(?<!\p{L})(?:يا[ \t]+هلا|هلا|أهلاً|اهلا|مرحبا|وش[ \t]+رايك[ \t]+فيها|وش[ \t]+رأيك[ \t]+فيها|إطلالة[ \t]+رسمية)(?!\p{L})/gu, "");
@@ -221,5 +315,7 @@ export function polishPage(parsed, { name = "", sourceText = "", notes = "", cat
       .filter((r) => r.key && r.value && !unsourced(`${r.key} ${r.value}`) && !unseenCut(`${r.key} ${r.value}`) && !propItemIn(r.key.replace(/^(?:لون|نوع|تصميم|شكل|مقاس|خامة|قماش|طول)[ \t]+/u, ""), name));
   }
   // مناسبة لم يذكرها التاجر (معيار ٦.٢، 2026-09-15) — آخر خطوة كي لا تعيدها تصحيحات الحقول أعلاه.
-  return stripUnsourcedOccasions(parsed, { sourceText, name });
+  const withOccasion = stripUnsourcedOccasions(parsed, { sourceText, name });
+  // سقف التكرار (معيار C10(ب)) آخر خطوة أيضاً: يُحتسب على النص المنشور فعلياً بعد كل حذف سابق.
+  return capKeywordRepetition(withOccasion, { name });
 }

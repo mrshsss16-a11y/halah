@@ -10,15 +10,55 @@ export const SEO_TITLE_MAX = 60;
 export const META_MAX = 160;
 const LIMITS = { highlights: 8, faqs: 8, specsTable: 15 };
 
-/** نص عادي من HTML الوصف الحالي على سلة — للعرض المضغوط في «قبل». */
-export function plainText(html) {
-  return String(html || "")
-    .replace(/<\/(?:p|li|h\d|div)>|<br\s*\/?>/gi, "\n")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n\s*\n+/g, "\n\n")
-    .trim();
+// HTML للقراءة فقط من وصف سلة الحالي («قبل») — عناصر بقائمة سماح وبلا أي خصائص (§3 DESIGN_SPEC).
+// script/style/iframe/… تُزال كاملة، وأي وسم آخر خارج القائمة يُفكّ (يبقى محتواه لا وسمه)، بلا أي خاصية HTML.
+const ALLOWED_TAGS = new Set(["P", "BR", "UL", "OL", "LI", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "STRONG", "EM", "B", "I"]);
+const STRIP_TAGS = ["script", "style", "iframe", "object", "embed", "link", "meta", "svg", "form", "input"];
+
+function sanitizeWithDom(html) {
+  const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
+  doc.querySelectorAll(STRIP_TAGS.join(",")).forEach((n) => n.remove());
+  // 2026-09-17: تعليقات HTML (<!-- ... -->) قد تُستغل لتهريب نص غير مقصود عبر
+  // شرط conditional comments بمتصفحات قديمة — تُزال قبل المشي على العناصر،
+  // مطابقةً لمسار sanitizeWithoutDom الذي يحذفها بالفعل.
+  const commentIter = doc.createNodeIterator(doc.body, NodeFilter.SHOW_COMMENT);
+  const comments = [];
+  let c;
+  while ((c = commentIter.nextNode())) comments.push(c);
+  comments.forEach((n) => n.remove());
+  const walk = (node) => {
+    [...node.children].forEach((el) => {
+      walk(el);
+      [...el.attributes].forEach((a) => el.removeAttribute(a.name));
+      if (!ALLOWED_TAGS.has(el.tagName)) el.replaceWith(...el.childNodes);
+    });
+  };
+  walk(doc.body);
+  return doc.body.innerHTML;
+}
+
+/** مسار بديل بلا DOM (بيئة Node بلا DOMParser، مثل اختبارات الوحدة) — نفس القواعد بمعالجة نصية. */
+function sanitizeWithoutDom(html) {
+  let out = String(html || "");
+  out = out.replace(/<!--[\s\S]*?-->/g, "");
+  for (const tag of STRIP_TAGS) {
+    const paired = new RegExp(`<${tag}\\b[^>]*>[\\s\\S]*?<\\/${tag}\\s*>`, "gi");
+    const lone = new RegExp(`<${tag}\\b[^>]*\\/?>`, "gi");
+    out = out.replace(paired, "").replace(lone, "");
+  }
+  out = out.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*\/?>/g, (m, tag) => {
+    const closing = m.startsWith("</");
+    const T = tag.toUpperCase();
+    if (!ALLOWED_TAGS.has(T)) return "";
+    return closing ? `</${tag.toLowerCase()}>` : `<${tag.toLowerCase()}>`;
+  });
+  return out;
+}
+
+/** يحوّل وصف سلة الحالي («قبل») إلى HTML آمن للعرض — بلا سكربتات ولا خصائص ولا وسوم خارج القائمة. */
+export function safeDescriptionHtml(html) {
+  if (typeof DOMParser !== "undefined") return sanitizeWithDom(html);
+  return sanitizeWithoutDom(html);
 }
 
 const INPUT = "w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-black leading-relaxed focus:outline-none focus:border-slate-400";

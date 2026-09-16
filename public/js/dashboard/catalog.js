@@ -193,12 +193,12 @@ export function catalogCard(it, key) {
     : "";
   const badge = it.hasDescription
     ? ""
-    : '<span class="absolute top-2 left-2 bg-black text-white text-[10px] font-bold px-2 py-0.5 rounded-full">بلا وصف</span>';
+    : '<span class="absolute top-2 left-2 bg-black text-white text-xs meta-12 font-bold px-2 py-0.5 rounded-full">بلا وصف</span>';
   // بلا SKU = خارج التوليد الجماعي فعلياً (الوظيفة تعرّف صفوفها بالـSKU) —
   // بطاقة صادقة تقول ذلك بدل مربع اختيار غائب بلا تفسير.
   const skuBadge = it.sku
     ? ""
-    : '<span class="absolute top-2 right-2 bg-amber-700 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" title="بلا SKU — لا يدخل التوليد الجماعي">بلا SKU</span>';
+    : '<span class="absolute top-2 right-2 bg-amber-700 text-white text-xs meta-12 font-bold px-2 py-0.5 rounded-full" title="بلا SKU — لا يدخل التوليد الجماعي">بلا SKU</span>';
   // أيقونة «بلا صورة» قطعة مبنيّة داخلياً من ثوابت (لا نص من سلة) — تُسمّى كمتغيّر
   // مثل img/badge ليبقى حارس CATUI-12 صارماً على كل ما عداها.
   const noImageIcon = iconSvg("image_not_supported", "text-3xl text-slate-400");
@@ -214,7 +214,7 @@ export function catalogCard(it, key) {
      </div>
      <div class="p-2.5 space-y-1">
        <div class="text-xs font-bold text-black leading-snug truncate" title="${escHtml(it.name)}">${escHtml(it.name)}</div>
-       <div class="text-[11px] text-slate-500">${escHtml(it.price || "")}${it.category ? " · " + escHtml(it.category) : ""}</div>
+       <div class="text-xs meta-12 text-slate-500">${escHtml(it.price || "")}${it.category ? " · " + escHtml(it.category) : ""}</div>
      </div>`;
 
   card.addEventListener("click", () => useCatalogItem(key));
@@ -356,7 +356,9 @@ function askCatalogItemNote(it) {
   const note = document.getElementById("copyAskNote");
   note.value = "";
   // textContent لا innerHTML — الاسم والرابط من سلة.
-  document.getElementById("copyAskName").textContent = it.name || "";
+  const askNameEl = document.getElementById("copyAskName");
+  askNameEl.textContent = it.name || "";
+  askNameEl.title = it.name || "";
   const img = document.getElementById("copyAskImg");
   if (it.imageUrl) { img.src = it.imageUrl; img.classList.remove("hidden"); } else img.classList.add("hidden");
   const card = document.getElementById("copyAsk");
@@ -407,7 +409,7 @@ export function openCopyPanel(it) {
     else img.classList.add("hidden");
   }
   const rName = document.getElementById("copyResultName");
-  if (rName) rName.innerText = it?.name || "";
+  if (rName) { rName.innerText = it?.name || ""; rName.title = it?.name || ""; }
 }
 
 /** إغلاق اللوحة — الشبكة تبقى كما هي، لا إعادة تحميل. */

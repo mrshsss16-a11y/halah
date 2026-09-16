@@ -48,7 +48,7 @@ export function publishExtras(r) {
     r.excerpt ? `تحت اسم المنتج: ${escHtml(r.excerpt)}` : ""
   ].filter(Boolean).join("<br>");
   if (!hl && !faqs && !meta && !specs) return "";
-  return `<details class="text-[11px] text-slate-700 rounded-xl bg-slate-50 border border-slate-200 p-2"><summary class="cursor-pointer font-bold">ما يُنشر مع الوصف (نقاط · مواصفات · أسئلة · سيو)</summary>
+  return `<details class="text-[13px] text-slate-700 rounded-xl bg-slate-50 border border-slate-200 p-2"><summary class="cursor-pointer font-bold">ما يُنشر مع الوصف (نقاط · مواصفات · أسئلة · سيو)</summary>
     ${hl ? `<ul class="list-disc pr-4 mt-1">${hl}</ul>` : ""}
     ${specs ? `<ul class="pr-4 mt-1">${specs}</ul>` : ""}
     ${faqs ? `<ul class="pr-4 mt-1">${faqs}</ul>` : ""}
@@ -68,8 +68,8 @@ export function reviewCard(r) {
       </div>
     </div>`;
   const current = r.currentDescription
-    ? `<details class="text-[11px] text-slate-600"><summary class="cursor-pointer font-bold">الوصف الحالي على سلة</summary><div class="mt-1 whitespace-pre-wrap">${escHtml(r.currentDescription)}</div></details>`
-    : `<div class="text-[11px] text-slate-500 font-bold">الحالي: بلا وصف</div>`;
+    ? `<details class="text-[13px] text-slate-600"><summary class="cursor-pointer font-bold">الوصف الحالي على سلة</summary><div class="mt-1 whitespace-pre-wrap">${escHtml(r.currentDescription)}</div></details>`
+    : `<div class="text-[13px] text-slate-500 font-bold">الحالي: بلا وصف</div>`;
   let body = "";
   if (S.reviewState === "pending") {
     // اعتماد/رفض **لكل منتج على حدة**: مع عشرين وصفاً، التأشير ثم الصعود لأعلى
@@ -77,23 +77,23 @@ export function reviewCard(r) {
     body = `<textarea class="review-desc w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" rows="5" data-id="${r.id}">${escHtml(r.description || "")}</textarea>
       ${publishExtras(r)}
       <div class="flex gap-2 items-center flex-wrap">
-        <button onclick="decideOne(${r.id}, 'approve')" class="sleek-btn-black px-3 py-1.5 rounded-lg text-[11px]">اعتمد وانشر</button>
-        <button onclick="saveReviewEdit(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">احفظ تعديلي</button>
-        <button onclick="decideOne(${r.id}, 'reject')" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px] text-rose-700">ارفض</button>
-        <button onclick="openReviewModal(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">قبل وبعد</button>
-        <span class="review-one-msg text-[11px] font-bold text-slate-600" data-msg="${r.id}"></span>
+        <button onclick="decideOne(${r.id}, 'approve')" class="sleek-btn-black px-3 py-1.5 rounded-lg text-[13px]">اعتمد وانشر</button>
+        <button onclick="saveReviewEdit(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px]">احفظ تعديلي</button>
+        <button onclick="decideOne(${r.id}, 'reject')" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px] text-rose-700">ارفض</button>
+        <button onclick="openReviewModal(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px]">قبل وبعد</button>
+        <span class="review-one-msg text-[13px] font-bold text-slate-600" data-msg="${r.id}"></span>
       </div>`;
   } else {
     body = `<div class="text-xs text-black whitespace-pre-wrap">${escHtml(r.description || "")}</div>`;
     if (S.reviewState === "publish_failed") {
-      body += `<div class="text-[11px] text-rose-700 font-bold">${escHtml(r.publishError || "فشل النشر")}</div>
-        <button onclick="retryReview(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px]">أعد المحاولة</button>`;
+      body += `<div class="text-[13px] text-rose-700 font-bold">${escHtml(r.publishError || "فشل النشر")}</div>
+        <button onclick="retryReview(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px]">أعد المحاولة</button>`;
     }
     if (S.reviewState === "published") {
-      body += `<div class="flex gap-2 items-center"><span class="text-[11px] text-slate-500">نُشر ${escHtml((r.publishedAt || "").slice(0, 16))}</span>
-        <button data-revert-sku="${escHtml(r.sku || "")}" onclick="revertReview(this.dataset.revertSku)" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[11px] text-rose-700">تراجع — رجّع الأصل</button></div>`;
+      body += `<div class="flex gap-2 items-center"><span class="text-xs meta-12 text-slate-500">نُشر ${escHtml((r.publishedAt || "").slice(0, 16))}</span>
+        <button data-revert-sku="${escHtml(r.sku || "")}" onclick="revertReview(this.dataset.revertSku)" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px] text-rose-700">تراجع — رجّع الأصل</button></div>`;
     }
-    if (S.reviewState === "rejected" && r.reviewNote) body += `<div class="text-[11px] text-slate-500">السبب: ${escHtml(r.reviewNote)}</div>`;
+    if (S.reviewState === "rejected" && r.reviewNote) body += `<div class="text-[13px] text-slate-500">السبب: ${escHtml(r.reviewNote)}</div>`;
   }
   div.innerHTML = head + current + body;
   return div;
