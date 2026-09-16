@@ -188,7 +188,8 @@ async function main() {
     // BULK-18 — الداشبورد: لا وعد بنشر تلقائي؛ زر توليد من الكتالوج وشاشة مراجعة.
     const dash = await readComposedPage("dashboard");
     assert(
-      !/ينشره على سلة تلقائياً/.test(dash) && /لا يُنشر شيء على سلة قبل ما تراجعه وتعتمده/.test(dash) && /\/api\/store\/review\/decide/.test(dash) && /\/api\/store\/bulk\/generate/.test(dash),
+      // شريط «منتجاتي» اختُصر 2026-09-17 (طلب المالك) — نفس الوعد بصياغة أقصر.
+      !/ينشره على سلة تلقائياً/.test(dash) && /لا يُنشر شيء قبل اعتمادك/.test(dash) && /\/api\/store\/review\/decide/.test(dash) && /\/api\/store\/bulk\/generate/.test(dash),
       "BULK-18: الداشبورد يعد بالمراجعة لا بالنشر التلقائي، ويصل شاشة المراجعة والتوليد من الكتالوج"
     );
   }

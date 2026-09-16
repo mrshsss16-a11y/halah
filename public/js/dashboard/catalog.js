@@ -252,12 +252,18 @@ export function renderCatalogSelection() {
   const btn = document.getElementById("catalogSelectedGenBtn");
   const n = S.selectedSkus.size;
   if (!bar || !btn) return;
-  document.getElementById("catalogSelectCount").innerText = `محدد: ${n}`;
+  document.getElementById("catalogSelectCount").innerText = n ? `${n} محدد` : "لا شيء محدد";
   document.getElementById("catalogSelectedGenText").innerText =
-    n ? `ولّد أوصاف المحدد (${n})` : "ولّد أوصاف المحدد";
+    n ? `ولّد المحدد (${n})` : "ولّد المحدد";
   btn.disabled = n === 0;
   btn.classList.toggle("opacity-50", n === 0);
   btn.classList.toggle("cursor-not-allowed", n === 0);
+  const allChk = document.getElementById("catalogSelectAllChk");
+  if (allChk) {
+    const total = document.querySelectorAll(".catalog-pick").length;
+    allChk.checked = total > 0 && n === total;
+    allChk.indeterminate = n > 0 && n < total;
+  }
 }
 
 export function selectAllCatalog(on) {
@@ -306,7 +312,7 @@ async function startSelectedGenerate(skus, notes) {
   } catch (e) {
     showMsg("catalogFeedback", "ما قدرنا نتصل — تأكد من الإنترنت وجرّب مرة ثانية.", "error");
   }
-  txt.innerText = "ولّد أوصاف المحدد";
+  txt.innerText = "ولّد المحدد";
   renderCatalogSelection();
 }
 

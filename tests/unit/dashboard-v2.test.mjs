@@ -138,7 +138,8 @@ async function main() {
   assert(/"brand"\]/.test(read("../../functions/api/store/bulk/generate.js")), "BV-8: التوليد الجماعي يقبل «لهجة متجري»");
   const api = read("../../functions/api/store/voice.js");
   assert(/requireCompletedAccount\(request, env, body\.storeId\)/.test(api) && /saveBrandVoice/.test(api) && /checkRateLimit/.test(api), "BV-9: نقطة اللهجة بجلسة وسقف معدل");
-  assert(/<option value="brand">لهجة متجري \(مخصصة\)<\/option>/.test(catalogPartial) && /id="brandVoiceModal"/.test(modals) && /openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange/.test(main),
+  // نصوص خيار النبرة اختُصرت 2026-09-17 (طلب المالك: أزرار/خيارات أقصر) — القيمة "brand" نفسها لم تتغيّر.
+  assert(/<option value="brand">لهجة متجري<\/option>/.test(catalogPartial) && /id="brandVoiceModal"/.test(modals) && /openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange/.test(main),
     "BV-10: «لهجة متجري» بقائمة النبرة ونافذة إعدادها منشورة");
 }
 
