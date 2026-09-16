@@ -112,7 +112,7 @@ export async function loadCatalog(offset = 0, { keepFeedback = false } = {}) {
         hint.innerText = "بعد الربط تُسحب منتجاتك بصورها تلقائياً وتظهر هنا.";
       } else {
         setIcon(icon, "inventory_2");
-        title.innerText = 'ما سحبنا منتجاتك بعد — اضغط "اسحب منتجاتي من سلة"';
+        title.innerText = "ما سحبنا منتجاتك بعد — اضغط أيقونة التحديث ⟳ بجانب «منتجاتي»";
         hint.innerText = "تظهر أول دفعة منتجات فوراً، وإن كان متجرك كبير يوصل الباقي خلال دقائق.";
       }
     }
@@ -430,8 +430,12 @@ export function closeCopyPanel() {
 export async function startCatalogSync() {
   const btn = document.getElementById("catalogSyncBtn");
   const txt = document.getElementById("catalogSyncBtnText");
+  // الزر أيقونة فقط (2026-09-17): الحالة تُقال بالتلميح والقارئ الصوتي، والأيقونة تدور أثناء السحب.
+  const icon = btn.querySelector("svg");
+  const label = (t) => { txt.innerText = t; btn.title = t; btn.setAttribute("aria-label", t); };
   btn.disabled = true;
-  txt.innerText = "جاري السحب…";
+  icon?.classList.add("animate-spin");
+  label("جاري السحب…");
   try {
     const { res, data } = await postCatalogSync();
     if (!res.ok || data?.error) {
@@ -444,6 +448,8 @@ export async function startCatalogSync() {
       // نجح ⇒ الزر يصير «تحديث» ويهدأ ٦٠ ثانية: الضغط المتكرر كان يصطدم
       // بحد المعدل (٣ محاولات/٥ دقائق) فيُعاقَب التاجر على فعل بدا مسموحاً.
       txt.innerText = "تحديث المنتجات";
+      label("تحديث المنتجات");
+      icon?.classList.remove("animate-spin");
       if (S.syncCooldownTimer) clearTimeout(S.syncCooldownTimer);
       S.syncCooldownTimer = setTimeout(() => { btn.disabled = false; S.syncCooldownTimer = null; }, 60000);
       return;
@@ -452,7 +458,8 @@ export async function startCatalogSync() {
     showMsg("catalogFeedback", "تعذر الاتصال. حاول مرة ثانية.", "error");
   }
   btn.disabled = false;
-  txt.innerText = "اسحب منتجاتي من سلة";
+  icon?.classList.remove("animate-spin");
+  label("اسحب منتجاتي من سلة");
 }
 
 /** بعد نشر مفرد ناجح: البطاقة بـ«منتجاتي» تعكس أن للمنتج وصفاً الآن —
