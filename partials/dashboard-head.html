@@ -57,6 +57,11 @@
     .tab-on { background:#000; color:#fff; }
     .tab-off { color:#334155; }
     .tab-off:hover { background:#F1F5F9; color:#000; }
+    /* 2026-09-17: تبويبات «المراجعة والنشر» صف واحد قابل للتمرير أفقياً بدل
+       التفاف يتصادم مع الأزرار (طلب المالك). شريط تمرير رفيع مخفٍ بصرياً فقط —
+       التمرير نفسه يعمل بلمس/عجلة الفأرة كما هو. */
+    .rv-tabs { scrollbar-width: none; -ms-overflow-style: none; }
+    .rv-tabs::-webkit-scrollbar { display: none; }
     /* D3 (docs/PARALLEL_TRACKS.md §أ.٤): بدل فراغ "--" أثناء انتظار /api/usage
        و/api/store/overview — يقلّل شعور البطء وقت جلب بيانات سلة (ROADMAP D2). */
     .skel { position: relative; overflow: hidden; background: #E2E8F0; border-radius: 6px; color: transparent !important; }

@@ -25,39 +25,42 @@
       <!-- نافذة «المراجعة والنشر» (طلب المالك 2026-09-13): كانت قسماً ثابتاً تحت المنتجات يعرض أصفاراً ورسائل حتى بلا
            أوصاف. تُفتح من زر شريط «منتجاتي» (catalogSelectBar)، ونافذة «قبل وبعد» تُفتح وحدها بعد التوليد الجماعي. -->
       <div id="reviewPanel" class="hidden fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="reviewPanelTitle">
-      <div id="reviewCard" class="rm-sheet sleek-card bg-white rounded-3xl p-6 space-y-4 shadow-xl w-full max-w-3xl max-h-[92vh] overflow-y-auto">
-        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4 flex-wrap">
-          <div class="space-y-1">
-            <h2 id="reviewPanelTitle" class="text-lg font-black text-black">راجع واعتمد — قبل أي نشر</h2>
+      <div id="reviewCard" class="sleek-card bg-white rounded-3xl p-6 space-y-4 shadow-xl w-full max-w-3xl max-h-[92vh] overflow-hidden flex flex-col">
+        <!-- 2026-09-17 (طلب المالك — «العناصر مضغوطة والأزرار كثيرة»): رأس بزر
+             رئيسي واحد + قائمة ⋯ للثانوي بدل ٣ أزرار متزاحمة. shrink-0 على كل
+             جزء ثابت، والقائمة وحدها flex-1 القابلة للتمرير — لا تراكب بأي حجم. -->
+        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-4 flex-wrap shrink-0">
+          <div class="space-y-1 min-w-0">
+            <h2 id="reviewPanelTitle" class="text-lg font-black text-black">المراجعة والنشر</h2>
             <p id="reviewCountsLine" class="text-xs text-slate-600 font-medium">أوصاف «ولّد المحدد» و«ولّد للكل» تنتظرك هنا. ما يُنشر على سلة إلا ما تعتمده.</p>
           </div>
-          <div class="flex items-center gap-2 flex-wrap">
-          <button id="reviewModalBtn" type="button" onclick="openReviewModal()" class="hidden sleek-btn-black px-4 py-2 rounded-xl text-xs transition">راجعها واحداً واحداً — قبل وبعد (<span id="rvModalCount">0</span>)</button>
-          <button onclick="reloadReview()" class="sleek-btn-white px-3 py-2 rounded-xl text-xs transition flex items-center gap-1">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M20.0092 2V5.13219C20.0092 5.42605 19.6418 5.55908 19.4537 5.33333C17.6226 3.2875 14.9617 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg><span>تحديث</span>
-          </button>
-          <button type="button" onclick="closeReviewPanel()" class="sleek-btn-white px-3 py-2 rounded-xl text-xs font-bold" aria-label="إغلاق نافذة المراجعة">إغلاق</button>
+          <div class="flex items-center gap-2 shrink-0">
+            <button id="reviewModalBtn" type="button" onclick="openReviewModal()" class="hidden sleek-btn-black px-4 py-2 rounded-xl text-xs transition">راجعها واحداً واحداً (<span id="rvModalCount">0</span>)</button>
+            <details class="rm-more shrink-0">
+              <summary aria-label="خيارات أخرى">⋯</summary>
+              <div class="rm-more-pop">
+                <button type="button" onclick="decideReview('approve_all')" class="w-full">اعتمد الكل وانشره</button>
+                <button type="button" onclick="reloadReview()" class="w-full flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="1em" height="1em" fill="none" class="hgi text-base" aria-hidden="true" focusable="false"><path d="M20.0092 2V5.13219C20.0092 5.42605 19.6418 5.55908 19.4537 5.33333C17.6226 3.2875 14.9617 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg><span>تحديث</span></button>
+              </div>
+            </details>
+            <button type="button" onclick="closeReviewPanel()" class="sleek-btn-white w-9 h-9 rounded-xl text-sm font-bold flex items-center justify-center shrink-0" aria-label="إغلاق نافذة المراجعة">×</button>
           </div>
         </div>
 
-        <div class="flex gap-2 flex-wrap text-[13px] font-bold">
-          <button data-state="pending" onclick="loadReview('pending')" class="review-tab tab-on px-3 py-1.5 rounded-lg">بانتظار مراجعتك <span id="rvPending">0</span></button>
-          <button data-state="awaiting_publish" onclick="loadReview('awaiting_publish')" class="review-tab tab-off px-3 py-1.5 rounded-lg">معتمد بانتظار النشر <span id="rvAwaiting">0</span></button>
-          <button data-state="published" onclick="loadReview('published')" class="review-tab tab-off px-3 py-1.5 rounded-lg">نُشر على سلة <span id="rvPublished">0</span></button>
-          <button data-state="publish_failed" onclick="loadReview('publish_failed')" class="review-tab tab-off px-3 py-1.5 rounded-lg">فشل نشره <span id="rvFailed">0</span></button>
-          <button data-state="rejected" onclick="loadReview('rejected')" class="review-tab tab-off px-3 py-1.5 rounded-lg">مرفوض <span id="rvRejected">0</span></button>
+        <!-- شريط تبويبات صف واحد قابل للتمرير أفقياً — لا يتراكب مع أي زر بأي عرض. -->
+        <div class="rv-tabs flex gap-2 overflow-x-auto flex-nowrap text-[13px] font-bold shrink-0">
+          <button data-state="pending" onclick="loadReview('pending')" class="review-tab tab-on px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0">بانتظار مراجعتك <span id="rvPending">0</span></button>
+          <button data-state="awaiting_publish" onclick="loadReview('awaiting_publish')" class="review-tab tab-off px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0">معتمد <span id="rvAwaiting">0</span></button>
+          <button data-state="published" onclick="loadReview('published')" class="review-tab tab-off px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0">نُشر <span id="rvPublished">0</span></button>
+          <button data-state="publish_failed" onclick="loadReview('publish_failed')" class="review-tab tab-off px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0">فشل <span id="rvFailed">0</span></button>
+          <button data-state="rejected" onclick="loadReview('rejected')" class="review-tab tab-off px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0">مرفوض <span id="rvRejected">0</span></button>
         </div>
 
-        <div id="reviewActions" class="hidden flex gap-2 flex-wrap">
-          <button onclick="decideReview('approve_all')" class="sleek-btn-black px-4 py-2.5 rounded-xl text-xs transition">اعتمد الكل وانشره</button>
-          <button onclick="decideReview('approve')" class="sleek-btn-white px-4 py-2.5 rounded-xl text-xs transition">اعتمد المحدد</button>
-          <button onclick="decideReview('reject')" class="sleek-btn-white px-4 py-2.5 rounded-xl text-xs transition text-rose-700">ارفض المحدد</button>
-          <label class="text-[13px] font-bold text-slate-600 flex items-center gap-1 mr-auto"><input type="checkbox" id="reviewSelectAll" onchange="toggleReviewAll(this.checked)"> تحديد الكل</label>
+        <div id="reviewScroll" class="flex-1 min-h-0 overflow-y-auto space-y-2">
+          <div id="reviewFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
+          <div id="reviewLoading" role="status" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري التحميل…</div>
+          <div id="reviewEmpty" class="hidden text-xs text-slate-500 font-medium py-6 text-center">ما فيه أوصاف بانتظار مراجعتك. حدّد منتجات من «منتجاتي» واضغط «ولّد أوصاف المحدد».</div>
+          <div id="reviewList" class="space-y-2"></div>
         </div>
-
-        <div id="reviewFeedback" class="hidden p-3.5 rounded-xl text-xs font-bold bg-slate-100 text-black border border-black"></div>
-        <div id="reviewLoading" role="status" class="hidden text-xs text-slate-500 font-medium py-6 text-center">جاري التحميل…</div>
-        <div id="reviewEmpty" class="hidden text-xs text-slate-500 font-medium py-6 text-center">ما فيه أوصاف بانتظار مراجعتك. حدّد منتجات من «منتجاتي» واضغط «ولّد أوصاف المحدد».</div>
-        <div id="reviewList" class="space-y-3"></div>
       </div>
       </div>

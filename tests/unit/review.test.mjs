@@ -202,39 +202,41 @@ main()
     process.exit(1);
   });
 
-  // ── اعتماد/رفض لكل منتج على حدة بالمراجعة الجماعية (2026-09-10) ──────
+  // ── إعادة تصميم «المراجعة والنشر» 2026-09-17 (طلب المالك: «العناصر مضغوطة
+  // والأزرار كثيرة») — صف مضغوط بزر واحد «راجع» يفتح نافذة «أوصاف منتجاتك»
+  // (reviewModal.js) بكل الحقول، بدل مربّع نص + ٤ أزرار لكل بطاقة. الاعتماد/
+  // الرفض الفردي والجماعي المحدَّد صارا حصراً داخل تلك النافذة. ──────
   {
     const { readFileSync } = await import("node:fs");
     const read = (rel) => readFileSync(new URL(rel, import.meta.url), "utf8");
     const rev = read("../../public/js/dashboard/review.js");
 
     assert(
-      /export async function decideOne\(id, action\)/.test(rev) &&
-        /decideOne\(\$\{r\.id\}, 'approve'\)/.test(rev) && /decideOne\(\$\{r\.id\}, 'reject'\)/.test(rev),
-      "ONE-1: كل بطاقة فيها اعتماد ورفض مستقلان"
-    );
-    // نفس نقطة القرار — لا مسار نشر ثانٍ يتجاوز بوابة المراجعة.
-    assert(
-      /postReviewDecide\(\{ action, ids: \[id\] \}\)/.test(rev) &&
-        !/fetch\("\/api\/store\/publish"/.test(rev),
-      "ONE-2: القرار المفرد يمرّ بنفس نقطة المراجعة لا بنشر مباشر"
-    );
-    // التعديل يُحفظ قبل الاعتماد وإلا نُشر النص الأصلي بدل ما كتبه التاجر.
-    assert(
-      /action: "edit", ids: \[id\], description: ta\.value/.test(rev),
-      "ONE-3: تعديل التاجر يُحفظ قبل الاعتماد المفرد"
+      !/export async function decideOne/.test(rev) && !/export async function saveReviewEdit/.test(rev) && !/export function toggleReviewAll/.test(rev),
+      "ONE-1: البطاقة لم تعد تحمل اعتماد/حفظ/رفض مستقلاً — القرار داخل نافذة «أوصاف منتجاتك» فقط"
     );
     assert(
-      /buttons\.forEach\(\(b\) => \{ b\.disabled = true; \}\)/.test(rev),
-      "ONE-4: الأزرار تُقفل أثناء التنفيذ — لا نشر مزدوج بضغطتين"
+      /window\.openReviewModal\(r\.id\)/.test(rev) && /راجع<\/button>/.test(rev),
+      "ONE-2: كل صف يحمل زر «راجع» واحداً يفتح النافذة، والنقر على الصف كله يفتح نفس النافذة"
     );
     assert(
-      /decideOne/.test(read("../../public/js/dashboard/main.js")),
-      "ONE-5: الدالة منشورة على window لسمات onclick"
+      !/class="review-desc/.test(rev),
+      "ONE-3: لا مربّع نص قابل للتعديل بالقائمة المضغوطة — التعديل بنافذة «أوصاف منتجاتك» وحدها"
     );
-    // الأزرار الجماعية باقية.
+    assert(
+      !/decideOne|saveReviewEdit|toggleReviewAll/.test(read("../../public/js/dashboard/main.js")),
+      "ONE-4: الدوال المحذوفة لم تعد منشورة على window"
+    );
+    // الاعتماد الجماعي («اعتمد الكل») باقٍ — الوحيد الذي بقي برأس النافذة (بقائمة ⋯) لأنه لا يفتح على منتج بعينه.
     assert(
       /decideReview\('approve_all'\)/.test(read("../../partials/dashboard-review.html")),
-      "ONE-6: الاعتماد الجماعي لم يُحذف — المساران متاحان"
+      "ONE-5: «اعتمد الكل وانشره» لم يُحذف — بقائمة ⋯ برأس النافذة"
+    );
+    // زر الرأس الرئيسي يفتح المراجعة منتجاً منتجاً، بلا أزرار «اعتمد المحدد/ارفض المحدد» المتزاحمة.
+    assert(
+      /راجعها واحداً واحداً/.test(read("../../partials/dashboard-review.html")) &&
+        !/اعتمد المحدد/.test(read("../../partials/dashboard-review.html")) &&
+        !/ارفض المحدد/.test(read("../../partials/dashboard-review.html")),
+      "ONE-6: رأس النافذة بزر رئيسي واحد — لا أزرار جماعية على العناصر المحدَّدة"
     );
   }

@@ -55,47 +55,51 @@ export function publishExtras(r) {
     ${meta ? `<div class="mt-1 text-slate-600">${meta}</div>` : ""}</details>`;
 }
 
+// شارة الحالة بأعلى كل صف — عنوان الحالة نفسها التي فتح التاجر تبويبها، فلا
+// حاجة لقراءة كل بطاقة لمعرفة أين هي بالطابور.
+const REVIEW_STATE_CHIP = {
+  pending: "بانتظار المراجعة",
+  awaiting_publish: "معتمد",
+  published: "منشور",
+  publish_failed: "فشل النشر",
+  rejected: "مرفوض"
+};
+
+/**
+ * صف مضغوط (طلب المالك 2026-09-17: «العناصر مضغوطة والأزرار كثيرة» — كانت كل
+ * بطاقة تحمل مربّع نص + ٤ أزرار). الصورة والاسم والـSKU وشارة الحالة وزر واحد
+ * فقط «راجع» يفتح نافذة «أوصاف منتجاتك» (reviewModal.js) بكل الحقول — لا تعديل
+ * ولا اعتماد هنا. النقر على الصف كله يفتح نفس النافذة.
+ */
 export function reviewCard(r) {
   const div = document.createElement("div");
-  div.className = "rounded-2xl border border-slate-200 bg-white p-4 space-y-2";
+  const name = escHtml(r.name || r.sku || "منتج بلا اسم");
+  div.className = "review-row flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5 cursor-pointer hover:bg-slate-50 transition";
   div.dataset.id = r.id;
-  const head = `<div class="flex items-start gap-2">
-      ${S.reviewState === "pending" ? `<input type="checkbox" class="review-check mt-1" data-id="${r.id}" aria-label="حدّد ${escHtml(r.name || r.sku || "")}">` : ""}
-      ${r.imageUrl ? `<img src="${escHtml(r.imageUrl)}" referrerpolicy="no-referrer" class="w-12 h-12 rounded-lg object-contain bg-slate-50 border border-slate-200" onerror="this.remove()">` : ""}
-      <div class="flex-1 min-w-0">
-        <div class="text-sm font-black text-black truncate">${escHtml(r.name || r.sku || "")}</div>
-        <div class="text-[11px] text-slate-500 font-mono" dir="auto"><bdi>${escHtml(r.sku || "")}</bdi>${r.category ? " · " + "<bdi>" + escHtml(r.category) + "</bdi>" : ""}</div>
-      </div>
-    </div>`;
-  const current = r.currentDescription
-    ? `<details class="text-[13px] text-slate-600"><summary class="cursor-pointer font-bold">الوصف الحالي على سلة</summary><div class="mt-1 whitespace-pre-wrap">${escHtml(r.currentDescription)}</div></details>`
-    : `<div class="text-[13px] text-slate-500 font-bold">الحالي: بلا وصف</div>`;
-  let body = "";
-  if (S.reviewState === "pending") {
-    // اعتماد/رفض **لكل منتج على حدة**: مع عشرين وصفاً، التأشير ثم الصعود لأعلى
-    // الصفحة لكل واحد يقتل التجربة. الأزرار الجماعية أعلى الشاشة باقية كما هي.
-    body = `<textarea class="review-desc w-full bg-white border border-slate-300 text-xs rounded-xl p-3 text-black font-medium focus:outline-none focus:border-black" rows="5" data-id="${r.id}">${escHtml(r.description || "")}</textarea>
-      ${publishExtras(r)}
-      <div class="flex gap-2 items-center flex-wrap">
-        <button onclick="decideOne(${r.id}, 'approve')" class="sleek-btn-black px-3 py-1.5 rounded-lg text-[13px]">اعتمد وانشر</button>
-        <button onclick="saveReviewEdit(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px]">احفظ تعديلي</button>
-        <button onclick="decideOne(${r.id}, 'reject')" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px] text-rose-700">ارفض</button>
-        <button onclick="openReviewModal(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px]">قبل وبعد</button>
-        <span class="review-one-msg text-[13px] font-bold text-slate-600" data-msg="${r.id}"></span>
-      </div>`;
-  } else {
-    body = `<div class="text-xs text-black whitespace-pre-wrap">${escHtml(r.description || "")}</div>`;
-    if (S.reviewState === "publish_failed") {
-      body += `<div class="text-[13px] text-rose-700 font-bold">${escHtml(r.publishError || "فشل النشر")}</div>
-        <button onclick="retryReview(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px]">أعد المحاولة</button>`;
-    }
-    if (S.reviewState === "published") {
-      body += `<div class="flex gap-2 items-center"><span class="text-xs meta-12 text-slate-500">نُشر ${escHtml((r.publishedAt || "").slice(0, 16))}</span>
-        <button data-revert-sku="${escHtml(r.sku || "")}" onclick="revertReview(this.dataset.revertSku)" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px] text-rose-700">تراجع — رجّع الأصل</button></div>`;
-    }
-    if (S.reviewState === "rejected" && r.reviewNote) body += `<div class="text-[13px] text-slate-500">السبب: ${escHtml(r.reviewNote)}</div>`;
+  div.setAttribute("role", "button");
+  div.tabIndex = 0;
+  div.setAttribute("aria-label", `راجع ${name}`);
+  div.onclick = () => window.openReviewModal(r.id);
+  div.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); window.openReviewModal(r.id); } };
+
+  let actionBtn = "";
+  if (S.reviewState === "published") {
+    actionBtn = `<button type="button" data-revert-sku="${escHtml(r.sku || "")}" onclick="event.stopPropagation(); revertReview(this.dataset.revertSku)" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px] text-rose-700 shrink-0">تراجع</button>`;
+  } else if (S.reviewState === "publish_failed") {
+    actionBtn = `<button type="button" onclick="event.stopPropagation(); retryReview(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px] shrink-0">أعد المحاولة</button>`;
+  } else if (S.reviewState === "pending") {
+    actionBtn = `<button type="button" onclick="event.stopPropagation(); openReviewModal(${r.id})" class="sleek-btn-white px-3 py-1.5 rounded-lg text-[13px] shrink-0">راجع</button>`;
   }
-  div.innerHTML = head + current + body;
+  // معتمد (awaiting_publish) ومرفوض بلا إجراء سطري — النقر على الصف يفتح النافذة للاطلاع فقط.
+
+  div.innerHTML = `
+    ${r.imageUrl ? `<img src="${escHtml(r.imageUrl)}" referrerpolicy="no-referrer" class="w-10 h-10 rounded-lg object-contain bg-slate-50 border border-slate-200 shrink-0" onerror="this.remove()">` : `<span class="w-10 h-10 rounded-lg bg-slate-50 border border-slate-200 shrink-0"></span>`}
+    <div class="flex-1 min-w-0">
+      <div class="text-[13px] font-black text-black truncate">${name}</div>
+      <div class="meta-12 text-xs text-slate-500 font-mono truncate" dir="auto"><bdi>${escHtml(r.sku || "")}</bdi>${r.category ? " · <bdi>" + escHtml(r.category) + "</bdi>" : ""}</div>
+    </div>
+    <span class="text-[11px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-600 shrink-0">${REVIEW_STATE_CHIP[S.reviewState] || ""}</span>
+    ${actionBtn}`;
   return div;
 }
 
@@ -105,7 +109,6 @@ export async function loadReview(state) {
     const on = b.dataset.state === S.reviewState;
     b.classList.toggle("tab-on", on); b.classList.toggle("tab-off", !on);
   });
-  document.getElementById("reviewActions").classList.toggle("hidden", S.reviewState !== "pending");
   const list = document.getElementById("reviewList");
   const loading = document.getElementById("reviewLoading");
   const empty = document.getElementById("reviewEmpty");
@@ -153,16 +156,22 @@ export function reloadReview() {
   return loadReview(S.reviewState);
 }
 
-export function selectedReviewIds() {
-  return [...document.querySelectorAll(".review-check:checked")].map((c) => Number(c.dataset.id));
-}
+// بعد أي قرار أو إغلاق بنافذة «أوصاف منتجاتك» (reviewModal.js) — القائمة المضغوطة
+// خلفها تحدّث نفسها، فلا يرى التاجر منتجاً قرر بشأنه للتو لا يزال بالقائمة.
+document.addEventListener("hala:review-decided", () => {
+  if (!document.getElementById("reviewPanel")?.classList.contains("hidden")) loadReview(S.reviewState);
+});
+document.addEventListener("hala:review-modal-closed", () => {
+  if (!document.getElementById("reviewPanel")?.classList.contains("hidden")) loadReview(S.reviewState);
+});
 
-export function toggleReviewAll(on) {
-  document.querySelectorAll(".review-check").forEach((c) => { c.checked = on; });
-}
-
+/**
+ * إعادة تصميم 2026-09-17 (طلب المالك): الاعتماد/الرفض الفردي والجماعي المحدَّد
+ * صارا حصراً داخل نافذة «أوصاف منتجاتك» (reviewModal.js: reviewModalDecide /
+ * reviewModalApproveAll) — القائمة هنا للتصفّح والفتح فقط. «اعتمد الكل وانشره»
+ * وحده بقي هنا (بقائمة ⋯ برأس النافذة) لأنه لا يفتح على منتج بعينه.
+ */
 export async function decideReview(action) {
-  const payload = { action };
   if (action === "approve_all") {
     // «اعتمد الكل» ينشر كل الطابور على متجر حي — لا يمر بضغطة عابرة.
     const n = Number(document.getElementById("rvPending")?.innerText || 0);
@@ -174,62 +183,17 @@ export async function decideReview(action) {
       variant: "warning"
     });
     if (!confirmed) return;
-  }
-  if (action !== "approve_all") {
-    payload.ids = selectedReviewIds();
-    if (!payload.ids.length) { showMsg("reviewFeedback", "حدّد عنصراً واحداً على الأقل.", "error"); return; }
+  } else {
+    return;
   }
   try {
-    const data = await postReviewDecide(payload);
+    const data = await postReviewDecide({ action: "approve_all" });
     if (!data?.ok) { showMsg("reviewFeedback", data?.error || "تعذر التنفيذ.", "error"); return; }
-    const n = data.approved ?? data.rejected ?? 0;
-    const failedNote = (data.failed || []).length ? ` (${data.failed.length} ما انطبق عليه)` : "";
-    showMsg("reviewFeedback", action === "reject"
-      ? `رُفض ${n}${failedNote}.`
-      : `اعتُمد ${n}${failedNote} — يُنشر على سلة تدريجياً خلال دقائق، تابع تبويب «معتمد بانتظار النشر».`, "success");
-    if (action !== "reject") maybeShowFeedback();
+    const n2 = data.approved ?? 0;
+    showMsg("reviewFeedback", `اعتُمد ${n2} — يُنشر على سلة تدريجياً خلال دقائق، تابع تبويب «معتمد بانتظار النشر».`, "success");
+    maybeShowFeedback();
     setReviewCounts(data.counts);
     loadReview("pending");
-  } catch (e) { showMsg("reviewFeedback", "تعذر الاتصال.", "error"); }
-}
-
-/**
- * اعتماد أو رفض **عنصر واحد** — نفس نقطة القرار الجماعية بمعرّف واحد، فلا
- * مسار نشر ثانٍ ولا تجاوز لبوابة المراجعة. التعديل المكتوب بالمربع يُحفظ قبل
- * الاعتماد، وإلا نُشر النص الأصلي بدل ما كتبه التاجر.
- */
-export async function decideOne(id, action) {
-  const msg = document.querySelector(`[data-msg="${id}"]`);
-  const card = document.querySelector(`[data-id="${id}"]`);
-  const buttons = card ? card.querySelectorAll("button") : [];
-  buttons.forEach((b) => { b.disabled = true; });
-  if (msg) msg.innerText = action === "approve" ? "جاري النشر…" : "جاري الرفض…";
-  try {
-    if (action === "approve") {
-      const ta = card?.querySelector(".review-desc");
-      if (ta) await postReviewDecide({ action: "edit", ids: [id], description: ta.value });
-    }
-    const data = await postReviewDecide({ action, ids: [id] });
-    if (!data?.ok) {
-      if (msg) msg.innerText = data?.error || "تعذر التنفيذ.";
-      buttons.forEach((b) => { b.disabled = false; });
-      return;
-    }
-    if (msg) msg.innerText = action === "approve" ? "اعتُمد ✅" : "رُفض";
-    setReviewCounts(data.counts);
-    setTimeout(() => card?.remove(), 800);
-  } catch (e) {
-    if (msg) msg.innerText = "تعذر الاتصال.";
-    buttons.forEach((b) => { b.disabled = false; });
-  }
-}
-
-export async function saveReviewEdit(id) {
-  const ta = document.querySelector(`.review-desc[data-id="${id}"]`);
-  if (!ta) return;
-  try {
-    const data = await postReviewDecide({ action: "update", id, description: ta.value });
-    showMsg("reviewFeedback", data?.ok ? "حُفظ تعديلك — اللي يُنشر هو النص المكتوب هنا بالضبط." : (data?.error || "تعذر الحفظ."), data?.ok ? "success" : "error");
   } catch (e) { showMsg("reviewFeedback", "تعذر الاتصال.", "error"); }
 }
 

@@ -21,7 +21,7 @@ import { startCatalogGenerate, openBulkProgress } from "./bulk.js";
 import { openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll } from "./reviewModal.js";
 import { loadBrandVoice, openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange } from "./brandVoice.js";
 import {
-  loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
+  loadReview, reloadReview, decideReview,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback, openReviewPanel, closeReviewPanel
 } from "./review.js";
 import { loadStore, loadUsage, handleMerchantLogout, onDeleteConfirmInput, requestDeletion } from "./store.js";
@@ -49,7 +49,7 @@ Object.assign(window, {
   openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll, openReviewPanel, closeReviewPanel,
   openBrandVoice, closeBrandVoice, saveBrandVoice, onToneChange,
   // المراجعة والتغذية الراجعة
-  loadReview, reloadReview, decideReview, decideOne, toggleReviewAll, saveReviewEdit,
+  loadReview, reloadReview, decideReview,
   retryReview, revertReview, dismissFeedback, pickFeedbackScore, sendFeedback,
   // الحذف الذاتي
   onDeleteConfirmInput, requestDeletion,
