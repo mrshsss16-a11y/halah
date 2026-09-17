@@ -18,11 +18,22 @@ export async function send(env, { to, subject, text, html }) {
   }
   const payload = { from: env.EMAIL_FROM, to: [to], subject, text };
   if (html) payload.html = html;
-  const res = await fetch(RESEND_URL, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  let res;
+  try {
+    // 2026-09-17: مهلة صريحة — WP-A7 (SCALE-2). بلا هذا يعلّق نداء البريد الطلب كله
+    // لو تأخر Resend، بدل فشل سريع بخطأ يفهمه المستدعي.
+    res = await fetch(RESEND_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, "content-type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(8000)
+    });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error("email provider timeout — استغرق الطلب أطول من ٨ ثوانٍ.");
+    }
+    throw err;
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`email provider HTTP ${res.status} ${body.slice(0, 200)}`);

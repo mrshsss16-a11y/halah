@@ -50,20 +50,33 @@ export async function askNexos({ apiKey, messages, maxTokens, reasoning = "none"
   throw new Error(`nexos ${errors.join(" | ")}`);
 }
 
+// 2026-09-17: مهلة صريحة على نداء nexos — WP-A7 (SCALE-2). الكتابة والرؤية كلاهما
+// يمرّ من هنا، ورؤية قد ترفع صوراً فتستحق مهلة أطول من نصوص باقي المزوّدين.
+const NEXOS_TIMEOUT_MS = 20000;
+
 async function askNexosModel({ apiKey, model, messages, maxTokens, effort, temperature }) {
   const thinking = effort !== "none";
-  const res = await fetch(NEXOS_API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      messages,
-      reasoning_effort: effort,
-      // التفكير يستهلك من نفس الحد: بلا رموز إضافية عاد نص فارغ بـfinish_reason: length (فستان تل مطرز).
-      max_tokens: maxTokens + (thinking ? REASONING_EXTRA_TOKENS : 0),
-      ...(!thinking && temperature !== undefined ? { temperature } : {})
-    })
-  });
+  let res;
+  try {
+    res = await fetch(NEXOS_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        messages,
+        reasoning_effort: effort,
+        // التفكير يستهلك من نفس الحد: بلا رموز إضافية عاد نص فارغ بـfinish_reason: length (فستان تل مطرز).
+        max_tokens: maxTokens + (thinking ? REASONING_EXTRA_TOKENS : 0),
+        ...(!thinking && temperature !== undefined ? { temperature } : {})
+      }),
+      signal: AbortSignal.timeout(NEXOS_TIMEOUT_MS)
+    });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error("timeout: استغرق الطلب أطول من ٢٠ ثانية.");
+    }
+    throw err;
+  }
   if (!res.ok) throw new Error(`${res.status}: ${String(await res.text().catch(() => "")).slice(0, 200)}`);
   const data = await res.json();
   const text = String(data?.choices?.[0]?.message?.content ?? "").trim();

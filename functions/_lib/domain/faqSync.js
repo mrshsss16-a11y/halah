@@ -9,6 +9,9 @@ import { listHalaFaq } from "./faq.js";
 import { reembedHalaFaq, deleteHalaFaqEmbedding } from "../ai/memory.js";
 
 const FAQ_SYNC_KEY = "hala_faq_embed_state";
+// 2026-09-17: WP-A8 — بصمة تزامن فقط (لا علم أمني)؛ انتهاؤها أسوأ حالة يعيد
+// تضميناً واحداً غير ضروري بأول healthcheck تالٍ، فـ٣٠ يوماً كافية وآمنة.
+const FAQ_SYNC_TTL_SECONDS = 30 * 24 * 3600;
 
 export async function faqFingerprint(rows) {
   const text = rows.map((r) => `${r.id}|${r.question}|${r.answer}`).join("\n");
@@ -47,7 +50,7 @@ export async function syncHalaFaqEmbeddings(env, { reembed = reembedHalaFaq, rem
     }
   }
   if (env.HALA_CACHE) {
-    await env.HALA_CACHE.put(FAQ_SYNC_KEY, JSON.stringify({ fingerprint, ids, at: new Date().toISOString() })).catch(() => {});
+    await env.HALA_CACHE.put(FAQ_SYNC_KEY, JSON.stringify({ fingerprint, ids, at: new Date().toISOString() }), { expirationTtl: FAQ_SYNC_TTL_SECONDS }).catch(() => {});
   }
   return { changed: true, reembedded, deleted };
 }

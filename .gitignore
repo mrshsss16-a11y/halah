@@ -23,3 +23,6 @@ skills-lock.json
 
 # graphify knowledge-graph output — regenerated from source, not app code
 graphify-out
+
+# نسخ عمل الوكلاء المتوازية (git worktree) — ليست جزءاً من الكود
+.claude/worktrees/

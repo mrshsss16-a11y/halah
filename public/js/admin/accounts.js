@@ -43,10 +43,10 @@ export async function loadAccountsList() {
               </span>
             </td>
             <td class="p-3.5 text-center space-x-1 space-x-reverse">
-              <button onclick="toggleAccountDisabled('${esc(row?.merchantId)}', ${!row?.disabled})" class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${row?.disabled ? "bg-black text-white" : "sleek-btn-white"}">
+              <button type="button" data-acct-action="toggle-disabled" data-merchant-id="${esc(row?.merchantId)}" data-next-disabled="${row?.disabled ? "" : "1"}" class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${row?.disabled ? "bg-black text-white" : "sleek-btn-white"}">
                 ${row?.disabled ? "تفعيل" : "تجميد"}
               </button>
-              <button onclick="resetAccountQuota('${esc(row?.merchantId)}')" class="px-2.5 py-1 rounded-lg text-[10px] font-bold sleek-btn-white">
+              <button type="button" data-acct-action="reset-quota" data-merchant-id="${esc(row?.merchantId)}" class="px-2.5 py-1 rounded-lg text-[10px] font-bold sleek-btn-white">
                 تصفير الرصيد
               </button>
             </td>
@@ -105,8 +105,8 @@ export async function loadBookingsList() {
             </span>
           </td>
           <td class="p-3.5 text-center flex items-center justify-center gap-1.5">
-            <button onclick="updateBookingStatus('${esc(row?.id)}', 'confirmed')" class="bg-black text-white hover:bg-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">تأكيد</button>
-            <button onclick="updateBookingStatus('${esc(row?.id)}', 'cancelled')" class="sleek-btn-white px-2.5 py-1 rounded-lg text-[10px] font-bold">إلغاء</button>
+            <button type="button" data-acct-action="booking-status" data-booking-id="${esc(row?.id)}" data-status="confirmed" class="bg-black text-white hover:bg-slate-800 px-2.5 py-1 rounded-lg text-[10px] font-bold">تأكيد</button>
+            <button type="button" data-acct-action="booking-status" data-booking-id="${esc(row?.id)}" data-status="cancelled" class="sleek-btn-white px-2.5 py-1 rounded-lg text-[10px] font-bold">إلغاء</button>
           </td>
         </tr>
       `).join("");
@@ -126,3 +126,24 @@ export async function updateBookingStatus(id, status) {
     alert("تعذر تحديث حالة التذكرة.");
   }
 }
+
+// 2026-09-17 (SEC-10): كانت أزرار الجدولين onclick="fn('${esc(...)}')" — قيمة معطوبة (بريد/معرّف
+// من D1 يحوي علامة اقتباس أحادية لم يوقفها esc نفسه، أو escHtml بثغرة مستقبلية) تكسر سلسلة onclick
+// المصدرية وتُنفَّذ كجافاسكربت داخل خاصية HTML بدل أن تبقى نصاً. الآن: data-* بلا أي قيمة تدخل onclick،
+// ومستمع نقر مفوَّض واحد على tbody كل جدول يقرأ dataset (نص دائماً، لا تفسير كود مهما كان محتواه).
+function delegateActions(tbodyId, handler) {
+  document.getElementById(tbodyId)?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-acct-action]");
+    if (!btn) return;
+    handler(btn.dataset);
+  });
+}
+
+delegateActions("accountsTableBody", (ds) => {
+  if (ds.acctAction === "toggle-disabled") toggleAccountDisabled(ds.merchantId, ds.nextDisabled === "1");
+  else if (ds.acctAction === "reset-quota") resetAccountQuota(ds.merchantId);
+});
+
+delegateActions("bookingsTableBody", (ds) => {
+  if (ds.acctAction === "booking-status") updateBookingStatus(ds.bookingId, ds.status);
+});

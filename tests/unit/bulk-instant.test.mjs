@@ -67,7 +67,7 @@ async function main() {
       && /if \(!document\.getElementById\("copyAsk"\) \|\| !document\.getElementById\("copyAskNote"\)\) \{\s*openCopyPanel\(it\);\s*generateCopy\(\);/.test(catalog),
       "BI-15: HTML قديم من الكاش بلا العناصر الجديدة لا يوقف التوليد");
     const hdr = read("../../_headers");
-    assert((hdr.match(/Cloudflare-CDN-Cache-Control: no-store/g) || []).length === 2, "BI-16: لوحة التاجر لا تُخزَّن بكاش الحافة (HTML قديم مع JS جديد يوقف التوليد)");
+    assert((hdr.match(/Cloudflare-CDN-Cache-Control: no-store/g) || []).length >= 2 && /^\/dashboard\r?$/m.test(hdr), "BI-16: لوحة التاجر لا تُخزَّن بكاش الحافة (HTML قديم مع JS جديد يوقف التوليد) — العدّ ≥٢ لأن /admin أُضيف 2026-09-17");
     const bulkJs = read("../../public/js/dashboard/bulk.js");
     const modal = read("../../public/js/dashboard/reviewModal.js");
     assert(/dispatchEvent\(new Event\("hala:review-ready"\)\)/.test(bulkJs) && /addEventListener\("hala:review-ready", appendReadyRows\)/.test(modal)

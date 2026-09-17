@@ -27,6 +27,8 @@
   ! Cache-Control
   Cache-Control: no-store
   Cloudflare-CDN-Cache-Control: no-store
+  # 2026-09-17 (SEC-10): لوحة تاجر مصادَق عليها — لا فهرسة رغم أنها ليست بـsitemap أصلاً (SEO-5).
+  X-Robots-Tag: noindex, nofollow
 
 # Salla's iframe requests /dashboard.html; this project 308-redirects that to
 # /dashboard (clean URL). Cover both in case that redirect behavior changes.
@@ -38,6 +40,21 @@
   ! Cache-Control
   Cache-Control: no-store
   Cloudflare-CDN-Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+# 2026-09-17 (SEC-10): لوحة الأدمن — حساسة أكثر من لوحة التاجر (بيانات كل الحسابات
+# والتذاكر). لا كاش على أي حافة، ولا فهرسة، بنفس منطق /dashboard أعلاه.
+/admin
+  ! Cache-Control
+  Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+
+/admin.html
+  ! Cache-Control
+  Cache-Control: no-store
+  Cloudflare-CDN-Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
 
 # SEO P0-5 (2026-09-14): مرآة pages.dev نسخة مكررة من halah.aura.sa — لا تُفهرس.
 # لا تحويل: فحوص النشر وروابط ويبهوك/OAuth قد تستخدمها. halah.aura.sa لا يطابق هذه الكتل.

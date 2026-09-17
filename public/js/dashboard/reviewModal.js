@@ -10,7 +10,7 @@
 import { confirmAction } from "./embedded.js";
 import { postReviewList, postReviewDecide } from "./api.js";
 import { setReviewCounts, loadReview, maybeShowFeedback } from "./review.js";
-import { sectionsHtml, safeDescriptionHtml, updateSeoPreview, syncToggle, collectFields, mergeFields, emptyRow } from "./reviewSections.js";
+import { sectionsHtml, safeDescriptionFragment, updateSeoPreview, syncToggle, collectFields, mergeFields, emptyRow } from "./reviewSections.js";
 
 const escHtml = window.escHtml;
 const $ = (id) => document.getElementById(id);
@@ -117,10 +117,21 @@ function productHeadHtml(r) {
     </span>`;
 }
 
+// 2026-09-17: SEC-6 — القالب هنا لا يحمل نص «قبل» المصفّى (يُحقن لاحقاً عبر
+// safeDescriptionFragment + replaceChildren في renderStep، بلا أي سلسلة نصية
+// تمرّ بـinnerHTML). العنصر نفسه فارغ هنا حتى لا يظهر فراغ لحظياً قبل الحقن.
 function beforeHtml(r) {
-  const safe = safeDescriptionHtml(r.currentDescription);
   const wide = window.matchMedia?.("(min-width: 768px)").matches;
-  return `<details class="rm-before rounded-2xl border border-slate-200 bg-slate-50 p-4"${wide ? " open" : ""}><summary class="cursor-pointer text-sm font-bold text-slate-600">قبل — الوصف الحالي على سلة</summary><div class="rm-before-body mt-3 text-sm text-slate-600 leading-relaxed">${safe || "بلا وصف حالي"}</div></details>`;
+  return `<details class="rm-before rounded-2xl border border-slate-200 bg-slate-50 p-4"${wide ? " open" : ""}><summary class="cursor-pointer text-sm font-bold text-slate-600">قبل — الوصف الحالي على سلة</summary><div class="rm-before-body mt-3 text-sm text-slate-600 leading-relaxed"></div></details>`;
+}
+
+/** يحقن نص «قبل» المصفّى داخل .rm-before-body — بلا سلسلة HTML تمرّ بـinnerHTML (SEC-6). */
+function renderBeforeBody(root, r) {
+  const holder = root.querySelector(".rm-before-body");
+  if (!holder) return;
+  const frag = safeDescriptionFragment(r.currentDescription);
+  if (!frag.childNodes.length) { holder.innerText = "بلا وصف حالي"; return; }
+  holder.replaceChildren(frag);
 }
 
 function renderStep() {
@@ -149,6 +160,7 @@ function renderStep() {
         ${sectionsHtml(r)}
       </div>
     </div></div>`;
+  renderBeforeBody(body, r);
   updateSeoPreview(body, r.name);
   // 2026-09-17: تصفير أي قائمة «rm-more» مفتوحة عند إعادة الرسم — لا تبقى مفتوحة على منتج آخر.
   body.querySelectorAll("details.rm-more[open]").forEach((d) => { d.open = false; });

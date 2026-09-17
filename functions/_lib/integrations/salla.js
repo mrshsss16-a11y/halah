@@ -34,21 +34,33 @@ function assertSallaUrlAllowed(rawUrl) {
   return parsed.toString();
 }
 
+// 2026-09-17: مهلة موحّدة لكل نداء سلة — WP-A7 (SCALE-2).
+const SALLA_TIMEOUT_MS = 15000;
+
 /**
  * تبادل توكن التجديد بتوكن جديد — طلب HTTP فقط، بلا قفل وبلا حفظ.
  * المستدعي الوحيد المسموح: `domain/salla.js` بعد الفوز بقفل التجديد.
  */
 export async function refreshSallaToken({ refreshToken, clientId, clientSecret }) {
-  const res = await fetch(assertSallaUrlAllowed(TOKEN_URL), {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: clientId,
-      client_secret: clientSecret
-    })
-  });
+  let res;
+  try {
+    res = await fetch(assertSallaUrlAllowed(TOKEN_URL), {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret
+      }),
+      signal: AbortSignal.timeout(SALLA_TIMEOUT_MS)
+    });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error("salla token refresh timeout: استغرق الطلب أطول من ١٥ ثانية.");
+    }
+    throw err;
+  }
   if (!res.ok) {
     throw new Error(`salla token refresh failed: HTTP ${res.status}`);
   }
@@ -59,14 +71,26 @@ export async function refreshSallaToken({ refreshToken, clientId, clientSecret }
 async function sallaFetch(token, path, opts = {}) {
   // التحقق أولاً — قبل حتى لمس التوكن.
   const url = assertSallaUrlAllowed(`${API_BASE}${path}`);
-  const res = await fetch(url, {
-    ...opts,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "content-type": "application/json",
-      ...(opts.headers || {})
+  let res;
+  try {
+    res = await fetch(url, {
+      ...opts,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        ...(opts.headers || {})
+      },
+      signal: opts.signal || AbortSignal.timeout(SALLA_TIMEOUT_MS)
+    });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      const timeoutErr = new Error(`salla API ${path}: timeout — استغرق الطلب أطول من ١٥ ثانية.`);
+      timeoutErr.status = 504;
+      timeoutErr.retryAfter = null;
+      throw timeoutErr;
     }
-  });
+    throw err;
+  }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     const err = new Error(`salla API ${path}: HTTP ${res.status} ${body.slice(0, 200)}`);
@@ -143,4 +167,3 @@ export async function createCategory(token, { name, status = "active" }) {
 export async function getProduct(token, productId) {
   return sallaFetch(token, `/products/${encodeURIComponent(productId)}`);
 }
-

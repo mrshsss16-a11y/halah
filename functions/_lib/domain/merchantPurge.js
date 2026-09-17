@@ -69,6 +69,19 @@ export const PURGE_TABLES = [
   "vector_refs"
 ];
 
+/**
+ * 2026-09-17: جداول مصادقة مفتاحها **البريد** لا `merchant_id` — SEC-5.
+ *
+ * حارس `PURGE-1` لا يراها أصلاً (لا عمود تاجر فيها)، فبقيت بعد «الحذف النهائي»
+ * تحمل بريد التاجر: قفل محاولات الدخول، ورمز إعادة تعيين كلمة المرور، ورمز
+ * تحقق البريد. بقاؤها يكذّب الوعد، والأسوأ أن رمزاً صالحاً لبريدٍ «محذوف»
+ * يبقى قابلاً للاستعمال لو سُجّل البريد من جديد.
+ *
+ * تُمحى **فقط** حين يُحذف الحساب نفسه (`keepAccount === false`): بوضع "salla"
+ * الحساب باقٍ ويسجّل دخوله، فمحو قفله ورموزه ليس من طلبه.
+ */
+const EMAIL_KEYED_TABLES = ["login_attempts", "password_resets", "email_verifications"];
+
 /** جداول تاجر لا تُمحى — كل واحد بسببه. يقرؤها الحارس ليتأكد أن الترك واعٍ. */
 export const PURGE_EXEMPT = {
   merchants: "الصف يبقى مفرَّغاً؛ حذفه يكسر إعادة الربط بنفس المعرّف",
@@ -117,6 +130,19 @@ export async function purgeMerchantData(env, merchantId, { keepAccount = false }
   // وهو ليس ما طلبه، ويمنعه من إعادة الربط بنفس الحساب بضغطة.
   const tables = keepAccount ? PURGE_TABLES.filter((t) => t !== "accounts") : PURGE_TABLES;
 
+  // 2026-09-17: البريد يُقرأ **قبل** محو `accounts` — بعده لا مفتاح لجداول
+  // المصادقة المفتاحة بالبريد فتبقى إلى الأبد (SEC-5).
+  let accountEmail = null;
+  if (!keepAccount) {
+    try {
+      const row = await env.DB.prepare("SELECT email FROM accounts WHERE merchant_id = ?").bind(merchantId).first?.();
+      accountEmail = row?.email || null;
+    } catch (err) {
+      const msg = String(err?.message || err);
+      if (!/no such table/i.test(msg)) failed.push(`accounts.email: ${msg.slice(0, 80)}`);
+    }
+  }
+
   for (const table of tables) {
     try {
       // اسم الجدول من ثابت داخلي لا من مدخل — لا حقن ممكن.
@@ -126,6 +152,20 @@ export async function purgeMerchantData(env, merchantId, { keepAccount = false }
       // جدول غير موجود بهذي البيئة (هجرة لم تُطبَّق) ليس فشلاً حقيقياً.
       const msg = String(err?.message || err);
       if (!/no such table/i.test(msg)) failed.push(`${table}: ${msg.slice(0, 80)}`);
+    }
+  }
+
+  // 2026-09-17: بقايا المصادقة المفتاحة بالبريد — نفس دلالات `failed` (SEC-5).
+  if (accountEmail) {
+    for (const table of EMAIL_KEYED_TABLES) {
+      try {
+        // اسم الجدول من ثابت داخلي لا من مدخل — لا حقن ممكن.
+        await env.DB.prepare(`DELETE FROM ${table} WHERE email = ?`).bind(accountEmail).run();
+        purged += 1;
+      } catch (err) {
+        const msg = String(err?.message || err);
+        if (!/no such table/i.test(msg)) failed.push(`${table}: ${msg.slice(0, 80)}`);
+      }
     }
   }
 

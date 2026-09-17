@@ -13,7 +13,9 @@ import { logError } from "../../_lib/core/errorLog.js";
 import { deleteMerchantAccount, DELETE_CONFIRM_PHRASE, DELETE_MODES } from "../../_lib/domain/accountDeletion.js";
 
 async function deleteHandler(body, env, request, requestId, context) {
-  const rl = await checkRateLimit(env, clientIp(request), "store_delete", 5, 3600);
+  // 2026-09-17: fail-closed — فعل لا رجعة فيه، فعطل KV يجب أن يمنعه لا أن
+  // يفتحه بلا حدّ. التاجر يعيد المحاولة؛ المحو لا يُعاد — SEC-9.
+  const rl = await checkRateLimit(env, clientIp(request), "store_delete", 5, 3600, { failClosed: true });
   if (!rl.allowed) {
     return { error: `محاولات كثيرة. حاول بعد ${rl.resetInSeconds} ثانية.`, code: "RATE_LIMITED" };
   }

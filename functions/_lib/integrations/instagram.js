@@ -180,15 +180,27 @@ export async function receive(rawBody, signatureHeader, env) {
   return [...parseIgComments(payload), ...parseIgMessages(payload)];
 }
 
+// 2026-09-17: مهلة صريحة على كل نداء Graph إنستغرام — WP-A7 (SCALE-2).
+const IG_TIMEOUT_MS = 12000;
+
 async function igPost(url, token, body) {
-  const res = await fetch(assertIgUrlAllowed(url), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "content-type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
+  let res;
+  try {
+    res = await fetch(assertIgUrlAllowed(url), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(IG_TIMEOUT_MS)
+    });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error("instagram API timeout — استغرق الطلب أطول من ١٢ ثانية.");
+    }
+    throw err;
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(`instagram API failed: ${res.status} ${JSON.stringify(data).slice(0, 200)}`);
@@ -283,7 +295,15 @@ export async function send(env, to, payload) {
  */
 export async function refreshLongLivedToken(accessToken) {
   const url = `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(accessToken)}`;
-  const res = await fetch(assertIgUrlAllowed(url));
+  let res;
+  try {
+    res = await fetch(assertIgUrlAllowed(url), { signal: AbortSignal.timeout(IG_TIMEOUT_MS) });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error("instagram token refresh timeout — استغرق الطلب أطول من ١٢ ثانية.");
+    }
+    throw err;
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok || !data.access_token) {
     throw new Error(`instagram token refresh failed: ${res.status} ${JSON.stringify(data).slice(0, 200)}`);

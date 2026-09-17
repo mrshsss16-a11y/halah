@@ -71,7 +71,7 @@ async function main() {
     const storeJs = read("../../public/js/dashboard/store.js");
     assert(/errBox\.innerText = msg;\s*\n\s*errBox\.classList\.remove\("hidden"\);\s*\n\s*return;/.test(storeJs), "P0-17: فشل نظرة المتجر يظهر داخل التبويب لا بالشريط وحده");
     const pkg = JSON.parse(read("../../package.json"));
-    assert(/^npm test && /.test(pkg.scripts.deploy), "P0-18: النشر لا يمر بلا npm test");
+    assert(/^(npm run deploy:guard && )?npm test && /.test(pkg.scripts.deploy), "P0-18: النشر لا يمر بلا npm test (وقد يسبقه حارس الحساب deploy:guard — 2026-09-17)");
   }
 }
 

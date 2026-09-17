@@ -52,12 +52,65 @@ async function subscribeToWaba(wabaId, businessToken) {
 }
 
 /** Display name + number, so the dashboard can show what got connected. */
+// 2026-09-17: كان `if (!res.ok) return {}` يبلع فشل المزود ويُكمل الحفظ ببيانات
+// عرض فارغة — الآن يفشل مغلقاً (502) بدل ربط نصف صامت — SEC-1.
 async function fetchPhoneDetails(phoneNumberId, businessToken) {
   const res = await fetch(`${GRAPH}/${phoneNumberId}?fields=display_phone_number,verified_name`, {
     headers: { Authorization: `Bearer ${businessToken}` }
   });
-  if (!res.ok) return {};
+  if (!res.ok) {
+    throw new DomainError(502, "تعذر إكمال الربط مع واتساب. حاول مرة ثانية.", "PHONE_DETAILS_FAILED", `phone details HTTP ${res.status}`);
+  }
   return (await res.json().catch(() => ({}))) || {};
+}
+
+// 2026-09-17: `assertPhoneNotTaken` تمنع سرقة رقم مربوط عندنا فقط — لا تثبت
+// **ملكية** الرقم. كان `phoneNumberId` قيمة يرسلها العميل وتُحفظ بلا أي إثبات
+// أن التوكن المتبادَل يملكها، فكان بإمكان تاجر ربط رقم WABA ليس له. نسأل غراف
+// عن أرقام الـWABA بنفس التوكن ونشترط وجود الرقم بينها — SEC-1.
+const MAX_PHONE_PAGES = 5;
+
+/** `paging.next` من ميتا يحمل التوكن داخل الرابط — لا يُسجَّل ولا يُتبع خارج غراف. */
+async function listWabaPhoneIds(wabaId, businessToken) {
+  const ids = [];
+  let url = `${GRAPH}/${wabaId}/phone_numbers?fields=id&limit=50`;
+  for (let page = 0; page < MAX_PHONE_PAGES && url; page++) {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${businessToken}` } });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !Array.isArray(data?.data)) {
+      throw new DomainError(502, "تعذر التحقق من أرقام حساب واتساب للأعمال. حاول مرة ثانية.", "PHONE_LIST_FAILED", `phone_numbers HTTP ${res.status}`);
+    }
+    for (const row of data.data) if (row?.id) ids.push(String(row.id));
+    const next = data?.paging?.next;
+    url = typeof next === "string" && next.startsWith(`${GRAPH}/`) ? next : null;
+  }
+  return ids;
+}
+
+async function assertPhoneOwnedByWaba(wabaId, phoneNumberId, businessToken, { context, requestId, merchantId }) {
+  let ids;
+  try {
+    ids = await listWabaPhoneIds(wabaId, businessToken);
+  } catch (err) {
+    logError(context, {
+      requestId,
+      path: "/api/whatsapp/connect#phone-ownership",
+      code: err?.code || "PHONE_LIST_FAILED",
+      internal: err?.internal || "phone_numbers lookup failed",
+      storeId: merchantId
+    });
+    throw err;
+  }
+  if (ids.includes(String(phoneNumberId))) return;
+
+  logError(context, {
+    requestId,
+    path: "/api/whatsapp/connect#phone-ownership",
+    code: "PHONE_NOT_IN_WABA",
+    internal: `phone ${phoneNumberId} not among ${ids.length} numbers of waba ${wabaId}`,
+    storeId: merchantId
+  });
+  throw new DomainError(403, "هذا الرقم ليس ضمن حساب واتساب للأعمال الذي وافقت عليه.", "PHONE_NOT_IN_WABA");
 }
 
 /**
@@ -73,6 +126,8 @@ export async function assertPhoneNotTaken(env, phoneNumberId, merchantId) {
 /** يرجّع بيانات العرض فقط — التوكن لا يغادر الخادم إطلاقاً. */
 export async function connectWhatsappNumber(env, { merchantId, code, wabaId, phoneNumberId, context, requestId }) {
   const businessToken = await exchangeCodeForToken(env, code);
+  // 2026-09-17: إثبات الملكية قبل أي أثر جانبي (اشتراك/حفظ) — SEC-1.
+  await assertPhoneOwnedByWaba(wabaId, phoneNumberId, businessToken, { context, requestId, merchantId });
   await subscribeToWaba(wabaId, businessToken);
   const details = await fetchPhoneDetails(phoneNumberId, businessToken);
 

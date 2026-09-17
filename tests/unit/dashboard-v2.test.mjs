@@ -66,8 +66,10 @@ async function main() {
     "RM-3: القرار بنفس نقطة المراجعة، وكل الحقول المعدّلة تُحفظ قبل الاعتماد");
   assert(/reviewModalApproveAll[\s\S]{0,400}confirmAction\(/.test(rm) && /«ينشر» ما تُنشر/.test(rm) && /اللي لسه تنكتب ما تدخل/.test(rm),
     "RM-4: «اعتمد الكل» يمر بتأكيد يقول بالضبط ما يُنشر وما لا يُنشر");
-  assert(/escHtml\(r\.imageUrl\)/.test(rm) && /safeDescriptionHtml\(r\.currentDescription\)/.test(rm) && /escHtml\(r\.description/.test(rs) && /escHtml\(text\)/.test(rs) && /escHtml\(q\)/.test(rs) && /escHtml\(key\)/.test(rs) && /escHtml\(meta\)/.test(rs),
-    "RM-5: كل نص من سلة أو النموذج مهرَّب قبل HTML أو مصفّى بقائمة سماح («قبل» عبر safeDescriptionHtml) — بما فيه قيم حقول التحرير");
+  assert(/escHtml\(r\.imageUrl\)/.test(rm) && /safeDescriptionFragment\(r\.currentDescription\)/.test(rm) && /escHtml\(r\.description/.test(rs) && /escHtml\(text\)/.test(rs) && /escHtml\(q\)/.test(rs) && /escHtml\(key\)/.test(rs) && /escHtml\(meta\)/.test(rs),
+    // 2026-09-17 (SEC-6): «قبل» صار يُحقن كعقدة DOM مصفّاة (safeDescriptionFragment + replaceChildren)
+    // لا كسلسلة HTML عبر innerHTML — safeDescriptionHtml بقي مصدّراً للاستخدام بلا DOM (Node/تجريب) فقط.
+    "RM-5: كل نص من سلة أو النموذج مهرَّب قبل HTML أو مصفّى بقائمة سماح («قبل» عبر safeDescriptionFragment بلا سلسلة innerHTML) — بما فيه قيم حقول التحرير");
   assert(/openReviewModal, closeReviewModal, reviewModalNav, reviewModalDecide, reviewModalApproveAll/.test(main) && /startCatalogGenerate, openBulkProgress/.test(main),
     "RM-6: دوال النافذة وتقدّم التوليد منشورة على window");
   const reviewView = (() => { try { return read("../../functions/_lib/domain/reviewView.js"); } catch { return ""; } })();

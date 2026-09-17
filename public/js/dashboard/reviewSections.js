@@ -13,7 +13,10 @@ const LIMITS = { highlights: 8, faqs: 8, specsTable: 15 };
 // HTML للقراءة فقط من وصف سلة الحالي («قبل») — عناصر بقائمة سماح وبلا أي خصائص (§3 DESIGN_SPEC).
 // script/style/iframe/… تُزال كاملة، وأي وسم آخر خارج القائمة يُفكّ (يبقى محتواه لا وسمه)، بلا أي خاصية HTML.
 const ALLOWED_TAGS = new Set(["P", "BR", "UL", "OL", "LI", "TABLE", "THEAD", "TBODY", "TR", "TH", "TD", "STRONG", "EM", "B", "I"]);
-const STRIP_TAGS = ["script", "style", "iframe", "object", "embed", "link", "meta", "svg", "form", "input"];
+// 2026-09-17: math/noscript/template تُزال كاملة (SEC-7) — math قد يحمل MathML بأحداث/روابط
+// بمتصفحات تفسّرها، noscript يفكّه المتصفح فيُظهر HTML خام ما كان يُعرض، وtemplate
+// محتواه خامل بالعرض العادي لكنه قابل للانتزاع سكربتياً — لا فائدة تُبرر إبقاء أيٍّ منها.
+const STRIP_TAGS = ["script", "style", "iframe", "object", "embed", "link", "meta", "svg", "form", "input", "math", "noscript", "template"];
 
 function sanitizeWithDom(html) {
   const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
@@ -59,6 +62,37 @@ function sanitizeWithoutDom(html) {
 export function safeDescriptionHtml(html) {
   if (typeof DOMParser !== "undefined") return sanitizeWithDom(html);
   return sanitizeWithoutDom(html);
+}
+
+// 2026-09-17: SEC-6 — نفس التصفية أعلاه لكن بلا إعادة تسلسل السلسلة الناتجة عبر innerHTML.
+// المسار القديم (safeDescriptionHtml ثم el.innerHTML = ...) يمرّ فعلياً بمحلّلين اثنين: الأول
+// بالتصفية (DOMParser) والثاني بالإدراج (innerHTML الفعلي) — أي هروب من قائمة السماح يفلت من الأول
+// بصياغة نص لا يفسَّرها DOMParser كوسم لكن يفسّرها محلّل innerHTML (تفاوتات محلّلي HTML موثّقة).
+// هنا نأخذ عقدة DOM المصفّاة فعلياً وننقلها لمستند العرض عبر adoptNode — لا سلسلة نصية تُعاد
+// أبداً لأي innerHTML، فينتفي مسار الهروب هذا بالكامل. يبقى بلا DOM (اختبارات Node) بلا دعم —
+// الاستدعاء يتحقق من وجود DOMParser ويستثني بوضوح بدل تمرير سلسلة بصمت.
+export function safeDescriptionFragment(html) {
+  if (typeof DOMParser === "undefined" || typeof document === "undefined") {
+    throw new Error("safeDescriptionFragment requires DOM (browser only) — use safeDescriptionHtml in Node/tests");
+  }
+  const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
+  doc.querySelectorAll(STRIP_TAGS.join(",")).forEach((n) => n.remove());
+  const commentIter = doc.createNodeIterator(doc.body, NodeFilter.SHOW_COMMENT);
+  const comments = [];
+  let c;
+  while ((c = commentIter.nextNode())) comments.push(c);
+  comments.forEach((n) => n.remove());
+  const walk = (node) => {
+    [...node.children].forEach((el) => {
+      walk(el);
+      [...el.attributes].forEach((a) => el.removeAttribute(a.name));
+      if (!ALLOWED_TAGS.has(el.tagName)) el.replaceWith(...el.childNodes);
+    });
+  };
+  walk(doc.body);
+  const frag = document.createDocumentFragment();
+  [...doc.body.childNodes].forEach((n) => frag.appendChild(document.adoptNode(n)));
+  return frag;
 }
 
 const INPUT = "w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-black leading-relaxed focus:outline-none focus:border-slate-400";

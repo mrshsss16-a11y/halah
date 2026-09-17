@@ -64,19 +64,32 @@ function externalVisionTiers(env) {
   return tiers;
 }
 
+// 2026-09-17: مهلة صريحة على مزوّدي الرؤية الخارجيين — WP-A7 (SCALE-2). ٢٠ ثانية
+// لأن الحمولة صورة مرفوعة لا نص، تحتاج وقتاً أطول من نداءات نصية عادية.
+const EXTERNAL_VISION_TIMEOUT_MS = 20000;
+
 async function askExternalVision({ url, apiKey, model, extra, question, dataUrl }) {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      max_tokens: 700,
-      // بلا حرارة صريحة يعتمد Groq القيمة 1.0 فخرجت عربية مكسورة («شقين أسود مطاوير»، 2026-09-12 02:22).
-      temperature: 0.2,
-      ...extra,
-      messages: [{ role: "user", content: [{ type: "text", text: question }, { type: "image_url", image_url: { url: dataUrl } }] }]
-    })
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model,
+        max_tokens: 700,
+        // بلا حرارة صريحة يعتمد Groq القيمة 1.0 فخرجت عربية مكسورة («شقين أسود مطاوير»، 2026-09-12 02:22).
+        temperature: 0.2,
+        ...extra,
+        messages: [{ role: "user", content: [{ type: "text", text: question }, { type: "image_url", image_url: { url: dataUrl } }] }]
+      }),
+      signal: AbortSignal.timeout(EXTERNAL_VISION_TIMEOUT_MS)
+    });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error("timeout: استغرق الطلب أطول من ٢٠ ثانية.");
+    }
+    throw err;
+  }
   if (!res.ok) throw new Error(`${res.status}: ${String(await res.text().catch(() => "")).slice(0, 200)}`);
   return readVisionText(await res.json());
 }

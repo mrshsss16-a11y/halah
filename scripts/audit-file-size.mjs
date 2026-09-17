@@ -78,6 +78,15 @@ function walk(dir, ext, out = []) {
 const rel = (p) => relative(ROOT, p).replace(/\\/g, "/");
 const lineCount = (p) => readFileSync(p, "utf8").split("\n").length;
 
+// 2026-09-17: WP-A10 — تحذير مبكر قبل سقف functions/_lib (٤٠٠ سطر): ملف يقترب
+// من السقف (≥٣٩٠) يُطبع كتحذير فقط، بلا تغيير كود الخروج — الهدف تنبيه المطوّر
+// قبل أن يتحوّل الاقتراب إلى فشل فعلي (ويحتاج تقسيماً مستعجلاً)، لا فرض قاعدة
+// جديدة. يطبَّق فقط على السقف الأكثر ازدحاماً حالياً (٤٠٠، functions/_lib)؛
+// السقفان الآخران (٨٠ و٨٠٠) بلا اقتراب مسجَّل اليوم.
+const WARN_THRESHOLD = 390;
+const WARN_CAP_LABEL = "functions/_lib/**";
+const nearCapWarnings = [];
+
 const failures = [];
 const seenAllowed = new Set();
 const snapshot = [];
@@ -93,6 +102,7 @@ for (const { label, dir, ext, cap, flat } of CAPS) {
     const n = lineCount(f);
     if (n <= cap) {
       if (ALLOWLIST.has(r)) seenAllowed.add(r); // نزل تحت السقف — تنظيف الاستثناء لاحقاً، لا فشل
+      if (label === WARN_CAP_LABEL && n >= WARN_THRESHOLD) nearCapWarnings.push([r, n]);
       continue;
     }
     snapshot.push([r, n]);
@@ -122,6 +132,12 @@ for (const r of ALLOWLIST.keys()) {
   if (!seenAllowed.has(r) && existsSync(join(ROOT, r))) {
     failures.push(`استثناء لم يعد لازماً: ${r} نزل تحت سقفه — احذفه من ALLOWLIST وأنقص EXPECTED_ALLOWLIST.`);
   }
+}
+
+if (nearCapWarnings.length) {
+  nearCapWarnings.sort((a, b) => b[1] - a[1]);
+  console.warn(`⚠ تدقيق أحجام الملفات — ${nearCapWarnings.length} ملفاً يقترب من سقف ${WARN_CAP_LABEL} (٤٠٠ سطر):`);
+  for (const [r, n] of nearCapWarnings) console.warn(`  ${r}: ${n} سطراً`);
 }
 
 if (failures.length) {

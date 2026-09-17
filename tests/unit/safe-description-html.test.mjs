@@ -63,6 +63,12 @@ async function main() {
     const got = safeDescriptionHtml('<SCRIPT>alert(1)</SCRIPT><DIV onclick="x()">نص</DIV>');
     assert(!/script/i.test(got) && !/<div/i.test(got) && !/onclick/i.test(got) && /نص/.test(got), `SD-11: حالة الأحرف لا تتجاوز الفلترة («${got}»)`);
   }
+
+  {
+    // SEC-7 (2026-09-17): math/noscript/template تُحذف كاملة — لا تُفكّ كوسم عادي يبقى محتواه.
+    const got = safeDescriptionHtml('قبل<math><mtext>x</mtext></math><noscript><img src=x onerror=alert(1)></noscript><template><script>alert(2)</script></template>بعد');
+    assert(!/math|mtext|noscript|template/i.test(got) && !/<img/i.test(got) && !/<script/i.test(got) && /قبل/.test(got) && /بعد/.test(got), `SD-12: math/noscript/template تُحذف كاملة بمحتواها («${got}»)`);
+  }
 }
 
 main().then(done);

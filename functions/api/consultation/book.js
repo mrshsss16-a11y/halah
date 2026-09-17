@@ -12,7 +12,9 @@ const PHONE_RE = /^\+?\d{9,15}$/;
 
 async function bookHandler(body, env, request) {
   const ip = clientIp(request);
-  const rateCheck = await checkRateLimit(env, ip, "consultation_book", 5, 300);
+  // 2026-09-17: fail-closed — نقطة عامة بلا جلسة تكتب صفوفاً بالقاعدة، فعطل KV
+  // بلا حدّ يعني إغراق حجوزات بلا سقف. رفض مؤقت أرخص من سجل مسموم — SEC-9.
+  const rateCheck = await checkRateLimit(env, ip, "consultation_book", 5, 300, { failClosed: true });
   if (!rateCheck.allowed) {
     return json({ ok: false, error: `محاولات كثيرة جداً. حاول بعد ${rateCheck.resetInSeconds} ثانية.` }, 429);
   }

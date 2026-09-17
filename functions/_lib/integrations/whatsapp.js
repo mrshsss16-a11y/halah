@@ -50,6 +50,22 @@ export function assertWaUrlAllowed(rawUrl) {
   return parsed.toString();
 }
 
+// 2026-09-17: مهلة موحّدة لكل نداء Graph — WP-A7 (SCALE-2). بلا هذا يعلّق رد
+// العميل كاملاً لو تأخر Meta، بدل فشل سريع يمرّره المستدعي كخطأ واتساب عادي.
+const WA_TIMEOUT_MS = 12000;
+
+/** يلفّ fetch بمهلة، ويحوّل انتهاءها لخطأ من نفس صنف أخطاء واتساب الحالية. */
+async function waFetch(url, opts, timeoutMsg) {
+  try {
+    return await fetch(url, { ...opts, signal: AbortSignal.timeout(WA_TIMEOUT_MS) });
+  } catch (err) {
+    if (err?.name === "TimeoutError" || err?.name === "AbortError") {
+      throw new Error(timeoutMsg);
+    }
+    throw err;
+  }
+}
+
 /**
  * Resolve which credentials to send with. A merchant connection always wins;
  * env is the fallback for Aura's own line.
@@ -93,20 +109,24 @@ export async function verifyWaSignature(rawBody, signatureHeader, appSecret) {
 export async function sendWaText(env, { to, body, conn = null }) {
   const creds = waCreds(env, conn);
   if (!creds) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
-  const res = await fetch(assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${creds.token}`,
-      "content-type": "application/json"
+  const res = await waFetch(
+    assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.token}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "text",
+        text: { preview_url: false, body: body.slice(0, 4000) }
+      })
     },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to,
-      type: "text",
-      text: { preview_url: false, body: body.slice(0, 4000) }
-    })
-  });
+    "whatsapp send timeout — استغرق الطلب أطول من ١٢ ثانية."
+  );
   const data = await res.json();
   if (!res.ok) {
     throw new Error(`whatsapp send failed: ${res.status} ${JSON.stringify(data).slice(0, 200)}`);
@@ -118,19 +138,23 @@ export async function sendWaText(env, { to, body, conn = null }) {
 export async function sendWaTemplate(env, { to, template, lang = "ar", components = [], conn = null }) {
   const creds = waCreds(env, conn);
   if (!creds) throw new Error("WhatsApp غير مفعّل.");
-  const res = await fetch(assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${creds.token}`,
-      "content-type": "application/json"
+  const res = await waFetch(
+    assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.token}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to,
+        type: "template",
+        template: { name: template, language: { code: lang }, components }
+      })
     },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "template",
-      template: { name: template, language: { code: lang }, components }
-    })
-  });
+    "whatsapp template timeout — استغرق الطلب أطول من ١٢ ثانية."
+  );
   const data = await res.json();
   if (!res.ok) throw new Error(`whatsapp template failed: ${res.status} ${JSON.stringify(data).slice(0, 200)}`);
   return data?.messages?.[0]?.id;
@@ -140,31 +164,35 @@ export async function sendWaTemplate(env, { to, template, lang = "ar", component
 export async function sendWaInteractiveList(env, { to, bodyText, buttonText, rows, conn = null }) {
   const creds = waCreds(env, conn);
   if (!creds) throw new Error("WhatsApp غير مفعّل — أضف WHATSAPP_TOKEN و WHATSAPP_PHONE_ID.");
-  const res = await fetch(assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${creds.token}`,
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      recipient_type: "individual",
-      to,
-      type: "interactive",
-      interactive: {
-        type: "list",
-        body: { text: bodyText },
-        action: {
-          button: buttonText,
-          // WhatsApp's Cloud API hard-caps interactive lists at 10 rows total —
-          // truncate defensively so a future WEEKLY_SLOTS growth bug fails safe
-          // (a shorter list) instead of a hard 400 from Meta that drops the
-          // whole send.
-          sections: [{ title: "الفتحات المتاحة", rows: rows.slice(0, 10) }]
+  const res = await waFetch(
+    assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(creds.phoneId)}/messages`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${creds.token}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "interactive",
+        interactive: {
+          type: "list",
+          body: { text: bodyText },
+          action: {
+            button: buttonText,
+            // WhatsApp's Cloud API hard-caps interactive lists at 10 rows total —
+            // truncate defensively so a future WEEKLY_SLOTS growth bug fails safe
+            // (a shorter list) instead of a hard 400 from Meta that drops the
+            // whole send.
+            sections: [{ title: "الفتحات المتاحة", rows: rows.slice(0, 10) }]
+          }
         }
-      }
-    })
-  });
+      })
+    },
+    "whatsapp interactive list timeout — استغرق الطلب أطول من ١٢ ثانية."
+  );
   const data = await res.json();
   if (!res.ok) {
     throw new Error(`whatsapp interactive list failed: ${res.status} ${JSON.stringify(data).slice(0, 200)}`);
@@ -211,19 +239,23 @@ export async function getWaMedia(env, mediaId, conn = null) {
   if (!creds) throw new Error("WhatsApp غير مفعّل.");
 
   const metaUrl = assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(mediaId)}`);
-  const res = await fetch(metaUrl, {
-    headers: { Authorization: `Bearer ${creds.token}` }
-  });
+  const res = await waFetch(
+    metaUrl,
+    { headers: { Authorization: `Bearer ${creds.token}` } },
+    "whatsapp media metadata timeout — استغرق الطلب أطول من ١٢ ثانية."
+  );
   const data = await res.json();
   if (!res.ok || !data.url) throw new Error(`whatsapp media GET failed: ${res.status}`);
 
   // `data.url` يأتي من رد Graph — ليس من كودنا. ثبّت مضيفه قبل لصق التوكن به.
   const dlUrl = assertWaUrlAllowed(data.url);
-  const dlRes = await fetch(dlUrl, {
-    headers: { Authorization: `Bearer ${creds.token}` }
-  });
+  const dlRes = await waFetch(
+    dlUrl,
+    { headers: { Authorization: `Bearer ${creds.token}` } },
+    "whatsapp media download timeout — استغرق الطلب أطول من ١٢ ثانية."
+  );
   if (!dlRes.ok) throw new Error(`whatsapp media download failed: ${dlRes.status}`);
-  
+
   return await dlRes.arrayBuffer();
 }
 
@@ -253,14 +285,18 @@ export async function getWaMedia(env, mediaId, conn = null) {
  * number) and new messages still flow in normally from that point on.
  */
 export async function requestCoexistenceSync(wabaId, businessToken, syncType) {
-  const res = await fetch(assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(wabaId)}/smb_app_data`), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${businessToken}`,
-      "Content-Type": "application/json"
+  const res = await waFetch(
+    assertWaUrlAllowed(`${GRAPH}/${encodeURIComponent(wabaId)}/smb_app_data`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${businessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ messaging_product: "whatsapp", sync_type: syncType })
     },
-    body: JSON.stringify({ messaging_product: "whatsapp", sync_type: syncType })
-  });
+    "whatsapp coexistence sync timeout — استغرق الطلب أطول من ١٢ ثانية."
+  );
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(`smb_app_data ${syncType} failed: ${res.status} ${detail.slice(0, 300)}`);
