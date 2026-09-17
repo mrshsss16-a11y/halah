@@ -13,6 +13,7 @@ import { handleInboundBatch, verifyInboundSignature, parseInboundPayload } from 
 import { logError } from "../../_lib/core/errorLog.js";
 import { checkRateLimit, clientIp } from "../../_lib/core/rateLimit.js";
 import { timingSafeEqualStr } from "../../_lib/core/crypto.js";
+import { readBoundedBody, filterUnseen } from "../../_lib/core/webhookGuard.js";
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
@@ -28,7 +29,9 @@ export async function onRequestGet(context) {
 
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const rawBody = await request.text();
+  // 2026-09-17: سقف الحجم **قبل** حساب الـHMAC — SEC-2 (core/webhookGuard.js).
+  const rawBody = await readBoundedBody(request);
+  if (rawBody === null) return new Response(JSON.stringify({ error: "payload too large" }), { status: 413, headers: { "content-type": "application/json" } });
 
   const ok = await verifyInboundSignature(
     rawBody,
@@ -59,9 +62,14 @@ export async function onRequestPost(context) {
   // sends from the WhatsApp Business phone app itself — recorded too so the
   // conversation history/RAG context the bot sees stays complete.
   // Ack immediately; process in the background (Meta expects a fast 200).
-  context.waitUntil(
-    handleInboundBatch(env, context, parseInboundPayload(payload))
-  );
+  // 2026-09-17: Meta تعيد إرسال الدفعة عند أي تأخر — نرشّح المعرّفات المعالَجة
+  // سابقاً فقط، فلا تسقط الرسائل الجديدة بنفس الدفعة معها — SEC-2.
+  const { inbound, echoes } = parseInboundPayload(payload);
+  context.waitUntil((async () => {
+    const seen = (m) => (m?.id ? `wa:${m.id}` : null);
+    const batch = { inbound: await filterUnseen(env, inbound, seen), echoes: await filterUnseen(env, echoes, seen) };
+    return handleInboundBatch(env, context, batch);
+  })());
 
   return new Response("ok", { status: 200 });
 }

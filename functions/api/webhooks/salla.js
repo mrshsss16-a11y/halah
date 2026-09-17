@@ -10,6 +10,7 @@ import { verifySallaSignature, processVerifiedSallaEvent } from "../../_lib/doma
 import { logWebhook } from "../../_lib/domain/platforms.js";
 import { kickoffFirstSync } from "../../_lib/domain/catalogSync.js";
 import { logError } from "../../_lib/core/errorLog.js";
+import { readBoundedBody, seenEvent, sallaEventKey } from "../../_lib/core/webhookGuard.js";
 
 const log = (context, code, storeId, internal) =>
   logError(context, { requestId: null, path: "webhooks/salla", code, storeId, internal });
@@ -36,7 +37,9 @@ export async function onRequestGet(context) {
 }
 
 async function sallaWebhookHandler(request, env, requestId, context) {
-  const rawBody = await request.text();
+  // 2026-09-17: سقف الحجم **قبل** حساب الـHMAC — SEC-2 (core/webhookGuard.js).
+  const rawBody = await readBoundedBody(request);
+  if (rawBody === null) return json({ error: "payload too large" }, 413);
   let payload;
   try {
     payload = JSON.parse(rawBody);
@@ -54,6 +57,10 @@ async function sallaWebhookHandler(request, env, requestId, context) {
     context.waitUntil(logWebhook(env, { platform: "salla", event, merchantId: null, payload: { rejected: true }, signatureOk: false }).catch(() => {}));
     return json({ error: "invalid signature" }, 401);
   }
+
+  // 2026-09-17: سلة تعيد الإرسال ٣ مرات عند أي تأخر — إعادة التنفيذ تعني تثبيتاً
+  // أو مزامنة مكرَّرة. التكرار يُقرّ بـ200 بلا أي أثر جانبي — SEC-2.
+  if (await seenEvent(env, await sallaEventKey(payload, rawBody))) return json({ ok: true });
 
   // نقرّ بسرعة؛ التصريف والتسجيل بالخلفية بـdomain (مهلة سلة ٣٠ ثانية).
   context.waitUntil(processVerifiedSallaEvent(env, {
