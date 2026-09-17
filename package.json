@@ -17,6 +17,6 @@
     "deploy": "npm run deploy:guard && npm test && npm run build && npm run verify:dist && wrangler pages deploy dist --project-name hala-ai-os --branch=main && npm run smoke"
   },
   "devDependencies": {
-    "wrangler": "^3.90.0"
+    "wrangler": "^4.133.0"
   }
 }

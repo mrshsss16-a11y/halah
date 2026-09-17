@@ -10,6 +10,8 @@
  *  ح٦ audit-store-gates   : resolveStoreId بملف تاجر/AI بلا تعليق `store-gate-ok: <سبب>` (P48)
  *  ح٧ audit-html-sinks    : innerHTML مع قالب `${...}` غير ملفوف بـesc(/escHtml( بأي *.html (P43/P47)
  *  ح٨ audit-postmessage   : event.origin مع endsWith/includes/indexOf بدل مطابقة تامة (P55)
+ *  ح١١ audit-log-sinks    : console.error/warn/log بقيمة ديناميكية خارج core/errorLog.js (LOG-1)
+ *  ح١٢ audit-nul-bytes    : بايت NUL خام بأي ملف تحت functions/**
  *  ح٩ audit-secret-columns: عمود D1 اسمه *_token أو *_secret يُكتب بقيمة لم تمرّ
  *                           بـencryptSecret (core/crypto.js) بأي ملف تحت functions/**
  *
@@ -266,9 +268,58 @@ for (const f of fnFiles) {
   });
 }
 
+// ── ح١١ ─────────────────────────────────────────────────────────────────────
+// LOG-1 — لماذا: `console.error/warn/log` بقيمة متغيّرة تحت functions/** تسكب
+// رسائل مزوّدين ونصوص طلبات في مجرى سجل Cloudflare بلا تنقية: رسالة خطأ من
+// Graph API قد تحمل التوكن المرفوض، و`err.stack` قد يحمل ترويسة Authorization.
+// المسار الوحيد المسموح هو `core/errorLog.js` (يطبّق sanitizeInternal ثم يكتب).
+// نداء بوسائط كلها سلاسل حرفية ثابتة يمرّ (لا شيء ديناميكي ليُسرَّب).
+// الاستثناء المبرَّر: تعليق `// log-ok: <سبب>` بنفس السطر أو السطر السابق —
+// يُستعمل حين تكون القيمة منقّاة سلفاً بـsanitizeInternal ولا نريد صف D1 لكل
+// سقوط طبقة متوقع (ai/gateway.js). النطاق functions/** فقط: scripts/ وcron
+// خارج مسار الطلب ولا يريان بيانات تاجر. (2026-09-17)
+const LOG_OWNER = "functions/_lib/core/errorLog.js";
+const LOG_CALL = /console\s*\.\s*(error|warn|log|info|debug)\s*\(/;
+const LOG_MARKER = /log-ok:\s*\S/;
+/** يزيل السلاسل الحرفية؛ ما يتبقّى فيه حرف كلمة = وسيط ديناميكي. */
+function hasDynamicArg(args) {
+  const stripped = args
+    .replace(/`[^`]*`/g, "")
+    .replace(/"(?:[^"\\]|\\.)*"/g, "")
+    .replace(/'(?:[^'\\]|\\.)*'/g, "");
+  return /[\w$]/.test(stripped);
+}
+const logFiles = process.env.AUDIT_LOG_DIR ? walk(join(ROOT, process.env.AUDIT_LOG_DIR), ".js") : fnFiles;
+for (const f of logFiles) {
+  const r = rel(f);
+  if (r.endsWith("core/errorLog.js") || r === LOG_OWNER) continue;
+  const lines = readFileSync(f, "utf8").split("\n");
+  lines.forEach((line, i) => {
+    if (/^\s*(\/\/|\*|\/\*)/.test(line)) return;
+    const m = LOG_CALL.exec(line);
+    if (!m) return;
+    if (LOG_MARKER.test(line) || LOG_MARKER.test(lines[i - 1] || "")) return;
+    const argsStart = m.index + m[0].length;
+    const end = closeParen(line, argsStart);
+    const args = line.slice(argsStart, end < 0 ? line.length : end);
+    if (!hasDynamicArg(args)) return;
+    fail("ح١١", `${r}:${i + 1}`, `console.${m[1]}( بقيمة ديناميكية — مرّرها بـlogError (core/errorLog.js) أو برّر بتعليق \`// log-ok: <سبب>\` (LOG-1)`);
+  });
+}
+
+// ── ح١٢ ─────────────────────────────────────────────────────────────────────
+// بايت NUL خام داخل ملف مصدر: يجعل الملف «binary» لكل أداة نصية (grep، diff،
+// مراجعة الفروقات) فيختفي من التدقيق. المكافئ النصي `\u0000` ينتج نفس البايتات
+// عند الترميز فلا يتغيّر أي مفتاح كاش. (2026-09-17)
+for (const f of logFiles) {
+  if (readFileSync(f).includes(0)) {
+    fail("ح١٢", rel(f), "بايت NUL خام بملف مصدر — استبدله بالتهريب `\\u0000` (نفس البايتات، ملف نصي)");
+  }
+}
+
 if (failures.length) {
   console.error("✖ تدقيق الأمن: ارتداد مكتشف —");
   for (const x of failures) console.error("  " + x);
   process.exit(1);
 }
-console.log("✔ تدقيق الأمن: ح٢ ح٥ ح٦ ح٧ ح٨ ح٩ ح١٠ سليمة.");
+console.log("✔ تدقيق الأمن: ح٢ ح٥ ح٦ ح٧ ح٨ ح٩ ح١٠ ح١١ ح١٢ سليمة.");
