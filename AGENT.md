@@ -1,322 +1,374 @@
-# AGENT.md — دليل بنية مشروع هالة (Hala AI OS) لأي وكيل ذكاء اصطناعي
+# AGENT.md — دليل بنية مشروع هالة لأي وكيل ذكاء اصطناعي
 
-> اقرأ هذا الملف كامل قبل أي تعديل. يشرح البنية، القواعد الصارمة، والمشاكل المفتوحة.
-> آخر تدقيق شامل: 2026-07-31 · §٣ و§٦ مُزامنان مع الشجرة 2026-09-08.
-
----
-
-## 1. ما هو المشروع
-
-**هالة** = مساعدة خدمة عملاء بالذكاء الاصطناعي، بلهجة سعودية بيضاء، تخدم **أورا للتسويق**
-(وكالة تسويق رقمي سعودية، مقرها مكة). تعمل على واتساب وعلى ويدجت الموقع. تجاوب استفسارات
-العملاء، تحجز استشارات، وتتكامل مع منصات المتاجر (سلة، Trendyol، زد).
-
-**مهم:** "هالة" شخصية خدمة عملاء **تمثّل أورا** — ليست منتجاً يُباع باسم "هالة". لا تفترض أن
-العميل صاحب متجر إلكتروني؛ قد يكون أي نشاط تجاري.
+> اقرأ هذا الملف كاملاً قبل أي تعديل. آخر مزامنة شاملة مع الكود: **2026-09-17** (موجة التحصين A).
+> قاعدة القارئ: **تحقّق من أي سطر هنا بـ`ملف:سطر` قبل الاعتماد عليه** — الوثائق تفوت التحديث.
 
 ---
 
-## 2. البنية التقنية — كل شيء على Cloudflare
+## ١. ما هو المشروع
+
+منتجان مبنيان على نفس المستودع والبنية التحتية، ولا يُخلطان:
+
+**أ) «هالة سلة» — كتابة أوصاف المنتجات.** تطبيق داخل متجر سلة (Easy Mode): يسحب منتجات
+التاجر، يقرأ صور المنتج، ويكتب وصفاً عربياً قابلاً للنشر مباشرة. **قيد المراجعة من سلة**؛
+اجتماع المراجعة **2026-10-06**. هذا هو المنتج المعروض اليوم بلوحة التاجر.
+
+**ب) «هالة» — شات بوت/وكيل تواصل خارج سلة.** ردود على واتساب وودجت الموقع بلهجة سعودية
+بيضاء تمثّل **أورا للتسويق** (وكالة سعودية بمكة): تجاوب، تحجز استشارات، تُصعّد للبشر.
+**ميتا وافقت 2026-09-15**، لكن المنتج **غير مُظهَر** للتجار (تبويب واتساب والودجت مخفيان
+حتى بعد قبول سلة). الكود حيّ ومختبَر، والعرض فقط هو المؤجَّل.
+
+قواعد المنتجين: الشخصية لا تذكر سعراً أبداً (§٥)، ولا استيراد متبادل بين مساري المنتجين،
+وأي ادعاء بأن ميزة «نشطة» يجب أن يطابق ما يفعله الكود فعلاً (§٥ قاعدة الصدق).
+
+---
+
+## ٢. البنية التقنية — كل شيء على Cloudflare
 
 | الطبقة | التقنية |
 |---|---|
-| الاستضافة | Cloudflare Pages (مشروع `hala-ai-os`, فرع الإنتاج **`main`**) |
-| الواجهة | HTML ثابت (جذر المستودع) + `partials/` عبر `#include` → `scripts/stage.mjs` |
-| الـ API | Pages Functions: `functions/api/*` → `/api/*` |
-| توليد النصوص | AI Gateway متعدد المزودين (`functions/_lib/ai/gateway.js`) — انظر §5 |
-| ذاكرة RAG | Vectorize `halah-tr-faq` (embeddings `@cf/baai/bge-m3`, عزل بـ metadata `storeId`) |
-| قاعدة البيانات | D1 `halah-tr-db` (id: `4d8955ff-f2db-4447-8817-fe1149cce582`) |
-| كاش + rate limit | KV `HALA_CACHE` |
+| الاستضافة | Cloudflare Pages (مشروع `hala-ai-os`، فرع الإنتاج **`main`**، دومين `halah.aura.sa`) |
+| الواجهة | HTML ثابت بجذر المستودع + `partials/` عبر `#include` → `scripts/stage.mjs` |
+| الـAPI | Pages Functions: `functions/api/**` → `/api/*` (٥٧ ملف endpoint) |
+| توليد النصوص | AI Gateway متعدد الطبقات (`functions/_lib/ai/gateway.js`) — §٨ |
+| قراءة الصور | `functions/_lib/ai/vision.js` + `domain/visionFacts.js` (كاش حقائق) — §٨ |
+| ذاكرة RAG | Vectorize `halah-tr-faq` (`@cf/baai/bge-m3`، عزل بـmetadata `storeId`) |
+| قاعدة البيانات | D1 `halah-tr-db` (`4d8955ff-f2db-4447-8817-fe1149cce582`)، هجرات `0001..0031` |
+| كاش + حدود معدّل | KV `HALA_CACHE` |
+| الـcron | Worker منفصل `cron-worker/` كل ١٠ دقائق يضرب `api/cron/*` بـ`CRON_SECRET` (Pages بلا cron) |
 
-Bindings معرّفة في `wrangler.toml`: `AI`, `VECTORIZE_INDEX`, `DB`, `HALA_CACHE`.
+Bindings بـ`wrangler.toml`: `AI`, `VECTORIZE_INDEX`, `DB`, `HALA_CACHE`.
+**قرار محسوم:** HTML ثابت + `functions/`. **لا Astro** ولا أي أداة تنتج `dist/_worker.js` (§٤).
 
 ---
 
-## 3. خريطة المجلدات (العقد المعماري بـ`docs/ARCHITECTURE.md` — مفروض آلياً بـ`npm test`)
+## ٣. خريطة المجلدات والعقد المعماري
+
+العقد الكامل: **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — الشجرة المستهدفة، اتجاه
+التبعيات (ق١–ق٦)، والحراس التي تفرضها. ما يلي خريطة تنقّل فقط.
 
 ```
 functions/
   _lib/
-    core/          بنية تحتية فقط: respond (withApi + withApi.raw) · errors (ApiError/DomainError) · errorLog
-                   session · identity · csrf · crypto · cors · rateLimit · security · oauthState · adminEmails
-                   auditLog · heartbeat · limits · meter
-    domain/        منطق الأعمال — ملف لكل مجال، لا يعرف HTTP: auth · accounts · salla · whatsapp ·
-                   whatsappAutoReply · whatsappInbound · whatsappConnect · bulk · bulkTick · catalog · catalogSync
-                   review · reviewGuards · publish · copy · copyParse · conversation · support · storeProfile
-                   storeOverview · sallaProductPayload · quota · faq · booking · analytics · health · instagram
-                   persona · platforms · auraAgent
+    core/          بنية تحتية فقط، صفر منطق أعمال: respond · errors · errorLog · session · identity
+                   csrf · crypto · cors · rateLimit · security · oauthState · adminEmails · auditLog
+                   heartbeat · limits · meter
+    domain/        منطق الأعمال، ملف لكل مجال، لا يعرف HTTP: auth · accounts · salla · sallaWelcome
+                   whatsapp · whatsappAutoReply · whatsappInbound · whatsappConnect · bulk · bulkTick
+                   catalog · catalogSync · review · reviewGuards · publish · copy · copyParse · copyPhrases
+                   conversation · support · storeProfile · storeOverview · sallaProductPayload · quota
+                   faq · booking · analytics · health · instagram · persona · platforms · merchantPurge
+                   visionFacts · auraAgent
     integrations/  محوّلات HTTP خالصة (صفر D1): salla · whatsapp · instagram · email
-    ai/            gateway · vision · parseModelJson · guards (أسعار + محدِّدات) · persona (المصدر الوحيد)
-                   prompts/{seo,chat,support,whatsapp,instagram} · memory · intents · productTaxonomy · supportPlaybook
-    imageProvider.js
-  api/**           تنسيق فقط (≤ ٨٠ سطراً، صفر SQL، صفر prompt، لا يستورد integrations):
-                   auth/* · store/{catalog,bulk,review,…} · admin/* · whatsapp/* · instagram/webhook · webhooks/salla
-                   cron/{reminders,healthcheck,bulk_process} · chat · copy · support · image · health · stats · usage
-cron-worker/         Worker منفصل */10 يضرب الـcron الثلاث بـCRON_SECRET
-partials/            head-common (كل الصفحات) · dashboard-* · admin-*   (#include عبر scripts/stage.mjs)
-public/js/           shared.js · dashboard/{state,api,render,catalog,studio,bulk,review,agent,whatsapp,store,account,tabs,main}.js · admin/*
-styles/              01..08 تُدمج في dist/style.css (08-shared-components = الأصناف المشتركة بقيمة واحدة)
-*.html               صفحات هيكلية قصيرة (dashboard 43 سطراً، admin 40)
-migrations/          مخطط D1 (0001..0027) — انظر §6
-persona/             مولَّد آلياً من ai/persona.js بـscripts/export-persona.mjs — لا يُحرَّر يدوياً
-tests/unit/*         ٢٤ ملف وحدة · tests/integration/* ٦ موجات · tests/frontend.test.mjs · tests/_helpers.mjs
-scripts/             stage (ينظّف dist ثم يبني) · verify-dist · run-tests (يجمع tests/**، حد أدنى ١٠١٠ تأكيداً)
-                     audit-{isolation,security,dead-exports,file-size,layering,migrations,frontend} (كلها ضمن npm test)
-                     backup-db · smoke-test · export-persona
+    ai/            gateway · nexos · vision · parseModelJson · guards · persona (المصدر الوحيد)
+                   prompts/{seo,chat,support,whatsapp,instagram} · memory · intents · productTaxonomy
+                   attributeDictionary · decisionQuestions · supportPlaybook
+  api/**           تنسيق فقط (≤٨٠ سطراً، صفر SQL، صفر prompt، لا يستورد integrations)
+cron-worker/       Worker مستقل */10
+partials/          head-common · dashboard-* · admin-*   (#include بـstage.mjs)
+public/js/         shared.js · dashboard/*.js · admin/*.js
+styles/            01..08 تُدمج في dist/style.css
+migrations/        0001..0031 — §٦
+persona/           مولَّد آلياً من ai/persona.js (scripts/export-persona.mjs) — لا يُحرَّر يدوياً
+tests/             unit/ (٨١ ملفاً) · integration/ (٦ موجات) · frontend.test.mjs · _helpers.mjs
+scripts/           §١١
 ```
 
-**الحراس (قوائم السماح صفرية):** أي ملف `api` فوق ٨٠ سطراً أو `_lib` فوق ٤٠٠ أو HTML فوق ٨٠٠، أي استيراد بالاتجاه الخاطئ (ق١–ق٦)، أي تصدير بلا مستورد، أي عمود بلا هجرة، أي `innerHTML` غير مهرَّب، أي `resolveStoreId` بلا تبرير — يُسقط `npm test`.
+**الحراس (قوائم سماح صفرية، كلها داخل `npm test`):** ملف `api` فوق ٨٠ سطراً، أو `_lib` فوق
+٤٠٠، أو HTML فوق ٨٠٠ · استيراد بالاتجاه الخاطئ (ق١–ق٦) · تصدير بلا مستورد · عمود بلا هجرة ·
+`innerHTML` غير مهرَّب · `resolveStoreId` بلا تبرير · `console.*` بقيمة ديناميكية خارج
+`errorLog.js` (ح١١) · بايت NUL خام (ح١٢).
 
 ---
 
-## 4. البناء والنشر — نظام واحد فقط
-
-**قرار معماري محسوم (2026-07-31): HTML ثابت + `functions/`. لا Astro.**
-تجربة Astro مؤرشفة في `docs/archive/astro-experiment/` (لا تُبنى ولا تُنشر).
+## ٤. البناء والنشر — مسار واحد فقط
 
 ```bash
-npm run deploy      # build (stage.mjs) → verify-dist → نشر على main
+npm run deploy   # deploy:guard → npm test → build → verify:dist → wrangler --branch=main → smoke
 ```
 
-### ⚠️ اللغم الذي فرض هذا القرار
+- **انشر بـ`npm run deploy` فقط.** لا `wrangler pages deploy` يدوياً: تتخطى الحراس والدخان.
+- `deploy:guard` (`scripts/check-wrangler-account.mjs`) يقارن حساب Cloudflare بالمتوقَّع
+  (`d1d225ac2dc19ecc3942e26056e6478c`) ويوقف النشر عند أي فرق — منع النشر بحساب خاطئ.
+- **حارس الهجرات (م٣ بـ`audit-migrations.mjs`) يحجب النشر عند وجود هجرة غير مطبَّقة على
+  البعيد.** الحل قبل النشر لا تعطيل الحارس:
+  ```bash
+  npx wrangler d1 migrations apply halah-tr-db --remote
+  ```
+- **لا تُدخل Astro.** `astro build` ينتج `dist/_worker.js` فيحوّل Pages لـAdvanced Mode
+  ويتجاهل `functions/` كاملاً — أسقط كل الـendpoints إلى 404 فعلاً (2026-07-31)، بما فيها
+  ويبهوك واتساب وتسجيل الدخول. `scripts/verify-dist.mjs` يمنعه آلياً؛ لا تُعطّله.
+- **بلا `--branch=main`** يذهب النشر لفرع Preview ولا يراه أحد على الدومين الحي.
+- **لا `_redirects` بقواعد `/x /x.html 200`** — Pages يخدم المسارات النظيفة تلقائياً،
+  والقاعدة تُنتج حلقة 308 لا نهائية (أسقطت `/dashboard` داخل إطار سلة 2026-09-09).
 
-`astro build` مع محوّل Cloudflare ينتج `dist/_worker.js`. وجوده يحوّل Cloudflare Pages إلى
-**Advanced Mode**، وفيه **يتجاهل مجلد `functions/` بالكامل**. حدث فعلياً وأسقط كل الـ ٥٦
-endpoint إلى 404 على الإنتاج — بما فيها ويبهوك واتساب وتسجيل الدخول.
-
-**الحماية الآلية:** `scripts/verify-dist.mjs` يعمل داخل `npm run deploy` ويرفض النشر
-(exit 1) لو وجد `_worker.js` أو `_routes.json`. لا يمكن تكرار العطل عبر المسار الطبيعي.
-
-- ✅ `dist/` = HTML + `_headers` فقط.
-- ✅ النشر يطبع `✔ dist/ is safe` ثم `✨ Uploading Functions bundle`.
-- ✅ **انشر دائماً بـ `--branch=main`** (مضمّن في `npm run deploy`) — بدونها يذهب لفرع
-  Preview ولا يراه أحد على الدومين الحي.
-- ❌ لا تُعِد إدخال Astro أو أي أداة تنتج `_worker.js` بدون هجرة كاملة ومقصودة لكل
-  الـ endpoints (اقرأ `docs/archive/astro-experiment/README.md` أولاً).
-
-### ⚠️ لا `_redirects` بقواعد `/x /x.html 200`
-Cloudflare Pages يخدم المسارات النظيفة تلقائياً (`/dashboard` ← `dashboard.html`) ويحوّل
-`/dashboard.html` → `/dashboard` بـ308. قاعدة rewrite إلى `.html` تُنتج **حلقة 308 لا نهائية**
-— حدث فعلياً 2026-09-09 وأسقط `/dashboard` (إطار سلة) حتى حُذف الملف. لا تُنشئ `_redirects`
-لمسارات نظيفة؛ تُستخدم فقط لتحويلات حقيقية (دومين قديم → جديد).
-
-### التحقق الإلزامي بعد أي نشر
+### التحقق الإلزامي بعد كل نشر
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://hala-ai-os.pages.dev/api/health   # 200
-curl -s -o /dev/null -w "%{http_code}\n" -X POST \
-  https://hala-ai-os.pages.dev/api/whatsapp/webhook -d '{}'                        # 401
-npx wrangler pages deployment list --project-name hala-ai-os | grep Production
+curl -s -o /dev/null -w "%{http_code}\n" https://hala-ai-os.pages.dev/api/health                 # 200
+curl -s -o /dev/null -w "%{http_code}\n" -X POST .../api/whatsapp/webhook   -d '{}'              # 401
+curl -s -o /dev/null -w "%{http_code}\n" -X POST .../api/webhooks/salla     -d '{}'              # 401
+curl -s -o /dev/null -w "%{http_code}\n" -X POST .../api/whatsapp/webhook   --data-binary @1mb   # 413
+curl -sI https://halah.aura.sa/admin | grep -iE 'cache-control|x-robots-tag'   # no-store + noindex
 ```
-404 على أي منهما = الـ API ساقط.
+ثم **يدوياً**: توليد وصف حيّ من لوحة التاجر (يثبت أن مسار AI كامل يعمل)، ومراجعة
+`/api/admin/errors` (جدول `error_log`) بحثاً عن أخطاء جديدة. 404 على أي فحص = الـAPI ساقط.
 
 ---
 
-## 5. AI Gateway — تعاقب أربع طبقات (`functions/_lib/ai/gateway.js`)
+## ٥. قواعد لا تُكسر
 
-قبل أي استدعاء: بحث في كاش KV (`HALA_CACHE`). ثم بالترتيب:
+### البناء
+- النشر بـ`npm run deploy` فقط، على `--branch=main`، وبعد تطبيق كل هجرة.
+- لا أداة تنتج `_worker.js` أو `_routes.json` بـ`dist/`.
+- سقوف الأحجام والحراس ليست اقتراحاً: لا قائمة سماح، لا تعطيل، لا `// eslint-disable` مكافئ.
 
-1. **Cloudflare Workers AI** — `@cf/meta/llama-3.3-70b-instruct-fp8-fast` (الأساسي، مجاني على الحافة)
-2. **Groq** — لو `GROQ_API_KEY` مضبوط
-3. **OpenRouter** — لو `OPENROUTER_API_KEY` مضبوط (نماذج مجانية)
+### الأمن
+- **لا أسرار بالكود ولا قيم افتراضية للأسرار.** غياب السر = رمي خطأ (fail closed)، لا
+  «تمرير برشاقة». ثلاث ثغرات مصادقة حرجة نشأت من كسر هذه القاعدة وأُغلقت (commit `47f569b`).
+- لا باب خلفي، لا كلمة مرور بالكود، لا تجاوز مصادقة بأي علم بيئة.
+- لا تثق بهوية يرسلها العميل (بريد/معرّف/`phoneNumberId`) — تحقق منها من مصدرها بالتوكن.
+- الجلسة كوكي HMAC `merchantId.expiry.sessionVersion.hmac`؛ `resolveStoreId` يجعل الجلسة
+  تتغلب دائماً على أي `storeId` يدّعيه العميل.
+- تواقيع الويبهوكس (`X-Salla-Signature`, `X-Hub-Signature-256`) مقارنة ثابتة الزمن، ورفض
+  401 صارم؛ `state` بتدفقات OAuth إلزامي. لا تُضعَّف أي منها.
+- `requireAdmin` يقارن بـ`ADMIN_EMAILS` فقط — **لا عمود `is_admin`** بالقاعدة عمداً.
 
-`TEXT_MODEL` هو الافتراضي المعتمد للجودة. `FAST_TEXT_MODEL` (3b) أسرع لكن **جودته أضعف
-بوضوح للعربية** — اختُبر ورُفض لمحادثات هالة (يهلوس ويخترع خدمات). لا تستخدمه لردود العملاء.
+### الصدق
+لا بيانات مفبركة تُعرض كأنها حقيقية: لا أسعار مخترعة، لا طلبات/عملاء وهميون، لا ادعاء
+«نشط» لنظام غير مضبوط، لا ادعاء امتثال قانوني. ينطبق على الكود التجريبي أيضاً.
 
----
-
-## 6. قاعدة البيانات — D1 `halah-tr-db`
-
-- Migrations في `migrations/` (0001..0027 كلها مطبَّقة على البعيد، تحقق 2026-09-09 — 0027 `cron_heartbeat` طُبِّقت ونبض الـcron `ok` بـ`/api/health`)  انظر §13 O2). طبّق بـ: `npx wrangler d1 migrations apply halah-tr-db --remote`
-- 0003 placeholder (للحفاظ على تسلسل الأرقام). 0010 أنشأ الجداول الناقصة سابقاً.
-- **جداول بالمخطط لا يذكرها الكود — المصدر الوحيد للقائمة.**
-  `scripts/audit-migrations.mjs` (فحص م٢) يقرأ الكتلة أدناه حرفياً؛ لا تكرّرها بالسكربت.
-  لتغيير القائمة: عدّل هنا فقط. حذف أي منها من الإنتاج **يحتاج نسخة احتياطية
-  متحقَّقاً منها (`npm run backup`) + قرار مالك المشروع** — قرار مؤجَّل، انظر
-  `docs/DEFERRED.md`.
-
-  <!-- LEGACY_TABLES:START (تُقرأ آلياً — سطر لكل جدول: `اسم` — السبب) -->
-  - `users` — legacy من بناء سابق، حلّت محلها accounts/merchants
-  - `faqs` — legacy، حلّ محلها store_faqs
-  - `store_connections` — legacy، حلّ محلها oauth_tokens/wa_connections
-  - `synced_products` — legacy، حلّ محلها store_products
-  - `merchant_marketing_contexts` — legacy من بناء سابق
-  - `store_documents` — legacy من بناء سابق
-  - `merchants_meta` — بيانات وصفية تشغيلية تُقرأ بأدوات التشغيل لا بالكود
-  - `pending_retargeting` — مخطط بلا ميزة؛ دواله الميتة حُذفت بالمرحلة ١
-  <!-- LEGACY_TABLES:END -->
-- **قبل أي ادعاء أن جدولاً موجود، تحقق فعلياً:**
-  `npx wrangler d1 execute halah-tr-db --remote --command "SELECT name FROM sqlite_master WHERE type='table'"`
-
-### النسخ الاحتياطي (`scripts/backup-db.mjs`)
-
-- `npm run backup` يصدّر D1 كاملة (مخطط + بيانات) إلى `backups/` (مستثنى من git)، ويتحقق بعد
-  التصدير أن الملف يحوي `CREATE TABLE accounts` وأن عدد أسطره > ١٠٠ — وإلا `exit 1` ولا يُعتمَد
-  على الملف (O5، 2026-09-09).
-- **النسخ يدوي ومحلي فقط.** لا رفع تلقائي لأي تخزين خارجي (R2 أو غيره) — القرار بيد مالك
-  المشروع، وهذا السكربت لا يتخذه نيابة عنه. يبقى `backups/` على جهاز المشغّل حتى يُنقَل يدوياً.
-- لا اختبار استعادة آلي بعد (مذكور كدَين منخفض بـ`docs/EVALUATION_2026-09-09.md`).
+### الشخصية
+مصدر واحد: `functions/_lib/ai/persona.js` (`HALA_WHATSAPP_SUPPORT_PROMPT` للواتساب،
+`HALA_SUPPORT_PROMPT` للموقع)؛ عدّل معه النسخة المرجعية بـ`persona/` عبر `export-persona.mjs`.
+**البوت ممنوع يذكر أي رقم سعر** — يوجّه للاستشارة المجانية. `DISABLE_ESCALATION_GATES`
+يبقى `false` بالإنتاج؛ عند التصعيد أو رد بشري يصمت البوت ساعتين.
 
 ---
 
-## 7. الأمن وعزل المتاجر (multi-tenant)
+## ٦. دروس لا تتكرر
 
-- **الجلسة:** كوكي موقّع HMAC، الشكل `merchantId.expiry.sessionVersion.hmac` (`core/session.js`). النسخة
-  تُقرأ من KV (`sv:<merchant>`) ثم D1؛ الخروج/إعادة التعيين/التعطيل يرفعونها فيقتلون كل توكن أقدم (P40).
-- **CSRF:** `core/csrf.js` داخل `withApi()` وبالمعالجات الخام — Origin بقائمة سماح + جسم JSON فقط (P42). `SESSION_SECRET` **إلزامي** — الكود يرمي خطأ بدونه (لا قيمة افتراضية مكتوبة).
-- **`resolveStoreId`:** الجلسة تتغلب دائماً على أي `storeId` يدّعيه العميل. متجر بلا حساب
-  (تثبيت سلة Easy-Mode) يُعرّف بـ id غير قابل للتخمين فقط.
-- **`requireAdmin`:** يتحقق من إيميل الحساب مقابل `ADMIN_EMAILS` (سر بيئة) فقط. **لا عمود
-  `is_admin` في قاعدة البيانات** — عمداً: لا مسار لمنح صلاحية أدمن بالكتابة للـ DB.
-- **تواقيع الـ webhooks:** سلة (`X-Salla-Signature`) وواتساب (`X-Hub-Signature-256`) —
-  HMAC-SHA256 على الـ body الخام، مقارنة timing-safe. رفض صارم (401) عند الفشل.
-- **OAuth CSRF:** تدفقات سلة وزد تمرّر `state` موقّع HMAC (`core/oauthState.js`) مربوط
-  بكوكي `hala_oauth_state` قصير العمر (١٠ دقائق، استخدام واحد). الـ callback يرفض (400)
-  أي طلب بلا state صالح ومطابق للكوكي — يمنع ربط متجر المهاجم بجلسة الضحية.
-
-### قواعد ذهبية للأمن (لا تكسرها)
-- لا أسرار مكتوبة بالكود، لا قيم افتراضية للأسرار. غياب السر = رمي خطأ، لا "تمرير برشاقة".
-- لا باب خلفي، لا كلمة مرور مكتوبة، لا تجاوز مصادقة بأي علم بيئة.
-
----
-
-## 8. شخصية هالة (`functions/_lib/ai/persona.js`)
-
-مصدر واحد فقط: `HALA_WHATSAPP_SUPPORT_PROMPT` (لواتساب) و `HALA_SUPPORT_PROMPT` (للموقع).
-`aura_whatsapp.js` يستورد من نفس المصدر (لا تكرار). قواعد الشخصية المضمّنة:
-
-- تعرّف بنفسها أول رسالة فقط، تفهم قصد العميل (لا نمط ثابت حسب طول الرسالة).
-- **ممنوع منعاً باتاً ذكر أي رقم سعر** — توجّه للاستشارة المجانية دائماً.
-- ممنوع اختلاق خدمة غير موجودة أو ربط موضوع غريب بأورا بشكل مصطنع.
-- تطابق لغة العميل (عربي/إنجليزي)، تصحح الأخطاء الإملائية بصمت.
-- المواضيع الشخصية/الترفيهية: تحوّلها بخفة، ليست صديقة ولا معالجة. ضيق نفسي حقيقي → `[ESCALATE]`.
-- حجز الاستشارة **آخر خطوة** بعد فهم الحاجة، لا أول رد.
-
-**بوابات التصعيد** (`whatsapp/webhook.js`): `DISABLE_ESCALATION_GATES` يجب أن يبقى `false`
-في الإنتاج. عند التصعيد أو رد بشري يدوي، البوت يصمت ساعتين (`HUMAN_SILENCE_WINDOW_MS`).
-
----
-
-## 9. واتساب
-
-- استقبال: `POST /api/whatsapp/webhook` (تحقق توقيع → تسجيل → رد تلقائي).
-- إرسال: `functions/_lib/integrations/whatsapp.js` (Cloud API, `graph.facebook.com/v21.0`).
-- الأسرار: `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID`, `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_APP_SECRET`.
-- التوكن الحالي **مؤقت** (ينتهي كل ~ساعة). المطلوب: **System User Token دائم** من Meta
-  Business Settings (صلاحيات `whatsapp_business_messaging` + `whatsapp_business_management`).
-- Webhook URL بميتا: `https://hala-ai-os.pages.dev/api/whatsapp/webhook`, verify token: `hala2026verify`.
-- Coexistence: الرقم يعمل بالتطبيق + API معاً؛ الرد اليدوي يصل كـ echo (`source: "human"`).
+| التاريخ | العرض | السبب | القاعدة |
+|---|---|---|---|
+| 2026-07-31 | كل الـ٥٦ endpoint 404 بالإنتاج | `dist/_worker.js` من Astro حوّل Pages لـAdvanced Mode | لا تُدخل أداة تنتج `_worker.js`؛ أبقِ `verify-dist` فعّالاً |
+| 2026-07-31 | ثلاث ثغرات مصادقة | أسرار بقيم افتراضية «كي لا ينكسر التشغيل» | لا قيمة افتراضية لسر — غيابه يرمي خطأ |
+| 2026-09-09 | `/dashboard` داخل سلة بحلقة 308 | `_redirects` بقاعدة `/x /x.html 200` | لا `_redirects` لمسار نظيف |
+| 2026-09-06 | ٦ بنود دَين موثّقة وهي مُصلَحة، وبند مُصلَح وهو ليس كذلك | نقل بين نسخ الوثيقة بلا تحقق | لا تنقل بنداً بلا `ملف:سطر` يثبته اليوم |
+| 2026-09-06 | `[observability]` أسقط النشر | Pages يرفض المفتاح (Workers-only) | لا تُعِده؛ التسجيل عبر `error_log` + `/api/admin/errors` |
+| 2026-09-08 | تذكرة برقمين مختلفين ورقم موظف مفبرك | مصدران للرقم + قيمة افتراضية | مصدر واحد للبيانات؛ غياب `STORE_WA_PHONE` = تخطٍّ مُسجَّل لا رقم مخترع |
+| 2026-09-12 | تاجر واحد استهلك سعة اليوم للجميع | حصة شهرية بلا حد يومي | الحصص يومية للموارد المتجددة يومياً + سقف عام فوقها |
+| 2026-09-14 | أوصاف أزياء ناقصة الوصف | قراءة مجانية للصور بفئات دقيقة | فئات الأزياء تُقرأ بـLuna أولاً، والقراءة تُحفظ (`vision_facts`) |
+| 2026-09-17 | ملفات وكلاء آخرين رجعت للخلف | وكيل شغّل `git stash` في شجرة عمل مشتركة | ممنوع `stash/checkout/reset/clean` بشجرة مشتركة؛ الحزم المتوازية بـworktree معزول |
+| 2026-09-17 | اختبار N9-2 على `_headers` انكسر بلا تغيير منطقي | أداة تحرير حوّلت LF↔CRLF | حافظ على نهايات الأسطر وتحقق بـ`file` بعد كل تعديل |
+| 2026-09-17 | تعبير regex بـJS انكسر | heredoc بايثون حوّل `\n` داخله إلى سطر حقيقي | عدّل التعابير بأداة Edit لا بسلاسل مُفسَّرة بصدفة/heredoc |
+| 2026-09-17 | النشر متوقف (`audit-migrations` م٣) | هجرة جديدة غير مطبَّقة على البعيد | طبّق `wrangler d1 migrations apply --remote` قبل `npm run deploy` |
+| 2026-09-17 | متغير بيئة بقيمة فيها مسافة زائدة | `set X=val && …` بـcmd يُدخل المسافة | استخدم `set "X=val"` أو PowerShell أو `env -u` |
+| 2026-09-17 | `gateway.js` عُومل كملف ثنائي (grep لا يقرأه) | بايت NUL حرفي داخل قالب مفتاح الكاش | لا بايتات تحكم خام بالمصدر؛ استخدم الهروب `\u0000` (حارس ح١٢) |
+| 2026-09-17 | 429 من Tier-0 nexos بالتوليد الجماعي | نداءات متوازية على مزوّد بحد معدّل | التوليد الجماعي تسلسلي من الصفحة |
+| 2026-09-17 | التوليد توقف للتجار بعد نشر سليم | كاش الحافة خدم HTML قديماً مع JS جديد | لوحة التاجر `no-store` + قاعدة Bypass للكاش على `halah.aura.sa` |
+| 2026-09-17 | تجاوز الحد اليومي بطلبين متوازيين | العدّاد KV «اقرأ ثم اكتب» غير ذرّي | العدّادات الحرجة ذرّية بـD1 (`INSERT … ON CONFLICT … WHERE`) |
+| 2026-09-17 | تاجر جدّد اشتراكه فتعطّل حسابه | `app.trial.expired` كان يحذف التوكنات | الانتهاء **إيقاف** لا حذف — لا تُتلف بيانات على حدث دورة حياة |
+| 2026-09-17 | رقم واتساب تاجر قابل للاستيلاء | `phoneNumberId` من جسم الطلب بلا إثبات ملكية | تحقق من العضوية بـ`GET /{wabaId}/phone_numbers` قبل الربط |
+| 2026-09-17 | احتمال تسريب مفتاح للسجل | `console.warn(e.message)` بجسم خطأ مزوّد | كل تسجيل عبر `logError`/`sanitizeInternal` (حارس ح١١) |
+| 2026-09-17 | ويبهوك بلا سقف حجم ولا منع تكرار | HMAC يُحسب على جسم غير محدود، وإعادة الإرسال تُعالَج مرتين | سقف ~512KB قبل HMAC + dedupe بـKV لكل ويبهوك |
+| 2026-09-17 | حذف حساب لا يمسح كل أثره | جداول مفتاحها البريد خارج `merchantPurge` | كل جدول جديد يُسجَّل بمسار الحذف فوراً |
+| 2026-09-17 | نداءات خارجية قد تعلّق للأبد | لا `AbortSignal.timeout` على أي fetch | كل fetch خارجي بمهلة ٨–١٥ ثانية |
+| 2026-09-17 | مفاتيح KV تتراكم بلا نهاية | كتابة KV بلا TTL | كل مفتاح KV بـTTL صريح (اختبار `kv-ttl`) |
+| 2026-09-17 | مسح كامل للجدول كل تِك cron | استعلام تجميعي بلا فهرس | فهرس قبل أي `GROUP BY` بمسار cron |
+| 2026-09-17 | ملفات على بُعد سطر من سقف ٤٠٠ | نمو بلا قسمة | اقسم عند ٣٩٠ (تحذير `file-size`) بإعادة تصدير `export {…} from` — صفر تعديل مستوردين |
+| 2026-09-17 | اختبارات تنكسر من إعادة تنسيق | ٤١ اختباراً يقرأ المصدر بـ`readFileSync` | لا `readFileSync` باختبار جديد — اختبر السلوك باستيراد الوحدة |
+| 2026-09-17 | وثيقة تصف ما لم يعد صحيحاً | ميزة شُحنت بلا تحديث AGENT.md | أي ميزة/سر/حصة جديدة تُحدَّث هنا بنفس الدفعة |
+| 2026-09-17 | تدوير مفتاح يضرب المنتجين معاً | مفاتيح AI مشتركة بين «هالة سلة» و«هالة» | سجّل التدوير بجدول §١٠ وبلّغ قبل أي تدوير مشترك |
+| 2026-09-17 | لا مسار لتدوير `ENCRYPTION_KEY` | تشفير بإصدار واحد بلا `enc:v2` | لا تُدوّر `ENCRYPTION_KEY` قبل شحن `enc:v2` — التدوير اليوم يسقط كل توكنات المتاجر |
 
 ---
 
-## 10. الأسرار والمتغيرات (محدَّثة 2026-09-09 — `grep -rhoE 'env\.[A-Z_]+|env\?\.[A-Z_]+' functions cron-worker`)
+## ٧. كيف تضيف
 
-إضافة أي سر: `npx wrangler pages secret put NAME --project-name hala-ai-os`.
+**endpoint جديد** ①`functions/api/<مسار>.js` ≤٨٠ سطراً ②`withApi()` للتحقق وCSRF
+③صفر SQL وصفر prompt — استدعِ `domain/` ④لا تستورد `integrations/` مباشرة ⑤أعد `json()` من
+`core/respond.js` ⑥اختبار عقد بـ`tests/unit/` ⑦`npm test` ⑧حدّث §٣ إن أضفت مجالاً.
 
-### أسرار إلزامية (غيابها = رمي خطأ، لا قيمة افتراضية)
-- `SESSION_SECRET` — توقيع كوكي الجلسة (HMAC). بدونه `core/session.js`/`core/csrf.js` يرميان خطأ.
-- `ENCRYPTION_KEY` — تشفير بيانات اعتماد الأطراف الثالثة بالراحة (`core/crypto.js`):
-  `oauth_tokens.access_token/refresh_token` · `platform_connections.api_key/api_secret` ·
-  `wa_connections.business_token` · `ig_connections.access_token`. غيابه = رمي عند الكتابة
-  (fail closed). حارس ح٩ بـ`audit-security.mjs` يمنع عودة أي عمود `*_token`/`*_secret` لنص صريح.
-- `ADMIN_EMAILS` — قائمة إيميلات مفصولة بفواصل يقارنها `requireAdmin`/`adminEmails.js` — لا عمود `is_admin`.
-- `SALLA_APP_ID`, `SALLA_CLIENT_ID`, `SALLA_CLIENT_SECRET` — تدفق OAuth Easy Mode لسلة.
-- `SALLA_WEBHOOK_SECRET` — تحقق `X-Salla-Signature` بـ`webhooks/salla.js` (401 عند الفشل).
-- `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_ID` — إرسال رسائل واتساب (Cloud API، خط أورا).
-- `WHATSAPP_VERIFY_TOKEN` — تحقق GET webhook عند إعداده بميتا.
-- `WHATSAPP_APP_SECRET` — تحقق `X-Hub-Signature-256` (`verifyWaSignature`، fail-closed).
-- `CRON_SECRET` — يحرس `Authorization: Bearer` على `api/cron/*` كلها؛ بدونه الوظائف ترفض 500 (`CRON_NOT_CONFIGURED`) بدل تشغيل بلا حماية.
+**مجال (domain) جديد** ①ملف واحد بـ`functions/_lib/domain/` ②صفر `Response` وصفر HTTP
+③يستورد `core/` و`integrations/` فقط، لا `api/` ④≤٤٠٠ سطر (اقسم عند ٣٩٠) ⑤لا يستورد أكثر
+من ١٠ أشقاء ⑥اختبار سلوك باستيراد الوحدة ⑦أضِف الاسم لـ§٣.
 
-### اختيارية بمزوّد (fallback يُعطَّل بلا كسر التشغيل، أو تحسين اختياري)
-- `GROQ_API_KEY` — الطبقة الثانية بتعاقب AI Gateway.
-- `OPENROUTER_API_KEY` — الطبقة الثالثة (نماذج مجانية).
-- `HF_TOKEN` — احتياطي `imageProvider.js` (Hugging Face) خلف klein الأساسي.
-- `TURNSTILE_SECRET_KEY` — تحقق كابتشا Turnstile؛ غيابه يمرّر الطلبات (N7، دَين موثّق).
-- `RESEND_API_KEY` — إرسال بريد (رابط استعادة كلمة المرور `domain/passwordReset.js`، رمز تحقق الإيميل) عبر `integrations/email.js`؛ غيابه = `forgot_password` يرد 503 صريحة + `RESET_EMAIL_NOT_CONFIGURED` (fail-closed).
-- `EMAIL_FROM` — عنوان المرسل لنفس مزوّد البريد (دومين موثَّق عند Resend، مثل `هالة <no-reply@send.aura.sa>`). رابط الاستعادة ثابت على `https://halah.aura.sa/reset-password` (لا يُبنى من Host).
-- `GOOGLE_CLIENT_ID` — تحقق توكن Google Sign-In بـ`auth/google.js`.
-- `META_APP_ID`, `META_APP_SECRET` — تطبيق ميتا لإنستغرام/واتساب Embedded Signup.
-- `INSTAGRAM_APP_SECRET`, `INSTAGRAM_VERIFY_TOKEN` — ويبهوك إنستغرام (مبني، غير مفعَّل بعد).
-- `WA_SIGNUP_CONFIG_ID` — Embedded Signup لواتساب من لوحة التاجر؛ غيابه يعطّل تبويب الربط بصدق (لا وهم اتصال).
+**تبويب/ميزة واجهة (partial + js)** ①`partials/dashboard-<اسم>.html` ②`public/js/dashboard/<اسم>.js`
+③سجّل الدوال على `window` من `main.js` وحده (لا `onclick` يشير لدالة غير مسجَّلة)
+④`#include` بالصفحة ⑤الأصناف من `styles/08-shared-components` ⑥`escHtml` لأي نص من المستخدم
+⑦اختبار بـ`tests/frontend.test.mjs` ⑧`npm test` (حارس `audit-frontend`).
 
-### إعدادات بيئة غير سرية
-- `STORE_WA_PHONE` — رقم واتساب الموظف/الأدمن لتذكيرات الاستشارة وتنبيهات الصحة؛ غيابه = تخطي تذكير الموظف مع تسجيل، لا رقم مفبرك (P49).
-- `MERCHANT_WA_PHONE` — بديل تسمية لنفس الغرض بمسارات أقدم.
-- `WHATSAPP_MERCHANT_ID` — معرّف WABA لبعض عمليات Coexistence.
-- `WIDGET_ALLOWED_ORIGINS` — قائمة سماح CORS لودجت `/api/support`.
-- `HALA_DEBUG_AI` — تفعيل تسجيل تشخيصي إضافي لمسار AI (تطوير فقط).
+**هجرة** ①`migrations/00NN_<اسم>.sql` بترقيم متسلسل ②`npm run backup` قبل أي تغيير مدمِّر
+③`npx wrangler d1 migrations apply halah-tr-db --remote` ④حدّث الكود ليستخدم العمود/الجدول
+⑤أضِف الجدول لمسار الحذف (`domain/merchantPurge.js`) ⑥`npm test` (م١/م٢/م٣) ⑦لا تنشر قبل
+نجاح م٣.
 
-### Bindings (ليست أسراراً — `wrangler.toml`)
-`AI` (Workers AI), `VECTORIZE_INDEX`, `DB` (D1)، `HALA_CACHE` (KV).
+**سر جديد** ①استعمله بـ`env.NAME` بلا قيمة افتراضية، والغياب يرمي أو يعطّل الميزة بصدق
+②`npx wrangler pages secret put NAME --project-name hala-ai-os` ③أضِفه لجرد §١٠ بتصنيفه
+④وثّق أثر غيابه ⑤إن كان يُخزَّن بالقاعدة فبتشفير `core/crypto.js` (حارس ح٩) ⑥اختبار
+fail-closed ⑦لا تطبع قيمته بأي سجل.
 
----
+**اختبار** ①`tests/unit/<موضوع>.test.mjs` ②استورد الوحدة واختبر سلوكها — **لا `readFileSync`
+على المصدر** ③استخدم `createRunner`/`fakeKv` من `tests/_helpers.mjs` ④أكّد الحالة السلبية
+(رفض/401/حد) لا الإيجابية وحدها ⑤اسم التأكيد يحمل معرّف البند ⑥`npm test` كاملاً.
 
-## 11. قاعدة الصدق (مبدأ أساسي للمشروع)
+**حارس جديد** ①`scripts/audit-<اسم>.mjs` يمشي الشجرة نصياً ②تحذير أولاً (طباعة بلا فشل)
+حتى تُنظَّف المخالفات القائمة ③ثم صارم بقائمة سماح صفرية ④رسالة الفشل تقول **ماذا تفعل**
+⑤أضِفه لـ`npm test` و`npm run check` بـ`package.json` ⑥اختبار للحارس نفسه ⑦اذكره بـ§١١.
 
-لا بيانات مفبركة تُعرض كأنها حقيقية — لا أسعار مخترعة، لا أرقام طلبات وهمية، لا أسماء عملاء
-وهمية، لا ادعاء "نشط 100%" لنظام غير مضبوط، لا ادعاء امتثال قانوني (PDPL) بمجرد فحص تقني.
-هذا يشمل الكود التجريبي: أي endpoint يرجّع بيانات وهمية يجب حذفه أو تعليمه بوضوح.
+**قسمة ملف بإعادة تصدير** ①انقل الكتلة لملف جديد بنفس المجلد ②`export {…} from "./new.js"`
+بالملف الأصلي — صفر تعديل بأي مستورد ③لا تغيّر أي توقيع دالة ④`npm test` يجب أن يمر بلا
+تعديل اختبار ⑤الملفات الحساسة (`salla.js`, `session.js`, `meter.js`) كل واحد بنشر منفصل
+⑥بعد النشر: `curl` + توليد حيّ ⑦`graphify update .`.
+
+**تكامل خارجي** ①`functions/_lib/integrations/<اسم>.js` بعقد `isConfigured/send/receive`
+②صفر D1 وصفر منطق أعمال ③`AbortSignal.timeout` على كل fetch ④تحقق توقيع + سقف حجم +
+dedupe لأي ويبهوك ⑤الأسرار fail-closed و§١٠ ⑥الميزة مخفية بصدق عند غياب السر ⑦اختبار
+يثبت الرفض بلا توقيع.
+
+**درس** ①أضِف صفاً لجدول §٦ بالتاريخ والعرض والسبب ②القاعدة بصيغة الأمر ③إن أمكن فرضها
+آلياً أضِف حارساً أو اختباراً ④اربطها بالبند بالباكلوج ⑤لا تحذف صفاً قديماً — الجدول يكبر.
 
 ---
 
-## 12. سير العمل
+## ٨. مرجع الحصص والطبقات
+
+**الحصص (`functions/_lib/core/meter.js`):**
+
+| الدلو | الحد | النطاق |
+|---|---|---|
+| `description` | **٥ يومياً** لكل متجر | `DAILY_BUCKET_LIMITS` |
+| `description` (عام) | **٢٥ يومياً** للمشروع كله | `GLOBAL_DAILY_LIMITS` — **حد إطلاق** يُرفع بقرار موثَّق |
+| `message` | ٣٠٠ شهرياً | `MONTHLY_BUCKET_LIMITS` |
+| `image` | ٢٠ شهرياً | `MONTHLY_BUCKET_LIMITS` |
+
+الإعفاء: `hala` ثابت بالكود (خط أورا التشغيلي) + `UNMETERED_MERCHANT_IDS` (متغير بيئة،
+مطابقة تامة بعد التشذيب). الإعفاء للحصة وحدها — حدود المعدّل تبقى سارية. العدّاد D1 هو
+مصدر الحقيقة (`INSERT … ON CONFLICT`)، وKV طبقة تسريع بـTTL ٢٥ ساعة/٣٢ يوماً.
+
+**تعاقب النص (`ai/gateway.js`)** — كاش KV أولاً (`ttlKind`: `copy` ٢٤س، `chat` ١٥د):
+
+1. **Tier 0 — nexos.ai (GPT 5.6 Luna)** للأوصاف فقط (`ttlKind === "copy"`) بسقف يومي
+   (`ai/nexos.js` / `reserveNexosCall`). **المحادثة والدعم لا يمران من nexos إطلاقاً.**
+2. Cloudflare Workers AI → 3. Groq → 4. Gemini → 5. OpenRouter →
+   Tier 5: nexos مرة أخيرة إن لم يُجرَّب بالطبقة ٠ (للأوصاف فقط).
+
+**الرؤية (`ai/vision.js` + `domain/visionFacts.js`):** فئات الأزياء (`womens_apparel`,
+`abayas` — قراءة منظّمة) تذهب لـ**Luna أولاً**؛ غيرها **Qwen 3.8 على Workers AI** (ثم Groq
+وOpenRouter)، ومع قراءة ناقصة (`visionTextIsThin`) تُصعَّد مرة واحدة لـLuna. النتيجة تُحفظ
+بـ`vision_facts` بمفتاح `FACTS_VERSION` الحالي **`v4`** فلا تُدفع القراءة مرتين.
+
+---
+
+## ٩. حالة التكاملات
+
+| التكامل | الحالة |
+|---|---|
+| **سلة** | Easy Mode مفعّل: OAuth + ويبهوك موقّع، وعند `app.installed` يُنشأ حساب التاجر ويُرسَل بريد ترحيب (`domain/sallaWelcome.js`؛ فشله لا يُسقط التثبيت). التطبيق **قيد المراجعة**. |
+| **Resend (البريد)** | مفعّل على دومين `send.aura.sa` — استعادة كلمة المرور وتحقق البريد والترحيب. غياب `RESEND_API_KEY` = 503 صريحة (fail-closed). |
+| **Google Sign-In** | مفعّل (`auth/google.js`، تحقق `aud` + `email_verified`). |
+| **واتساب** | الكود كامل ومختبَر، **ميتا وافقت 2026-09-15**، والتبويب **مخفي** عن التجار. `WA_SIGNUP_CONFIG_ID` غير مضبوط ⇒ Embedded Signup معطّل بصدق. |
+| **إنستغرام** | مبني (ويبهوك + محوّل) **وغير مفعّل**. |
+| **صفحة الأسعار** | `pricing.html` موجودة لكن **الرابط مخفي** من الواجهة و`noindex` حتى قبول سلة وتفعيل الباقات بالكود. |
+
+---
+
+## ١٠. الأسرار والمتغيرات
+
+جرد مُولَّد 2026-09-17 من:
+`grep -rhoE 'env\.[A-Z_]+|env\?\.[A-Z_]+' functions cron-worker | sort -u`
+إضافة سر: `npx wrangler pages secret put NAME --project-name hala-ai-os`. **لا تطبع قيمة سر أبداً.**
+
+### إلزامية (الغياب = رمي خطأ / رفض صريح)
+`SESSION_SECRET` (توقيع الجلسة وCSRF) · `ENCRYPTION_KEY` (تشفير `oauth_tokens.*`,
+`platform_connections.*`, `wa_connections.business_token`, `ig_connections.access_token` —
+حارس ح٩) · `ADMIN_EMAILS` · `SALLA_APP_ID` · `SALLA_CLIENT_ID` · `SALLA_CLIENT_SECRET` ·
+`SALLA_WEBHOOK_SECRET` · `WHATSAPP_TOKEN` · `WHATSAPP_PHONE_ID` · `WHATSAPP_VERIFY_TOKEN` ·
+`WHATSAPP_APP_SECRET` · `CRON_SECRET` (بدونه `api/cron/*` ترفض 500 `CRON_NOT_CONFIGURED`).
+
+### اختيارية (الغياب يعطّل ميزة بصدق، لا يكسر التشغيل)
+`NEXOS_API_KEY` (Tier 0 للأوصاف) · `GROQ_API_KEY` · `GEMINI_API_KEY` · `OPENROUTER_API_KEY` ·
+`HF_TOKEN` (احتياطي `imageProvider.js`) · `RESEND_API_KEY` · `EMAIL_FROM` ·
+`GOOGLE_CLIENT_ID` · `META_APP_ID` · `META_APP_SECRET` · `INSTAGRAM_APP_SECRET` ·
+`INSTAGRAM_VERIFY_TOKEN` · `WA_SIGNUP_CONFIG_ID` ·
+`TURNSTILE_SECRET_KEY` (**fail-open — دَين N7 موثّق، §١٢**).
+
+### غير سرية (إعدادات بيئة)
+`TRUSTED_ORIGINS` (قائمة سماح Origin إضافية بـ`core/csrf.js`) ·
+`UNMETERED_MERCHANT_IDS` (إعفاء حصة مؤقت، §٨) · `WIDGET_ALLOWED_ORIGINS` ·
+`STORE_WA_PHONE` · `MERCHANT_WA_PHONE` · `WHATSAPP_MERCHANT_ID` · `HALA_DEBUG_AI`.
+**Bindings** (`wrangler.toml`، ليست أسراراً): `AI` · `VECTORIZE_INDEX` · `DB` · `HALA_CACHE`.
+
+### سجل التدوير
+| التاريخ | السر | السبب | مَن نفّذ |
+|---|---|---|---|
+| — | — | لا تدوير مسجَّل بعد | — |
+
+> **تنبيه:** تدوير `ENCRYPTION_KEY` **يحتاج كوداً** (مخطط `enc:v2` + `ENCRYPTION_KEY_PREV`
+> وإعادة تشفير خلفية). تدويره اليوم يُسقط كل توكنات المتاجر — SEC-ENC-1 بـ§١٢.
+> مفاتيح AI (Groq/OpenRouter/nexos) **مشتركة بين المنتجين**: تدويرها يضربهما معاً.
+
+---
+
+## ١١. الاختبارات والسكربتات والحراس
 
 ```bash
-npm run build      # بناء dist/ (stage.mjs)
-npm run verify:dist # فحص أمان المخرجات (يعمل تلقائياً ضمن deploy)
-npm run deploy     # build + verify + نشر للإنتاج (main)
-npm test           # tests/api.test.mjs
-npm run dev        # تشغيل محلي (wrangler pages dev)
-npx wrangler d1 migrations apply halah-tr-db --remote   # تطبيق المخطط
-graphify query "<سؤال>"   # فهم البنية قبل أي تعديل (إلزامي)
-graphify update .          # تحديث الجراف بعد التعديل (AST فقط، بلا تكلفة)
+npm test     # stage + run-tests + كل audit-* (بوابة النشر)
+npm run check # نفس الشيء بلا بناء dist (أسرع أثناء التطوير)
+npm run build · npm run verify:dist · npm run backup · npm run smoke · npm run deploy:guard · npm run dev
+npx wrangler d1 migrations apply halah-tr-db --remote
+graphify query "<سؤال>"   /   graphify update .   (بعد كل تعديل)
 ```
+
+- **الحراس:** `audit-isolation` (عزل المتاجر) · `audit-security` (ح٢ ح٥ ح٦ ح٧ ح٨ ح٩ ح١٠ +
+  **ح١١** `console.*` بقيمة ديناميكية خارج `errorLog.js` + **ح١٢** بايت NUL خام) ·
+  `audit-dead-exports` · `audit-file-size` (سقف ٤٠٠ لـ`_lib`، **تحذير عند ٣٩٠**) ·
+  `audit-layering` (ق١–ق٦) · `audit-migrations` (م١ أعمدة، م٢ جداول يتيمة من كتلة §٦،
+  **م٣ هجرة غير مطبَّقة ⇒ يحجب النشر**) · `audit-frontend`.
+- **سكربتات تشغيل:** `stage` · `verify-dist` · `run-tests` (حد أدنى للتأكيدات) ·
+  `check-wrangler-account` (deploy:guard) · `backup-db` · `smoke-test` · `export-persona` ·
+  `verify-wa-token`.
+- **اختبارات حارسة بارزة:** `kv-ttl` (كل كتابة KV بـTTL) · `file-size-warning` ·
+  `deploy-guard` · `log-guard`/`log-hygiene` · `fetch-timeouts` ·
+  `whatsapp-connect-ownership` · `webhook-guard` · `secrets-at-rest` · `db-isolation`.
+
+### النسخ الاحتياطي
+`npm run backup` يصدّر D1 كاملة إلى `backups/` (خارج git) ويتحقق أن الملف يحوي
+`CREATE TABLE accounts` وأن أسطره > ١٠٠ وإلا `exit 1`. **النسخ يدوي ومحلي فقط** — لا رفع
+تلقائي لأي تخزين خارجي؛ القرار **بيد مالك المشروع**. لا اختبار استعادة آلي بعد.
+
+### جداول بالمخطط لا يذكرها الكود
+`scripts/audit-migrations.mjs` (م٢) يقرأ الكتلة أدناه **حرفياً** — مصدر واحد، لا نسخة
+بالسكربت. لتغيير القائمة عدّل هنا فقط. حذف أي جدول من الإنتاج يحتاج نسخة احتياطية
+متحقَّقاً منها + قرار مالك المشروع (`docs/DEFERRED.md`).
+
+<!-- LEGACY_TABLES:START (تُقرأ آلياً — سطر لكل جدول: `اسم` — السبب) -->
+- `users` — legacy من بناء سابق، حلّت محلها accounts/merchants
+- `faqs` — legacy، حلّ محلها store_faqs
+- `store_connections` — legacy، حلّ محلها oauth_tokens/wa_connections
+- `synced_products` — legacy، حلّ محلها store_products
+- `merchant_marketing_contexts` — legacy من بناء سابق
+- `store_documents` — legacy من بناء سابق
+- `merchants_meta` — بيانات وصفية تشغيلية تُقرأ بأدوات التشغيل لا بالكود
+- `pending_retargeting` — مخطط بلا ميزة؛ دواله الميتة حُذفت بالمرحلة ١
+<!-- LEGACY_TABLES:END -->
+
+قبل أي ادعاء أن جدولاً موجود، تحقق فعلياً:
+`npx wrangler d1 execute halah-tr-db --remote --command "SELECT name FROM sqlite_master WHERE type='table'"`
 
 ---
 
-## 13. المشاكل المفتوحة (محدّثة 2026-09-06 — تحقق مباشر من الكود، لا نقل من نسخة سابقة)
+## ١٢. المشاكل المفتوحة
 
-**خارطة الإطلاق المرجعية: [`docs/ROADMAP.md`](docs/ROADMAP.md)** — الترتيب والأولويات
-والمسؤوليات من هناك. خطة التنفيذ التفصيلية: `docs/PARALLEL_TRACKS.md` (المعايير)
-و`docs/PLAN_90_DAYS.md` (الجدول). ملخص الدَين التقني الفعلي:
+| المعرّف | البند | الأثر |
+|---|---|---|
+| **SEC-ENC-1** | لا مسار لتدوير `ENCRYPTION_KEY` (`enc:v2` + `ENCRYPTION_KEY_PREV` + إعادة تشفير خلفية) | التدوير اليوم يُسقط كل توكنات المتاجر |
+| **N7** | `verifyTurnstileToken` fail-open عند غياب المفتاح | طبقة إضافية معطّلة بصمت — بلا موعد إغلاق |
+| **SCALE-CRON** | `catalog_sync` صفحة واحدة و`publish` متجر واحد لكل تِك ١٠ دقائق | سقف ~١٤٤ متجراً/يوم للنشر — يحتاج تقسيماً بالهاش أو شرائح |
+| **QUOTA-GLOBAL** | `GLOBAL_DAILY_LIMITS.description = 25` حد إطلاق | يخنق أول ١٠٠ متجر — يُرفع بقرار موثَّق قبل الإطلاق |
+| **FE-SRI** | `cdn.tailwindcss.com` بلا SRI + CSP بـ`unsafe-inline` | تضمين Tailwind محلياً بـ`dist` هو الحل |
+| **TEST-BRITTLE** | ٤١ اختباراً يقرأ المصدر بـ`readFileSync` | ينكسر من إعادة تنسيق — يُحوَّل لاختبار سلوك قبل أي قسمة |
+| **SIZE-400** | خمسة ملفات على بُعد ١–٤ أسطر من سقف ٤٠٠ (`salla.js`, `copy.js`, `copyParse.js`, `catalog.js`, `review.js`) | أي سطر إضافي يكسر `npm test` — اقسم بإعادة تصدير (§٧) |
 
-**✅ مُصلَح بالفعل (كان موثّقاً كدَين هنا سابقاً — تحقق 2026-09-06، لا تُعِد فتحه بلا تحقق جديد):**
-- `verifyWaSignature` fail-closed فعلاً (`functions/_lib/integrations/whatsapp.js:38`: `if (!appSecret) return false`). — P2 ✅
-- حصة صور المنتجات: `image.js` تستخدم `checkAndConsumeMonthly` + `resolveStoreId` (عزل لكل متجر، لا حساب أدمن مشترك).
-- تدقيق العزل آلي فعلاً: `scripts/audit-isolation.mjs` مربوط بـ`package.json:11` ضمن `npm test`. — P5 ✅
-- `requestId` منفَّذ بالكامل: `functions/_lib/core/respond.js:51` (`generateRequestId()`)، يُمرَّر لرأس `X-Request-Id` (٧٤/٧٧/٨٦/٩٨)، لكل `logError` (٨١/٨٩)، ولجسم الخطأ (٨٤/٩٥). — P7 ✅
-- صفحة أخطاء الأدمن منفَّذة: `functions/api/admin/errors.js` (`requireAdmin` سطر ١٢ ثم `SELECT ... FROM error_log` سطر ١٧). — P8 ✅
-- جدول `error_log` **متحقَّق منه على D1 البعيد** (لا ادعاء): نسخة `backups/halah-tr-db_2026-09-06T04-52-55_full.sql` تحوي `CREATE TABLE error_log` (سطر ٥٣٠) + فهرسين، وهجرة `0015_error_log.sql` مسجّلة مطبَّقة `2026-09-06 03:06:33`.
-- تسجيل أخطاء مهيكل بدأ (`core/errorLog.js` + `respond.js`) — **لم يكتمل**، انظر أدناه.
-
-**❌ باطل — لا يُنفَّذ ولا يُعاد فتحه (ليس دَيناً):**
-- `[observability]` بـ`wrangler.toml`: **Cloudflare Pages يرفض المفتاح صراحةً** (Workers-only). جُرِّب حياً وفشل `npm run deploy` فوراً — التفاصيل بـ`wrangler.toml:32-39`. البديل المنفَّذ: `error_log` على D1 + `/api/admin/errors`. لا تُعِد إضافته. — P6 ❌
-- fail-open عند فشل **فحص** الحصة بـ`functions/api/whatsapp/webhook.js:107-121`: **قرار مدير 2026-09-06**، متعمَّد — البوت يبقى يرد أثناء عطل D1/KV بدل توقف كل التجار، وكل حالة تُسجَّل بـ`logError` وتُطلق تنبيهاً مخنوقاً (`checkRateLimit` سطر ١١٩). ليس دَيناً معلَّقاً ولا يحتاج قراراً جديداً. — P28 ✅
-
-**متوسط (متانة) — لا يزال قائماً:**
-- `verifyTurnstileToken` يمرّر الكل عند غياب المفتاح — مقبول كطبقة إضافية، لكن موثّق هنا فقط لأمانة العرض.
-- **"٦ مسارات بلا حصة" (البند الشهير بالتوثيق السابق) — تحقُّق 2026-09-06 يُبطله شبه كلياً:**
-  `scan`/`sandbox`/`trendyol/qa` **مؤرشفة، لا تعمل** (`docs/archive/deprioritized-features/`) —
-  صفر تعرّض. `support.js` معفى بالتصميم (`storeId: "hala"` ثابت، ودجت أورا نفسه، محمي
-  بـ`checkRateLimit` لا بالحصة). `admin/aura_whatsapp` معفى عمداً (`UNMETERED_MERCHANT_IDS`).
-  `whatsapp/webhook.js` **مُقاس فعلاً** (`checkAndConsumeMonthly` — `webhook.js:110-111`).
-  البند مغلق كلياً (P4 ✅). الفرع الأخير منه (fail-open عند فشل الفحص) **حُسم بقرار مدير
-  2026-09-06** — انظر قسم "باطل" أعلاه، لم يعد دَيناً.
-- ~~رقم التذكرة مزدوج المصدر~~ — P18 ✅ أُغلق 2026-09-08: `reminders.js` يقرأ `booking.ticket_code` (اختبار P18-1). معه أُزيل رقم الموظف المفبرك `966500000000` (P49) — غياب `STORE_WA_PHONE` = تخطي تذكير الموظف مع `logError`.
-- ~~ويبهوك واتساب بلا `checkRateLimit`~~ — P21 ✅ 2026-09-08: ٦٠٠/دقيقة بعد التوقيع.
-- ~~٩ ملفات `console.error` خام~~ — ✅ 2026-09-08: صفر `console.error` خارج `errorLog.js`، محروس باختبار LOG-1. P23 وP26 أُغلقا بنفس الدفعة (`timingSafeEqualStr` بـ`core/crypto.js`).
-- لا cron trigger أصلي بـ`wrangler.toml` — **معالج فعلياً** عبر `cron-worker/` منفصل (Pages لا يدعم cron triggers أصلاً)، هذا السطر توثيقي لا دَين حقيقي.
-- توكن واتساب دائم بدل المؤقت — **يفكّ الحجب الحالي**، أولوية قصوى (مسار د، `PARALLEL_TRACKS.md`).
-
-**منخفض (جودة):**
-- توسيع تغطية الاختبارات — التحسّن حقيقي (٣٨ اختبار، منها عزل متاجر فعلي: كاش، جلسة، Vectorize)، لكن لا تغطية على التوقيعات نفسها بعد.
-- استشارة قانونية PDPL فعلية (الكود يقدّم تقييماً تقنياً فقط).
-
-**⚠️ قاعدة لمن يقرأ هذا القسم:** تحقق من الكود قبل الاعتماد على أي سطر هنا كحقيقة حالية —
-هذا القسم يفوت التحديث بسهولة بعد إصلاحات جانبية. مزامنة 2026-09-06 (الثانية) وجدت
-**٦ بنود** موثّقة كدَين لم تكن كذلك (P2 · P4 · P5 · P6 · P7 · P8 — خمسة مُصلَحة سلفاً،
-وواحد مستحيل على Pages)، و**بنداً واحداً موثّقاً كمُصلَح وهو ليس كذلك** (P18، رقم التذكرة).
-الخطأ يقع بالاتجاهين — تحقّق دائماً بـ`ملف:سطر`.
-
-**ملاحظة توثيق:** أي endpoint في §3 يجب أن يبقى صادقاً بمخرجاته (§11). عند تعديل أي شخصية،
-عدّل `functions/_lib/ai/persona.js` **و** النسخة المرجعية في `persona/`.
+خارطة الإطلاق والأولويات: [`docs/ROADMAP.md`](docs/ROADMAP.md) · القرارات المؤجَّلة:
+[`docs/DEFERRED.md`](docs/DEFERRED.md) · العقد المعماري: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).

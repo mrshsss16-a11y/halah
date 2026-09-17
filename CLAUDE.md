@@ -14,13 +14,16 @@
   الإنتاج فعلاً (2026-07-31)، بما فيها ويبهوك واتساب وتسجيل الدخول.
   `scripts/verify-dist.mjs` يمنع ذلك آلياً؛ لا تُعطّله.
 - النشر بلا `--branch=main` يذهب لفرع Preview ولا يراه أحد على الدومين الحي.
+- **حارس الهجرات يحجب النشر** عند وجود هجرة غير مطبَّقة على البعيد — طبّقها أولاً:
+  `npx wrangler d1 migrations apply halah-tr-db --remote`. لا تُعطّل الحارس.
 - **تحقق بعد كل نشر:**
   ```bash
   curl -s -o /dev/null -w "%{http_code}\n" https://hala-ai-os.pages.dev/api/health          # 200
   curl -s -o /dev/null -w "%{http_code}\n" -X POST \
     https://hala-ai-os.pages.dev/api/whatsapp/webhook -d '{}'                               # 401
   ```
-  404 على أي منهما = الـ API ساقط.
+  404 على أي منهما = الـ API ساقط. (القائمة الكاملة — سلة 401، جسم كبير 413، `/admin`
+  no-store+noindex، توليد حيّ، `error_log` — في `AGENT.md` §٤.)
 
 ### الأمن
 - **لا أسرار مكتوبة بالكود، ولا قيم افتراضية للأسرار.** غياب السر = ارمِ خطأ (fail closed)،
